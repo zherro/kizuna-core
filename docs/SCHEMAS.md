@@ -285,33 +285,3 @@ export default async function CategoriesPage() {
   );
 }
 ```
-
----
-
-## 4. Checklist: Implementar uma Nova Tela
-
-- [ ] **Definir Resource** (se não existir)
-  - [ ] Table name, columns
-  - [ ] mapInput/mapOutput (se houver transform)
-  - [ ] Adicionar a `src/config/resources.ts`
-
-- [ ] **Definir ScreenConfig**
-  - [ ] Blocos (page-header, resource-screen, etc)
-  - [ ] Props para cada bloco
-  - [ ] Campos do form
-  - [ ] Config da lista
-  - [ ] Adicionar a `src/config/screens.ts`
-
-- [ ] **Criar Page Component**
-  - [ ] Importar RenderScreen
-  - [ ] Passar config + context
-  - [ ] Adicionar auth check se necessário
-
-- [ ] **Testar**
-  - [ ] Criar registro
-  - [ ] Editar registro
-  - [ ] Deletar registro
-  - [ ] Buscar por termo
-  - [ ] Paginar
-
-**Tempo estimado**: 15 minutos (sem componentes customizados).

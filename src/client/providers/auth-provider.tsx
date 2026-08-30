@@ -9,6 +9,7 @@ export interface PublicSession {
   display_name?: string;
   login?: string;
   tenant_type?: string;
+  is_root?: boolean;
   perms?: PermissionMap;
 }
 

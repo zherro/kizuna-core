@@ -46,6 +46,10 @@ import { NumberField } from '../ui-better-soft/forms/number-field';
 import { SectionIllustration } from '../ui-better-soft/section-illustration';
 import { EntityGridList } from '../ui-better-soft/lists/entity-grid-list';
 import { InlineAlert } from '../ui-better-soft/inline-alert';
+import {
+  SystemConfigSection,
+  type SystemConfigFieldSpec,
+} from '../ui-better-soft/system-config-section';
 import { RpcTester } from '../rpc-tester';
 import { LocationTrigger, LocationModal } from '../location-modal';
 import { useForm } from '@kizuna/core';
@@ -829,6 +833,38 @@ function LocationModalDemo() {
       <LocationTrigger onClick={() => setOpen(true)} />
       <LocationModal open={open} onClose={() => setOpen(false)} />
     </div>
+  );
+}
+
+const SYSTEM_CONFIG_DEMO_FIELDS: SystemConfigFieldSpec[] = [
+  { type: 'toggle', key: 'visible', title: 'Exibir campo' },
+  {
+    type: 'toggle',
+    key: 'required',
+    title: 'Obrigatorio',
+    disabledWhen: (value) => !value.visible,
+  },
+  {
+    type: 'select',
+    key: 'mask',
+    label: 'Tipo de documento',
+    options: [
+      { value: 'cpf_cnpj', label: 'CPF ou CNPJ' },
+      { value: 'cpf', label: 'Somente CPF' },
+    ],
+    disabledWhen: (value) => !value.visible,
+  },
+];
+
+function SystemConfigSectionDemo() {
+  return (
+    <SystemConfigSection
+      configKey="showcase.demo_field"
+      title="Campo de documento"
+      description="Demo — este card não salva de verdade nesta página."
+      fields={SYSTEM_CONFIG_DEMO_FIELDS}
+      initialValue={{ visible: true, required: false, mask: 'cpf_cnpj' }}
+    />
   );
 }
 

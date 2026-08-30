@@ -91,6 +91,7 @@ export function createLoginHandler(pgrstRpc: PgrstRpc) {
       const tenantId = (data?.tenant_id ?? data?.tenant_uid) as string | undefined;
       const tenantType = data?.tenant_type as string | undefined;
       const perms = data?.perms as PermissionMap | undefined;
+      const isRoot = data?.is_root as boolean | undefined;
 
       if (!rpcRes.ok) {
         const details =
@@ -135,6 +136,7 @@ export function createLoginHandler(pgrstRpc: PgrstRpc) {
         perms,
         login: email,
         display_name: displayName,
+        is_root: isRoot,
       });
 
       const response = NextResponse.json({
@@ -145,6 +147,7 @@ export function createLoginHandler(pgrstRpc: PgrstRpc) {
           login: email,
           tenant_type: tenantType,
           perms,
+          is_root: isRoot,
         },
       });
 
@@ -327,6 +330,7 @@ export function createRegisterHandler(pgrstRpc: PgrstRpc) {
       const tenantId = (loginData?.tenant_id ?? loginData?.tenant_uid) as string | undefined;
       const tenantType = loginData?.tenant_type as string | undefined;
       const perms = loginData?.perms as PermissionMap | undefined;
+      const isRoot = loginData?.is_root as boolean | undefined;
 
       if (!loginRes.ok || !userId || !tenantId) {
         console.error('[auth.register] auto_login_failed', {
@@ -361,6 +365,7 @@ export function createRegisterHandler(pgrstRpc: PgrstRpc) {
         perms,
         login: email,
         display_name: displayName,
+        is_root: isRoot,
       });
 
       const response = NextResponse.json(
@@ -372,6 +377,7 @@ export function createRegisterHandler(pgrstRpc: PgrstRpc) {
             login: email,
             tenant_type: tenantType,
             perms,
+            is_root: isRoot,
           },
         },
         { status: 201 }

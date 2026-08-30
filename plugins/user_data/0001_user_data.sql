@@ -2,10 +2,14 @@
 -- Optional. Depends only on core (auth.users, auth.tenants, auth.fun_auth_user_id(),
 -- auth.fun_auth_current_tenant_id()). Skip entirely if a project doesn't need a profile table.
 -- Trimmed from foco-total's live version: dropped the dead bytea `avatar` column (superseded by
--- avatar_url), dropped email_verification_code (implementation-specific to one verification
--- flow), dropped onboarding_done/status (foco-total business meaning, not generic), and made
--- document_type/document_number nullable (KYC is a vertical-specific requirement, not core —
+-- avatar_url), dropped onboarding_done/status (foco-total business meaning, not generic), and
+-- made document_type/document_number nullable (KYC is a vertical-specific requirement, not core —
 -- a project needing it enforces NOT NULL itself, e.g. via a resource config's requiredFields).
+-- email_verification_code ships here too (not trimmed): the column always exists — whether a
+-- project actually uses it (requires an email-verification step or not) is an application-level
+-- decision, not a schema one. Same principle as document_type/birth_date being nullable: the core
+-- table doesn't decide what's required or visible, `system_config` (or a project's own logic)
+-- does.
 
 CREATE TABLE IF NOT EXISTS public.user_data (
     id               bigserial PRIMARY KEY,
@@ -31,6 +35,7 @@ CREATE TABLE IF NOT EXISTS public.user_data (
     document_type    character varying(10),
     document_number  character varying(20),
     birth_date       date,
+    email_verification_code character varying(10),
     active           boolean NOT NULL DEFAULT true,
     created_by       uuid NOT NULL DEFAULT auth.fun_auth_user_id(),
     created_at       timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -66,5 +71,37 @@ WITH CHECK (uid = auth.fun_auth_user_id());
 INSERT INTO auth.plugin_registry (name, version)
 VALUES ('user_data', '1.0.0')
 ON CONFLICT (name) DO UPDATE SET version = EXCLUDED.version;
+
+-- fn_get_provider_profile — public-safe subset of user_data for a public profile page. RLS above
+-- only lets a user read their own row (`uid = auth.fun_auth_user_id()`), so anon has no way to
+-- read anyone else's profile directly — a project showing a public profile page needs a
+-- SECURITY DEFINER function with an explicit whitelisted column list (never `SELECT *`) so an
+-- anonymous visitor reads exactly these fields and nothing else (no document number, phone,
+-- email, or any other private column). Bundled in this plugin (not left to each consuming project
+-- to reinvent) because it's a direct, generic consequence of the RLS policy this same file sets.
+DROP FUNCTION IF EXISTS public.fn_get_provider_profile(uuid);
+
+CREATE OR REPLACE FUNCTION public.fn_get_provider_profile(p_user_id uuid)
+ RETURNS TABLE(
+   user_id uuid,
+   full_name character varying,
+   display_name character varying,
+   avatar_url character varying,
+   bio text,
+   city character varying,
+   state character varying
+ )
+ LANGUAGE sql
+ SECURITY DEFINER
+ SET search_path = public
+AS $function$
+  SELECT ud.user_id, ud.full_name, ud.display_name, ud.avatar_url, ud.bio, ud.city, ud.state
+  FROM public.user_data ud
+  WHERE ud.user_id = p_user_id
+    AND ud.active = true
+  LIMIT 1;
+$function$;
+
+GRANT EXECUTE ON FUNCTION public.fn_get_provider_profile(uuid) TO anon, auth_user;
 
 NOTIFY pgrst, 'reload schema';

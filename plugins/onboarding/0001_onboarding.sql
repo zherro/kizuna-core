@@ -23,8 +23,9 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.onboarding_steps TO auth_us
 DROP POLICY IF EXISTS onboarding_steps_select_policy ON public.onboarding_steps;
 CREATE POLICY onboarding_steps_select_policy ON public.onboarding_steps FOR SELECT TO auth_user
 USING (true);
--- Writes gated by the onboarding_steps.manage permission (registered below), granted to ADMIN by
--- default — see plugins/README.md convention.
+-- Writes gated by the onboarding_steps.manage permission (registered below). Nobody is granted
+-- it by default — see plugins/README.md convention; root already passes this check via
+-- auth.fun_auth_has_perm's is_root bypass, no role_grants row needed.
 DROP POLICY IF EXISTS onboarding_steps_insert_policy ON public.onboarding_steps;
 CREATE POLICY onboarding_steps_insert_policy ON public.onboarding_steps FOR INSERT TO auth_user
 WITH CHECK (auth.fun_auth_has_perm('onboarding_steps', 'manage'));
@@ -66,17 +67,15 @@ CREATE POLICY onboarding_progress_update_policy ON public.onboarding_progress FO
 USING (user_id = auth.fun_auth_user_id())
 WITH CHECK (user_id = auth.fun_auth_user_id());
 
--- Plugin registration + RBAC wiring (see plugins/README.md convention). Admins get
--- onboarding_steps.manage out of the box so they can author/edit the checklist; onboarding_progress
+-- Plugin registration + RBAC wiring (see plugins/README.md convention). onboarding_steps.manage
+-- is registered in the catalog only — no role gets it automatically. Root already passes
+-- auth.fun_auth_has_perm for it via the is_root bypass; granting it to a tenant role (or any
+-- other role) is left to whoever installs/administers the consuming project. onboarding_progress
 -- stays self-service only (no admin permission — a user's own progress isn't something an admin
 -- edits here).
 INSERT INTO auth.permissions (resource, action, name)
 VALUES ('onboarding_steps', 'manage', 'Gerenciar etapas de onboarding')
 ON CONFLICT (resource, action) DO NOTHING;
-
-INSERT INTO auth.role_grants (role_id, permission_id)
-SELECT 2, id FROM auth.permissions WHERE resource = 'onboarding_steps' AND action = 'manage'
-ON CONFLICT DO NOTHING;
 
 INSERT INTO auth.plugin_registry (name, version)
 VALUES ('onboarding', '1.0.0')

@@ -65,10 +65,7 @@ export function IconChoiceGrid({
 
   return (
     <div
-      className={cn(
-        'grid gap-3',
-        columnsClassName ?? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4'
-      )}
+      className={cn('grid gap-3', columnsClassName ?? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4')}
     >
       {items.map((item) => {
         const active = value === item.id;
@@ -95,9 +92,7 @@ export function IconChoiceGrid({
             <div className="min-w-0">
               <div className="text-sm font-semibold">{item.title}</div>
               {item.description ? (
-                <div className="line-clamp-2 text-xs text-muted-foreground">
-                  {item.description}
-                </div>
+                <div className="line-clamp-2 text-xs text-muted-foreground">{item.description}</div>
               ) : null}
             </div>
           </button>

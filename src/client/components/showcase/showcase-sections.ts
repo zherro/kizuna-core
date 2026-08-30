@@ -31,7 +31,8 @@ export type ShowcaseSectionId =
   | 'inline-alert'
   | 'rpc-tester'
   | 'pwa-register'
-  | 'location-modal';
+  | 'location-modal'
+  | 'system-config-section';
 
 export type ShowcaseGroupId = 'shadcn-default' | 'ui-better-soft';
 
@@ -874,6 +875,44 @@ export function LocationPicker() {
       <LocationTrigger onClick={() => setOpen(true)} />
       <LocationModal open={open} onClose={() => setOpen(false)} />
     </>
+  );
+}`,
+  },
+  {
+    id: 'system-config-section',
+    groupId: 'ui-better-soft',
+    label: 'System Config Section',
+    description:
+      'Card generico pra editar UM registro de auth.system_config (plugin system_config) — o projeto so declara os campos (toggle/select/textarea), o componente cuida de renderizar e salvar via /api/resources/system_config/<key>.',
+    usageCode: `import { SystemConfigSection, type SystemConfigFieldSpec } from '../ui-better-soft/system-config-section';
+
+const FIELDS: SystemConfigFieldSpec[] = [
+  { type: 'toggle', key: 'visible', title: 'Exibir campo' },
+  {
+    type: 'toggle',
+    key: 'required',
+    title: 'Obrigatorio',
+    disabledWhen: (value) => !value.visible,
+  },
+  {
+    type: 'select',
+    key: 'mask',
+    label: 'Tipo de documento',
+    options: [
+      { value: 'cpf_cnpj', label: 'CPF ou CNPJ' },
+      { value: 'cpf', label: 'Somente CPF' },
+    ],
+  },
+];
+
+export function DocumentFieldConfig() {
+  return (
+    <SystemConfigSection
+      configKey="user_data.document_field"
+      title="Campo de documento"
+      fields={FIELDS}
+      initialValue={{ visible: true, required: false, mask: 'cpf_cnpj' }}
+    />
   );
 }`,
   },

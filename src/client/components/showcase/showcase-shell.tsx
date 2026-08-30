@@ -26,6 +26,7 @@ import {
   Play,
   Radio,
   Rows3,
+  Settings2,
   Sparkles,
   SpellCheck2,
   SquareStack,
@@ -79,6 +80,7 @@ const ICON_BY_SECTION: Record<ShowcaseSectionId, React.ComponentType<{ className
   'rpc-tester': Play,
   'pwa-register': WifiOff,
   'location-modal': MapPin,
+  'system-config-section': Settings2,
 };
 
 type ShowcaseShellProps = {

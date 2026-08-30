@@ -13,6 +13,7 @@ export type SessionPayload = {
   role?: string;
   login?: string;
   display_name?: string;
+  is_root?: boolean;
 };
 
 function getJwtSecret(): string {

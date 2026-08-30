@@ -11,6 +11,7 @@ export type UserSession = {
   role: string;
   login?: string;
   display_name?: string;
+  is_root?: boolean;
   perms?: PermissionMap;
   access_token?: string;
   refresh_token?: string;
