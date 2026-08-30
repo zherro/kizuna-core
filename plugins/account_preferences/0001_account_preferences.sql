@@ -17,4 +17,11 @@ CREATE POLICY account_preferences_policy ON public.account_preferences FOR ALL T
 USING (user_id = auth.fun_auth_user_id())
 WITH CHECK (user_id = auth.fun_auth_user_id());
 
+-- Plugin registration (see plugins/README.md convention). No permissions registered: this plugin
+-- is strictly self-service (a user manages only their own preferences, no admin-facing action
+-- exists over other users' rows), so there is nothing meaningful to gate behind RBAC.
+INSERT INTO auth.plugin_registry (name, version)
+VALUES ('account_preferences', '1.0.0')
+ON CONFLICT (name) DO UPDATE SET version = EXCLUDED.version;
+
 NOTIFY pgrst, 'reload schema';

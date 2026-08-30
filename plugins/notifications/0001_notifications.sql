@@ -26,4 +26,11 @@ CREATE POLICY notifications_update_policy ON public.notifications FOR UPDATE TO 
 USING (user_id = auth.fun_auth_user_id())
 WITH CHECK (user_id = auth.fun_auth_user_id());
 
+-- Plugin registration (see plugins/README.md convention). No permissions registered: rows are
+-- pushed by trusted backend code only (never inserted by auth_user, see header note above), so
+-- there is no admin-manageable action here to gate behind RBAC.
+INSERT INTO auth.plugin_registry (name, version)
+VALUES ('notifications', '1.0.0')
+ON CONFLICT (name) DO UPDATE SET version = EXCLUDED.version;
+
 NOTIFY pgrst, 'reload schema';

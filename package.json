@@ -1,0 +1,41 @@
+{
+  "name": "@kizuna/core",
+  "version": "0.0.1",
+  "description": "Configuration-driven framework for Next.js + PostgREST",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js",
+    "./types": "./dist/types/index.js",
+    "./client": "./dist/client/index.js",
+    "./server": "./dist/server/index.js"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "type-check": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {},
+  "peerDependencies": {
+    "react": "^18 || ^19",
+    "react-dom": "^18 || ^19",
+    "typescript": "^5"
+  },
+  "devDependencies": {
+    "@types/react": "^19",
+    "typescript": "^5"
+  },
+  "keywords": [
+    "next.js",
+    "postgrest",
+    "configuration",
+    "crud",
+    "forms",
+    "screens"
+  ]
+}

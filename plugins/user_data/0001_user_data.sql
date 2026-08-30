@@ -56,4 +56,15 @@ CREATE POLICY user_data_update_policy ON public.user_data FOR UPDATE TO auth_use
 USING (uid = auth.fun_auth_user_id())
 WITH CHECK (uid = auth.fun_auth_user_id());
 
+-- Plugin registration (see plugins/README.md convention). No permissions registered: as trimmed
+-- for kizuna-core (see header note above), this plugin ships strictly self-service RLS — no admin
+-- override to view/edit another user's profile exists here. A project wanting an admin-facing
+-- "manage any member's profile" capability should add a `user_data.manage` permission plus a
+-- SELECT/UPDATE policy branch gated on auth.fun_auth_has_perm('user_data','manage') itself; that is
+-- a product decision (how much of a member's profile an admin should see/edit), not implied by the
+-- generic core table.
+INSERT INTO auth.plugin_registry (name, version)
+VALUES ('user_data', '1.0.0')
+ON CONFLICT (name) DO UPDATE SET version = EXCLUDED.version;
+
 NOTIFY pgrst, 'reload schema';
