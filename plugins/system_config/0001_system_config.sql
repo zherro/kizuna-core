@@ -22,7 +22,11 @@ CREATE TABLE IF NOT EXISTS auth.system_config (
 
 ALTER TABLE auth.system_config ENABLE ROW LEVEL SECURITY;
 GRANT SELECT ON TABLE auth.system_config TO auth_user, anon;
-GRANT INSERT, UPDATE, DELETE ON TABLE auth.system_config TO auth_user;
+-- No DELETE — no plugin does physical delete (see plugins/README.md). A key/value bag like this
+-- has no natural soft-delete flag either (its PK *is* the key), so removing a key just isn't a
+-- supported operation here: a project that stops using a key simply stops reading it.
+GRANT INSERT, UPDATE ON TABLE auth.system_config TO auth_user;
+REVOKE DELETE ON TABLE auth.system_config FROM auth_user;
 
 DROP POLICY IF EXISTS system_config_select_policy ON auth.system_config;
 CREATE POLICY system_config_select_policy ON auth.system_config FOR SELECT TO auth_user, anon
@@ -40,9 +44,8 @@ CREATE POLICY system_config_update_policy ON auth.system_config FOR UPDATE TO au
 USING (auth.fun_auth_has_perm('system_config', 'manage'))
 WITH CHECK (auth.fun_auth_has_perm('system_config', 'manage'));
 
+-- No longer created — physical delete is disallowed (see the GRANT note above).
 DROP POLICY IF EXISTS system_config_delete_policy ON auth.system_config;
-CREATE POLICY system_config_delete_policy ON auth.system_config FOR DELETE TO auth_user
-USING (auth.fun_auth_has_perm('system_config', 'manage'));
 
 -- Plugin registration + RBAC wiring (see plugins/README.md convention). system_config.manage is
 -- registered in the catalog only — no role gets it automatically. Root already passes

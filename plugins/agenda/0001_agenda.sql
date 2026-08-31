@@ -26,14 +26,23 @@ CREATE TABLE IF NOT EXISTS public.agenda_events (
     people       jsonb,
     calendar_id  text NOT NULL,
     resource_id  text,
+    active       boolean NOT NULL DEFAULT true,
     created_at   timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at   timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Backfill for a table created before `active` existed here.
+ALTER TABLE public.agenda_events ADD COLUMN IF NOT EXISTS active boolean NOT NULL DEFAULT true;
+
 CREATE INDEX IF NOT EXISTS idx_agenda_events_user_start ON public.agenda_events(user_id, start);
 
 ALTER TABLE public.agenda_events ENABLE ROW LEVEL SECURITY;
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.agenda_events TO auth_user;
+-- No DELETE — no plugin does physical delete (see plugins/README.md). Removing an event is a
+-- soft delete (`active = false`), which the existing UPDATE grant/policy below already covers.
+-- The REVOKE strips DELETE back off an install from before this change (GRANT alone never
+-- removes a privilege a prior apply already handed out).
+GRANT SELECT, INSERT, UPDATE ON TABLE public.agenda_events TO auth_user;
+REVOKE DELETE ON TABLE public.agenda_events FROM auth_user;
 
 DROP POLICY IF EXISTS agenda_events_select_policy ON public.agenda_events;
 CREATE POLICY agenda_events_select_policy ON public.agenda_events FOR SELECT TO auth_user
@@ -48,9 +57,9 @@ CREATE POLICY agenda_events_update_policy ON public.agenda_events FOR UPDATE TO 
 USING (user_id = auth.fun_auth_user_id())
 WITH CHECK (user_id = auth.fun_auth_user_id());
 
+-- No longer created — physical delete is disallowed (see the GRANT note above). Dropped so a
+-- re-apply against an install from before this change removes it too.
 DROP POLICY IF EXISTS agenda_events_delete_policy ON public.agenda_events;
-CREATE POLICY agenda_events_delete_policy ON public.agenda_events FOR DELETE TO auth_user
-USING (user_id = auth.fun_auth_user_id());
 
 -- ---------------------------------------------------------------------------------------------
 -- 2) agenda_settings — singleton row per (user_id, tenant_id), same composite-PK-as-uniqueness

@@ -106,7 +106,10 @@ CREATE INDEX IF NOT EXISTS idx_categories_sub_tags_category_sub_id ON public.cat
 -- categories_group
 ALTER TABLE public.categories_group ENABLE ROW LEVEL SECURITY;
 GRANT SELECT ON TABLE public.categories_group TO anon, auth_user;
-GRANT INSERT, UPDATE, DELETE ON TABLE public.categories_group TO auth_user;
+-- No DELETE — no plugin does physical delete (see plugins/README.md). Removing a group is a
+-- soft delete (`active = false`), already covered by the UPDATE grant/policy below.
+GRANT INSERT, UPDATE ON TABLE public.categories_group TO auth_user;
+REVOKE DELETE ON TABLE public.categories_group FROM auth_user;
 DROP POLICY IF EXISTS categories_group_select_policy ON public.categories_group;
 CREATE POLICY categories_group_select_policy ON public.categories_group FOR SELECT TO anon, auth_user
 USING (true);
@@ -117,14 +120,15 @@ DROP POLICY IF EXISTS categories_group_update_policy ON public.categories_group;
 CREATE POLICY categories_group_update_policy ON public.categories_group FOR UPDATE TO auth_user
 USING (auth.fun_auth_has_perm('categorias', 'manage'))
 WITH CHECK (auth.fun_auth_has_perm('categorias', 'manage'));
+-- No longer created — physical delete is disallowed (see the GRANT note above).
 DROP POLICY IF EXISTS categories_group_delete_policy ON public.categories_group;
-CREATE POLICY categories_group_delete_policy ON public.categories_group FOR DELETE TO auth_user
-USING (auth.fun_auth_has_perm('categorias', 'manage'));
 
 -- categories (predates this plugin — see note above)
 ALTER TABLE public.categories ENABLE ROW LEVEL SECURITY;
 GRANT SELECT ON TABLE public.categories TO anon, auth_user;
-GRANT INSERT, UPDATE, DELETE ON TABLE public.categories TO auth_user;
+-- No DELETE — soft delete (`active = false`) via the UPDATE grant/policy below.
+GRANT INSERT, UPDATE ON TABLE public.categories TO auth_user;
+REVOKE DELETE ON TABLE public.categories FROM auth_user;
 DROP POLICY IF EXISTS categories_select_policy ON public.categories;
 CREATE POLICY categories_select_policy ON public.categories FOR SELECT TO anon, auth_user
 USING (true);
@@ -135,14 +139,15 @@ DROP POLICY IF EXISTS categories_update_policy ON public.categories;
 CREATE POLICY categories_update_policy ON public.categories FOR UPDATE TO auth_user
 USING (auth.fun_auth_has_perm('categorias', 'manage'))
 WITH CHECK (auth.fun_auth_has_perm('categorias', 'manage'));
+-- No longer created — physical delete is disallowed (see the GRANT note above).
 DROP POLICY IF EXISTS categories_delete_policy ON public.categories;
-CREATE POLICY categories_delete_policy ON public.categories FOR DELETE TO auth_user
-USING (auth.fun_auth_has_perm('categorias', 'manage'));
 
 -- categories_sub (predates this plugin — see note above)
 ALTER TABLE public.categories_sub ENABLE ROW LEVEL SECURITY;
 GRANT SELECT ON TABLE public.categories_sub TO anon, auth_user;
-GRANT INSERT, UPDATE, DELETE ON TABLE public.categories_sub TO auth_user;
+-- No DELETE — soft delete (`active = false`) via the UPDATE grant/policy below.
+GRANT INSERT, UPDATE ON TABLE public.categories_sub TO auth_user;
+REVOKE DELETE ON TABLE public.categories_sub FROM auth_user;
 DROP POLICY IF EXISTS categories_sub_select_policy ON public.categories_sub;
 CREATE POLICY categories_sub_select_policy ON public.categories_sub FOR SELECT TO anon, auth_user
 USING (true);
@@ -153,14 +158,15 @@ DROP POLICY IF EXISTS categories_sub_update_policy ON public.categories_sub;
 CREATE POLICY categories_sub_update_policy ON public.categories_sub FOR UPDATE TO auth_user
 USING (auth.fun_auth_has_perm('categorias', 'manage'))
 WITH CHECK (auth.fun_auth_has_perm('categorias', 'manage'));
+-- No longer created — physical delete is disallowed (see the GRANT note above).
 DROP POLICY IF EXISTS categories_sub_delete_policy ON public.categories_sub;
-CREATE POLICY categories_sub_delete_policy ON public.categories_sub FOR DELETE TO auth_user
-USING (auth.fun_auth_has_perm('categorias', 'manage'));
 
 -- categories_sub_tags
 ALTER TABLE public.categories_sub_tags ENABLE ROW LEVEL SECURITY;
 GRANT SELECT ON TABLE public.categories_sub_tags TO anon, auth_user;
-GRANT INSERT, UPDATE, DELETE ON TABLE public.categories_sub_tags TO auth_user;
+-- No DELETE — soft delete (`active = false`) via the UPDATE grant/policy below.
+GRANT INSERT, UPDATE ON TABLE public.categories_sub_tags TO auth_user;
+REVOKE DELETE ON TABLE public.categories_sub_tags FROM auth_user;
 DROP POLICY IF EXISTS categories_sub_tags_select_policy ON public.categories_sub_tags;
 CREATE POLICY categories_sub_tags_select_policy ON public.categories_sub_tags FOR SELECT TO anon, auth_user
 USING (true);
@@ -171,9 +177,8 @@ DROP POLICY IF EXISTS categories_sub_tags_update_policy ON public.categories_sub
 CREATE POLICY categories_sub_tags_update_policy ON public.categories_sub_tags FOR UPDATE TO auth_user
 USING (auth.fun_auth_has_perm('categorias', 'manage'))
 WITH CHECK (auth.fun_auth_has_perm('categorias', 'manage'));
+-- No longer created — physical delete is disallowed (see the GRANT note above).
 DROP POLICY IF EXISTS categories_sub_tags_delete_policy ON public.categories_sub_tags;
-CREATE POLICY categories_sub_tags_delete_policy ON public.categories_sub_tags FOR DELETE TO auth_user
-USING (auth.fun_auth_has_perm('categorias', 'manage'));
 
 -- ---------------------------------------------------------------------------------------------
 -- 5) RBAC wiring (see kizuna-core/plugins/README.md convention). Two actions on the `categorias`

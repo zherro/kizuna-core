@@ -57,6 +57,7 @@ const ALLOWED_PURPOSES = new Set([
   'other',
 ]);
 const IMAGE_MIME_PREFIX = 'image/';
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 type PgErrorPayload = {
   message?: string;
@@ -152,9 +153,8 @@ async function listFilesPostgres(args: {
   });
 
   if (args.ids && args.ids.length > 0) {
-    const ids = args.ids
-      .map((value) => String(value).trim())
-      .filter((value) => /^\d+$/.test(value));
+    // `files.id` is a uuid (see plugins/storage/0001_storage.sql), not a numeric id.
+    const ids = args.ids.map((value) => String(value).trim()).filter((value) => UUID_RE.test(value));
 
     if (ids.length > 0) {
       query.set('id', `in.(${ids.join(',')})`);
@@ -280,7 +280,7 @@ async function uploadFilesPostgres(args: { authHeader: string; files: UploadFile
 
 async function deleteFilePostgres(args: { authHeader: string; id: string }) {
   const cleanId = String(args.id ?? '').trim();
-  if (!/^\d+$/.test(cleanId)) {
+  if (!UUID_RE.test(cleanId)) {
     return false;
   }
 
@@ -310,7 +310,7 @@ async function getFileContentPostgres(args: {
   activeOnly?: boolean;
 }) {
   const cleanId = String(args.id ?? '').trim();
-  if (!/^\d+$/.test(cleanId)) {
+  if (!UUID_RE.test(cleanId)) {
     return null;
   }
 

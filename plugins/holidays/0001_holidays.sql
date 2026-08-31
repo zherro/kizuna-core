@@ -45,7 +45,11 @@ CREATE INDEX IF NOT EXISTS idx_holidays_tenant_id ON public.holidays(tenant_id);
 
 ALTER TABLE public.holidays ENABLE ROW LEVEL SECURITY;
 GRANT SELECT ON TABLE public.holidays TO auth_user, anon;
-GRANT INSERT, UPDATE, DELETE ON TABLE public.holidays TO auth_user;
+-- No DELETE — no plugin does physical delete (see plugins/README.md). Removing a catalog entry
+-- is a soft delete (`active = false`), already covered by the UPDATE grant/policy below. The
+-- REVOKE strips DELETE back off an install from before this change.
+GRANT INSERT, UPDATE ON TABLE public.holidays TO auth_user;
+REVOKE DELETE ON TABLE public.holidays FROM auth_user;
 
 DROP POLICY IF EXISTS holidays_select_policy ON public.holidays;
 CREATE POLICY holidays_select_policy ON public.holidays FOR SELECT TO auth_user, anon
@@ -63,9 +67,8 @@ CREATE POLICY holidays_update_policy ON public.holidays FOR UPDATE TO auth_user
 USING (auth.fun_auth_has_perm('holidays', 'manage'))
 WITH CHECK (auth.fun_auth_has_perm('holidays', 'manage'));
 
+-- No longer created — physical delete is disallowed (see the GRANT note above).
 DROP POLICY IF EXISTS holidays_delete_policy ON public.holidays;
-CREATE POLICY holidays_delete_policy ON public.holidays FOR DELETE TO auth_user
-USING (auth.fun_auth_has_perm('holidays', 'manage'));
 
 -- ---------------------------------------------------------------------------------------------
 -- 2) holidays_tenant — a tenant's on/off preference against a catalog entry. Strictly
@@ -86,7 +89,9 @@ CREATE INDEX IF NOT EXISTS idx_holidays_tenant_tenant_id ON public.holidays_tena
 CREATE INDEX IF NOT EXISTS idx_holidays_tenant_holiday_id ON public.holidays_tenant(holiday_id);
 
 ALTER TABLE public.holidays_tenant ENABLE ROW LEVEL SECURITY;
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.holidays_tenant TO auth_user;
+-- No DELETE — soft delete (`active = false`) via the UPDATE grant/policy below.
+GRANT SELECT, INSERT, UPDATE ON TABLE public.holidays_tenant TO auth_user;
+REVOKE DELETE ON TABLE public.holidays_tenant FROM auth_user;
 
 DROP POLICY IF EXISTS holidays_tenant_select_policy ON public.holidays_tenant;
 CREATE POLICY holidays_tenant_select_policy ON public.holidays_tenant FOR SELECT TO auth_user
@@ -101,9 +106,8 @@ CREATE POLICY holidays_tenant_update_policy ON public.holidays_tenant FOR UPDATE
 USING (tenant_id = auth.fun_auth_current_tenant_id())
 WITH CHECK (tenant_id = auth.fun_auth_current_tenant_id());
 
+-- No longer created — physical delete is disallowed (see the GRANT note above).
 DROP POLICY IF EXISTS holidays_tenant_delete_policy ON public.holidays_tenant;
-CREATE POLICY holidays_tenant_delete_policy ON public.holidays_tenant FOR DELETE TO auth_user
-USING (tenant_id = auth.fun_auth_current_tenant_id());
 
 -- ---------------------------------------------------------------------------------------------
 -- 3) holidays_tenant_custom_days_off — a tenant's own days off, unrelated to the catalog.
@@ -131,7 +135,10 @@ CREATE INDEX IF NOT EXISTS idx_custom_days_off_tenant_id ON public.holidays_tena
 CREATE INDEX IF NOT EXISTS idx_custom_days_off_date ON public.holidays_tenant_custom_days_off(date);
 
 ALTER TABLE public.holidays_tenant_custom_days_off ENABLE ROW LEVEL SECURITY;
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.holidays_tenant_custom_days_off TO auth_user;
+-- No DELETE — soft delete (`active`/`deleted`, both already columns here) via the UPDATE
+-- grant/policy below.
+GRANT SELECT, INSERT, UPDATE ON TABLE public.holidays_tenant_custom_days_off TO auth_user;
+REVOKE DELETE ON TABLE public.holidays_tenant_custom_days_off FROM auth_user;
 
 DROP POLICY IF EXISTS holidays_custom_days_off_select_policy ON public.holidays_tenant_custom_days_off;
 CREATE POLICY holidays_custom_days_off_select_policy ON public.holidays_tenant_custom_days_off FOR SELECT TO auth_user
@@ -146,9 +153,8 @@ CREATE POLICY holidays_custom_days_off_update_policy ON public.holidays_tenant_c
 USING (tenant_id = auth.fun_auth_current_tenant_id())
 WITH CHECK (tenant_id = auth.fun_auth_current_tenant_id());
 
+-- No longer created — physical delete is disallowed (see the GRANT note above).
 DROP POLICY IF EXISTS holidays_custom_days_off_delete_policy ON public.holidays_tenant_custom_days_off;
-CREATE POLICY holidays_custom_days_off_delete_policy ON public.holidays_tenant_custom_days_off FOR DELETE TO auth_user
-USING (tenant_id = auth.fun_auth_current_tenant_id());
 
 -- Plugin registration + RBAC wiring (see plugins/README.md convention). holidays.manage is
 -- registered in the catalog only — no role gets it automatically. Root already passes

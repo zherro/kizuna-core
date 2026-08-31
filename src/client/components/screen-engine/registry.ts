@@ -2,8 +2,8 @@ import type { ComponentType } from 'react';
 import { PageHeaderBlock } from '../page-header-block';
 import { ResourceScreen } from '../resource-screen';
 import { ListBlock } from '../list-block';
-import { TaxonomyManager } from '@/components/admin/taxonomy-manager';
-import { AccountForm } from '@/components/onboarding/user-data-form';
+import { TaxonomyManager } from '../taxonomy/taxonomy-manager';
+import { AccountForm } from '../onboarding/user-data-form';
 
 export type RegistryEntry = {
   /** Heterogeneous registry: each entry has its own prop type, resolved dynamically from screen-config JSON, not statically. */

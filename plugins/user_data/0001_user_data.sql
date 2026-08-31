@@ -10,6 +10,12 @@
 -- decision, not a schema one. Same principle as document_type/birth_date being nullable: the core
 -- table doesn't decide what's required or visible, `system_config` (or a project's own logic)
 -- does.
+--
+-- `avatar_url` is just a URL string — no FK to any file-storage table, so nothing here forces
+-- installing the `storage` plugin. But it's a soft, functional dependency: a project that lets
+-- users upload an avatar (as foco-total's user-data form does, via `/api/storage/files`) needs
+-- `storage` installed too, or every upload fails with "permission denied for table files" (no
+-- plugin ever GRANTed `auth_user` access to it). See `plugins/storage/0001_storage.sql`.
 
 CREATE TABLE IF NOT EXISTS public.user_data (
     id               bigserial PRIMARY KEY,
@@ -43,6 +49,14 @@ CREATE TABLE IF NOT EXISTS public.user_data (
     CONSTRAINT user_data_uid_unique UNIQUE (uid),
     CONSTRAINT user_data_user_id_unique UNIQUE (user_id)
 );
+
+-- `display_name` doubles as the public profile slug (/prestador/<display_name>), so it must be
+-- unique — case-insensitively, so "Joao" and "joao" can't collide as two different URLs. Partial
+-- (WHERE display_name IS NOT NULL) since the column itself stays optional at the schema level; a
+-- consuming app that requires it (as foco-total's form does) enforces that in its own validation.
+CREATE UNIQUE INDEX IF NOT EXISTS user_data_display_name_unique_idx
+  ON public.user_data (lower(display_name))
+  WHERE display_name IS NOT NULL;
 
 ALTER TABLE public.user_data ENABLE ROW LEVEL SECURITY;
 GRANT SELECT, INSERT, UPDATE ON TABLE public.user_data TO auth_user;
@@ -103,5 +117,33 @@ AS $function$
 $function$;
 
 GRANT EXECUTE ON FUNCTION public.fn_get_provider_profile(uuid) TO anon, auth_user;
+
+-- Same lookup, keyed by the public slug (`display_name`) instead of the internal `user_id` — what
+-- `/prestador/<slug>` actually has in the URL. Overloaded under the same name (Postgres dispatches
+-- by argument type), so callers pick whichever identifier they have on hand.
+DROP FUNCTION IF EXISTS public.fn_get_provider_profile(text);
+
+CREATE OR REPLACE FUNCTION public.fn_get_provider_profile(p_display_name text)
+ RETURNS TABLE(
+   user_id uuid,
+   full_name character varying,
+   display_name character varying,
+   avatar_url character varying,
+   bio text,
+   city character varying,
+   state character varying
+ )
+ LANGUAGE sql
+ SECURITY DEFINER
+ SET search_path = public
+AS $function$
+  SELECT ud.user_id, ud.full_name, ud.display_name, ud.avatar_url, ud.bio, ud.city, ud.state
+  FROM public.user_data ud
+  WHERE lower(ud.display_name) = lower(p_display_name)
+    AND ud.active = true
+  LIMIT 1;
+$function$;
+
+GRANT EXECUTE ON FUNCTION public.fn_get_provider_profile(text) TO anon, auth_user;
 
 NOTIFY pgrst, 'reload schema';

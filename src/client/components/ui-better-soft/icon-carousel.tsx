@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import useEmblaCarousel from 'embla-carousel-react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { TaxonomyIcon } from '@/components/admin/taxonomy-icon';
+import { TaxonomyIcon } from '../taxonomy/taxonomy-icon';
 import { cn } from '../../../lib/utils';
 
 export type IconCarouselItem = {

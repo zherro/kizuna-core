@@ -1,7 +1,6 @@
 'use client';
 
 import { createContext, useCallback, useContext, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import type { PermissionMap } from '../../types/auth';
 
 export interface PublicSession {
@@ -26,8 +25,12 @@ function buildAuthUser(raw: PublicSession): AuthUser {
   const login = raw.login?.trim();
   const canManageCatalog = (raw.tenant_type ?? '').toUpperCase() === 'ADMIN';
   const perms = raw.perms ?? {};
+  // Mirrors auth.fun_auth_has_perm's bypass on the DB side: a root session isn't granted every
+  // permission row (plugins never auto-grant, see plugins/README.md), it bypasses the check
+  // entirely — so the client-side gate (nav items, page guards keyed off `permResource`) must
+  // bypass the same way, or a root-only feature with no explicit grant just disappears for root.
   const hasPerm = (resource: string, action: keyof PermissionMap[string] = 'view') =>
-    perms[resource]?.[action] === true || resource === 'default';
+    raw.is_root === true || perms[resource]?.[action] === true || resource === 'default';
 
   const makeInitials = (str: string) =>
     str
@@ -92,7 +95,6 @@ export function AuthProvider({
   children: React.ReactNode;
   initialUser: PublicSession | null;
 }) {
-  const router = useRouter();
   const [user, setUserRaw] = useState<AuthUser | null>(
     initialUser ? buildAuthUser(initialUser) : null
   );
@@ -103,9 +105,13 @@ export function AuthProvider({
 
   const logout = useCallback(async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
-    setUserRaw(null);
-    router.push('/login');
-  }, [router]);
+    // Hard redirect on purpose: a client-side router.push() re-renders the tree with
+    // user=null while still on the old /painel/* route, and panel-shell's
+    // checkPagePermission() hits notFound() before the navigation lands — the user gets
+    // stuck on a 404 inside /painel instead of reaching /login. A full reload discards
+    // that tree instead of racing it.
+    window.location.href = '/login';
+  }, []);
 
   const value = useMemo(() => ({ user, setUser, logout }), [user, setUser, logout]);
 

@@ -4,7 +4,13 @@ Optional, independent of each other and of `sql/` beyond the core auth schema. A
 ones a project needs — each folder is one self-contained, idempotent `.sql` file.
 
 - `user_data/` — per-user profile (name, avatar, contact, document, birth date). No KYC fields
-  are required (nullable) — enforce that per-project if needed.
+  are required (nullable) — enforce that per-project if needed. `avatar_url` just holds a URL
+  string (no FK) — actually being able to upload/serve that file needs the `storage` plugin
+  installed too (soft, functional dependency, not a schema one — see `storage/0001_storage.sql`).
+- `storage/` — generic file storage (`files`: `bytea` content inline, no external object storage
+  wiring). Owner-only writes; SELECT is open to `anon` too (active rows only) since a file's
+  public URL (an avatar, an ad's cover photo) must be viewable by a visitor who isn't logged in.
+  Self-service only, no admin-manage permission registered.
 - `onboarding/` — generic checklist mechanism (`onboarding_steps` + `onboarding_progress`). No
   steps are seeded; insert your own.
 - `account_preferences/` — one jsonb settings bag per (user, tenant): theme, locale, notification
