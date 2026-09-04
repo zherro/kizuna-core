@@ -17,7 +17,7 @@ import { QuillEditor } from '@kizuna/core/client/components/ui/quill-editor';
 import { SearchableSelect } from '@kizuna/core/client/components/ui/searchable-select';
 import { useAuth } from '@kizuna/core/client/providers/auth-provider';
 import { useForm } from '@kizuna/core/client';
-import { validateDocument } from '@/lib/validate-doc';
+import { validateDocument } from '../../../lib/validate-doc';
 import { stripHtml } from '@/components/services/service-type';
 
 const STATES_BR = [

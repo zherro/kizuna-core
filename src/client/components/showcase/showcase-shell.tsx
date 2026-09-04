@@ -8,6 +8,9 @@ import {
   Bell,
   Boxes,
   CalendarClock,
+  ClipboardList,
+  FileInput,
+  FileText,
   Filter,
   GalleryHorizontalEnd,
   Gauge,
@@ -81,6 +84,9 @@ const ICON_BY_SECTION: Record<ShowcaseSectionId, React.ComponentType<{ className
   'pwa-register': WifiOff,
   'location-modal': MapPin,
   'system-config-section': Settings2,
+  'form-builder': FileInput,
+  'forms-manager': ClipboardList,
+  'pages-admin': FileText,
 };
 
 type ShowcaseShellProps = {

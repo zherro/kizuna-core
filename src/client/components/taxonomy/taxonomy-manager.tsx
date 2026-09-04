@@ -37,8 +37,9 @@ function matches(normalizedTerm: string, ...values: Array<string | undefined>) {
 export function TaxonomyManager() {
   const { error: toastError } = useToast();
 
-  // maxPageSize on each resource config (see src/lib/server/resources/resource-taxonomy.ts) lifts the
-  // default 100-row cap, so a single page-1 load already brings in the full tree.
+  // maxPageSize on each resource config (screen-engine/resources/taxonomy.ts `resourceTaxonomy`,
+  // spread into the consuming app's postgrestResources) lifts the default 100-row cap, so a single
+  // page-1 load already brings in the full tree.
   const groupsRes = useTenantResource<TaxonomyGroup>({
     resource: 'categories_group',
     defaultItems: [],

@@ -20,9 +20,11 @@ type CreateScreenPageOptions = {
  * today: the admin gate and reading the route's params/searchParams into a
  * `ScreenContext`.
  *
- * All three converted screens use the same gate (`tenant_type === 'ADMIN'`)
- * because that's genuinely what they all require today — this is not yet
- * wired to the finer `perms` claim (`AuthUser.hasPerm`, see .claude/auth.md).
+ * All three converted screens use the same gate (`tenant_type === 'ADMIN'`, plus an
+ * `is_root` bypass — root's own tenant is `USER`-typed, not `ADMIN`, so without this it
+ * gets redirected out of every admin screen) because that's genuinely what they all
+ * require today — this is not yet wired to the finer `perms` claim (`AuthUser.hasPerm`,
+ * see .claude/auth.md).
  * A screen that needs a specific permission instead of blanket admin access
  * should NOT stretch this helper; write that page by hand until enough
  * screens need it to justify a `requiredPerm` option here.
@@ -35,7 +37,8 @@ type CreateScreenPageOptions = {
 export function createScreenPage(config: ScreenConfig, options: CreateScreenPageOptions = {}) {
   return async function ScreenPageComponent(routeProps: RouteProps) {
     const session = await getSession();
-    const canManageCatalog = (session?.tenant_type ?? '').toUpperCase() === 'ADMIN';
+    const canManageCatalog =
+      (session?.tenant_type ?? '').toUpperCase() === 'ADMIN' || !!session?.is_root;
 
     if (!canManageCatalog) {
       redirect(options.redirectTo ?? '/painel');

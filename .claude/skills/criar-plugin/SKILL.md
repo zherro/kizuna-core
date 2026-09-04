@@ -19,9 +19,15 @@ sentido para o foco-total (ou qualquer outro app específico), ele não é plugi
 
 ```
 kizuna-core/plugins/<nome-do-plugin>/0001_<nome-do-plugin>.sql
+kizuna-core/plugins/<nome-do-plugin>/0002_*.sql   # opcional: seed de dados ou migração posterior
 ```
 
 Nome curto, snake_case, um substantivo do domínio (`agenda`, `onboarding`, não `feature-x`).
+
+O `0001_*.sql` é schema/RLS/RBAC. Arquivos numerados seguintes (`0002_`, `0003_`, …) são
+opcionais — o instalador aplica todos os `NNNN_*.sql` da pasta do plugin em ordem de nome. Use um
+`0002_*_seed.sql` só para dados *genéricos de verdade* (ex.: `plugins/pages/0002_pages_seed.sql`
+com páginas neutras); conteúdo específico de um app continua no `db/extras/` do consumidor.
 
 ## Passo 2 — O que o `0001_*.sql` precisa ter
 

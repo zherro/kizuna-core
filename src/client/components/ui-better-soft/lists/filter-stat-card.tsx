@@ -1,7 +1,7 @@
 'use client';
 
 import { cn } from '../../../../lib/utils';
-import { TONE_TEXT, type ThemeTone } from '@/lib/ui-tone';
+import { TONE_TEXT, type ThemeTone } from '../../../../lib/ui-tone';
 
 type FilterStatCardProps = {
   label: string;

@@ -150,9 +150,9 @@ else
       continue
     fi
 
-    plugin_files=("$PLUGINS_DIR/$plugin"/0001_*.sql)
+    plugin_files=("$PLUGINS_DIR/$plugin"/[0-9][0-9][0-9][0-9]_*.sql)
     if [ ! -e "${plugin_files[0]}" ]; then
-      echo -e "${RED}❌ ERROR: nenhum 0001_*.sql encontrado em $PLUGINS_DIR/$plugin${NC}"
+      echo -e "${RED}❌ ERROR: nenhum NNNN_*.sql encontrado em $PLUGINS_DIR/$plugin${NC}"
       exit 1
     fi
 

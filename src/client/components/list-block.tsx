@@ -23,7 +23,7 @@ import type { ResourceConfig } from '../../types/resource';
 import { postgrestResources } from '@/lib/server/resources';
 import { formatServicePrice } from '@/components/services/service-type';
 import { cn } from '../../lib/utils';
-import { TONE_BADGE, type ThemeTone } from '@/lib/ui-tone';
+import { TONE_BADGE, type ThemeTone } from '../../lib/ui-tone';
 
 /**
  * `block.props` crosses a Server Component → Client Component boundary

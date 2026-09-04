@@ -13,12 +13,19 @@ function getResourceConfig(resource: string) {
 
 function parsePgError(payload: unknown) {
   const json = (payload as RecordValue | null) ?? null;
-  const message =
-    (json?.message as string | undefined) ?? 'Erro ao processar requisicao no PostgREST.';
+  const code = json?.code as string | undefined;
   const details =
     (json?.details as string | undefined) ||
     (json?.hint as string | undefined) ||
     (json?.error as string | undefined);
+
+  // 23505 = unique_violation — PostgREST's raw message ("duplicate key value violates unique
+  // constraint ...") isn't something to show a user, so translate it generically. Specific forms
+  // (e.g. displayName) can still show a more targeted message from `details` if they need to.
+  const message =
+    code === '23505'
+      ? 'Já existe um registro com esse valor. Verifique os campos que precisam ser únicos.'
+      : ((json?.message as string | undefined) ?? 'Erro ao processar requisicao no PostgREST.');
 
   return { message, details };
 }

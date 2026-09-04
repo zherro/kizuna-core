@@ -52,6 +52,9 @@ import {
 } from '../ui-better-soft/system-config-section';
 import { RpcTester } from '../rpc-tester';
 import { LocationTrigger, LocationModal } from '../location-modal';
+import { FormBuilderShowcaseDemo } from '../form-builder/showcase-demo';
+import { FormsShowcaseDemo } from '../forms/showcase-demo';
+import { PagesAdminShowcaseDemo } from '../pages/showcase-demo';
 import { useForm } from '@kizuna/core';
 import * as Yup from 'yup';
 import { getShowcaseSection, type ShowcaseSectionId } from './showcase-sections';
@@ -901,6 +904,10 @@ function SectionDemo({ sectionId }: { sectionId: ShowcaseSectionId }) {
   if (sectionId === 'rpc-tester') return <RpcTesterDemo />;
   if (sectionId === 'pwa-register') return <PwaRegisterDemo />;
   if (sectionId === 'location-modal') return <LocationModalDemo />;
+  if (sectionId === 'system-config-section') return <SystemConfigSectionDemo />;
+  if (sectionId === 'form-builder') return <FormBuilderShowcaseDemo />;
+  if (sectionId === 'forms-manager') return <FormsShowcaseDemo />;
+  if (sectionId === 'pages-admin') return <PagesAdminShowcaseDemo />;
   return <UiBetterSoftDemo />;
 }
 

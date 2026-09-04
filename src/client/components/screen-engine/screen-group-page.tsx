@@ -18,7 +18,10 @@ type CreateScreenGroupPageOptions = {
  * plugin/feature and don't each deserve their own URL segment — collapses them into one
  * catch-all route (`/painel/<group>/[slug]`) resolved against a `slug -> ScreenConfig` registry,
  * the same shape `root-screens/resolver.tsx` uses for ROOT-only screens (`/painel/root/[slug]`,
- * `/painel/security/[slug]`), just gated on `tenant_type === 'ADMIN'` instead of `is_root`.
+ * `/painel/security/[slug]`), gated on `tenant_type === 'ADMIN'` plus an `is_root` bypass
+ * (root's own tenant is `USER`-typed, not `ADMIN`, so without this it gets redirected out
+ * of every screen in the group) — same idea as ROOT-only screens, just not exclusively
+ * `is_root`.
  *
  * Usage — the entire page.tsx becomes:
  * ```tsx
@@ -31,7 +34,8 @@ export function createScreenGroupPage(
 ) {
   return async function ScreenGroupPageComponent(routeProps: RouteProps) {
     const session = await getSession();
-    const canManageCatalog = (session?.tenant_type ?? '').toUpperCase() === 'ADMIN';
+    const canManageCatalog =
+      (session?.tenant_type ?? '').toUpperCase() === 'ADMIN' || !!session?.is_root;
 
     if (!canManageCatalog) {
       redirect(options.redirectTo ?? '/painel');

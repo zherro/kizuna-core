@@ -71,6 +71,34 @@ Both this RBAC layer and a legacy jsonb layer (`auth.group_permissions` /
 `auth.get_auth__effective_permissions()` into the JWT's `perms` claim at login. The two coexist —
 see `STATUS.md` for the open decision on cutover.
 
+## RBAC admin delegation (`sql/0111_rbac_admin_delegation.sql`)
+
+Guards what a **non-root** admin can hand out. A tenant admin may only `allow`/grant a permission
+they currently hold themselves (`auth.fun_auth_can_grant`), and may only assign a role whose
+entire grant set is within that ceiling (`auth.fun_auth_can_assign_role`). `deny` and role
+*removal* are unrestricted beyond the `tenant_member.manage` gate. `is_root` can edit the global
+template roles' grants; a tenant admin cannot.
+
+The ready-made RBAC admin screens (`@kizuna/core/client/components/rbac/*` — `RolesManagerScreen`,
+`UserAccessManagerScreen`) drive this. Their mutations go through `POST /api/postgrest/rpc`
+(`schema: 'auth'`, functions `fn_rbac__set_role_grant`, `fn_rbac__set_user_role`,
+`fn_rbac__set_user_override`, `fn_rbac__copy_user_access`), not `/api/resources`. A consuming
+project wires them into two routes it owns (e.g. `/painel/root/papeis`,
+`/painel/administracao/acessos`) and picks the nav gating.
+
+## Route protection (proxy)
+
+Next.js 16 renamed `middleware.ts` → `proxy.ts` (exported function named `proxy`). The consuming
+project owns this file. It should verify the JWT **inline** (`jsonwebtoken` directly, not
+`@kizuna/core/server`, to avoid `next/headers` bundling in the edge context) and:
+
+- request to a protected prefix (`/painel/*`) with no valid session → redirect to `/login`
+- request to an auth page (`/login`, `/registre-se`) with a valid session → redirect to `/painel`
+
+A `createKizunaProxy({ protectedPrefixes, authPages })` helper is a Fase A promotion target — see
+`STATUS.md` for whether it has landed. The proxy is a fast cookie/signature gate only; the real
+boundary is still RLS + `fun_auth_has_perm`, and the panel layout re-verifies expiry.
+
 ## Enforcement: UI-only vs real
 
 - **Real**: `auth.fun_auth_has_perm(resource, action)` — reads `perms`/`is_root` straight from JWT

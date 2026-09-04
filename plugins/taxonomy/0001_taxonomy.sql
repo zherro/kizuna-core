@@ -1,24 +1,29 @@
 -- plugins/taxonomy/0001_taxonomy.sql
 -- Plugin: taxonomy — generic hierarchical taxonomy mechanism, group -> category -> subcategory ->
--- tag. Extends public.categories/public.categories_sub, which are expected to already exist in
--- the consuming project's own base schema (this plugin only ALTERs them — it does not define
--- their base CREATE TABLE, to avoid fighting a project's own migration order for tables that may
--- be FK'd elsewhere). This file adds what's specific to the taxonomy feature: the
--- category_group level, category_group_id/icon on categories, and a categories_sub_tags leaf
--- table for free-text search tags.
+-- tag. This plugin owns categories_group, categories_sub, and categories_sub_tags outright
+-- (CREATE TABLE). Only the middle level, public.categories, is expected to already exist in the
+-- consuming project's own base schema (this plugin only ALTERs it — it does not define its base
+-- CREATE TABLE, to avoid fighting a project's own migration order for a table that may be FK'd
+-- elsewhere, e.g. a `services`/`ads` table owned by the consumer).
 --
 -- Idempotent, from-zero-safe — same convention as kizuna-core/plugins/*/0001_*.sql (see
 -- kizuna-core/plugins/README.md): CREATE TABLE IF NOT EXISTS / ADD COLUMN IF NOT EXISTS,
 -- ON CONFLICT DO ..., self-registers in auth.plugin_registry, and registers a `categorias`
 -- resource + permission (`view`/`manage`) that a consuming project's own admin UI and nav-perm
 -- checks are expected to gate on, matching the write policies below.
+--
+-- IDs are bigserial (not uuid) across the whole tree — verified faster to index for a taxonomy
+-- this size, and there's no cross-tenant/cross-system sharing need that would call for uuid.
+-- public.categories (the one table this plugin doesn't own) is expected to use the same bigserial
+-- convention in the consumer's own migration, since categories_group_id/category_id FKs here are
+-- typed bigint.
 
 -- ---------------------------------------------------------------------------------------------
 -- 1) categories_group — enum-like table of top-level groups that classify categories, one level
 --    above them. Same column conventions as public.categories.
 -- ---------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.categories_group (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  id bigserial PRIMARY KEY,
   tenant_id uuid NOT NULL,
   name text NOT NULL,
   slug text NOT NULL,
@@ -34,16 +39,15 @@ CREATE TABLE IF NOT EXISTS public.categories_group (
 );
 
 -- ---------------------------------------------------------------------------------------------
--- 2) categories/categories_sub gain the columns the taxonomy feature needs on top of whatever
---    base shape the consuming project already defines for them: a group + icon + description on
---    categories (icon: a client-resolved icon name, e.g. an icon-library component name), and
---    description/tags on categories_sub. Both tables also gain tenant_id/created_by, matching the
---    ownership columns every other domain table normally carries — nullable (not NOT NULL)
---    because a project's base schema may already seed rows with neither column set; new rows
---    created afterwards pick up the current session via the column defaults.
+-- 2) categories gains the columns the taxonomy feature needs on top of whatever base shape the
+--    consuming project already defines for it: a group + icon + description (icon: a
+--    client-resolved icon name, e.g. an icon-library component name). Also gains tenant_id/
+--    created_by, matching the ownership columns every other domain table normally carries —
+--    nullable (not NOT NULL) because a project's base schema may already seed rows with neither
+--    column set; new rows created afterwards pick up the current session via the column defaults.
 -- ---------------------------------------------------------------------------------------------
 ALTER TABLE public.categories
-  ADD COLUMN IF NOT EXISTS category_group_id uuid REFERENCES public.categories_group(id);
+  ADD COLUMN IF NOT EXISTS category_group_id bigint REFERENCES public.categories_group(id);
 
 ALTER TABLE public.categories
   ADD COLUMN IF NOT EXISTS icon text;
@@ -57,28 +61,60 @@ ALTER TABLE public.categories
 ALTER TABLE public.categories
   ADD COLUMN IF NOT EXISTS created_by uuid DEFAULT auth.fun_auth_user_id();
 
-ALTER TABLE public.categories_sub
-  ADD COLUMN IF NOT EXISTS description text;
+-- form_key: optional bridge to the `forms` plugin. When set, a category points at a reusable
+-- `public.forms` row (by its tenant-scoped `form_key` string — no FK, `forms` may not be
+-- installed). Consuming UIs (the service wizard's dynamic step) use it to decide whether to
+-- render a `<DynamicFormStep>` for entities in that category. Harmless (nullable, unreferenced)
+-- when the `forms` plugin is absent. Surfaced by kizuna-core's `taxonomy-edit-panel`.
+-- Sibling column: `request_form_key` below is the symmetric bridge for the buyer's side —
+-- `form_key` is the form the entity's PROVIDER fills (extra fields describing the offer),
+-- `request_form_key` is the form the BUYER fills when requesting a quote / closing an order.
+ALTER TABLE public.categories
+  ADD COLUMN IF NOT EXISTS form_key text;
 
-ALTER TABLE public.categories_sub
-  ADD COLUMN IF NOT EXISTS tags text;
+COMMENT ON COLUMN public.categories.form_key IS
+  'form_key of an active public.forms row (forms plugin). When set, consuming UIs render that form (filled by the entity provider) for entities in this category. No FK — forms is tenant-scoped. Sibling: request_form_key (buyer-facing).';
 
-ALTER TABLE public.categories_sub
-  ADD COLUMN IF NOT EXISTS tenant_id uuid DEFAULT auth.fun_auth_current_tenant_id();
+-- request_form_key: symmetric sibling of `form_key`. Same bridge mechanism (tenant-scoped
+-- `public.forms.form_key` string, no FK, `forms` may not be installed), but this points at the
+-- form the BUYER fills when requesting a quote / closing an order for entities in this category,
+-- as opposed to `form_key` which is filled by the entity's provider. Harmless (nullable,
+-- unreferenced) when the `forms` plugin is absent. Surfaced by kizuna-core's `taxonomy-edit-panel`.
+ALTER TABLE public.categories
+  ADD COLUMN IF NOT EXISTS request_form_key text;
 
-ALTER TABLE public.categories_sub
-  ADD COLUMN IF NOT EXISTS created_by uuid DEFAULT auth.fun_auth_user_id();
+COMMENT ON COLUMN public.categories.request_form_key IS
+  'form_key of an active public.forms row (forms plugin) used for the buyer''s quote/order-request flow for entities in this category. Buyer-facing sibling of form_key (provider-facing). No FK — forms is tenant-scoped.';
 
 -- ---------------------------------------------------------------------------------------------
--- 3) categories_sub_tags — free-text search tags one level below categories_sub (the
+-- 3) categories_sub — owned outright by this plugin (unlike `categories`, nothing outside the
+--    taxonomy feature FKs it, so there's no reason to leave its base table to the consumer).
+-- ---------------------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.categories_sub (
+  id bigserial PRIMARY KEY,
+  category_id bigint NOT NULL REFERENCES public.categories(id) ON DELETE CASCADE,
+  name text NOT NULL,
+  slug text NOT NULL,
+  description text,
+  tags text,
+  tenant_id uuid DEFAULT auth.fun_auth_current_tenant_id(),
+  created_by uuid DEFAULT auth.fun_auth_user_id(),
+  active boolean NOT NULL DEFAULT true,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT categories_sub_slug_key UNIQUE (slug)
+);
+
+-- ---------------------------------------------------------------------------------------------
+-- 4) categories_sub_tags — free-text search tags one level below categories_sub (the
 --    "what the user would type in the search bar" leaf level). Not a globally-unique slug: the
 --    same tag text may intentionally repeat under two different subcategories, so uniqueness is
 --    scoped to (category_sub_id, slug) instead.
 -- ---------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.categories_sub_tags (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  category_id uuid NOT NULL REFERENCES public.categories(id) ON DELETE CASCADE,
-  category_sub_id uuid NOT NULL REFERENCES public.categories_sub(id) ON DELETE CASCADE,
+  category_id bigint NOT NULL REFERENCES public.categories(id) ON DELETE CASCADE,
+  category_sub_id bigint NOT NULL REFERENCES public.categories_sub(id) ON DELETE CASCADE,
   name text NOT NULL,
   slug text NOT NULL,
   description text,
@@ -92,18 +128,23 @@ CREATE TABLE IF NOT EXISTS public.categories_sub_tags (
 
 CREATE INDEX IF NOT EXISTS idx_categories_sub_tags_category_id ON public.categories_sub_tags(category_id);
 CREATE INDEX IF NOT EXISTS idx_categories_sub_tags_category_sub_id ON public.categories_sub_tags(category_sub_id);
+CREATE INDEX IF NOT EXISTS idx_categories_sub_category_id ON public.categories_sub(category_id);
 
 -- ---------------------------------------------------------------------------------------------
--- 4) RLS. The whole tree (group/category/subcategory/tag) is read-open — it's meant to serve
+-- 5) RLS. The whole tree (group/category/subcategory/tag) is read-open — it's meant to serve
 --    public browse data to anon — and write-gated behind the single `categorias`/`manage`
 --    permission, shared by whatever admin screens a consuming project builds for it.
---    categories/categories_sub are expected to predate this plugin (defined in the consuming
---    project's own base schema) and may have no RLS policy of their own to mirror; this plugin
---    is the first to enable RLS on them, using the same read-open/write-gated shape as the new
---    tables so the whole feature is protected consistently under one permission.
+--    `categories` is expected to predate this plugin (defined in the consuming project's own
+--    base schema) and may have no RLS policy of its own to mirror; this plugin is the first to
+--    enable RLS on it, using the same read-open/write-gated shape as the tables it owns outright
+--    so the whole feature is protected consistently under one permission.
 -- ---------------------------------------------------------------------------------------------
 
 -- categories_group
+-- bigserial's underlying sequence needs its own GRANT — a table GRANT never covers it. Without
+-- this, PostgREST returns "permission denied for sequence categories_group_id_seq" on insert
+-- even though the table's own GRANT/policy already allow it.
+GRANT USAGE, SELECT ON SEQUENCE public.categories_group_id_seq TO auth_user;
 ALTER TABLE public.categories_group ENABLE ROW LEVEL SECURITY;
 GRANT SELECT ON TABLE public.categories_group TO anon, auth_user;
 -- No DELETE — no plugin does physical delete (see plugins/README.md). Removing a group is a
@@ -142,7 +183,8 @@ WITH CHECK (auth.fun_auth_has_perm('categorias', 'manage'));
 -- No longer created — physical delete is disallowed (see the GRANT note above).
 DROP POLICY IF EXISTS categories_delete_policy ON public.categories;
 
--- categories_sub (predates this plugin — see note above)
+-- categories_sub
+GRANT USAGE, SELECT ON SEQUENCE public.categories_sub_id_seq TO auth_user;
 ALTER TABLE public.categories_sub ENABLE ROW LEVEL SECURITY;
 GRANT SELECT ON TABLE public.categories_sub TO anon, auth_user;
 -- No DELETE — soft delete (`active = false`) via the UPDATE grant/policy below.
@@ -181,7 +223,7 @@ WITH CHECK (auth.fun_auth_has_perm('categorias', 'manage'));
 DROP POLICY IF EXISTS categories_sub_tags_delete_policy ON public.categories_sub_tags;
 
 -- ---------------------------------------------------------------------------------------------
--- 5) RBAC wiring (see kizuna-core/plugins/README.md convention). Two actions on the `categorias`
+-- 6) RBAC wiring (see kizuna-core/plugins/README.md convention). Two actions on the `categorias`
 --    resource: `view` for read access to the admin UI a consuming project builds on top of this
 --    (a nav-perm check typically defaults an authenticated user's check to the 'view' action);
 --    `manage` is what the write policies above gate on. Both only exist in the catalog
@@ -197,7 +239,7 @@ VALUES
 ON CONFLICT (resource, action) DO NOTHING;
 
 INSERT INTO auth.plugin_registry (name, version)
-VALUES ('taxonomy', '1.0.0')
+VALUES ('taxonomy', '1.2.0')
 ON CONFLICT (name) DO UPDATE SET version = EXCLUDED.version;
 
 NOTIFY pgrst, 'reload schema';

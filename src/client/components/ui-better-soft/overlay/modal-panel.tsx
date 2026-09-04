@@ -14,6 +14,11 @@ type ModalPanelProps = {
   footer?: ReactNode;
   footerFixed?: boolean;
   headerFixed?: boolean;
+  /**
+   * Wide variant: panel takes at least 90% of the viewport width, and drops to
+   * true fullscreen below a 500px viewport. Default keeps the `sm:max-w-lg` cap.
+   */
+  wide?: boolean;
 };
 
 /**
@@ -33,6 +38,7 @@ export function ModalPanel({
   footer,
   footerFixed = false,
   headerFixed = false,
+  wide = false,
 }: Readonly<ModalPanelProps>) {
   const overlayRef = useRef<HTMLDivElement>(null);
   const [entered, setEntered] = useState(false);
@@ -75,7 +81,8 @@ export function ModalPanel({
         aria-modal="true"
         aria-label={title}
         className={cn(
-          'fixed inset-y-0 right-0 flex h-full w-full flex-col overflow-y-auto border-l border-border bg-background shadow-xl transition-transform duration-300 ease-out sm:max-w-lg',
+          'fixed inset-y-0 right-0 flex h-full w-full flex-col overflow-y-auto border-l border-border bg-background shadow-xl transition-transform duration-300 ease-out',
+          wide ? 'min-[500px]:w-[90vw]' : 'sm:max-w-lg',
           entered ? 'translate-x-0' : 'translate-x-full'
         )}
       >

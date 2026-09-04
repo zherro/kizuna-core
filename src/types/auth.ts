@@ -1,5 +1,10 @@
 /** One row from auth.group_permissions, keyed by resource (e.g. 'categorias', 'aprovacoes'). */
-export type PermissionActions = { view?: boolean; edit?: boolean; delete?: boolean };
+export type PermissionActions = {
+  view?: boolean;
+  edit?: boolean;
+  delete?: boolean;
+  manage?: boolean;
+};
 export type PermissionMap = Record<string, PermissionActions>;
 
 export type UserSession = {

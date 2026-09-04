@@ -10,7 +10,7 @@ import { Input } from '../ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import type { UseTableResult } from '@kizuna/core';
 import { cn } from '../../../lib/utils';
-import { TONE_BG, TONE_BORDER_L, type ThemeTone } from '@/lib/ui-tone';
+import { TONE_BG, TONE_BORDER_L, type ThemeTone } from '../../../lib/ui-tone';
 
 export type ResponsiveTableColumn<TItem> = {
   key: string;

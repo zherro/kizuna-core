@@ -24,10 +24,12 @@
   "peerDependencies": {
     "react": "^18 || ^19",
     "react-dom": "^18 || ^19",
+    "react-markdown": "^9 || ^10",
     "typescript": "^5"
   },
   "devDependencies": {
     "@types/react": "^19",
+    "react-markdown": "^10.1.0",
     "typescript": "^5"
   },
   "keywords": [

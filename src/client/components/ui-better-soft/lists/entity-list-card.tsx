@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { cn } from '../../../../lib/utils';
-import { TONE_BORDER_L, type ThemeTone } from '@/lib/ui-tone';
+import { TONE_BORDER_L, type ThemeTone } from '../../../../lib/ui-tone';
 
 type EntityListCardProps = {
   leading: ReactNode;

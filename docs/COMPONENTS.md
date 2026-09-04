@@ -76,3 +76,64 @@ reference for every `ui`/`ui-better-soft` component, not just documentation.
 
 Both `useResourceOptions` and `useResourceMap` fetch through the same `fetchResourceList` helper
 (`client/hooks/shared/fetch-resource.ts`).
+
+`useTenantResource` (listed above; import by its path — the `hooks/index.ts` barrel currently
+re-exports only `useTable`/`useForm`/`useDelete`/`useResourceOptions`/`useResourceMap`/
+`useToggleActive`) is the hook for rows scoped to the current tenant via RLS where no id is known
+upfront. Field names stay identical to the DB columns (snake_case — it does
+not camelCase). Three shapes: one row per tenant (`save([item])`), several fixed rows per tenant
+(`save(items)` — upserts one by one, no bulk `on_conflict`), variable-length tenant-owned list
+(`saveOne(item)` / `remove(id)` touch a single row instead of re-saving the array).
+
+## `useTable` — count derivation
+
+`total`/`totalPages` are not taken as-is from the server. When a page returns fewer rows than
+`pageSize` it is provably the last page, so `total` is derived from
+`(page - 1) * pageSize + items.length`. A full page trusts the server value but floors it at
+`items.length`. Reason: PostgREST's exact count (`Content-Range` via `Prefer: count=exact`) has
+come back 0/unreliable for some query shapes even with rows present — "0 registros" while rows
+are visibly listed is the symptom this fixes.
+
+## Providers — `client/providers/`
+
+**`AuthProvider`** / `useAuth()` → `{ user, setUser, logout }`. `user: AuthUser | null` (name,
+subtitle, initials, `hasPerm(resource, action = 'view')`). Hydrated from the server via
+`initialUser` in the root layout — no loading flash. Call `setUser(data.user)` after
+login/register; `logout()` clears the cookie + navigates to `/login`. Client components read auth
+from context **only** — never a `session`/`user` prop.
+
+**`AppPreferencesProvider`** / `useAppPreferences()` → `{ language, setLanguage, resolvedTheme,
+setTheme, messages }`. Language (`pt-BR`/`en-US`/`es-ES`), theme color (OKLCH options), dark mode.
+Persisted in `localStorage`. Backed by the `account_preferences` plugin when a project wires it.
+
+## Typography & Grid
+
+`Typography` — use instead of raw `<h1>`/`<p>`; applies a responsive scale + color tokens.
+Props: `size` (responsive per breakpoint), `color` (`default`/`muted`/`primary`/`secondary`/
+`destructive`), `weight`, `align`, `lineClamp` (1–6), `bold`, `italic`. Tags `H1`…`H6`, `P`,
+`Span`.
+
+`Grid` — 12-col CSS grid. Container mode: `container`, `containerSize`
+(`compact`/`default`/`wide`/`ultraWide`/`fluid`), `padding` or `px`/`py`, `gap`. Item mode: col
+span 1–12 per breakpoint (`xs`/`sm`/`md`/`lg`/`xl`).
+
+## Form patterns
+
+All forms: Formik + Yup via `useForm`, fields through `FormField`
+(`ui-better-soft/forms/form-field.tsx`, `as`: `input` (default) / `textarea` / `switch`) — not
+the deprecated `wrappers/wrapper-field` etc.
+
+- **Standard** (admin CRUD, `selectedId` known, no other resource hook on the page) — `useForm`'s
+  built-in `resourceSubmit: { resource, selectedId, toPayload }`.
+- **Page already has a resource hook** (`useTenantResource`, a wizard's `persist`) — use
+  `onSubmit` instead, so the save still goes through that one hook (avoids two things POSTing to
+  `/api/resources` on the same page).
+- Form inside a `ModalPanel` with the submit button in the modal footer (outside the `<form>`) →
+  call `formik.submitForm()` imperatively.
+
+## Theming
+
+Colors are OKLCH CSS variables, theme color toggled via `data-theme-color` on `<html>`, dark mode
+via a class on `<html>`. Base `ui/` primitives accept `className`; `ui-better-soft/` components
+with a locked-down look deliberately don't. New components → register in `/showcase` (see the
+`criar-componente-core` skill).

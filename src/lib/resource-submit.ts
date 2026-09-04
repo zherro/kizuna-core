@@ -1,4 +1,4 @@
-import { translateApiErrorMessage } from '@/lib/api-error-message';
+import { translateApiErrorMessage } from './api-error-message';
 
 type MutationResponse<TItem> = {
   message?: string;

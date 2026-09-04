@@ -1,7 +1,9 @@
 # Plugins
 
 Optional, independent of each other and of `sql/` beyond the core auth schema. Apply only the
-ones a project needs — each folder is one self-contained, idempotent `.sql` file.
+ones a project needs — each folder is `0001_*.sql` (schema/RLS/RBAC) plus optional numbered
+follow-ups (`0002_*.sql`, …) for data seeds or later migrations; the installer applies every
+`NNNN_*.sql` in a requested plugin's folder in filename order. All idempotent.
 
 - `user_data/` — per-user profile (name, avatar, contact, document, birth date). No KYC fields
   are required (nullable) — enforce that per-project if needed. `avatar_url` just holds a URL
@@ -22,8 +24,19 @@ ones a project needs — each folder is one self-contained, idempotent `.sql` fi
   `account_preferences`.
 - `taxonomy/` — generic hierarchical taxonomy mechanism, group -> category -> subcategory -> tag
   (`categories_group`, `categories_sub_tags`, plus columns added onto the consuming project's own
-  `categories`/`categories_sub`). Read-open, write-gated behind one `categorias`/`manage`
-  permission. No content is seeded — a project inserts its own category names.
+  `categories`/`categories_sub`: `category_group_id`, `icon`, `description`, `form_key`,
+  `request_form_key`, `tenant_id`, `created_by`). Read-open, write-gated behind one
+  `categorias`/`manage` permission.
+  No content is seeded — a project inserts its own category names. `form_key` is an optional,
+  FK-less bridge to the `forms` plugin for the form the entity's provider fills; `request_form_key`
+  is the symmetric sibling for the form the buyer fills when requesting a quote / closing an order.
+  The generic
+  `postgrestResources` configs for these tables ship from kizuna-core
+  (`src/client/components/screen-engine/resources/taxonomy.ts`, `resourceTaxonomy`) so a consuming
+  project only imports + spreads them.
+  `0002_taxonomy_stats_view.sql` (v1.3.0) adds `vw_category_subcategory_stats` — one row per active
+  subcategory with its parent category + `qtd` (subcategory count per category, window). Pure
+  taxonomy, no listing/service count (that is consumer-specific).
 - `holidays/` — a shared holiday catalog (`holidays`, national/state/city, readable by any
   session, writes gated by `holidays.manage`) plus two tenant self-service tables built on top of
   it: `holidays_tenant` (on/off toggle per catalog entry) and `holidays_tenant_custom_days_off` (a
@@ -34,6 +47,19 @@ ones a project needs — each folder is one self-contained, idempotent `.sql` fi
   session, no write grant to `auth_user` at all (pure reference data, seeded once outside the
   API — no `auth.permissions` gate either). No data is seeded — a consuming project inserts its
   own countries/regions/states/cities (e.g. foco-total's `db/extras/location_seed_brazil.sql`).
+- `forms/` — generic reusable forms (`forms`: a `FormSchema` jsonb keyed by `form_key`, version
+  bumped by a `BEFORE UPDATE` trigger when the schema changes) plus captured answers
+  (`form_results`: **singleton** — one current row per `(tenant_id, domain, reference_id)`, jsonb
+  `answers` + a frozen `schema_snapshot`). Answers are written only via
+  `fn_form_result_upsert(form_key, domain, reference_id, answers)` (invoker rights, `ON CONFLICT`
+  upsert). Read-open (active forms; own results or `forms.manage`), writes gated by `forms.manage`.
+  Schemas are authored with the `form-builder` component engine (`src/client/components/form-builder`).
+- `pages/` — database-backed institutional / legal pages (`pages`: Markdown `content`, `slug`
+  unique per tenant, `draft`/`published`). Server-rendered via `PageView` (first plugin shipping a
+  server component). Anon SELECT sees only `published + active`; `auth_user` also sees drafts.
+  Writes gated by `pages.manage`. Ships `0002_pages_seed.sql` — project-neutral default pages
+  (`sobre`, `quem-somos`, `termos-de-uso`, published) seeded under the first root user's tenant,
+  a silent no-op on a DB with no root user yet. A project can layer its own content on top.
 - `system_config/` — generic key/value config bag (`auth.system_config`: `key` text PK, `value`
   jsonb). Mechanism only — which keys exist and the shape of their jsonb value is a consuming
   project's business decision, not this plugin's. Read-open to any session (a config flag isn't

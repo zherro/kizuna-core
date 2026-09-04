@@ -1,5 +1,9 @@
 # kizuna-core: Exemplos de Schemas
 
+> Exemplos trabalhados de `ResourceConfig` e `ScreenConfig`. O tipo canônico de `ResourceConfig`
+> (campos, defaults, comportamento do PATCH) está em `API.md` §3; o motor de telas em
+> `SCREEN-ENGINE.md`.
+
 ## 1. ResourceConfig - Definindo o que Persiste
 
 ### Exemplo 1: Tabela Simples (Categorias)

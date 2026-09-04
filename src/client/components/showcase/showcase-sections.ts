@@ -32,7 +32,10 @@ export type ShowcaseSectionId =
   | 'rpc-tester'
   | 'pwa-register'
   | 'location-modal'
-  | 'system-config-section';
+  | 'system-config-section'
+  | 'form-builder'
+  | 'forms-manager'
+  | 'pages-admin';
 
 export type ShowcaseGroupId = 'shadcn-default' | 'ui-better-soft';
 
@@ -914,6 +917,67 @@ export function DocumentFieldConfig() {
       initialValue={{ visible: true, required: false, mask: 'cpf_cnpj' }}
     />
   );
+}`,
+  },
+  {
+    id: 'form-builder',
+    groupId: 'ui-better-soft',
+    label: 'Form Builder',
+    description:
+      'Engine de formularios: FormBuilder (editor visual) + FormRenderer + FormResultViewer, com key obrigatoria, visibilidade condicional e opcoes vindas de um recurso.',
+    usageCode: `import { useState } from 'react';
+import {
+  FormBuilder,
+  FormRenderer,
+  FormResultViewer,
+  type FormSchema,
+  type FormValues,
+} from '../form-builder';
+
+export function FormEngineExample() {
+  const [schema, setSchema] = useState<FormSchema>({ title: 'Novo formulario', fields: [] });
+  const [values, setValues] = useState<FormValues>({});
+
+  return (
+    <>
+      <FormBuilder value={schema} onChange={setSchema} />
+      <FormRenderer schema={schema} values={values} onChange={setValues} onSubmit={(output) => console.log(output)} />
+      <FormResultViewer schema={schema} values={values} />
+    </>
+  );
+}`,
+  },
+  {
+    id: 'forms-manager',
+    groupId: 'ui-better-soft',
+    label: 'Forms manager',
+    description:
+      'Formularios reutilizaveis: FormBuilder -> FormRenderer + validate() -> FormResultViewer. Base do passo dinamico do wizard de servicos e da tela /painel/administracao/formularios.',
+    usageCode: `import { useRef } from 'react';
+import { FormsAdmin, DynamicFormStep, type DynamicFormStepHandle } from '../forms';
+
+<FormsAdmin />;
+
+const ref = useRef<DynamicFormStepHandle>(null);
+<DynamicFormStep
+  ref={ref}
+  formKey={category.formKey}
+  domain="service"
+  referenceId={String(service.id)}
+  onValidChange={setStepValid}
+/>;
+// no persist() do wizard: await ref.current?.persist();`,
+  },
+  {
+    id: 'pages-admin',
+    groupId: 'ui-better-soft',
+    label: 'Pages Admin',
+    description:
+      'Gestao master/detail das paginas institucionais do plugin pages (Markdown, slug automatico, publicar/rascunho, exclusao suave). Salva em /api/resources/pages.',
+    usageCode: `import { PagesAdmin } from '@kizuna/core/client/components/pages';
+
+export function PaginasAdminPage() {
+  return <PagesAdmin reservedSlugs={['painel', 'busca', 'anuncios', 'login']} />;
 }`,
   },
 ];

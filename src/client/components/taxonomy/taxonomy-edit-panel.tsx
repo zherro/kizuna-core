@@ -34,6 +34,8 @@ type FormValues = {
   tags: string;
   sortOrder: string;
   icon: string;
+  formKey: string;
+  requestFormKey: string;
 };
 
 const EMPTY_VALUES: FormValues = {
@@ -47,6 +49,8 @@ const EMPTY_VALUES: FormValues = {
   tags: '',
   sortOrder: '0',
   icon: '',
+  formKey: '',
+  requestFormKey: '',
 };
 
 function buildInitialValues(target: TaxonomyEditTarget | null): FormValues {
@@ -74,6 +78,8 @@ function buildInitialValues(target: TaxonomyEditTarget | null): FormValues {
       slug: item?.slug ?? '',
       description: item?.description ?? '',
       icon: item?.icon ?? '',
+      formKey: item?.formKey ?? '',
+      requestFormKey: item?.requestFormKey ?? '',
       active: item?.active ?? true,
       groupId: item?.categoryGroupId != null ? String(item.categoryGroupId) : '',
     };
@@ -278,6 +284,8 @@ export function TaxonomyEditPanel({
         if (level === 'category') {
           base.icon = values.icon.trim();
           base.categoryGroupId = values.groupId ? values.groupId : null;
+          base.formKey = values.formKey.trim() || null;
+          base.requestFormKey = values.requestFormKey.trim() || null;
         }
         if (level === 'subcategory') base.categoryId = Number(values.categoryId);
         if (level === 'tag') {
@@ -487,6 +495,54 @@ export function TaxonomyEditPanel({
                 lucide.dev/icons
               </a>
               , ex.: Home, Car, Sparkles.
+            </p>
+          </div>
+        ) : null}
+
+        {level === 'category' ? (
+          <div className="space-y-2">
+            <Label htmlFor="taxonomy-form-key">Formulario dinamico (form_key)</Label>
+            <Input
+              id="taxonomy-form-key"
+              name="formKey"
+              value={formik.values.formKey}
+              onChange={(event) =>
+                void formik.setFieldValue('formKey', event.target.value.trim())
+              }
+              placeholder="ex.: eventos_som_iluminacao (opcional)"
+            />
+            <p className="text-xs text-muted-foreground">
+              Chave de um formulario ativo em{' '}
+              <a href="/painel/administracao/formularios" className="underline">
+                Formularios
+              </a>
+              . Quando preenchida, o wizard de servicos mostra as perguntas desse formulario para
+              esta categoria.
+            </p>
+          </div>
+        ) : null}
+
+        {level === 'category' ? (
+          <div className="space-y-2">
+            <Label htmlFor="taxonomy-request-form-key">
+              Formulário de solicitação (request_form_key)
+            </Label>
+            <Input
+              id="taxonomy-request-form-key"
+              name="requestFormKey"
+              value={formik.values.requestFormKey}
+              onChange={(event) =>
+                void formik.setFieldValue('requestFormKey', event.target.value.trim())
+              }
+              placeholder="ex.: solicitacao_orcamento_eventos (opcional)"
+            />
+            <p className="text-xs text-muted-foreground">
+              Chave de um formulario ativo em{' '}
+              <a href="/painel/administracao/formularios" className="underline">
+                Formularios
+              </a>
+              . Quando preenchida, o comprador preenche esse formulario ao solicitar um orcamento
+              ou fechar um pedido nesta categoria.
             </p>
           </div>
         ) : null}

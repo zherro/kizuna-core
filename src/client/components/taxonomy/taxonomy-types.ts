@@ -15,6 +15,13 @@ export type TaxonomyCategory = {
   slug: string;
   description: string;
   icon: string;
+  /** form_key of an active `public.forms` row (forms plugin). When set, the service wizard shows
+   * the dynamic form step for services in this category. App-level column, not owned by taxonomy.
+   * This is the form filled by the entity's PROVIDER. */
+  formKey?: string | null;
+  /** form_key of an active `public.forms` row (forms plugin) used for the BUYER's quote/order-request
+   * flow for entities in this category. Buyer-facing sibling of `formKey`. */
+  requestFormKey?: string | null;
   categoryGroupId: string | number | null;
   active: boolean;
 };
