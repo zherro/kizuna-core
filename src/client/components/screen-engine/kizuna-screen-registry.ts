@@ -1,7 +1,7 @@
 import type { ComponentType } from 'react';
 
 /**
- * Uma tela do painel resolvida pela rota catch-all `/painel/[[...kizuna]]`.
+ * Uma tela do painel resolvida pela rota catch-all `/painel/[...kizuna]`.
  * A chave é o path relativo a `/painel` com os segmentos unidos por `/`
  * (ex.: `agenda`, `taxonomia/arvore`).
  */

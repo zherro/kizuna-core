@@ -14,7 +14,7 @@ type ResolveKizunaScreenOptions = {
 
 /**
  * O único lugar onde o gate de permissão de uma tela de painel de plugin vive.
- * Chamado pelo `page.tsx` fino da rota catch-all `/painel/[[...kizuna]]` com os
+ * Chamado pelo `page.tsx` fino da rota catch-all `/painel/[...kizuna]` com os
  * segmentos da URL. Resolve a chave contra `KIZUNA_SCREEN_REGISTRY`; `notFound()`
  * numa chave desconhecida ou slot sem componente (404 normal do Next, não 500);
  * `redirect('/painel')` se a entrada exige `permResource` e a sessão não tem.
