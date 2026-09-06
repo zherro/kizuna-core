@@ -23,6 +23,17 @@ export {
   type LogoutRequestBody,
 } from './auth-handlers';
 
+export {
+  listResource,
+  createResource,
+  getResourceById,
+  updateResource,
+  deleteResource,
+  serverFetchResource,
+  isRpcResource,
+  executeRpcResource,
+} from './postgrest-crud';
+
 export { pgrstTable, pgrstRpc } from './postrest/conn';
 export { getStorageService } from './storage-service';
 export { apiError } from './api-error';

@@ -2,7 +2,7 @@ import {
   deleteResource,
   getResourceById,
   updateResource,
-} from '@kizuna/core/server/postgrest-crud';
+} from '@kizuna/core/server';
 
 export const runtime = 'nodejs';
 
