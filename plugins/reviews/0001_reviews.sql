@@ -65,6 +65,7 @@ CREATE TABLE IF NOT EXISTS public.reviews (
   tenant_id     uuid NOT NULL REFERENCES auth.tenants(uid) ON DELETE RESTRICT,
   rating        smallint NOT NULL,
   comment       text,
+  author_name   text,                                 -- snapshot do nome público do avaliador na hora da criação (privacidade: só string, sem id)
   status        text NOT NULL DEFAULT 'published',
   active        boolean NOT NULL DEFAULT true,
   created_at    timestamptz NOT NULL DEFAULT now(),
@@ -74,6 +75,9 @@ CREATE TABLE IF NOT EXISTS public.reviews (
   CONSTRAINT reviews_rating_range CHECK (rating BETWEEN 1 AND 5),
   CONSTRAINT reviews_status_chk CHECK (status IN ('pending','published','hidden','rejected'))
 );
+
+-- Migração para instalações anteriores à v1.0.0 (CREATE TABLE IF NOT EXISTS não adiciona coluna).
+ALTER TABLE public.reviews ADD COLUMN IF NOT EXISTS author_name text;
 
 CREATE INDEX IF NOT EXISTS reviews_lookup       ON public.reviews (domain, reference_id, status) WHERE active;
 CREATE INDEX IF NOT EXISTS reviews_customer     ON public.reviews (id_customer);
@@ -414,6 +418,7 @@ DECLARE
   v_tenant  uuid;
   v_owner   uuid;
   v_status  text;
+  v_author  text;
   v_review  public.reviews%ROWTYPE;
 BEGIN
   IF v_uid IS NULL THEN
@@ -445,9 +450,16 @@ BEGIN
 
   v_status := public.fn_review_default_status();
 
+  SELECT COALESCE(NULLIF(btrim(ud.display_name), ''), NULLIF(btrim(ud.full_name), ''))
+    INTO v_author
+    FROM public.user_data ud
+   WHERE ud.uid = v_uid AND ud.active = true
+   ORDER BY ud.created_at
+   LIMIT 1;
+
   BEGIN
-    INSERT INTO public.reviews (domain, reference_id, id_customer, tenant_id, rating, comment, status)
-    VALUES (p_domain, p_reference_id, v_uid, v_tenant, p_rating, NULLIF(btrim(p_comment), ''), v_status)
+    INSERT INTO public.reviews (domain, reference_id, id_customer, tenant_id, rating, comment, author_name, status)
+    VALUES (p_domain, p_reference_id, v_uid, v_tenant, p_rating, NULLIF(btrim(p_comment), ''), v_author, v_status)
     RETURNING * INTO v_review;
   EXCEPTION WHEN unique_violation THEN
     RAISE EXCEPTION 'Você já avaliou este serviço.' USING ERRCODE = 'unique_violation';
