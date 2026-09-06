@@ -1,8 +1,9 @@
-// EXEMPLO — reescreva. Casca mínima: só os providers que o core espera.
+// EXEMPLO — reescreva. Casca mínima: só os providers irredutíveis.
 // Adicione fontes, Topbar/Footer, PWA, metadata etc. conforme o seu app.
+// Preferências de tema/locale: o plugin `account_preferences` traz o
+// AppPreferencesProvider — ele depende de `src/i18n/messages.ts` no seu projeto.
 import type { ReactNode } from 'react';
 import { Toaster } from 'sonner';
-import { AppPreferencesProvider } from '@kizuna/core/client/providers/app-preferences-provider';
 import { AuthProvider } from '@kizuna/core/client/providers/auth-provider';
 import { getSession } from '@kizuna/core/server';
 import './globals.css';
@@ -23,12 +24,10 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <body suppressHydrationWarning>
-        <AppPreferencesProvider>
-          <AuthProvider initialUser={initialUser}>
-            {children}
-            <Toaster richColors position="bottom-center" />
-          </AuthProvider>
-        </AppPreferencesProvider>
+        <AuthProvider initialUser={initialUser}>
+          {children}
+          <Toaster richColors position="bottom-center" />
+        </AuthProvider>
       </body>
     </html>
   );
