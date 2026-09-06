@@ -1,0 +1,1 @@
+{"version":3,"file":"temporal-global.js","sourceRoot":"","sources":["../../src/lib/temporal-global.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,QAAQ,IAAI,gBAAgB,EAAE,MAAM,uBAAuB,CAAC;AAMrE,MAAM,kBAAkB,GAAG,UAAgC,CAAC;AAE5D,IAAI,CAAC,kBAAkB,CAAC,QAAQ,EAAE,CAAC;IACjC,kBAAkB,CAAC,QAAQ,GAAG,gBAAgB,CAAC;AACjD,CAAC"}

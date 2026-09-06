@@ -19,6 +19,14 @@ type ModalPanelProps = {
    * true fullscreen below a 500px viewport. Default keeps the `sm:max-w-lg` cap.
    */
   wide?: boolean;
+  /**
+   * When `false`, the panel never closes on its own: a backdrop click is
+   * ignored and ESC does nothing. Only the explicit X button (and whatever the
+   * parent renders in `footer`) call `onClose`, so the parent can guard against
+   * discarding unsaved changes. Default `true` — the original click-outside /
+   * ESC-to-close behavior, unchanged for every existing caller.
+   */
+  dismissible?: boolean;
 };
 
 /**
@@ -39,6 +47,7 @@ export function ModalPanel({
   footerFixed = false,
   headerFixed = false,
   wide = false,
+  dismissible = true,
 }: Readonly<ModalPanelProps>) {
   const overlayRef = useRef<HTMLDivElement>(null);
   const [entered, setEntered] = useState(false);
@@ -55,13 +64,15 @@ export function ModalPanel({
   useEffect(() => {
     if (!open) return;
 
+    if (!dismissible) return;
+
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onClose();
     };
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [open, onClose]);
+  }, [open, onClose, dismissible]);
 
   if (!open) return null;
 
@@ -69,7 +80,7 @@ export function ModalPanel({
     <div
       ref={overlayRef}
       onClick={(event) => {
-        if (event.target === overlayRef.current) onClose();
+        if (dismissible && event.target === overlayRef.current) onClose();
       }}
       className={cn(
         'fixed inset-0 z-50 bg-black/40 backdrop-blur-sm transition-opacity duration-300',

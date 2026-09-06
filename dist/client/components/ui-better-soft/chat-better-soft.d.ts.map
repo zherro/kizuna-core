@@ -1,0 +1,1 @@
+{"version":3,"file":"chat-better-soft.d.ts","sourceRoot":"","sources":["../../../../src/client/components/ui-better-soft/chat-better-soft.tsx"],"names":[],"mappings":"AAIA,OAAO,KAAK,EAAE,gBAAgB,EAAE,MAAM,cAAc,CAAC;AAMrD,KAAK,mBAAmB,GAAG;IACzB,aAAa,EAAE,gBAAgB,EAAE,CAAC;CACnC,CAAC;AAiBF,wBAAgB,cAAc,CAAC,EAAE,aAAa,EAAE,EAAE,mBAAmB,2CAqIpE"}

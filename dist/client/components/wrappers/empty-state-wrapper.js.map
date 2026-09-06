@@ -1,0 +1,1 @@
+{"version":3,"file":"empty-state-wrapper.js","sourceRoot":"","sources":["../../../../src/client/components/wrappers/empty-state-wrapper.tsx"],"names":[],"mappings":";AAQA,MAAM,UAAU,iBAAiB,CAAC,EAAE,IAAI,EAAE,QAAQ,EAAE,SAAS,EAA0B;IACrF,IAAI,CAAC,IAAI;QAAE,OAAO,IAAI,CAAC;IAEvB,OAAO,CACL,cACE,SAAS,EAAE,SAAS,IAAI,mEAAmE,YAE1F,QAAQ,GACL,CACP,CAAC;AACJ,CAAC"}

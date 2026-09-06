@@ -1,0 +1,1 @@
+{"version":3,"file":"card-loading-wrapper.d.ts","sourceRoot":"","sources":["../../../../src/client/components/wrappers/card-loading-wrapper.tsx"],"names":[],"mappings":"AAEA,KAAK,uBAAuB,GAAG;IAC7B,KAAK,EAAE,MAAM,CAAC;IACd,WAAW,EAAE,MAAM,CAAC;IACpB,SAAS,CAAC,EAAE,MAAM,CAAC;CACpB,CAAC;AAEF,wBAAgB,kBAAkB,CAAC,EACjC,KAAK,EACL,WAAW,EACX,SAAS,GACV,EAAE,QAAQ,CAAC,uBAAuB,CAAC,2CAWnC"}

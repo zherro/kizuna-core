@@ -21,7 +21,15 @@ follow-ups (`0002_*.sql`, …) for data seeds or later migrations; the installer
   never by the recipient (no INSERT grant to `auth_user`).
 - `agenda/` — a user's own calendar events (`agenda_events`) plus one view-preferences row per
   (user, tenant) (`agenda_settings`). Both strictly self-service, same shape as
-  `account_preferences`.
+  `account_preferences`. `0002_agenda_config.sql` (v1.1.0) adds the tenant's *schedule
+  configuration*: `agenda_schedule` (N named weekly schedules per tenant, `active` toggle +
+  `deleted` soft delete), `agenda_schedule_hours` (one row per weekday `0..6` + `9`=lunch
+  sentinel, per schedule), and two per-tenant singletons — `agenda_booking_preferences`
+  (booking window, who-picks, buffer, radius…) and `agenda_notification_preferences`
+  (what/when/how the tenant is notified). All tenant-scoped, self-service, no permission
+  registered. Resource configs ship from `screen-engine/resources/agenda-config`
+  (`resourceAgendaConfig`); the whole tenant UI ships from
+  `client/components/agenda-config` (`AgendaConfigPage`).
 - `taxonomy/` — generic hierarchical taxonomy mechanism, group -> category -> subcategory -> tag
   (`categories_group`, `categories_sub_tags`, plus columns added onto the consuming project's own
   `categories`/`categories_sub`: `category_group_id`, `icon`, `description`, `form_key`,

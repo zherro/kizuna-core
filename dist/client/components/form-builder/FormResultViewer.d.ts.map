@@ -1,0 +1,1 @@
+{"version":3,"file":"FormResultViewer.d.ts","sourceRoot":"","sources":["../../../../src/client/components/form-builder/FormResultViewer.tsx"],"names":[],"mappings":"AAKA,OAAO,EAA6B,KAAK,UAAU,EAAE,KAAK,UAAU,EAAE,MAAM,SAAS,CAAC;AAGtF,KAAK,KAAK,GAAG;IACX,MAAM,EAAE,UAAU,CAAC;IACnB,MAAM,EAAE,UAAU,CAAC;CACpB,CAAC;AASF,wBAAgB,gBAAgB,CAAC,EAAE,MAAM,EAAE,MAAM,EAAE,EAAE,KAAK,2CAsDzD"}

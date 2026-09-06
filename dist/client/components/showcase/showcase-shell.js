@@ -1,0 +1,71 @@
+'use client';
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { AlertCircle, AlertTriangle, Bell, Boxes, CalendarClock, ClipboardList, FileInput, FileText, Filter, GalleryHorizontalEnd, Gauge, Grid2x2, Hash, Heading, Inbox, LayoutDashboard, LayoutGrid, LayoutPanelTop, MapPin, MousePointerClick, PanelBottom, PanelTop, PictureInPicture2, Play, Radio, Rows3, Settings2, Sparkles, SpellCheck2, SquareStack, TableProperties, Tags, ToggleLeft, ToggleRight, WifiOff, Zap, } from 'lucide-react';
+import { cn } from '../../../lib/utils';
+import { DEFAULT_SHOWCASE_SECTION, SHOWCASE_GROUPS, SHOWCASE_SECTIONS, normalizeShowcaseSection, } from './showcase-sections';
+const ICON_BY_SECTION = {
+    cards: LayoutDashboard,
+    buttons: ToggleLeft,
+    forms: Boxes,
+    tables: TableProperties,
+    alerts: Bell,
+    progress: Gauge,
+    'experience-pill': Zap,
+    'bottom-progress-bar': PanelBottom,
+    'mosaic-grid': LayoutGrid,
+    'admin-page-reader': PanelTop,
+    'bs-button': MousePointerClick,
+    'toggle-row': ToggleRight,
+    'channel-chip': Radio,
+    'schedule-row': CalendarClock,
+    'settings-section': LayoutPanelTop,
+    'choice-card': SquareStack,
+    'modal-panel': PictureInPicture2,
+    'confirm-dialog': AlertTriangle,
+    'filter-stat-card': Filter,
+    'entity-list-card': Rows3,
+    'media-result-card': GalleryHorizontalEnd,
+    'icon-choice-grid': LayoutGrid,
+    'chip-toggle-list': Tags,
+    'empty-state-card': Inbox,
+    'form-field': SpellCheck2,
+    'number-field': Hash,
+    'page-header': Heading,
+    'section-illustration': Sparkles,
+    'entity-grid-list': Grid2x2,
+    'inline-alert': AlertCircle,
+    'rpc-tester': Play,
+    'pwa-register': WifiOff,
+    'location-modal': MapPin,
+    'system-config-section': Settings2,
+    'form-builder': FileInput,
+    'forms-manager': ClipboardList,
+    'pages-admin': FileText,
+};
+function extractSection(pathname) {
+    const value = pathname?.split('/')[2];
+    if (!value)
+        return DEFAULT_SHOWCASE_SECTION;
+    const normalized = normalizeShowcaseSection(value);
+    if (normalized)
+        return normalized;
+    return DEFAULT_SHOWCASE_SECTION;
+}
+export function ShowcaseShell({ children }) {
+    const pathname = usePathname();
+    const activeSection = extractSection(pathname);
+    const activeItem = SHOWCASE_SECTIONS.find((section) => section.id === activeSection) ?? SHOWCASE_SECTIONS[0];
+    return (_jsx("div", { className: "min-h-screen bg-[radial-gradient(circle_at_top_left,_hsl(var(--primary)/0.14),_transparent_44%),radial-gradient(circle_at_bottom_right,_hsl(var(--accent)/0.25),_transparent_48%)] px-4 py-8 sm:px-6 lg:px-8", children: _jsxs("div", { className: "mx-auto grid w-full max-w-7xl gap-6 lg:grid-cols-[260px_1fr]", children: [_jsxs("aside", { className: "h-fit rounded-2xl border border-border bg-card/90 p-4 shadow-sm backdrop-blur lg:sticky lg:top-6", children: [_jsxs("div", { className: "mb-4 border-b border-border pb-4", children: [_jsx("p", { className: "text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground", children: "Showcase" }), _jsx("h1", { className: "mt-2 text-2xl font-semibold tracking-tight text-foreground", children: "Componentes" }), _jsx("p", { className: "mt-2 text-sm text-muted-foreground", children: "Subpaginas independentes para navegar e validar os blocos de interface." })] }), _jsx("nav", { className: "space-y-4", children: SHOWCASE_GROUPS.map((group) => {
+                                const groupSections = SHOWCASE_SECTIONS.filter((section) => section.groupId === group.id);
+                                return (_jsxs("div", { className: "space-y-1", children: [_jsx("p", { className: "px-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground", children: group.label }), groupSections.map((section) => {
+                                            const isActive = section.id === activeSection;
+                                            const Icon = ICON_BY_SECTION[section.id];
+                                            return (_jsxs(Link, { className: cn('ml-2 flex w-[calc(100%-0.5rem)] items-center gap-2 rounded-lg border px-3 py-2 text-left text-sm transition-colors', isActive
+                                                    ? 'border-primary/40 bg-primary/10 text-primary'
+                                                    : 'border-transparent text-muted-foreground hover:border-border hover:bg-muted/60 hover:text-foreground'), href: `/showcase/${section.id}`, children: [_jsx(Icon, { className: "h-4 w-4" }), _jsx("span", { children: section.label })] }, section.id));
+                                        })] }, group.id));
+                            }) }), _jsxs("div", { className: "mt-4 rounded-lg border border-border bg-background/70 p-3", children: [_jsx("p", { className: "text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground", children: "Secao ativa" }), _jsx("p", { className: "mt-1 text-sm font-medium text-foreground", children: activeItem.label }), _jsx("p", { className: "mt-1 text-xs text-muted-foreground", children: activeItem.description })] })] }), _jsx("section", { className: "space-y-6", children: children })] }) }));
+}
+//# sourceMappingURL=showcase-shell.js.map
