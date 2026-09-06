@@ -61,9 +61,9 @@ export async function run(ctx) {
   // (5) banco
   const dbUrl = flags.dbUrl || process.env.DATABASE_URL;
   if (dbUrl && !flags.skipDb) {
-    runCoreInstall({ dbUrl, coreDir, plugins: enabled });
+    runCoreInstall({ dbUrl, coreDir, plugins: enabled, psql: flags.psql });
   } else {
-    console.log('pulei o banco (sem --db-url/$DATABASE_URL ou com --skip-db)');
+    console.log('pulei o banco (sem --db-url/$DATABASE_URL ou com --skip-db) — rode depois: node kizuna-core/cli db install --db-url <url>');
   }
 
   // (6-7) lock

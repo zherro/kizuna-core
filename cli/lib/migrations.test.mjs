@@ -1,4 +1,4 @@
-import { it, expect } from 'vitest';
+import { it, expect, describe } from 'vitest';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { countMigrations, listMigrationFiles } from './migrations.mjs';
@@ -21,4 +21,23 @@ it('listMigrationFiles ordena 0001 antes de 0002', () => {
 
 it('plugin inexistente → lista vazia', () => {
   expect(listMigrationFiles(CORE, 'nao-existe')).toEqual([]);
+});
+
+import { resolvePsql } from './migrations.mjs';
+
+describe('resolvePsql', () => {
+  it('default é psql', () => {
+    delete process.env.KIZUNA_PSQL;
+    expect(resolvePsql()).toEqual({ cmd: 'psql', args: [] });
+  });
+  it('quebra um comando com args (docker exec)', () => {
+    expect(resolvePsql('docker exec -i pg psql -U myuser')).toEqual({
+      cmd: 'docker', args: ['exec', '-i', 'pg', 'psql', '-U', 'myuser'],
+    });
+  });
+  it('flag explícita ganha do env', () => {
+    process.env.KIZUNA_PSQL = 'from-env';
+    expect(resolvePsql('from-flag').cmd).toBe('from-flag');
+    delete process.env.KIZUNA_PSQL;
+  });
 });

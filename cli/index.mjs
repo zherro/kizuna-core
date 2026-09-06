@@ -10,7 +10,7 @@ import { makePrompt } from './lib/prompt.mjs';
 const COMMANDS = ['install', 'update', 'sync', 'check', 'lock', 'adopt', 'db', 'plugin'];
 
 // Flags globais que consomem o próximo token como valor.
-const VALUE_FLAGS = new Set(['--project', '--db-url', '--plugin']);
+const VALUE_FLAGS = new Set(['--project', '--db-url', '--plugin', '--psql']);
 
 function parseArgv(argv) {
   const flags = {};
@@ -54,6 +54,8 @@ comandos:
 
 opções globais:
   --project <dir>    raiz do projeto (padrão: cwd)
+  --db-url <url>     conexão do PostgreSQL (ou env DATABASE_URL)
+  --psql "<cmd>"     comando psql (ou env KIZUNA_PSQL); ex.: "docker exec -i pg psql -U myuser"
   --yes              responde "sim" a toda confirmação
   --no-input         falha em vez de perguntar
   --help             esta ajuda
