@@ -10,7 +10,7 @@
 // O valor pode ter argumentos: KIZUNA_PSQL="docker exec -i pg psql -U myuser"
 
 import { execFileSync } from 'node:child_process';
-import { readdirSync, readFileSync } from 'node:fs';
+import { readdirSync, readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 
 const NUM_RE = /^(\d{4})_.*\.sql$/;
@@ -27,10 +27,19 @@ function indexOf(name) {
   return m ? Number(m[1]) : 0;
 }
 
-// "docker exec -i pg psql -U x" → { cmd: 'docker', args: ['exec','-i','pg','psql','-U','x'] }
+// Resolve o comando psql:
+//   "psql"                                        → { cmd: 'psql', args: [] }
+//   "C:\Program Files\PostgreSQL\17\bin\psql.exe" → { cmd: <path>, args: [] }  (path com espaços, arquivo existe)
+//   'docker exec -i pg psql -U x'                 → { cmd: 'docker', args: [...] }
+//   'psql "-U" "meu user"'                        → tokeniza respeitando aspas
 export function resolvePsql(explicit) {
   const raw = (explicit || process.env.KIZUNA_PSQL || 'psql').trim();
-  const parts = raw.split(/\s+/);
+  // Um caminho único (mesmo com espaços) que aponta pra um arquivo existente.
+  const unquoted = raw.replace(/^"(.*)"$/, '$1');
+  if (existsSync(unquoted)) return { cmd: unquoted, args: [] };
+  if (!/\s/.test(raw)) return { cmd: raw, args: [] };
+  // Tokeniza respeitando "aspas".
+  const parts = raw.match(/"[^"]*"|\S+/g).map((t) => t.replace(/^"(.*)"$/, '$1'));
   return { cmd: parts[0], args: parts.slice(1) };
 }
 

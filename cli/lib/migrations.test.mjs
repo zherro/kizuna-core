@@ -35,6 +35,16 @@ describe('resolvePsql', () => {
       cmd: 'docker', args: ['exec', '-i', 'pg', 'psql', '-U', 'myuser'],
     });
   });
+  it('caminho único existente com espaços vira cmd sem args', () => {
+    const self = fileURLToPath(import.meta.url); // este arquivo existe
+    expect(resolvePsql(self)).toEqual({ cmd: self, args: [] });
+    expect(resolvePsql(`"${self}"`)).toEqual({ cmd: self, args: [] });
+  });
+  it('respeita aspas na tokenização', () => {
+    expect(resolvePsql('psql "-U" "meu user"')).toEqual({
+      cmd: 'psql', args: ['-U', 'meu user'],
+    });
+  });
   it('flag explícita ganha do env', () => {
     process.env.KIZUNA_PSQL = 'from-env';
     expect(resolvePsql('from-flag').cmd).toBe('from-flag');
