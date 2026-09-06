@@ -55,6 +55,11 @@ const REVIEWS_RESOURCE: ResourceConfig = {
   primaryKey: 'id',
   defaultOrder: 'created_at',
   searchableColumns: ['comment', 'author_name'],
+  // No `requiredFields` — it is enforced on PATCH too (postgrest-crud), which would block the
+  // author's rating/comment edit. A direct `POST /api/resources/reviews` fails closed anyway:
+  // `mapInput` emits neither `domain` nor `reference_id` nor `tenant_id` (all NOT NULL), so the
+  // insert is rejected by the DB. Creation MUST go through `fn_review_create` (cross-tenant
+  // tenant resolution + owner check).
   // PATCH only — the author edits rating/comment inside the edit window (RLS enforces the
   // window + "not rejected"). Status changes are a moderation action → `fn_review_moderate`,
   // never a PATCH here, so `status` is intentionally absent from mapInput.
