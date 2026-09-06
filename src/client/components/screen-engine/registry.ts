@@ -4,6 +4,7 @@ import { ResourceScreen } from '../resource-screen';
 import { ListBlock } from '../list-block';
 import { TaxonomyManager } from '../taxonomy/taxonomy-manager';
 import { AccountForm } from '../onboarding/user-data-form';
+import { ReviewModerationTable } from '../reviews';
 
 export type RegistryEntry = {
   /** Heterogeneous registry: each entry has its own prop type, resolved dynamically from screen-config JSON, not statically. */
@@ -32,4 +33,5 @@ export const SCREEN_COMPONENT_REGISTRY: Record<string, RegistryEntry> = {
   'taxonomy-manager': { component: TaxonomyManager, serverSafe: false },
   list: { component: ListBlock, serverSafe: false },
   'account-form': { component: AccountForm, serverSafe: false },
+  'review-moderation': { component: ReviewModerationTable, serverSafe: false },
 };
