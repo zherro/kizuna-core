@@ -15,7 +15,7 @@ export function useConversationMessages(uid: string | null) {
 
   const lastIdRef = useRef(0);
   const oldestRef = useRef<number | null>(null);
-  const lastActivityRef = useRef(Date.now());
+  const lastActivityRef = useRef(0); // set to Date.now() on load / activity — 0 until then reads as "idle"
   const backoffRef = useRef(0);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -36,6 +36,9 @@ export function useConversationMessages(uid: string | null) {
   // carga inicial ao trocar de conversa
   useEffect(() => {
     if (!uid) {
+      // reset ao sair da conversa (na prática o ChatWindow desmonta, mas o hook precisa suportar
+      // uid=null pelo contrato). Sincronização de estado com uma prop externa, não render-derived.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setMessages([]);
       setStatus('idle');
       return;
@@ -46,6 +49,7 @@ export function useConversationMessages(uid: string | null) {
     lastIdRef.current = 0;
     oldestRef.current = null;
     backoffRef.current = 0;
+    lastActivityRef.current = Date.now(); // abrir uma conversa conta como atividade → polling ativo
     fetchMessages(uid, { limit: cfg.messagesPerPage })
       .then((page) => {
         if (!alive) return;

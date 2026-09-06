@@ -71,7 +71,7 @@ describe('useConversationMessages', () => {
     });
     expect(api.fetchMessages).toHaveBeenLastCalledWith('c-1', { after: 3 });
     await waitFor(() =>
-      expect(result.current.messages.map((m: any) => m.id)).toEqual([1, 2, 3, 4])
+      expect(result.current.messages.map((m) => m.id)).toEqual([1, 2, 3, 4])
     );
   });
 
@@ -86,7 +86,7 @@ describe('useConversationMessages', () => {
       await vi.advanceTimersByTimeAsync(8000);
     });
     await waitFor(() =>
-      expect(result.current.messages.map((m: any) => m.id)).toEqual([1, 2, 3])
+      expect(result.current.messages.map((m) => m.id)).toEqual([1, 2, 3])
     );
   });
 

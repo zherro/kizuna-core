@@ -1,20 +1,19 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useAuth } from '../../providers/auth-provider';
 import { useConversations } from './use-conversations';
 import { ConversationList } from './conversation-list';
 import { ChatWindow } from './chat-window';
 
+function initialActiveUid(): string | null {
+  if (typeof window === 'undefined') return null;
+  return new URLSearchParams(window.location.search).get('c');
+}
+
 export function ChatShell() {
   const { user } = useAuth();
   const { items, loading, refresh, markReadLocally } = useConversations();
-  const [activeUid, setActiveUid] = useState<string | null>(null);
-
-  // read ?c= on mount
-  useEffect(() => {
-    const c = new URLSearchParams(window.location.search).get('c');
-    if (c) setActiveUid(c);
-  }, []);
+  const [activeUid, setActiveUid] = useState<string | null>(initialActiveUid);
 
   const active = items.find((x) => x.uid === activeUid) ?? null;
 
