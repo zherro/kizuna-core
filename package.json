@@ -18,7 +18,9 @@
   "scripts": {
     "build": "tsc",
     "type-check": "tsc --noEmit",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "test": "vitest run",
+    "kizuna": "node cli"
   },
   "dependencies": {},
   "peerDependencies": {
