@@ -1,0 +1,137 @@
+// Materializa um ManifestSet no projeto (direction 'apply') ou empurra as
+// edições do projeto de volta para o core (direction 'push').
+// Assinatura async: 'conflict' consulta prompt.choose, que é async.
+
+import {
+  existsSync, mkdirSync, copyFileSync, readFileSync, writeFileSync,
+} from 'node:fs';
+import { join, dirname, sep } from 'node:path';
+import { hashFile } from './hash.mjs';
+import { classify } from './diff3.mjs';
+import { mergePackageJson } from './pkg-merge.mjs';
+
+function isTemplateEntry(entry) {
+  return entry.sourceAbsPath.includes(sep + 'template' + sep);
+}
+
+function safeHash(absPath) {
+  try {
+    return hashFile(absPath);
+  } catch {
+    return null;
+  }
+}
+
+export async function materialize(manifestSet, opts) {
+  const { projectDir, direction = 'apply', lock, prompt, dryRun = false } = opts;
+  const report = {
+    applied: [],
+    skipped: [],
+    conflicts: [],
+    merges: [],
+    newLockFragment: { templateFiles: {}, pluginShellFiles: {}, packageOwnedKeys: null },
+  };
+
+  const record = (entry, absPath) => {
+    const h = safeHash(absPath);
+    if (!h) return;
+    if (isTemplateEntry(entry)) {
+      report.newLockFragment.templateFiles[entry.projectPath] = h;
+    } else {
+      const bucket = report.newLockFragment.pluginShellFiles[entry.owner] ?? {};
+      bucket[entry.projectPath] = h;
+      report.newLockFragment.pluginShellFiles[entry.owner] = bucket;
+    }
+  };
+
+  const write = (from, to) => {
+    if (dryRun) return;
+    mkdirSync(dirname(to), { recursive: true });
+    copyFileSync(from, to);
+  };
+
+  for (const entry of manifestSet.entries) {
+    const target = join(projectDir, entry.projectPath);
+    const source = entry.sourceAbsPath;
+
+    if (direction === 'push') {
+      if (entry.mode !== 'managed') continue;
+      if (!existsSync(target)) {
+        report.skipped.push(entry.projectPath);
+        continue;
+      }
+      const liveHash = hashFile(target);
+      const currentHash = safeHash(source);
+      if (currentHash === liveHash) {
+        record(entry, source);
+        continue;
+      }
+      write(target, source);
+      report.applied.push(entry.projectPath);
+      record(entry, dryRun ? target : source);
+      continue;
+    }
+
+    // direction === 'apply'
+    if (entry.mode === 'seed') {
+      if (existsSync(target)) {
+        report.skipped.push(entry.projectPath);
+      } else {
+        write(source, target);
+        report.applied.push(entry.projectPath);
+      }
+      continue;
+    }
+
+    // managed
+    const liveHash = hashFile(source);
+    const lockedHash = isTemplateEntry(entry)
+      ? (lock?.template?.files?.[entry.projectPath] ?? null)
+      : (lock?.plugins?.[entry.owner]?.shellFiles?.[entry.projectPath] ?? null);
+    const currentHash = existsSync(target) ? hashFile(target) : null;
+    const verdict = classify(liveHash, lockedHash, currentHash);
+
+    if (verdict === 'noop') {
+      report.skipped.push(entry.projectPath);
+      record(entry, existsSync(target) ? target : source);
+      continue;
+    }
+    if (verdict === 'fast-forward') {
+      write(source, target);
+      report.applied.push(entry.projectPath);
+      record(entry, dryRun ? source : target);
+      continue;
+    }
+    // conflict
+    const choice = await prompt.choose(
+      `conflito em ${entry.projectPath}`,
+      ['sobrescreve', 'mantém', 'ver diff'],
+    );
+    report.conflicts.push(entry.projectPath);
+    if (choice === 'sobrescreve') {
+      write(source, target);
+      record(entry, dryRun ? source : target);
+    } else {
+      record(entry, target);
+    }
+  }
+
+  if (direction === 'apply') {
+    for (const merge of manifestSet.merges) {
+      const target = join(projectDir, merge.projectPath);
+      const targetJson = existsSync(target)
+        ? JSON.parse(readFileSync(target, 'utf8'))
+        : {};
+      const contribJson = JSON.parse(readFileSync(merge.contribAbsPath, 'utf8'));
+      const prevOwned = lock?.packageJson?.ownedKeys ?? {};
+      const merged = mergePackageJson(targetJson, contribJson, prevOwned);
+      if (!dryRun) {
+        writeFileSync(target, JSON.stringify(merged.result, null, 2) + '\n');
+      }
+      report.merges.push({ path: merge.projectPath, conflicts: merged.conflicts });
+      report.newLockFragment.packageOwnedKeys = merged.ownedKeys;
+    }
+  }
+
+  return report;
+}
