@@ -15,7 +15,12 @@ export const fetchConfig = () => fetch('/api/chat/config').then((r) => json<Mess
 
 export const fetchConversations = (before?: string | null) =>
   fetch(`/api/chat/conversations${before ? `?before=${encodeURIComponent(before)}` : ''}`).then((r) =>
-    json<{ items: ChatConversationSummary[]; nextCursor: string | null; hasMore: boolean }>(r)
+    json<{
+      items: ChatConversationSummary[];
+      nextCursor: string | null;
+      hasMore: boolean;
+      badgeCount?: number;
+    }>(r)
   );
 
 export const fetchMessages = (
