@@ -1,0 +1,8 @@
+{
+  "owner": "onboarding",
+  "_deferred": "rotas que ainda dependem de @/lib/server/* e virão numa promoção de Fase A: app/api/onboarding/email/request-code/route.ts (depende de @/lib/server/email-templates + @/lib/server/email-sender)",
+  "files": {
+    "app/api/onboarding/progress/route.ts": "managed",
+    "app/api/onboarding/email/verify-code/route.ts": "managed"
+  }
+}
