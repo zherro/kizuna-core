@@ -36,7 +36,9 @@ project-specific env var names, no app-specific imports. `sql/` + `plugins/` is 
   `resources/forms`, `resources/form-results`, `resources/pages`, `resources/taxonomy`
   (`resourceTaxonomy` — `categories` / `categories_group` / `subcategories` / `categories_sub_tags`
   + `*_public` read variants; the `taxonomy` plugin owns them, a consuming project just spreads
-  `resourceTaxonomy` into its `postgrestResources`)
+  `resourceTaxonomy` into its `postgrestResources`), `resources/reviews` (`resourceReviews` —
+  `reviews` / `review_tags` / `review_moderation_requests` / `review_moderation_events` /
+  `review_stats`; the `reviews` plugin owns them). Registry also has the `review-moderation` block.
 - `@kizuna/core/client/components/form-builder/*`: `FormBuilder`, `FormRenderer`, `FieldEditor`,
   `FormResultViewer`, `validate`, `collectOutput`, `isFieldVisible`, `evalVisibleWhen`, plus the
   schema model types (`FormSchema`, `FormField`, `FieldType`, `VisibleWhen`, `OptionsSource`,
@@ -47,6 +49,13 @@ project-specific env var names, no app-specific imports. `sql/` + `plugins/` is 
 - `@kizuna/core/client/components/pages/*`: `PageView` (server component), `PagesAdmin`,
   `DEFAULT_RESERVED_SLUGS`, `isReservedSlug`, `slugify`. Backed by the `pages` plugin (`public.pages`,
   + `0002_pages_seed.sql` project-neutral default pages: `sobre` / `quem-somos` / `termos-de-uso`).
+- `@kizuna/core/client/components/reviews/*`: `RatingInput`, `RatingDisplay`, `ReviewTags`,
+  `ReviewSummary`, `ReviewCard`, `ReviewList`, `ReviewModal`, `ReviewModerationRequestModal`,
+  `ReviewModerationTable`; hooks `useReviewStats` / `useReviewList` / `useReviewTags` / `useMyReview`
+  + `submitReview` / `requestModeration` / `moderateReview` / `coerceReview`; types `ReviewView`,
+  `ReviewStats`, `ReviewTagOption`, `ReviewStatus`, `ModerationAction`, `ReviewModerationEvent`,
+  … (re-exported from the folder barrel; NOT yet in the `@kizuna/core/types` barrel). Backed by the
+  `reviews` plugin (`public.reviews` + 5 sibling tables + `fn_review_*` RPCs).
 - `@kizuna/core/client/components/showcase/*`: `ShowcaseShell`, `ShowcaseSectionPage`,
   `showcase-sections` (`SHOWCASE_SECTIONS`, `DEFAULT_SHOWCASE_SECTION`, `normalizeShowcaseSection`)
 - `@kizuna/core/client/components/ui/*` and `ui-better-soft/*` — see `docs/COMPONENTS.md`
