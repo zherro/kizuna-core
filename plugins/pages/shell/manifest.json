@@ -1,0 +1,7 @@
+{
+  "owner": "pages",
+  "_deferred": "rotas que ainda dependem de @/lib/server/* e virão numa promoção de Fase A: nenhuma",
+  "files": {
+    "app/api/pages/revalidate/route.ts": "managed"
+  }
+}
