@@ -1,89 +1,90 @@
 ---
 name: setup-projeto-novo
-description: Use ao iniciar um projeto novo em cima do kizuna-starter / kizuna-core — clonar, renomear, escolher plugins, instalar o banco, criar o primeiro usuário root e subir.
+description: Use ao iniciar um projeto novo em cima do kizuna-core — submódulo, kizuna install, instalar o banco, criar o primeiro usuário root e subir.
 ---
 
-# Setup de Projeto Novo — kizuna-starter
+# Setup de Projeto Novo — kizuna-core
 
 ## Overview
 
-Um projeto novo nasce de `git clone` do **`kizuna-starter`** (não CLI, não `app-template/` dentro
-do core). O `kizuna-core` entra como submódulo, consumido por path alias (`@kizuna/core/*` →
-`./kizuna-core/src/*`), igual num projeto existente. No primeiro `npm run dev` você já tem
-**auth + RBAC + chrome do painel + telas admin genéricas + showcase** funcionando, e
-**home / busca / wizard como exemplos editáveis**.
+Um projeto novo entra pelo **`kizuna-starter`** (repo fino: `kizuna.plugins.json` + `.env.example`
++ `README.md` + o submódulo `kizuna-core`) ou começando de um dir vazio e adicionando o submódulo
+à mão. Em ambos os casos o conteúdo real da casca **não é copiado no repo** — é **materializado
+por `node kizuna-core/cli install`** a partir do `kizuna-core/template/`.
 
-> Esta skill é forward-looking: descreve o starter pretendido (spec
-> `2026-09-04-kizuna-starter-setup-design.md`). Se algum passo ainda não existe no repo, ele é o
-> trabalho da Fase B/D — confira o `README.md` do starter, que é a fonte viva.
+O `kizuna-core` é consumido por path alias (`@kizuna/core/*` → `./kizuna-core/src/*`), igual num
+projeto existente. Depois do `install` + `npm install` + `db install` você tem **auth + RBAC +
+chrome do painel + telas admin genéricas + catch-all `[...kizuna]` para telas de plugin**
+funcionando; `app/page.tsx` e `app/layout.tsx` vêm como seeds editáveis.
 
-## Forma do starter (o que você recebe)
-
-```
-meu-projeto/
-├── kizuna-core/                    # submódulo
-├── src/
-│   ├── app/
-│   │   ├── layout.tsx              # providers (Auth, AppPreferences, Toaster) — mínimo
-│   │   ├── page.tsx                # home EXEMPLO ("// EXEMPLO — reescreva")
-│   │   ├── login/ registre-se/     # renderizam LoginPageContent / RegisterPageContent do core
-│   │   ├── painel/                 # layout com getSession→redirect→<PanelShell>, dashboard exemplo,
-│   │   │   ├── root/[slug]/         #   catch-all root-screens do core
-│   │   │   └── administracao/…      #   telas genéricas via screen-engine (categorias, forms, paginas)
-│   │   ├── showcase/               # showcase do core
-│   │   ├── [slug]/                 # PageView do plugin pages
-│   │   └── api/                    # re-export dos handlers do core (auth, resources, postgrest, storage)
-│   ├── components/
-│   │   ├── nav-config.ts           # a lista de nav do PanelShell — é aqui que o projeto começa a editar
-│   │   └── examples/               # home, busca — código de exemplo isolado, dá pra apagar
-│   ├── lib/server/resources/index.ts  # importa + spread dos resourceX de plugin do core
-│   └── proxy.ts                    # createKizunaProxy({ protectedPrefixes, authPages })
-├── db/
-│   ├── install.sh                 # core + plugins (de kizuna.plugins.json) + migrations/ + extras/
-│   ├── migrations/                # vazio (0001 template comentado — cria categories/categories_sub se usar taxonomy)
-│   └── extras/                    # vazio (seeds de exemplo comentados)
-├── kizuna.plugins.json            # lista curada default (sem taxonomy — ver nota)
-├── .env.example
-└── README.md
-```
-
-**Regra do starter:** tudo que é "exemplo" fica fisicamente isolado (`components/examples/`,
-comentário `// EXEMPLO`). O que não está em `examples/` é infraestrutura que o projeto mantém.
+Referência de comandos: **`kizuna-core/docs/CLI.md`**.
 
 ## Checklist
 
-1. `git clone --recurse-submodules <kizuna-starter> meu-projeto && cd meu-projeto`
+1. **Submódulo.**
+   ```bash
+   git clone --recurse-submodules <kizuna-starter> meu-projeto && cd meu-projeto
+   # OU, de um dir vazio:
+   git init && git submodule add <url-do-kizuna-core> kizuna-core
+   ```
    (esqueceu `--recurse-submodules`? `git submodule update --init --recursive`).
-2. `bash scripts/rename-project.sh "Meu Projeto"` — troca nome do app, `themeColor`, metadata
-   num passo.
-3. `cp .env.example .env` e preencher **`PGRST_JWT_SECRET`** (ou `JWT_SECRET` — tem que bater com
-   o secret que o PostgREST verifica) + a **URL do PostgREST** (`POSTGREST_URL`). Todo o resto
-   (SMTP, TinyPNG, Gemini) é opcional.
-4. Editar `kizuna.plugins.json` — manter só os plugins que o projeto usa. Cada linha comentada
-   explica o plugin. Ver `kizuna-core/docs/PLUGINS.md`.
-5. `npm install`
-6. `npm run db:install -- --db-url "$DATABASE_URL"` — aplica `kizuna-core/sql/*` (schema de auth,
-   RBAC, plugin_registry) em ordem, depois cada plugin de `kizuna.plugins.json`, depois
-   `db/migrations/` e `db/extras/` do app (vazios no starter).
-7. `npm run dev`, abrir `/registre-se`, criar o **primeiro usuário** → `fun_auth__signup_bootstrap`
-   detecta `auth.users` vazio e marca esse usuário **`is_root = true`** automaticamente. Nenhum
-   signup depois disso vira root.
-8. **Re-rodar `npm run db:install`** — agora os seeds de plugin que dependem de um tenant/root
-   existirem pegam (ex.: `plugins/pages/0002_pages_seed.sql` semeia `sobre`/`quem-somos`/
-   `termos-de-uso` sob o tenant do primeiro root; era no-op silencioso antes).
-9. `/painel` abre; `/showcase` é a referência de UI viva; `src/components/examples/` é o que dá
-   pra apagar sem medo.
-10. Começar o app: `src/components/nav-config.ts` (nav do painel), `src/lib/server/resources/`
-    (recursos do app — skill `criar-recurso`), `db/migrations/` (schema do app),
-    `.claude/domains/` (docs de domínio do app).
+
+2. **Materializar a casca.**
+   ```bash
+   node kizuna-core/cli install
+   ```
+   Cria `kizuna.plugins.json` (pergunta plugin a plugin se o arquivo faltar), materializa
+   `template/` (managed + seed), faz merge do `package.json` (scripts `kizuna`/`predev` + deps
+   pinadas), e no fim pergunta **"rodar `npm install` agora?"**. Sem `--db-url`/`$DATABASE_URL`
+   ele pula o banco (passo 4). Flags úteis: `--yes`, `--no-input`, `--skip-db`.
+
+3. **Env.**
+   ```bash
+   cp .env.example .env
+   ```
+   Preencher **`PGRST_JWT_SECRET`** (ou `JWT_SECRET` — tem que bater com o secret que o PostgREST
+   verifica) e **`POSTGREST_URL`**. Todo o resto (SMTP, TinyPNG, Gemini, `SHOWCASE_ENABLED`,
+   `DEBUG_HTTP`) é opcional.
+
+4. **Banco.**
+   ```bash
+   node kizuna-core/cli db install --db-url "$DATABASE_URL"
+   ```
+   Aplica `kizuna-core/sql/*` (auth, RBAC, plugin_registry) em ordem, depois cada plugin de
+   `kizuna.plugins.json`. Idempotente — é um instalador do zero, não histórico de migração.
+
+5. **Primeiro usuário = root.** `npm run dev`, abrir `/registre-se`, criar o primeiro usuário →
+   `fun_auth__signup_bootstrap` detecta `auth.users` vazio e marca esse usuário
+   **`is_root = true`** automaticamente. Nenhum signup depois disso vira root.
+
+6. **Re-rodar o `db install`** — agora os seeds de plugin que dependem de um tenant/root existirem
+   pegam (ex.: `plugins/pages/0002_pages_seed.sql` semeia `sobre`/`quem-somos`/`termos-de-uso` sob
+   o tenant do primeiro root; era no-op silencioso antes).
+   ```bash
+   node kizuna-core/cli db install --db-url "$DATABASE_URL"
+   ```
+
+7. **Começar o app:** `src/lib/server/resources/` (recursos do app — skill `criar-recurso`), a nav
+   do `PanelShell`, migrations do app, `.claude/domains/` (docs de domínio). Telas novas de
+   `/painel` seguem a skill `nova-tela-screen-engine`.
 
 ## `taxonomy` — o caso especial
 
 `taxonomy` fica **fora** de `kizuna.plugins.json` de propósito: ele faz `ALTER` em
 `public.categories` / `public.categories_sub`, que só existem depois de uma migração do app criar
-essas tabelas. Se o projeto usa taxonomia: descomente o `db/migrations/0001` template (cria
-`categories`/`categories_sub` mínimos) e o passo do `install.sh` que aplica o plugin `taxonomy`
-entre as migrations e os extras. Se não usa: deixe como está.
+essas tabelas. Se o projeto usa taxonomia: crie as tabelas mínimas numa migration do app e habilite
+o plugin **depois** (`node kizuna-core/cli plugin add taxonomy`). Se não usa: deixe fora.
+
+## Manter o core alinhado depois
+
+- `predev` roda `node kizuna-core/cli check` a cada `npm run dev` — só **avisa** se o submódulo
+  divergiu do `kizuna.lock` (nunca bloqueia).
+- `git -C kizuna-core pull` + `node kizuna-core/cli update` aplica o que mudou no core (fast-forward
+  / conflito 3-way + migrations pendentes).
+- `node kizuna-core/cli lock` marca o core atual como "visto" sem aplicar nada.
+- Melhorou algo local que devia estar no core: `node kizuna-core/cli sync` (submódulo num branch).
+
+Detalhes de cada comando, do `kizuna.lock` e da regra de bump do `VERSION`: **`kizuna-core/docs/CLI.md`**.
 
 ## Env que o core lê
 
@@ -101,6 +102,6 @@ entre as migrations e os extras. Se não usa: deixe como está.
 
 - Login funciona; primeiro usuário é root (`select is_root from auth.users`).
 - `/painel` abre; telas de `administracao` (categorias/forms/paginas) salvam.
-- `/showcase` renderiza.
-- `/sobre` (seed do plugin `pages`) aparece — se não, o passo 8 não rodou.
+- `/sobre` (seed do plugin `pages`) aparece — se não, o passo 6 não rodou.
+- `node kizuna-core/cli check` → sem banner (lock == submódulo).
 - `npm run build` limpo.

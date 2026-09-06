@@ -5,8 +5,25 @@ layer, a JSON-driven screen-engine, and a UI kit. Genuinely independent of any o
 project-specific env var names, no app-specific imports. `sql/` + `plugins/` is the DB side;
 `src/` is the TS side. Consumed via a tsconfig path alias (`@kizuna/core/*`), not an npm package.
 
+## CLI + template/ (starter)
+
+O core não é só biblioteca: ele carrega a **casca base** de um app Next.js e um **CLI Node** que
+a materializa num projeto e mantém projeto ↔ core alinhados. Ver **`docs/CLI.md`**.
+
+- `VERSION` — string semver única (hoje `0.5.0`); sinal do version-gate. Bumpa só em mudança
+  relevante pro consumidor (`template/`, shell de plugin, migration nova, API pública). `git log`
+  é o changelog — sem `CHANGELOG`.
+- `cli/` — `index.mjs` (dispatcher) + `commands/{install,update,sync,lock,check,adopt,plugin,db}.mjs`
+  + `lib/*.mjs`. Zero deps, ESM, Node ≥ 20. Testes: `npx vitest run cli/`.
+- `template/` — `kizuna.manifest.json` (21 paths: `managed` / `seed` / `merge`) + os arquivos da
+  casca base.
+- `plugins/<n>/shell/` — fragmento de casca por plugin (rotas limpas + registry): hoje
+  `storage`, `location`, `pages`, `onboarding`, `agenda`.
+- `kizuna.lock` (no projeto consumidor, não aqui) — hashes + versões do que foi instalado.
+
 ## Docs
 
+- `docs/CLI.md` — o CLI (`install`/`update`/`sync`/`plugin`/`lock`/`check`/`adopt`/`db`), o `kizuna.lock`, managed/seed/merge, regra de bump do `VERSION`.
 - `docs/ARCHITECTURE.md` — folder layout, `ResourceConfig`/`ScreenConfig` split, context refs.
 - `docs/AUTH.md` — JWT/session, login/register/logout, `is_root`, RBAC, route protection (proxy).
 - `docs/PLUGINS.md` — what a plugin is, the plugins that exist today, how to activate them.
@@ -39,6 +56,14 @@ project-specific env var names, no app-specific imports. `sql/` + `plugins/` is 
   `resourceTaxonomy` into its `postgrestResources`), `resources/reviews` (`resourceReviews` —
   `reviews` / `review_tags` / `review_moderation_requests` / `review_moderation_events` /
   `review_stats`; the `reviews` plugin owns them). Registry also has the `review-moderation` block.
+  `resources/agenda-config` (`resourceAgendaConfig` — `agenda_schedule` / `agenda_schedule_hours` /
+  `agenda_booking_preferences` / `agenda_notification_preferences`; the `agenda` plugin v1.1.0 owns
+  them, a consuming project spreads `resourceAgendaConfig` into its `postgrestResources`).
+- `@kizuna/core/client/components/agenda-config/*`: `AgendaConfigPage` (tenant agenda
+  configuration screen — schedule list + booking rules + notification preferences),
+  `useAgendaSchedules`, `ScheduleSheet`, `ScheduleForm`, `ScheduleCard`, `SchedulesEmptyState`,
+  and pure helpers `summarizeSchedule` / `suggestScheduleName` / `validateSchedule` /
+  `crossesMidnight` / `hmToMinutes`. Backed by the `agenda` plugin v1.1.0.
 - `@kizuna/core/client/components/form-builder/*`: `FormBuilder`, `FormRenderer`, `FieldEditor`,
   `FormResultViewer`, `validate`, `collectOutput`, `isFieldVisible`, `evalVisibleWhen`, plus the
   schema model types (`FormSchema`, `FormField`, `FieldType`, `VisibleWhen`, `OptionsSource`,
