@@ -60,6 +60,21 @@ follow-ups (`0002_*.sql`, …) for data seeds or later migrations; the installer
   Writes gated by `pages.manage`. Ships `0002_pages_seed.sql` — project-neutral default pages
   (`sobre`, `quem-somos`, `termos-de-uso`, published) seeded under the first root user's tenant,
   a silent no-op on a DB with no root user yet. A project can layer its own content on top.
+- `reviews/` — generic ratings/reviews infrastructure, scoped by `domain` + `reference_id` (no
+  FK to the reviewed entity — same decoupling as `forms`). Tables: `reviews` (rating 1–5 +
+  comment + status `pending`/`published`/`hidden`/`rejected` + soft delete), `review_tags`
+  (admin-managed tag catalog, `slug`/`sort_order`/`selectable`/`active`), `review_tag_links`
+  (review↔tag with `tag_label_snapshot` so history survives a tag being deactivated),
+  `review_moderation_requests` (the reviewed entity's owner asks for re-moderation — one open per
+  review), `review_moderation_events` (append-only audit, backend-write only like
+  `notifications`), `review_stats` (trigger-maintained aggregate: `total_reviews`,
+  `average_rating`, `dist` — O(1) summary reads, only `published`+`active` count). Writes go
+  through RPCs: `fn_review_create` / `fn_review_moderation_request` (SECURITY INVOKER — RLS scopes
+  by identity; **cross-tenant**: `reviews.tenant_id` is the reviewed entity's tenant, set by the
+  RPC, not a JWT default) and `fn_review_moderate` (SECURITY DEFINER — writes the audit table).
+  Reads open to `anon` (published only). Permissions: `reviews.moderate`, `reviews.manage_tags`
+  (catalog only). No content seeded — a project seeds its own tags (e.g. foco-total's
+  `db/extras/reviews_tags_seed.sql`) and the `domain`s it supports (v1: `'service'`).
 - `system_config/` — generic key/value config bag (`auth.system_config`: `key` text PK, `value`
   jsonb). Mechanism only — which keys exist and the shape of their jsonb value is a consuming
   project's business decision, not this plugin's. Read-open to any session (a config flag isn't
