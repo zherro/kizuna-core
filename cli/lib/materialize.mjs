@@ -5,13 +5,15 @@
 import {
   existsSync, mkdirSync, copyFileSync, readFileSync, writeFileSync,
 } from 'node:fs';
-import { join, dirname, sep } from 'node:path';
+import { join, dirname } from 'node:path';
 import { hashFile } from './hash.mjs';
 import { classify } from './diff3.mjs';
 import { mergePackageJson } from './pkg-merge.mjs';
 
+// Uma entry é do template sse seu dono é 'base'; caso contrário é casca de
+// plugin, cujo dono é o nome do plugin (usado para chavear pluginShellFiles).
 function isTemplateEntry(entry) {
-  return entry.sourceAbsPath.includes(sep + 'template' + sep);
+  return entry.owner === 'base';
 }
 
 function safeHash(absPath) {
