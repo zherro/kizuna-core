@@ -18,7 +18,7 @@ import { SearchableSelect } from '@kizuna/core/client/components/ui/searchable-s
 import { useAuth } from '@kizuna/core/client/providers/auth-provider';
 import { useForm } from '@kizuna/core/client';
 import { validateDocument } from '../../../lib/validate-doc';
-import { stripHtml } from '@/components/services/service-type';
+import { stripHtml } from '../../../lib/helper/text.helper';
 
 const STATES_BR = [
   'AC',
@@ -1090,7 +1090,10 @@ export function AccountForm({
                 <div className="grid gap-4 sm:grid-cols-3">
                   <div className="space-y-1.5">
                     <Label htmlFor="zipCode">
-                      CEP {cepLookupLoading && <span className="text-muted-foreground">(buscando...)</span>}
+                      CEP{' '}
+                      {cepLookupLoading && (
+                        <span className="text-muted-foreground">(buscando...)</span>
+                      )}
                     </Label>
                     <Input
                       id="zipCode"
