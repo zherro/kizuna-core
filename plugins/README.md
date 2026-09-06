@@ -83,6 +83,21 @@ follow-ups (`0002_*.sql`, …) for data seeds or later migrations; the installer
   foco-total's `db/extras/system_config_seed.sql` seeding `user_data.document_field`/
   `user_data.birth_date_field` for the `user_data` plugin's onboarding form).
 
+- `messaging/` — multi-channel conversation infra (`conversation`, `conversation_participant`,
+  `message`, `message_external_identity`). Access is **always by participation**
+  (`conversation_participant.user_id`, checked via `auth.fun_msg_is_participant(bigint)`), never by
+  tenant or phone — `conversation.tenant_id` exists but is informational only and never appears in
+  a policy, so conversations are cross-tenant. Only the `platform` channel is exercised today; the
+  `whatsapp`/`instagram`/`telegram`/`email` source enum values and `message_external_identity`
+  table are defined but unused until an external-ingestion worker exists. Writes go through
+  `SECURITY DEFINER` RPCs: `fn_msg_start_conversation` (idempotent per pair+context — reuses an
+  open conversation), `fn_msg_send_message` (dedups by `metadata->>'client_token'`),
+  `fn_msg_mark_read`, `fn_msg_list_conversations` (adds `unread_count` + the other participant,
+  LEFT JOIN on `user_data`). The `auth_user` INSERT policy on `message` forces
+  `sender_id = auth.fun_auth_user_id() AND direction = 'outbound' AND source = 'platform'`.
+  Depends on the `user_data` plugin (install `user_data,messaging` together). Permission
+  `messaging.manage` is catalog-only (moderator override in the SELECT policies) — never granted.
+
 ## Convention: registering with RBAC
 
 Every plugin's `0001_*.sql`, at the end, must:
