@@ -42,12 +42,11 @@ export async function run(ctx) {
       return 0;
     }
 
-    addEnabled(projectDir, name);
-    const nextEnabled = readEnabled(projectDir);
-
+    // Valida ANTES de persistir: um conflito de dono não pode deixar o plugin
+    // gravado como habilitado em kizuna.plugins.json.
     let set;
     try {
-      set = loadManifests(coreDir, nextEnabled);
+      set = loadManifests(coreDir, [...enabled, name]);
     } catch (err) {
       if (err instanceof DuplicateOwnerError) {
         console.error('conflito de donos no manifesto:');
@@ -56,6 +55,8 @@ export async function run(ctx) {
       }
       throw err;
     }
+
+    addEnabled(projectDir, name);
 
     const subset = {
       entries: set.entries.filter((e) => e.owner === name),

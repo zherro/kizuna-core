@@ -95,7 +95,9 @@ export async function materialize(manifestSet, opts) {
 
     if (verdict === 'noop') {
       report.skipped.push(entry.projectPath);
-      record(entry, existsSync(target) ? target : source);
+      // noop: live == locked == current. O hash estável é o da fonte; hashear
+      // o arquivo do projeto avançaria o lock para uma edição local.
+      record(entry, source);
       continue;
     }
     if (verdict === 'fast-forward') {
@@ -107,7 +109,7 @@ export async function materialize(manifestSet, opts) {
     // conflict
     const choice = await prompt.choose(
       `conflito em ${entry.projectPath}`,
-      ['sobrescreve', 'mantém', 'ver diff'],
+      ['sobrescreve', 'mantém'],
     );
     report.conflicts.push(entry.projectPath);
     if (choice === 'sobrescreve') {

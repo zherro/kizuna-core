@@ -59,6 +59,25 @@ it('re-run é noop', async () => {
   cleanup();
 });
 
+it('noop registra o hash da FONTE, não o do target editado localmente', async () => {
+  const { core, proj, cleanup } = scaffold();
+  const set = loadManifests(core, []);
+  const lock = emptyLock();
+  const r1 = await materialize(set, {
+    projectDir: proj, direction: 'apply', lock, prompt: { choose: vi.fn() }, dryRun: false,
+  });
+  lock.template.files = { ...r1.newLockFragment.templateFiles };
+  const sourceHash = r1.newLockFragment.templateFiles['app/proxy.ts'];
+  // usuário edita o managed localmente; live == locked, então o verdict é noop
+  writeFileSync(join(proj, 'app', 'proxy.ts'), 'export const proxy = 12345;\n');
+  const r2 = await materialize(set, {
+    projectDir: proj, direction: 'apply', lock, prompt: { choose: vi.fn() }, dryRun: false,
+  });
+  expect(r2.skipped).toContain('app/proxy.ts');
+  expect(r2.newLockFragment.templateFiles['app/proxy.ts']).toBe(sourceHash);
+  cleanup();
+});
+
 it('conflito chama prompt e respeita "sobrescreve"', async () => {
   const { core, proj, cleanup } = scaffold();
   const set = loadManifests(core, []);

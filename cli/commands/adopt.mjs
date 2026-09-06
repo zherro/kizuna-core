@@ -2,7 +2,7 @@
 // (retrofit). Assume que cada managed presente está sincronizado com o core.
 // Não copia nada.
 
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { loadManifests, DuplicateOwnerError } from '../lib/manifest.mjs';
 import { readEnabled } from '../lib/plugins-file.mjs';
@@ -44,6 +44,31 @@ export async function run(ctx) {
       lock.plugins[entry.owner] = lock.plugins[entry.owner] ?? {};
       lock.plugins[entry.owner].shellFiles = lock.plugins[entry.owner].shellFiles ?? {};
       lock.plugins[entry.owner].shellFiles[entry.projectPath] = h;
+    }
+  }
+
+  // Chaves de package.json que o core já contribui e que o projeto tem com valor
+  // idêntico: assume-se sincronizadas, então entram em ownedKeys — sem isso o
+  // primeiro `update` pós-retrofit dispara conflito em cada dep pinada do core.
+  for (const merge of set.merges) {
+    const targetPath = join(projectDir, merge.projectPath);
+    if (!existsSync(targetPath) || !existsSync(merge.contribAbsPath)) continue;
+    let projJson;
+    let contribJson;
+    try {
+      projJson = JSON.parse(readFileSync(targetPath, 'utf8'));
+      contribJson = JSON.parse(readFileSync(merge.contribAbsPath, 'utf8'));
+    } catch {
+      continue;
+    }
+    for (const section of ['dependencies', 'devDependencies', 'scripts']) {
+      const proj = projJson[section] ?? {};
+      const contrib = contribJson[section] ?? {};
+      const owned = lock.packageJson.ownedKeys[section] ?? {};
+      for (const [key, val] of Object.entries(contrib)) {
+        if (proj[key] === val) owned[key] = val;
+      }
+      lock.packageJson.ownedKeys[section] = owned;
     }
   }
 

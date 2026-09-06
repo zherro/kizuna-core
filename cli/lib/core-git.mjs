@@ -5,7 +5,10 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 function git(coreDir, args) {
-  return execFileSync('git', ['-C', coreDir, ...args], { encoding: 'utf8' }).trim();
+  return execFileSync('git', ['-C', coreDir, ...args], {
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'ignore'],
+  }).trim();
 }
 
 export function head(coreDir) {

@@ -1,7 +1,9 @@
 // Leitura/escrita do kizuna.plugins.json do projeto (lista de plugins habilitados)
 // e enumeração dos plugins disponíveis no core.
 
-import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
+import {
+  readFileSync, writeFileSync, readdirSync, existsSync,
+} from 'node:fs';
 import { join } from 'node:path';
 
 const SQL_RE = /^\d{4}_.*\.sql$/;
@@ -38,6 +40,7 @@ export function addEnabled(projectDir, name) {
 // Subdirs de plugins/ que têm ao menos um NNNN_*.sql.
 export function listAvailable(coreDir) {
   const dir = join(coreDir, 'plugins');
+  if (!existsSync(dir)) return [];
   return readdirSync(dir, { withFileTypes: true })
     .filter((d) => d.isDirectory())
     .filter((d) => {
