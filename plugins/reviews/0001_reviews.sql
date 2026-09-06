@@ -617,7 +617,11 @@ GRANT EXECUTE ON FUNCTION public.fn_review_moderate(bigint, text, text, boolean,
 -- =============================================================================================
 -- 9) RBAC + registro do plugin (ver kizuna-core/plugins/README.md)
 -- =============================================================================================
+-- `view` existe só para o gate de nav/UI do projeto consumidor (client `hasPerm('reviews')`
+-- default action) — os writes reais gateiam em `moderate` / `manage_tags`. Mesmo par que o
+-- plugin `taxonomy` registra (`categorias.view` + `categorias.manage`).
 INSERT INTO auth.permissions (resource, action, name) VALUES
+  ('reviews', 'view',        'Ver o painel de avaliações'),
   ('reviews', 'moderate',    'Moderar avaliações'),
   ('reviews', 'manage_tags', 'Gerenciar tags de avaliação')
 ON CONFLICT (resource, action) DO NOTHING;
