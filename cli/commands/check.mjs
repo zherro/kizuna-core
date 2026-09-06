@@ -19,7 +19,13 @@ export async function run(ctx) {
   const { paths, flags = {} } = ctx;
   const { projectDir, coreDir } = paths;
 
-  const lock = readLock(projectDir);
+  let lock;
+  try {
+    lock = readLock(projectDir);
+  } catch {
+    console.log('kizuna.lock ilegível (JSON inválido?) — rode `kizuna adopt` para regerá-lo');
+    return 0;
+  }
   if (!lock) {
     console.log('projeto sem kizuna.lock — rode `kizuna adopt`');
     return 0;
@@ -27,7 +33,7 @@ export async function run(ctx) {
 
   const liveVersion = readVersion(coreDir);
   const liveSha = safe(() => head(coreDir), null);
-  const enabled = readEnabled(projectDir);
+  const enabled = safe(() => readEnabled(projectDir), []);
 
   const pluginDeltas = enabled.map((name) => ({
     name,

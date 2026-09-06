@@ -85,5 +85,15 @@ export default async function main(argv) {
 const HERE = fileURLToPath(import.meta.url);
 const invoked = process.argv[1] ? resolve(process.argv[1]) : '';
 if (invoked === HERE || invoked === dirname(HERE)) {
-  main(process.argv.slice(2)).then((code) => process.exit(code));
+  main(process.argv.slice(2))
+    .then((code) => process.exit(code))
+    .catch((err) => {
+      // `check` é o hook do predev: NUNCA pode falhar o `npm run dev`.
+      if (process.argv[2] === 'check') {
+        console.log(`aviso: kizuna check falhou internamente (${err.message})`);
+        process.exit(0);
+      }
+      console.error(err.message);
+      process.exit(1);
+    });
 }
