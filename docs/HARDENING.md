@@ -57,10 +57,11 @@ Coluna **MITIGADO**: `sim` / `não` / `parcial` — estado no código hoje, não
 
 ## Prioridade sugerida (Fase B — hardening)
 
-1. **Layout público** (não lê cookie) + remover `force-dynamic` + `/api/auth/me` — destrava static/ISR e TTFB. *Alto impacto, ~1 sessão.*
-2. **Checklist + teste de RLS** (FORCE em toda tabela, isolamento entre tenants) + auditoria de grants `anon` + `search_path` em toda `fn_*`. *Alto risco de vazamento.*
-3. **Rate limit em `/api/auth/*`** + headers de segurança no `next.config.ts`.
-4. **PgBouncer + tuning de `db-pool`** documentado em `docs/DEPLOY.md`; PostgREST privado.
-5. **Índices**: GIN para busca, `tenant_id` / `tenant_members` para RLS; RPC-first para leituras compostas; `select=` pinado nos `ResourceConfig`.
-6. **SEO**: `robots.ts` / `sitemap.ts` / `generateMetadata` como seeds do template.
-7. RS256 no lugar de HS256 (quando #1–#5 estiverem feitos).
+- [x] **1. Layout público** (não lê cookie) + remover `force-dynamic` + `/api/auth/me` — destrava static/ISR e TTFB. **FEITO v0.8.0.**
+- [ ] **2. Cache de leitura pública** — agora que ISR é possível: pôr `export const revalidate = <n>` (ou `dynamicParams`) nas páginas públicas (`/`, `/[slug]`, detalhe de anúncio, `/busca`); `Cache-Control: s-maxage, stale-while-revalidate` nas rotas de API anônimas; `revalidatePath`/tag na escrita (o plugin `pages` já tem `/api/pages/revalidate`). *Barato, alto impacto de load. Próximo passo natural do #1.*
+- [ ] **3. Checklist + teste de RLS** (FORCE em toda tabela, isolamento entre tenants) + auditoria de grants `anon` + `search_path` em toda `fn_*`. *Alto risco de vazamento.*
+- [ ] **4. Rate limit em `/api/auth/*`** + headers de segurança no `next.config.ts`.
+- [ ] **5. PgBouncer + tuning de `db-pool`** documentado em `docs/DEPLOY.md`; PostgREST privado.
+- [ ] **6. Índices**: GIN para busca, `tenant_id` / `tenant_members` para RLS; RPC-first para leituras compostas; `select=` pinado nos `ResourceConfig`.
+- [ ] **7. SEO**: `robots.ts` / `sitemap.ts` / `generateMetadata` como seeds do template.
+- [ ] **8. RS256** no lugar de HS256 (quando #3–#6 estiverem feitos).
