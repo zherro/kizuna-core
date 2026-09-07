@@ -32,7 +32,8 @@ export function DiscoverCta({
     <Link
       href={href}
       className={cn(
-        'flex items-center gap-4 overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-primary to-primary/70 p-5 shadow-lg shadow-primary/20 transition-transform active:scale-[0.99]',
+        // gradiente sutil, horizontal, dentro da cor primária (sem virar laranja no fim)
+        'flex items-center gap-4 overflow-hidden rounded-2xl bg-primary bg-[linear-gradient(90deg,var(--primary),color-mix(in_oklch,var(--primary),black_14%))] p-5 shadow-lg shadow-primary/25 transition-transform active:scale-[0.99]',
         className
       )}
     >
