@@ -1,12 +1,14 @@
+// EXEMPLO — reescreva. Dashboard do painel. Os cards abaixo apontam para as
+// telas de plugin que o kizuna-core já entrega (resolvidas por /painel/[...kizuna]).
+// Adicione as telas do seu app aqui.
 import Link from 'next/link';
 import {
   CalendarDays,
-  FlaskConical,
+  FileText,
   FolderTree,
   GitFork,
-  Layers3,
-  Megaphone,
-  SquareChartGantt,
+  NotebookPen,
+  UserRound,
 } from 'lucide-react';
 import { buttonVariants } from '@kizuna/core/client/components/ui/button';
 import {
@@ -22,53 +24,48 @@ import { PainelWrapper } from '@/components/painel-wrapper';
 const cards = [
   {
     title: 'Categorias',
-    description: 'Organize os tipos de servico e mantenha o cadastro centralizado.',
+    description: 'Árvore de categorias e subcategorias (plugin taxonomy).',
     href: '/painel/taxonomia/categorias',
     icon: FolderTree,
     adminOnly: true,
   },
   {
     title: 'Subcategorias',
-    description: 'Cadastre subcategorias e vincule cada item a uma categoria principal.',
+    description: 'Subcategorias vinculadas a cada categoria (plugin taxonomy).',
     href: '/painel/taxonomia/subcategorias',
     icon: GitFork,
     adminOnly: true,
   },
   {
-    title: 'Teste de funcoes',
-    description: 'Execute RPCs no PostgREST com o token da sessao para validar RLS e retorno.',
-    href: '/painel/funcoes',
-    icon: FlaskConical,
+    title: 'Formulários',
+    description: 'Definições de formulário reutilizáveis + respostas (plugin forms).',
+    href: '/painel/administracao/formularios',
+    icon: NotebookPen,
   },
   {
-    title: 'Meus anúncios',
-    description: 'Crie e gerencie seus anúncios com fluxo em etapas.',
-    href: '/painel/meus-anuncios',
-    icon: Megaphone,
+    title: 'Páginas',
+    description: 'Conteúdo institucional em Markdown servido por /[slug] (plugin pages).',
+    href: '/painel/administracao/paginas',
+    icon: FileText,
   },
   {
     title: 'Agenda',
-    description: 'Planeje compromissos em visoes de mes, semana, dia e lista.',
+    description: 'Horários, regras de agendamento e notificações (plugin agenda).',
     href: '/painel/agenda',
     icon: CalendarDays,
   },
   {
-    title: 'Servicos',
-    description: 'Proxima etapa: conectar o cadastro completo de servicos ao backend real.',
-    href: '#',
-    icon: Layers3,
-  },
-  {
-    title: 'Operacao',
-    description: 'Use o painel para estruturar o fluxo administrativo da plataforma.',
-    href: '#',
-    icon: SquareChartGantt,
+    title: 'Minha conta',
+    description: 'Dados do usuário logado.',
+    href: '/painel/minha-conta',
+    icon: UserRound,
   },
 ];
 
 export default async function PainelPage() {
   const session = await getSession();
-  const canManageCatalog = (session?.tenant_type ?? '').toUpperCase() === 'ADMIN';
+  const canManageCatalog =
+    session?.is_root === true || (session?.tenant_type ?? '').toUpperCase() === 'ADMIN';
   const isUserType = (session?.tenant_type ?? '').toUpperCase() === 'USER';
   const visibleCards = cards.filter((card) => !card.adminOnly || canManageCatalog);
 
