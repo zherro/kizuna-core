@@ -22,7 +22,7 @@ export function CategoryRail({
 /** Carrossel enxuto: cards verticais pequenos (ícone em círculo + label). */
 function CategoryRailCompact({ t }: { t: HomeMessages }) {
   return (
-    <section className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6">
+    <section className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6">
       <div className="flex items-end justify-between gap-4">
         <h2 className="text-lg font-bold tracking-tight text-foreground">{t.categoriesTitle}</h2>
         <Link
