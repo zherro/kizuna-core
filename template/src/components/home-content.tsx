@@ -65,12 +65,12 @@ export function HomeContent({
       style={getHomeInkStyle(inkLevel)}
     >
       {showHero ? <HomeHero t={t} /> : null}
+      <CategoryRail t={t} variant={categoriesVariant} />
       {showDiscover ? (
-        <div className="pt-6">
+        <div className="pb-6">
           <DiscoverCta />
         </div>
       ) : null}
-      <CategoryRail t={t} variant={categoriesVariant} />
       <NearbyGrid t={t} />
       <HowItWorks t={t} />
       <JoinCta t={t} />
