@@ -21,7 +21,6 @@ import { EmptyStateCard } from './ui-better-soft/lists/empty-state-card';
 import { useTable } from '../hooks';
 import type { ResourceConfig } from '../../types/resource';
 import { postgrestResources } from '@/lib/server/resources';
-import { formatServicePrice } from '@/components/services/service-type';
 import { cn } from '../../lib/utils';
 import { TONE_BADGE, type ThemeTone } from '../../lib/ui-tone';
 
@@ -55,12 +54,24 @@ const ACTION_ICON_MAP: Record<'edit' | 'review', string> = {
   review: 'ClipboardCheck',
 };
 
-/** Named formatters that need real domain logic (not expressible as plain data) — keyed by name so `screens/*.ts` can reference one without importing/passing a function. */
-const NAMED_FORMATTERS: Record<string, (value: unknown, item: Record<string, unknown>) => string> =
-  {
-    servicePrice: (value, item) =>
-      formatServicePrice(Number(value) || 0, String(item.priceUnit ?? 'quote')),
-  };
+/**
+ * Named formatters that need real domain logic (not expressible as plain data) —
+ * keyed by name so `screens/*.ts` can reference one without importing/passing a
+ * function. Começa vazio: o projeto consumidor registra os seus com
+ * `registerNamedFormatter('servicePrice', fn)` (ex.: no `layout.tsx` ou num
+ * `src/lib/*` importado cedo). Um nome não registrado cai no formato `text`.
+ */
+export const NAMED_FORMATTERS: Record<
+  string,
+  (value: unknown, item: Record<string, unknown>) => string
+> = {};
+
+export function registerNamedFormatter(
+  name: string,
+  fn: (value: unknown, item: Record<string, unknown>) => string,
+) {
+  NAMED_FORMATTERS[name] = fn;
+}
 
 export type FieldFormat =
   | { type: 'text' }

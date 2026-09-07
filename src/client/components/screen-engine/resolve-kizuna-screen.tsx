@@ -29,12 +29,14 @@ export async function resolveKizunaScreen(
     notFound();
   }
 
-  if (entry.permResource) {
+  if (entry.permResource || entry.adminOnly) {
     const session = await getSession();
-    const hasPerm =
-      !!session &&
-      (session.is_root === true || session.perms?.[entry.permResource]?.view === true);
-    if (!hasPerm) {
+    const isRoot = session?.is_root === true;
+    const ok = entry.adminOnly
+      ? isRoot || (session?.tenant_type ?? '').toUpperCase() === 'ADMIN'
+      : !!session &&
+        (isRoot || session.perms?.[entry.permResource!]?.view === true);
+    if (!ok) {
       redirect('/painel');
     }
   }
