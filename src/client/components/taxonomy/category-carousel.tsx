@@ -34,6 +34,10 @@ export type CategoryCarouselProps = {
   iconFor?: (item: CategoryCarouselItem) => ReactNode;
   /** label do contador (compact esconde). Default: `(n) => \`${n} subcategorias\``. */
   countLabel?: (count: number) => string;
+  /** texto quando não há categorias. Default: "Nenhuma categoria disponível." */
+  emptyLabel?: string;
+  /** se true, esconde a seção inteira quando vazia (default false — mostra título + mensagem). */
+  hideWhenEmpty?: boolean;
   className?: string;
 };
 
@@ -55,6 +59,8 @@ export function CategoryCarousel({
   hrefFor = (c) => `/busca?categoryId=${c.id}`,
   iconFor = () => <Tag className="h-5 w-5" />,
   countLabel = (n) => `${n} ${n === 1 ? 'subcategoria' : 'subcategorias'}`,
+  emptyLabel = 'Nenhuma categoria disponível.',
+  hideWhenEmpty = false,
   className,
 }: CategoryCarouselProps) {
   const { options, loading } = useResourceOptions<StatRow>({ resource });
@@ -72,15 +78,24 @@ export function CategoryCarousel({
     return [...map.values()].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
   }, [options]);
 
-  if (!loading && items.length === 0) return null;
+  const empty = !loading && items.length === 0;
+  if (empty && hideWhenEmpty) return null;
 
   const maxW = 'mx-auto w-full max-w-6xl px-4 sm:px-6';
+  const emptyBox = (
+    <div className="mt-4 rounded-2xl border border-dashed border-border bg-muted/30 px-4 py-8 text-center text-sm text-muted-foreground">
+      {emptyLabel}
+    </div>
+  );
 
   if (variant === 'compact') {
     return (
       <section className={className ?? `${maxW} py-8`}>
         <Header title={title} allLabel={allLabel} allHref={allHref} compact />
-        <div className="mt-4 flex gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {empty ? (
+          emptyBox
+        ) : (
+          <div className="mt-4 flex gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {loading
             ? Array.from({ length: 6 }).map((_, i) => (
                 <div key={i} className="h-[76px] w-20 shrink-0 animate-pulse rounded-2xl bg-muted" />
@@ -99,7 +114,8 @@ export function CategoryCarousel({
                   </span>
                 </Link>
               ))}
-        </div>
+          </div>
+        )}
       </section>
     );
   }
@@ -107,7 +123,10 @@ export function CategoryCarousel({
   return (
     <section className={className ?? `${maxW} py-14`}>
       <Header title={title} allLabel={allLabel} allHref={allHref} />
-      <div className="mt-6 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      {empty ? (
+        emptyBox
+      ) : (
+        <div className="mt-6 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {loading
           ? Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="h-[132px] min-w-[200px] animate-pulse rounded-2xl bg-muted" />
@@ -129,7 +148,8 @@ export function CategoryCarousel({
                 </span>
               </Link>
             ))}
-      </div>
+        </div>
+      )}
     </section>
   );
 }
