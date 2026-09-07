@@ -18,6 +18,11 @@
 -- convention in the consumer's own migration, since categories_group_id/category_id FKs here are
 -- typed bigint.
 
+-- public.categories definição
+
+-- Drop table
+
+
 -- ---------------------------------------------------------------------------------------------
 -- 1) categories_group — enum-like table of top-level groups that classify categories, one level
 --    above them. Same column conventions as public.categories.
@@ -46,20 +51,36 @@ CREATE TABLE IF NOT EXISTS public.categories_group (
 --    nullable (not NOT NULL) because a project's base schema may already seed rows with neither
 --    column set; new rows created afterwards pick up the current session via the column defaults.
 -- ---------------------------------------------------------------------------------------------
-ALTER TABLE public.categories
-  ADD COLUMN IF NOT EXISTS category_group_id bigint REFERENCES public.categories_group(id);
 
-ALTER TABLE public.categories
-  ADD COLUMN IF NOT EXISTS icon text;
+-- DROP TABLE public.categories;
 
-ALTER TABLE public.categories
-  ADD COLUMN IF NOT EXISTS description text;
+CREATE TABLE public.categories (
+   id bigserial PRIMARY KEY,
+	"name" text NOT NULL,
+	slug text NOT NULL,
+	active bool DEFAULT true NULL,
+	created_at timestamptz DEFAULT now() NULL,
+	updated_at timestamptz DEFAULT now() NULL,
+	icon text NULL,
+	description text NULL,
+	tenant_id uuid DEFAULT auth.fun_auth_current_tenant_id() NULL,
+	created_by uuid DEFAULT auth.fun_auth_user_id() NULL,
+	category_group_id int8 NULL,
+	form_key text NULL, -- form_key de um public.forms ativo (plugin forms). Quando setado, o wizard de servicos exibe o passo de formulario dinamico para servicos desta categoria. Sem FK — forms e escopado por tenant.
+	request_form_key text NULL,
+	CONSTRAINT categories_slug_key UNIQUE (slug)
+);
 
-ALTER TABLE public.categories
-  ADD COLUMN IF NOT EXISTS tenant_id uuid DEFAULT auth.fun_auth_current_tenant_id();
+-- Column comments
 
-ALTER TABLE public.categories
-  ADD COLUMN IF NOT EXISTS created_by uuid DEFAULT auth.fun_auth_user_id();
+COMMENT ON COLUMN public.categories.form_key IS 'form_key de um public.forms ativo (plugin forms). Quando setado, o wizard de servicos exibe o passo de formulario dinamico para servicos desta categoria. Sem FK — forms e escopado por tenant.';
+
+
+-- public.categories chaves estrangeiras
+
+ALTER TABLE public.categories ADD CONSTRAINT categories_category_group_id_fkey FOREIGN KEY (category_group_id) REFERENCES public.categories_group(id);
+
+
 
 -- form_key: optional bridge to the `forms` plugin. When set, a category points at a reusable
 -- `public.forms` row (by its tenant-scoped `form_key` string — no FK, `forms` may not be
