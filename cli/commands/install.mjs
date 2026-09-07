@@ -84,6 +84,7 @@ export async function run(ctx) {
     }
   }
 
-  console.log(`casca instalada: ${report.applied.length} arquivo(s), ${report.conflicts.length} conflito(s)`);
+  const verb = flags.force === true ? 'sobrescrito(s)' : 'conflito(s)';
+  console.log(`casca instalada: ${report.applied.length} novo(s)/atualizado(s), ${report.conflicts.length} ${verb}`);
   return 0;
 }
