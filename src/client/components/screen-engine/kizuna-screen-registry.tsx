@@ -9,6 +9,8 @@ import { DEFAULT_RESERVED_SLUGS } from '../pages/reserved-slugs';
 import { PageContainerWrapper } from '../wrappers/page-container-wrapper';
 import { PageHeaderWrapper } from '../wrappers/page-header-wrapper';
 import { AgendaConfigPage } from '../agenda-config/agenda-config-page';
+import { UserAccessManagerScreen } from '../rbac/user-access-manager';
+import { RpcTester } from '../rpc-tester';
 
 /**
  * Uma tela do painel resolvida pela rota catch-all `/painel/[...kizuna]`.
@@ -73,6 +75,19 @@ export const KIZUNA_SCREEN_REGISTRY: Record<string, KizunaScreenEntry> = {
 
   // plugin `agenda`
   agenda: { title: 'Agenda', component: AgendaConfigPage },
+
+  // core — RBAC / acessos
+  'administracao/acessos': {
+    title: 'Acessos dos usuários',
+    component: UserAccessManagerScreen,
+    permResource: 'tenant_member',
+  },
+
+  // core — testador de RPC (dev)
+  funcoes: {
+    title: 'Teste de funções',
+    component: () => <RpcTester backHref="/painel" backLabel="Voltar ao painel" />,
+  },
 
   // core — conta do usuário logado
   'minha-conta': { title: 'Minha conta', component: screenComponent(MINHA_CONTA_SCREEN) },
