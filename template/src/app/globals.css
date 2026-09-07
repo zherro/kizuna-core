@@ -245,6 +245,48 @@
   --ring: oklch(0.8 0.2 350);
 }
 
+/* ================= TERRACOTA (tema completo — terracota/âmbar/areia) ================= */
+
+:root[data-theme-color='terracotta'] {
+  --background: oklch(0.978 0.01 82);
+  --background-white: oklch(0.978 0.01 82);
+  --foreground: oklch(0.2 0.035 55);
+
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.2 0.035 55);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.2 0.035 55);
+
+  --primary: oklch(0.56 0.185 35);
+  --primary-foreground: oklch(0.99 0.005 85);
+  --secondary: oklch(0.95 0.02 80);
+  --secondary-foreground: oklch(0.24 0.04 55);
+  --muted: oklch(0.94 0.015 80);
+  --muted-foreground: oklch(0.52 0.04 55);
+  --accent: oklch(0.78 0.13 72);
+  --accent-foreground: oklch(0.24 0.04 55);
+
+  --destructive: oklch(0.55 0.22 25);
+  --destructive-foreground: oklch(0.99 0.005 85);
+  --danger: oklch(0.55 0.22 25);
+
+  --border: oklch(0.89 0.02 80);
+  --input: oklch(0.89 0.02 80);
+  --ring: oklch(0.56 0.185 35);
+
+  /* extras semânticos deste tema */
+  --terracotta: oklch(0.56 0.185 35);
+  --terracotta-foreground: oklch(0.99 0.005 85);
+  --amber: oklch(0.76 0.13 72);
+  --amber-foreground: oklch(0.24 0.04 55);
+  --sand: oklch(0.94 0.015 80);
+
+  /* fontes: só têm efeito se o layout usar var(--font-display)/var(--font-body)
+     em vez das classes do next/font — ver docs. */
+  --font-display: "Playfair Display", Georgia, serif;
+  --font-body: "Inter", system-ui, sans-serif;
+}
+
 /* ================= DARK MODE ================= */
 
 .dark {
