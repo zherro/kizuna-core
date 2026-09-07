@@ -9,7 +9,8 @@ import { Topbar } from '@kizuna/core/client/components/topbar';
 import { Footer } from '@/components/footer';
 import { Toaster } from 'sonner';
 import './globals.css';
-import { getSession } from '@kizuna/core/server';
+import { getSession, checkKizunaEnv } from '@kizuna/core/server';
+import { SetupRequiredScreen } from '@kizuna/core/client/components/setup-required-screen';
 import { getAppPreferencesFabVisible } from '@/lib/server/app-preferences-config';
 
 // Match the reference template: Roboto (Google Fonts wght 400/500/700/900).
@@ -62,6 +63,18 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // TRAVA kizuna — não remova. Sem PostgREST + segredo de JWT o app não sobe.
+  const env = checkKizunaEnv();
+  if (!env.ok) {
+    return (
+      <html lang="pt-BR" suppressHydrationWarning>
+        <body suppressHydrationWarning>
+          <SetupRequiredScreen missing={env.missing} />
+        </body>
+      </html>
+    );
+  }
+
   const session = await getSession();
   const fabVisible = await getAppPreferencesFabVisible();
   // Logged-in users go straight to the service wizard; visitors get the

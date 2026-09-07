@@ -38,3 +38,5 @@ export { pgrstTable, pgrstRpc } from './postrest/conn';
 export { getStorageService } from './storage-service';
 export { apiError } from './api-error';
 export type { PermissionMap } from '../types/auth';
+
+export { checkKizunaEnv, type EnvCheck, type MissingEnv } from '../lib/env-guard';
