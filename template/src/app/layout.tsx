@@ -13,9 +13,11 @@ import { getSession, checkKizunaEnv } from '@kizuna/core/server';
 import { SetupRequiredScreen } from '@kizuna/core/client/components/setup-required-screen';
 import { getAppPreferencesFabVisible } from '@/lib/server/app-preferences-config';
 
-// App inteiro é dirigido por sessão + PostgREST — nada é realmente estático, e
-// a trava de ambiente abaixo precisa rodar a cada request (não no build).
-export const dynamic = 'force-dynamic';
+// Este layout já é dinâmico: `getSession()` lê `cookies()`. Não force
+// `dynamic = 'force-dynamic'` — isso trava static/ISR também para quem, no
+// futuro, tornar o layout raiz sem cookie (páginas públicas estáticas — ver
+// docs/HARDENING.md, "layout público"). A trava de ambiente também roda no
+// proxy (createKizunaProxy), então não depende deste render.
 
 // Match the reference template: Roboto (Google Fonts wght 400/500/700/900).
 const robotoSans = Roboto({
