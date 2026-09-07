@@ -238,6 +238,7 @@ export const resourceTaxonomy: Record<string, ResourceConfig> = {
     select: 'category_id,category_name,category_group_id,subcategory_id,subcategory_name,qtd',
     primaryKey: 'subcategory_id',
     defaultOrder: 'category_name',
+    searchableColumns: ['category_name', 'subcategory_name'],
     mapOutput: (record) => ({
       id: record.subcategory_id,
       categoryId: record.category_id,
