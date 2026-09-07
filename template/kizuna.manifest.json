@@ -1,13 +1,15 @@
 {
   "owner": "base",
   "files": {
-    "app/proxy.ts": "managed",
+    "proxy.ts": "managed",
     "app/api/postgrest/rpc/route.ts": "managed",
     "app/api/resources/[resource]/route.ts": "managed",
     "app/api/resources/[resource]/[id]/route.ts": "managed",
     "app/api/auth/login/route.ts": "managed",
     "app/api/auth/logout/route.ts": "managed",
     "app/api/auth/register/route.ts": "managed",
+    "app/login/page.tsx": "managed",
+    "app/registre-se/page.tsx": "managed",
     "app/layout.tsx": "seed",
     "app/page.tsx": "seed",
     "app/globals.css": "seed",
