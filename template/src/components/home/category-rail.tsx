@@ -8,7 +8,49 @@ import { HOME_CATEGORIES } from './mock-data';
 
 type HomeMessages = AppMessages['home'];
 
-export function CategoryRail({ t }: { t: HomeMessages }) {
+export function CategoryRail({
+  t,
+  variant = 'classic',
+}: {
+  t: HomeMessages;
+  variant?: 'classic' | 'compact';
+}) {
+  if (variant === 'compact') return <CategoryRailCompact t={t} />;
+  return <CategoryRailClassic t={t} />;
+}
+
+/** Carrossel enxuto: cards verticais pequenos (ícone em círculo + label). */
+function CategoryRailCompact({ t }: { t: HomeMessages }) {
+  return (
+    <section className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6">
+      <div className="flex items-end justify-between gap-4">
+        <h2 className="text-lg font-bold tracking-tight text-foreground">{t.categoriesTitle}</h2>
+        <Link
+          href="/busca"
+          className="text-sm font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+        >
+          {t.categoriesAll}
+        </Link>
+      </div>
+      <div className="mt-4 flex gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {HOME_CATEGORIES.map(({ slug, label, Icon }) => (
+          <Link
+            key={slug}
+            href={`/busca?q=${encodeURIComponent(label)}`}
+            className="flex w-20 shrink-0 flex-col items-center gap-2 rounded-2xl border border-border bg-card py-3 text-center transition-transform active:scale-95"
+          >
+            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary text-primary">
+              <Icon className="h-5 w-5" />
+            </span>
+            <span className="text-[11px] font-semibold text-foreground">{label}</span>
+          </Link>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function CategoryRailClassic({ t }: { t: HomeMessages }) {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const [atStart, setAtStart] = useState(true);
   const [atEnd, setAtEnd] = useState(false);

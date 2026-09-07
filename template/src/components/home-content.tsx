@@ -17,7 +17,14 @@ import {
 } from './home/home-ink-config';
 import { HomeInkTonePicker } from './home/home-ink-tone-picker';
 
-export function HomeContent() {
+type HomeContentProps = {
+  /** mostra a seção hero (default true) — vem de KIZUNA_HOME_HERO */
+  showHero?: boolean;
+  /** layout do carrossel de categorias — vem de KIZUNA_HOME_CATEGORIES */
+  categoriesVariant?: 'classic' | 'compact';
+};
+
+export function HomeContent({ showHero = true, categoriesVariant = 'classic' }: HomeContentProps = {}) {
   const { messages } = useAppPreferences();
   const t = messages.home;
 
@@ -50,8 +57,8 @@ export function HomeContent() {
       data-home-ink-level={inkLevel}
       style={getHomeInkStyle(inkLevel)}
     >
-      <HomeHero t={t} />
-      <CategoryRail t={t} />
+      {showHero ? <HomeHero t={t} /> : null}
+      <CategoryRail t={t} variant={categoriesVariant} />
       <NearbyGrid t={t} />
       <HowItWorks t={t} />
       <JoinCta t={t} />
