@@ -5,7 +5,7 @@ import { PwaRegister } from '@kizuna/core/client/components/pwa-register';
 import { PreferencesFab } from '@kizuna/core/client/components/preferences-fab';
 import { AppPreferencesProvider } from '@kizuna/core/client/providers/app-preferences-provider';
 import { AuthProvider } from '@kizuna/core/client/providers/auth-provider';
-import { Topbar } from '@kizuna/core/client/components/topbar';
+import { KizunaHeader } from '@kizuna/core/client/components/kizuna-header';
 import { Footer } from '@/components/footer';
 import { Toaster } from 'sonner';
 import './globals.css';
@@ -65,9 +65,11 @@ export default function RootLayout({
         <AppPreferencesProvider>
           <AuthProvider initialUser={null}>
             <PwaRegister swUrl="/sw.js?v=1" migrationKey="kizuna-sw-v1" />
-            <Topbar
+            {/* Variante fixada por env KIZUNA_HEADER_VARIANT (classic|compact). */}
+            <KizunaHeader
               showThemeToggle={false}
               authCta="single"
+              brandLabel="Kizuna"
               navLinks={[
                 { href: '/busca', label: 'Buscar', icon: <Search /> },
                 { href: '/painel', label: 'Anunciar', icon: <Megaphone /> },
