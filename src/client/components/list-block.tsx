@@ -54,24 +54,15 @@ const ACTION_ICON_MAP: Record<'edit' | 'review', string> = {
   review: 'ClipboardCheck',
 };
 
-/**
- * Named formatters that need real domain logic (not expressible as plain data) —
- * keyed by name so `screens/*.ts` can reference one without importing/passing a
- * function. Começa vazio: o projeto consumidor registra os seus com
- * `registerNamedFormatter('servicePrice', fn)` (ex.: no `layout.tsx` ou num
- * `src/lib/*` importado cedo). Um nome não registrado cai no formato `text`.
- */
-export const NAMED_FORMATTERS: Record<
-  string,
-  (value: unknown, item: Record<string, unknown>) => string
-> = {};
-
-export function registerNamedFormatter(
-  name: string,
-  fn: (value: unknown, item: Record<string, unknown>) => string,
-) {
-  NAMED_FORMATTERS[name] = fn;
-}
+// Formatters de domínio — o mapa + `registerNamedFormatter` vivem num módulo
+// neutro (ver list-block-formatters.ts) para o consumidor poder registrar de
+// código que também carrega no servidor. Re-export aqui por compat.
+export {
+  NAMED_FORMATTERS,
+  registerNamedFormatter,
+  type NamedFormatter,
+} from './list-block-formatters';
+import { NAMED_FORMATTERS } from './list-block-formatters';
 
 export type FieldFormat =
   | { type: 'text' }
