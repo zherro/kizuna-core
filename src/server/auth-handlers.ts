@@ -14,6 +14,7 @@ import type { PermissionMap } from '../types/auth';
 import { apiError } from './api-error';
 import {
   signSession,
+  getSession,
   maskEmail,
   getDisplayNameFromEmail,
   getDisplayName,
@@ -450,5 +451,29 @@ export function createLogoutHandler() {
     });
 
     return response;
+  };
+}
+
+/**
+ * `GET /api/auth/me` — devolve a sessão atual (`{ user }`) ou `{ user: null }`,
+ * lendo o cookie de sessão. Serve para o `AuthProvider` hidratar do lado
+ * cliente quando o layout raiz NÃO lê cookie (páginas públicas estáticas —
+ * ver docs/HARDENING.md). O payload é o mesmo shape que `createLoginHandler`
+ * retorna em `user`.
+ */
+export function createMeHandler() {
+  return async function GET() {
+    const session = await getSession();
+    if (!session) return NextResponse.json({ user: null });
+    return NextResponse.json({
+      user: {
+        user_id: session.user_id,
+        display_name: session.display_name,
+        login: session.login,
+        tenant_type: session.tenant_type,
+        perms: session.perms,
+        is_root: session.is_root,
+      },
+    });
   };
 }

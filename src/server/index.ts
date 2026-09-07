@@ -18,6 +18,7 @@ export {
   createLoginHandler,
   createRegisterHandler,
   createLogoutHandler,
+  createMeHandler,
   type LoginRequestBody,
   type RegisterRequestBody,
   type LogoutRequestBody,

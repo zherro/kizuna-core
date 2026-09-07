@@ -8,6 +8,7 @@
     "src/app/api/auth/login/route.ts": "managed",
     "src/app/api/auth/logout/route.ts": "managed",
     "src/app/api/auth/register/route.ts": "managed",
+    "src/app/api/auth/me/route.ts": "managed",
     "src/app/painel/[...kizuna]/page.tsx": "managed",
     "src/app/painel/root/[slug]/page.tsx": "managed",
     "src/app/painel/security/[slug]/page.tsx": "managed",
