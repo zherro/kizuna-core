@@ -10,7 +10,6 @@ import { useAuth } from '../providers/auth-provider';
 import { Button, buttonVariants } from './ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from './ui/sheet';
 import { LocationModal, LocationTrigger } from './location-modal';
-import { Grid } from './ui/grid';
 
 // `icon` takes a rendered element (e.g. `<Search />`), not a component reference — that's what
 // keeps it safe to pass from a Server Component consumer (RootLayout) across the client boundary.
@@ -82,8 +81,7 @@ export function Topbar({
   return (
     <>
       <header className="sticky top-0 z-40 border-b border-border/70 bg-background/90 backdrop-blur-sm">
-        <Grid container containerSize="wide" padding="none">
-          <Grid>
+        <div className="mx-auto w-full max-w-6xl">
             <div className="mx-auto flex items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
               <Link href="/" className="flex items-center gap-2.5">
                 <span
@@ -175,8 +173,7 @@ export function Topbar({
                 <Menu className="h-4 w-4" />
               </Button>
             </div>
-          </Grid>
-        </Grid>
+        </div>
       </header>
 
       <LocationModal open={locationOpen} onClose={() => setLocationOpen(false)} />
