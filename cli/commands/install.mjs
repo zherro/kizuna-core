@@ -6,8 +6,9 @@ import { execFileSync } from 'node:child_process';
 import { loadManifests, DuplicateOwnerError } from '../lib/manifest.mjs';
 import { materialize } from '../lib/materialize.mjs';
 import { readEnabled, addEnabled, listAvailable } from '../lib/plugins-file.mjs';
-import { writeLock } from '../lib/lockfile.mjs';
+import { readLock, writeLock } from '../lib/lockfile.mjs';
 import { buildFreshLock } from '../lib/lock-build.mjs';
+import { findOrphans, removeOrphans } from '../lib/prune.mjs';
 import { runCoreInstall } from '../lib/migrations.mjs';
 
 export async function run(ctx) {
@@ -69,8 +70,24 @@ export async function run(ctx) {
     console.log('pulei o banco (sem --db-url/$DATABASE_URL ou com --skip-db) — rode depois: node kizuna-core/cli db install --db-url <url>');
   }
 
+  // (5b) órfãos de um layout anterior (ex.: app/ → src/app/)
+  const prevMaterialized = readLock(projectDir)?.materialized ?? [];
+  const orphans = findOrphans(projectDir, prevMaterialized, report.materializedPaths);
+  if (orphans.length) {
+    if (flags.force === true || flags.prune === true) {
+      removeOrphans(projectDir, orphans);
+      console.log(`removidos ${orphans.length} arquivo(s) de layout anterior: ${orphans.join(', ')}`);
+    } else {
+      console.log('');
+      console.log(`⚠ ${orphans.length} arquivo(s) de um layout ANTERIOR ainda existem — o Next pode usá-los em vez dos novos:`);
+      for (const p of orphans) console.log(`      ${p}`);
+      console.log('    rode com --prune (ou --force) para remover.');
+    }
+  }
+
   // (6-7) lock
   const lock = buildFreshLock({ coreDir, enabled, report });
+  lock.materialized = [...report.materializedPaths].sort();
   writeLock(projectDir, lock);
 
   // (8) npm install

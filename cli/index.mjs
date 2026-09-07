@@ -59,6 +59,7 @@ opções globais:
   --yes              responde "sim" a toda confirmação
   --no-input         falha em vez de perguntar
   --force            (install) re-materializa TODA a casca por cima do projeto
+  --prune            (install/update) remove arquivos de um layout anterior
   --reseed <paths>   (update) re-copia seeds do template ("all" ou "a,b,c")
   --help             esta ajuda
 `;

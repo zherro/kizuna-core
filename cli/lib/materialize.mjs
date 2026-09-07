@@ -35,6 +35,7 @@ export async function materialize(manifestSet, opts) {
     conflicts: [],
     merges: [],
     seedDrift: [],
+    materializedPaths: manifestSet.entries.map((e) => e.projectPath),
     newLockFragment: { templateFiles: {}, pluginShellFiles: {}, packageOwnedKeys: null },
   };
 

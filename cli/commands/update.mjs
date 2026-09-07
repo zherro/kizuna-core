@@ -8,6 +8,7 @@ import { materialize } from '../lib/materialize.mjs';
 import { readEnabled } from '../lib/plugins-file.mjs';
 import { readLock, writeLock } from '../lib/lockfile.mjs';
 import { applyFragment, stampCore } from '../lib/lock-build.mjs';
+import { findOrphans, removeOrphans } from '../lib/prune.mjs';
 import { hashFile } from '../lib/hash.mjs';
 import { pull } from '../lib/core-git.mjs';
 import { applyRange as applyMigrations } from '../lib/migrations.mjs';
@@ -96,6 +97,22 @@ export async function run(ctx) {
       else delete lock.plugins[entry.owner].shellFiles[p];
     }
   }
+
+  // órfãos de um layout anterior
+  const prevMaterialized = lock.materialized ?? [];
+  const orphans = findOrphans(projectDir, prevMaterialized, report.materializedPaths);
+  if (orphans.length) {
+    if (flags.prune === true) {
+      removeOrphans(projectDir, orphans);
+      console.log(`removidos ${orphans.length} arquivo(s) de layout anterior: ${orphans.join(', ')}`);
+    } else {
+      console.log('');
+      console.log(`⚠ ${orphans.length} arquivo(s) de um layout ANTERIOR — o Next pode usá-los em vez dos novos:`);
+      for (const p of orphans) console.log(`      ${p}`);
+      console.log('    rode  node kizuna-core/cli update --prune  para remover.');
+    }
+  }
+  lock.materialized = [...report.materializedPaths].sort();
 
   stampCore(lock, { coreDir, enabled });
   writeLock(projectDir, lock);
