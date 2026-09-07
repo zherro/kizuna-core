@@ -8,9 +8,7 @@ import { join, dirname } from 'node:path';
 
 export function findOrphans(projectDir, prevPaths = [], currentPaths = []) {
   const current = new Set(currentPaths);
-  return prevPaths.filter(
-    (p) => !current.has(p) && existsSync(join(projectDir, p)),
-  );
+  return prevPaths.filter((p) => !current.has(p) && existsSync(join(projectDir, p)));
 }
 
 function pruneEmptyDirsUp(absFile, stopAt) {

@@ -172,10 +172,7 @@ export function ReviewModerationTable({
                 className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-card p-3"
               >
                 <RatingDisplay value={Number(str(row, 'rating') || 0)} size="sm" />
-                <Badge
-                  variant="secondary"
-                  className={cn('shrink-0', STATUS_TONE[rowStatus] ?? '')}
-                >
+                <Badge variant="secondary" className={cn('shrink-0', STATUS_TONE[rowStatus] ?? '')}>
                   {rowStatus}
                 </Badge>
                 <span className="min-w-0 flex-1 truncate text-sm text-muted-foreground">
@@ -186,7 +183,11 @@ export function ReviewModerationTable({
                 </span>
                 <Link
                   href={`${hrefBase}/${id}`}
-                  className={buttonVariants({ variant: 'outline', size: 'sm', className: 'shrink-0' })}
+                  className={buttonVariants({
+                    variant: 'outline',
+                    size: 'sm',
+                    className: 'shrink-0',
+                  })}
                 >
                   Analisar
                 </Link>

@@ -64,7 +64,12 @@ export async function run(ctx) {
     };
     const lock = readLock(projectDir) ?? emptyLock();
     const report = await materialize(subset, {
-      projectDir, coreDir, direction: 'apply', lock, prompt, dryRun: false,
+      projectDir,
+      coreDir,
+      direction: 'apply',
+      lock,
+      prompt,
+      dryRun: false,
     });
 
     const dbUrl = flags.dbUrl || process.env.DATABASE_URL;

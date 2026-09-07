@@ -26,12 +26,12 @@ to the user or fail silently (e.g. a verification email failing should not 500 t
 
 ## Env
 
-| Var | Notes |
-|---|---|
-| `SMTP_HOST` | server hostname |
-| `SMTP_PORT` | 465 (SSL) or 587 (TLS) |
-| `SMTP_USER` / `SMTP_PASS` | auth |
-| `SMTP_FROM` | `"App Name <noreply@example.com>"` |
+| Var                       | Notes                              |
+| ------------------------- | ---------------------------------- |
+| `SMTP_HOST`               | server hostname                    |
+| `SMTP_PORT`               | 465 (SSL) or 587 (TLS)             |
+| `SMTP_USER` / `SMTP_PASS` | auth                               |
+| `SMTP_FROM`               | `"App Name <noreply@example.com>"` |
 
 All optional — with no SMTP config the app runs, email sends just fail. Project-specific templates
 (verification code, welcome, …) stay documented in the consuming project.

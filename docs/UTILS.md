@@ -4,12 +4,12 @@ Small, dependency-light helpers shipped by the core. Entry points:
 
 ## `@kizuna/core/lib/utils`
 
-| Export | Signature | Notes |
-|---|---|---|
-| `cn` | `cn(...inputs: ClassValue[]): string` | `clsx` + `tailwind-merge` |
-| `submitResource` | see `API.md` §4 | POST/PUT against `/api/resources/:resource`; used by `useForm`'s `resourceSubmit` |
+| Export              | Signature                                       | Notes                                                                                                        |
+| ------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `cn`                | `cn(...inputs: ClassValue[]): string`           | `clsx` + `tailwind-merge`                                                                                    |
+| `submitResource`    | see `API.md` §4                                 | POST/PUT against `/api/resources/:resource`; used by `useForm`'s `resourceSubmit`                            |
 | `resolveLucideIcon` | `(name?: string \| null) => LucideIcon \| null` | resolves a DB-stored `lucide-react` export name (e.g. `"Wrench"`) to the component; `null` for unknown/empty |
-| `isShowcaseEnabled` | `() => boolean` | reads `SHOWCASE_ENABLED` / `NEXT_PUBLIC_SHOWCASE_ENABLED` (`1`/`true`/`on`/`yes`) |
+| `isShowcaseEnabled` | `() => boolean`                                 | reads `SHOWCASE_ENABLED` / `NEXT_PUBLIC_SHOWCASE_ENABLED` (`1`/`true`/`on`/`yes`)                            |
 
 ## `@kizuna/core/lib/api-error-message`
 

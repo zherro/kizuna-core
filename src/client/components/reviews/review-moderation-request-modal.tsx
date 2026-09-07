@@ -50,9 +50,7 @@ export function ReviewModerationRequestModal({
       onSubmitted?.();
       onClose();
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : 'Não foi possível enviar a solicitação.'
-      );
+      setError(err instanceof Error ? err.message : 'Não foi possível enviar a solicitação.');
     } finally {
       setSubmitting(false);
     }
@@ -94,9 +92,7 @@ export function ReviewModerationRequestModal({
           {reason.length}/{REASON_MAX}
         </span>
         {error ? (
-          <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-            {error}
-          </p>
+          <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>
         ) : null}
       </div>
     </ModalPanel>

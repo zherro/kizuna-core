@@ -38,10 +38,7 @@ export function ReviewModal({
   void customerId;
   const { user } = useAuth();
   const { tags, loading: tagsLoading } = useReviewTags(domain);
-  const selectableTags = useMemo(
-    () => tags.filter((tag) => tag.selectable && tag.active),
-    [tags]
-  );
+  const selectableTags = useMemo(() => tags.filter((tag) => tag.selectable && tag.active), [tags]);
 
   const isEdit = Boolean(existingReview);
   const [rating, setRating] = useState(existingReview?.rating ?? 0);
@@ -149,11 +146,7 @@ export function ReviewModal({
             {tagsLoading ? (
               <div className="h-8 w-48 animate-pulse rounded bg-muted" aria-hidden="true" />
             ) : selectableTags.length ? (
-              <ReviewTags
-                tags={selectableTags}
-                selected={selectedSlugs}
-                onToggle={toggleTag}
-              />
+              <ReviewTags tags={selectableTags} selected={selectedSlugs} onToggle={toggleTag} />
             ) : (
               <p className="text-xs text-muted-foreground">Nenhuma tag disponível.</p>
             )}

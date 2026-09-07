@@ -1,8 +1,4 @@
-import {
-  deleteResource,
-  getResourceById,
-  updateResource,
-} from '@kizuna/core/server';
+import { deleteResource, getResourceById, updateResource } from '@kizuna/core/server';
 
 export const runtime = 'nodejs';
 

@@ -39,7 +39,12 @@ export function MessageInput({
         aria-label="Mensagem"
         className="max-h-32 min-h-9 flex-1 resize-none rounded-2xl border border-input bg-card px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
       />
-      <Button type="submit" size="icon" disabled={disabled || !text.trim()} aria-label="Enviar mensagem">
+      <Button
+        type="submit"
+        size="icon"
+        disabled={disabled || !text.trim()}
+        aria-label="Enviar mensagem"
+      >
         <SendHorizonal className="h-4 w-4" />
       </Button>
     </form>

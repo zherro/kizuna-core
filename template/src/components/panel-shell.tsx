@@ -28,29 +28,64 @@ const navigationGroups: PanelNavGroup[] = [
     items: [
       { title: 'Tela inicial', href: '/', icon: Home, permResource: 'default' },
       { title: 'Painel', href: '/painel', icon: LayoutGrid, permResource: 'default' },
-      { title: 'Minha conta', href: '/painel/minha-conta', icon: UserCircle, permResource: 'default' },
+      {
+        title: 'Minha conta',
+        href: '/painel/minha-conta',
+        icon: UserCircle,
+        permResource: 'default',
+      },
     ],
   },
   {
     title: 'Catálogo',
     items: [
-      { title: 'Categorias', href: '/painel/taxonomia/categorias', icon: FolderTree, permResource: 'categories' },
-      { title: 'Subcategorias', href: '/painel/taxonomia/subcategorias', icon: GitFork, permResource: 'categories' },
-      { title: 'Árvore', href: '/painel/taxonomia/arvore', icon: Network, permResource: 'categories' },
+      {
+        title: 'Categorias',
+        href: '/painel/taxonomia/categorias',
+        icon: FolderTree,
+        permResource: 'categories',
+      },
+      {
+        title: 'Subcategorias',
+        href: '/painel/taxonomia/subcategorias',
+        icon: GitFork,
+        permResource: 'categories',
+      },
+      {
+        title: 'Árvore',
+        href: '/painel/taxonomia/arvore',
+        icon: Network,
+        permResource: 'categories',
+      },
     ],
   },
   {
     title: 'Conteúdo',
     items: [
-      { title: 'Formulários', href: '/painel/administracao/formularios', icon: NotebookPen, permResource: 'forms' },
-      { title: 'Páginas', href: '/painel/administracao/paginas', icon: FileText, permResource: 'pages' },
+      {
+        title: 'Formulários',
+        href: '/painel/administracao/formularios',
+        icon: NotebookPen,
+        permResource: 'forms',
+      },
+      {
+        title: 'Páginas',
+        href: '/painel/administracao/paginas',
+        icon: FileText,
+        permResource: 'pages',
+      },
       { title: 'Agenda', href: '/painel/agenda', icon: CalendarDays, permResource: 'agenda' },
     ],
   },
   {
     title: 'Administração',
     items: [
-      { title: 'Acessos dos usuários', href: '/painel/administracao/acessos', icon: UserCog, permResource: 'tenant_member' },
+      {
+        title: 'Acessos dos usuários',
+        href: '/painel/administracao/acessos',
+        icon: UserCog,
+        permResource: 'tenant_member',
+      },
       { title: 'Teste de funções', href: '/painel/funcoes', icon: FlaskConical, devOnly: true },
     ],
   },
@@ -59,8 +94,18 @@ const navigationGroups: PanelNavGroup[] = [
     items: [
       { title: 'Plugins instalados', href: '/painel/root/plugins', icon: Blocks, rootOnly: true },
       { title: 'Papéis e permissões', href: '/painel/root/papeis', icon: KeyRound, rootOnly: true },
-      { title: 'Configurações', href: '/painel/root/configuracoes', icon: Settings, rootOnly: true },
-      { title: 'Log de acesso root', href: '/painel/security/root-access-log', icon: LockKeyhole, rootOnly: true },
+      {
+        title: 'Configurações',
+        href: '/painel/root/configuracoes',
+        icon: Settings,
+        rootOnly: true,
+      },
+      {
+        title: 'Log de acesso root',
+        href: '/painel/security/root-access-log',
+        icon: LockKeyhole,
+        rootOnly: true,
+      },
     ],
   },
 ];

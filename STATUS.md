@@ -14,7 +14,7 @@ a materializa num projeto e mantém projeto ↔ core alinhados. Ver **`docs/CLI.
   relevante pro consumidor (`template/`, shell de plugin, migration nova, API pública). `git log`
   é o changelog — sem `CHANGELOG`.
 - `cli/` — `index.mjs` (dispatcher) + `commands/{install,update,sync,lock,check,adopt,plugin,db}.mjs`
-  + `lib/*.mjs`. Zero deps, ESM, Node ≥ 20. Testes: `npx vitest run cli/`.
+  - `lib/*.mjs`. Zero deps, ESM, Node ≥ 20. Testes: `npx vitest run cli/`.
 - `template/` — `kizuna.manifest.json` (21 paths: `managed` / `seed` / `merge`) + os arquivos da
   casca base.
 - `plugins/<n>/shell/` — fragmento de casca por plugin (rotas limpas + registry): hoje
@@ -52,13 +52,13 @@ a materializa num projeto e mantém projeto ↔ core alinhados. Ver **`docs/CLI.
   `ResourceScreen`, `ListBlock`, `PageHeaderBlock`, `DynamicField`, `DynamicStepForm`, `screens/*`,
   `resources/forms`, `resources/form-results`, `resources/pages`, `resources/taxonomy`
   (`resourceTaxonomy` — `categories` / `categories_group` / `subcategories` / `categories_sub_tags`
-  + `*_public` read variants; the `taxonomy` plugin owns them, a consuming project just spreads
-  `resourceTaxonomy` into its `postgrestResources`), `resources/reviews` (`resourceReviews` —
-  `reviews` / `review_tags` / `review_moderation_requests` / `review_moderation_events` /
-  `review_stats`; the `reviews` plugin owns them). Registry also has the `review-moderation` block.
-  `resources/agenda-config` (`resourceAgendaConfig` — `agenda_schedule` / `agenda_schedule_hours` /
-  `agenda_booking_preferences` / `agenda_notification_preferences`; the `agenda` plugin v1.1.0 owns
-  them, a consuming project spreads `resourceAgendaConfig` into its `postgrestResources`).
+  - `*_public` read variants; the `taxonomy` plugin owns them, a consuming project just spreads
+    `resourceTaxonomy` into its `postgrestResources`), `resources/reviews` (`resourceReviews` —
+    `reviews` / `review_tags` / `review_moderation_requests` / `review_moderation_events` /
+    `review_stats`; the `reviews` plugin owns them). Registry also has the `review-moderation` block.
+    `resources/agenda-config` (`resourceAgendaConfig` — `agenda_schedule` / `agenda_schedule_hours` /
+    `agenda_booking_preferences` / `agenda_notification_preferences`; the `agenda` plugin v1.1.0 owns
+    them, a consuming project spreads `resourceAgendaConfig` into its `postgrestResources`).
 - `@kizuna/core/client/components/agenda-config/*`: `AgendaConfigPage` (tenant agenda
   configuration screen — schedule list + booking rules + notification preferences),
   `useAgendaSchedules`, `ScheduleSheet`, `ScheduleForm`, `ScheduleCard`, `SchedulesEmptyState`,
@@ -73,14 +73,14 @@ a materializa num projeto e mantém projeto ↔ core alinhados. Ver **`docs/CLI.
   (`public.forms` / `public.form_results` / `fn_form_result_upsert`).
 - `@kizuna/core/client/components/pages/*`: `PageView` (server component), `PagesAdmin`,
   `DEFAULT_RESERVED_SLUGS`, `isReservedSlug`, `slugify`. Backed by the `pages` plugin (`public.pages`,
-  + `0002_pages_seed.sql` project-neutral default pages: `sobre` / `quem-somos` / `termos-de-uso`).
+  - `0002_pages_seed.sql` project-neutral default pages: `sobre` / `quem-somos` / `termos-de-uso`).
 - `@kizuna/core/client/components/reviews/*`: `RatingInput`, `RatingDisplay`, `ReviewTags`,
   `ReviewSummary`, `ReviewCard`, `ReviewList`, `ReviewModal`, `ReviewModerationRequestModal`,
   `ReviewModerationTable`; hooks `useReviewStats` / `useReviewList` / `useReviewTags` / `useMyReview`
-  + `submitReview` / `requestModeration` / `moderateReview` / `coerceReview`; types `ReviewView`,
-  `ReviewStats`, `ReviewTagOption`, `ReviewStatus`, `ModerationAction`, `ReviewModerationEvent`,
-  … (re-exported from the folder barrel; NOT yet in the `@kizuna/core/types` barrel). Backed by the
-  `reviews` plugin (`public.reviews` + 5 sibling tables + `fn_review_*` RPCs).
+  - `submitReview` / `requestModeration` / `moderateReview` / `coerceReview`; types `ReviewView`,
+    `ReviewStats`, `ReviewTagOption`, `ReviewStatus`, `ModerationAction`, `ReviewModerationEvent`,
+    … (re-exported from the folder barrel; NOT yet in the `@kizuna/core/types` barrel). Backed by the
+    `reviews` plugin (`public.reviews` + 5 sibling tables + `fn_review_*` RPCs).
 - `@kizuna/core/client/components/showcase/*`: `ShowcaseShell`, `ShowcaseSectionPage`,
   `showcase-sections` (`SHOWCASE_SECTIONS`, `DEFAULT_SHOWCASE_SECTION`, `normalizeShowcaseSection`)
 - `@kizuna/core/client/components/ui/*` and `ui-better-soft/*` — see `docs/COMPONENTS.md`
@@ -112,11 +112,11 @@ a materializa num projeto e mantém projeto ↔ core alinhados. Ver **`docs/CLI.
   language switcher over the `account_preferences` plugin.
 - `@kizuna/core/client/components/login-page` / `register-page`: `LoginPageContent` /
   `RegisterPageContent` are now full working forms (formik + Yup + `useForm`, `POST
-  /api/auth/{login,register}`, themed `ui/` components). Props: `redirectTo`, `onLoginSuccess` /
+/api/auth/{login,register}`, themed `ui/` components). Props: `redirectTo`, `onLoginSuccess` /
   `onRegisterSuccess`, `loginEndpoint` / `registerEndpoint`, `registerHref` / `loginHref` /
   `termsHref`. A consuming project renders them directly inside its own page wrapper.
 - `@kizuna/core/server/proxy`: `createKizunaProxy({ protectedPrefixes, authPages, loginPath,
-  panelPath, sessionCookie })` → a Next 16 `proxy` function. The consumer's `src/proxy.ts` is this
+panelPath, sessionCookie })` → a Next 16 `proxy` function. The consumer's `src/proxy.ts` is this
   call plus a static `export const config = { matcher: [...] }`.
 
 ## PostgREST layer

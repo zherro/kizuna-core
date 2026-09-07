@@ -13,16 +13,31 @@ const storage = getStorageService(); // provider from STORAGE_PROVIDER env, defa
 
 ```ts
 type StorageService = {
-  listFiles(a: { authHeader: string; ids?: string[]; purpose?: string; active?: boolean; limit?: number })
-    : Promise<StorageFileRecord[]>;
-  uploadFiles(a: { authHeader: string; files: UploadFileInput[] })
-    : Promise<{ uploaded: StorageFileRecord[]; errors: { fileName: string; message: string }[] }>;
-  deleteFile(a: { authHeader: string; id: string }): Promise<boolean>;   // soft delete (active=false)
-  getFileContent(a: { authHeader: string; id: string; activeOnly?: boolean })
-    : Promise<{ mimeType: string; originalName: string; content: Buffer } | null>;
+  listFiles(a: {
+    authHeader: string;
+    ids?: string[];
+    purpose?: string;
+    active?: boolean;
+    limit?: number;
+  }): Promise<StorageFileRecord[]>;
+  uploadFiles(a: {
+    authHeader: string;
+    files: UploadFileInput[];
+  }): Promise<{ uploaded: StorageFileRecord[]; errors: { fileName: string; message: string }[] }>;
+  deleteFile(a: { authHeader: string; id: string }): Promise<boolean>; // soft delete (active=false)
+  getFileContent(a: {
+    authHeader: string;
+    id: string;
+    activeOnly?: boolean;
+  }): Promise<{ mimeType: string; originalName: string; content: Buffer } | null>;
 };
 
-type UploadFileInput = { file: File; purpose: string; optimizeImages: boolean; maxFileSizeBytes: number };
+type UploadFileInput = {
+  file: File;
+  purpose: string;
+  optimizeImages: boolean;
+  maxFileSizeBytes: number;
+};
 ```
 
 `authHeader` is always explicit — get it with `getAuthHeaderFromCookies()` in the route handler.
@@ -39,8 +54,8 @@ upload today), `purpose`, `active`, `createdAt`/`updatedAt`.
 ### Bytea conversion (done inside the service)
 
 ```ts
-toPgBytea(buf)   // Buffer  → '\\x' + hex
-fromPgBytea(str) // '\\x…'  → Buffer  (null on malformed input)
+toPgBytea(buf); // Buffer  → '\\x' + hex
+fromPgBytea(str); // '\\x…'  → Buffer  (null on malformed input)
 ```
 
 ## API routes (consuming project owns the files, delegating to the service)
@@ -61,7 +76,9 @@ the MIME type starts with `image/`.
 
 ```ts
 const { buffer, optimized, reason } = await optimizeImageBuffer({
-  input: Buffer, mimeType: 'image/jpeg' | 'image/png' | 'image/webp', strict: false,
+  input: Buffer,
+  mimeType: 'image/jpeg' | 'image/png' | 'image/webp',
+  strict: false,
 });
 // strict:false → returns the original buffer on failure; strict:true → throws
 ```

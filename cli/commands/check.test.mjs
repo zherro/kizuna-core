@@ -37,13 +37,16 @@ it('kizuna.lock com JSON inválido: resolve 0 e imprime aviso', async () => {
 it('lock em dia com o core real: não imprime banner, exit 0', async () => {
   const proj = mkdtempSync(join(tmpdir(), 'kz-'));
   const version = readVersion(CORE);
-  writeFileSync(join(proj, 'kizuna.lock'), JSON.stringify({
-    lockVersion: 1,
-    kizunaCore: { version, sha: head(CORE), syncedAt: null },
-    template: { version, files: {} },
-    plugins: {},
-    packageJson: { ownedKeys: { dependencies: {}, devDependencies: {}, scripts: {} } },
-  }));
+  writeFileSync(
+    join(proj, 'kizuna.lock'),
+    JSON.stringify({
+      lockVersion: 1,
+      kizunaCore: { version, sha: head(CORE), syncedAt: null },
+      template: { version, files: {} },
+      plugins: {},
+      packageJson: { ownedKeys: { dependencies: {}, devDependencies: {}, scripts: {} } },
+    })
+  );
   const log = vi.spyOn(console, 'log').mockImplementation(() => {});
   const code = await run({
     paths: { projectDir: proj, coreDir: CORE, lockPath: join(proj, 'kizuna.lock') },

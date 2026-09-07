@@ -1,9 +1,7 @@
 // Leitura/escrita do kizuna.plugins.json do projeto (lista de plugins habilitados)
 // e enumeração dos plugins disponíveis no core.
 
-import {
-  readFileSync, writeFileSync, readdirSync, existsSync,
-} from 'node:fs';
+import { readFileSync, writeFileSync, readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 
 const SQL_RE = /^\d{4}_.*\.sql$/;

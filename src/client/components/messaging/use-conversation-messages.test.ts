@@ -70,9 +70,7 @@ describe('useConversationMessages', () => {
       await vi.advanceTimersByTimeAsync(8000);
     });
     expect(api.fetchMessages).toHaveBeenLastCalledWith('c-1', { after: 3 });
-    await waitFor(() =>
-      expect(result.current.messages.map((m) => m.id)).toEqual([1, 2, 3, 4])
-    );
+    await waitFor(() => expect(result.current.messages.map((m) => m.id)).toEqual([1, 2, 3, 4]));
   });
 
   it('delta que traz id já conhecido não duplica', async () => {
@@ -85,9 +83,7 @@ describe('useConversationMessages', () => {
     await act(async () => {
       await vi.advanceTimersByTimeAsync(8000);
     });
-    await waitFor(() =>
-      expect(result.current.messages.map((m) => m.id)).toEqual([1, 2, 3])
-    );
+    await waitFor(() => expect(result.current.messages.map((m) => m.id)).toEqual([1, 2, 3]));
   });
 
   it('pausa o polling quando document.hidden e refaz ao voltar', async () => {

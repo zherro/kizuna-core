@@ -1,7 +1,5 @@
 import { it, expect, vi, beforeEach, afterEach } from 'vitest';
-import {
-  mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, rmSync,
-} from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { run } from './install.mjs';
@@ -18,23 +16,32 @@ function fakeCore() {
   mkdirSync(join(dir, 'plugins'), { recursive: true });
   writeFileSync(join(dir, 'sql', '0001_init.sql'), 'select 1;\n');
   writeFileSync(join(dir, 'VERSION'), '1.2.3\n');
-  writeFileSync(join(dir, 'template', 'kizuna.manifest.json'), JSON.stringify({
-    owner: 'base',
-    files: { 'app/proxy.ts': 'managed', 'app/page.tsx': 'seed' },
-    merge: { 'package.json': 'package.kizuna.json' },
-  }));
+  writeFileSync(
+    join(dir, 'template', 'kizuna.manifest.json'),
+    JSON.stringify({
+      owner: 'base',
+      files: { 'app/proxy.ts': 'managed', 'app/page.tsx': 'seed' },
+      merge: { 'package.json': 'package.kizuna.json' },
+    })
+  );
   writeFileSync(join(dir, 'template', 'app', 'proxy.ts'), 'export const proxy = 1;\n');
   writeFileSync(join(dir, 'template', 'app', 'page.tsx'), 'export default () => null;\n');
-  writeFileSync(join(dir, 'template', 'package.kizuna.json'), JSON.stringify({
-    scripts: { kizuna: 'node kizuna-core/cli', predev: 'npm run kizuna -- check' },
-  }));
+  writeFileSync(
+    join(dir, 'template', 'package.kizuna.json'),
+    JSON.stringify({
+      scripts: { kizuna: 'node kizuna-core/cli', predev: 'npm run kizuna -- check' },
+    })
+  );
   return dir;
 }
 
 beforeEach(() => {
   core = fakeCore();
   proj = mkdtempSync(join(tmpdir(), 'kz-proj-'));
-  writeFileSync(join(proj, 'package.json'), JSON.stringify({ name: 'p', scripts: { dev: 'next dev' } }));
+  writeFileSync(
+    join(proj, 'package.json'),
+    JSON.stringify({ name: 'p', scripts: { dev: 'next dev' } })
+  );
 });
 
 afterEach(() => {

@@ -191,11 +191,7 @@ type UseReviewListOpts = {
   includeAllStatuses?: boolean;
 };
 
-export function useReviewList(
-  domain: string,
-  referenceId: string,
-  opts: UseReviewListOpts = {}
-) {
+export function useReviewList(domain: string, referenceId: string, opts: UseReviewListOpts = {}) {
   const { pageSize = 10, includeAllStatuses = false } = opts;
   const { user } = useAuth();
   const currentUserId = user?.user_id ?? null;
@@ -325,9 +321,7 @@ export function useReviewTags(domain?: string) {
         const all = asArray(body?.items)
           .map(coerceTagOption)
           .filter((t): t is ReviewTagOption => t !== null);
-        const scoped = domain
-          ? all.filter((t) => t.domain === null || t.domain === domain)
-          : all;
+        const scoped = domain ? all.filter((t) => t.domain === null || t.domain === domain) : all;
         setTags(scoped);
       } catch {
         if (activeRef.current) setTags([]);

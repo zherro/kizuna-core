@@ -25,19 +25,26 @@ export const PAGES_RESOURCE: Record<string, ResourceConfig> = {
     mapInput: (input) => {
       const out: Record<string, unknown> = {};
       if (input.title !== undefined) out.title = String(input.title ?? '').trim();
-      if (input.slug !== undefined) out.slug = String(input.slug ?? '').trim().toLowerCase();
+      if (input.slug !== undefined)
+        out.slug = String(input.slug ?? '')
+          .trim()
+          .toLowerCase();
       if (input.description !== undefined)
         out.description = String(input.description ?? '').trim() || null;
       if (input.content !== undefined) out.content = String(input.content ?? '');
       if (input.status !== undefined) {
-        const status = String(input.status ?? '').trim().toLowerCase();
+        const status = String(input.status ?? '')
+          .trim()
+          .toLowerCase();
         out.status = status === 'published' ? 'published' : 'draft';
       }
       if (input.active !== undefined) {
         out.active =
           typeof input.active === 'boolean'
             ? input.active
-            : String(input.active ?? 'true').trim().toLowerCase() !== 'false';
+            : String(input.active ?? 'true')
+                .trim()
+                .toLowerCase() !== 'false';
       }
       return out;
     },
@@ -49,8 +56,7 @@ export const PAGES_RESOURCE: Record<string, ResourceConfig> = {
       description: record.description ?? '',
       content: record.content ?? '',
       status: record.status ?? 'draft',
-      active:
-        typeof record.active === 'boolean' ? record.active : record.active !== 'false',
+      active: typeof record.active === 'boolean' ? record.active : record.active !== 'false',
       createdBy: record.created_by ?? record.createdBy ?? null,
       createdAt: record.created_at ?? record.createdAt,
       updatedAt: record.updated_at ?? record.updatedAt,

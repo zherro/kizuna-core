@@ -14,9 +14,9 @@ shapes de resposta): `kizuna-core/docs/API.md` §3. Assume `padrao-de-projeto` c
 
 **Duas casas possíveis para o config — decida primeiro:**
 
-| A tabela é... | O `ResourceConfig` vai em... |
-| --- | --- |
-| específica do app (só faz sentido pra este projeto) | um `resource-<dominio>.ts` no `src/lib/server/resources/` do projeto, spread no `index.ts` local |
+| A tabela é...                                                                                         | O `ResourceConfig` vai em...                                                                                     |
+| ----------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| específica do app (só faz sentido pra este projeto)                                                   | um `resource-<dominio>.ts` no `src/lib/server/resources/` do projeto, spread no `index.ts` local                 |
 | de um **plugin do core** (a tabela vem de `plugins/<x>/`, e componentes do core já esperam o recurso) | `kizuna-core/src/client/components/screen-engine/resources/<x>.ts`, exportado pra o projeto só importar + spread |
 
 Regra: nada específico de um app entra no core (igual `criar-plugin` / `criar-componente-core`).
@@ -25,6 +25,7 @@ Na dúvida, deixe no projeto — promover depois é barato.
 ## Passo 1 — A tabela existe?
 
 O `ResourceConfig` não cria tabela. Se a tabela é nova:
+
 - app-específica → migração própria do projeto (`db/migrations/` do consumidor).
 - genérica e independente → é um **plugin** (`criar-plugin`), não uma tabela solta.
 
@@ -34,7 +35,7 @@ Confirme colunas, `primaryKey`, e os defaults de coluna que resolvem `tenant_id`
 ## Passo 2 — Escreva o config
 
 ```ts
-import type { ResourceConfig } from './resource-types';        // projeto
+import type { ResourceConfig } from './resource-types'; // projeto
 // ou: import type { ResourceConfig } from '../types/resource-config';  // recurso de plugin no core
 
 export const resourceCoisas: Record<string, ResourceConfig> = {
@@ -43,12 +44,12 @@ export const resourceCoisas: Record<string, ResourceConfig> = {
     table: 'coisas',
     select: 'id,uid,name,slug,description,active,created_at,updated_at',
     primaryKey: 'id',
-    defaultOrder: 'name',                 // string: 'name' ou 'created_at.desc'
+    defaultOrder: 'name', // string: 'name' ou 'created_at.desc'
     searchableColumns: ['name', 'description'],
-    requiredFields: ['name'],             // validado depois do mapInput → 400 se vazio
-    softDeleteField: 'active_deleted',    // opcional — só se a flag é TRUTHY quando apagado
-    listRequiresAuth: false,              // só se a leitura é pública (RLS abre pra anon)
-    maxPageSize: 500,                     // só pra tabela de referência pequena que uma tela carrega inteira
+    requiredFields: ['name'], // validado depois do mapInput → 400 se vazio
+    softDeleteField: 'active_deleted', // opcional — só se a flag é TRUTHY quando apagado
+    listRequiresAuth: false, // só se a leitura é pública (RLS abre pra anon)
+    maxPageSize: 500, // só pra tabela de referência pequena que uma tela carrega inteira
     mapInput: (input) => {
       const name = String(input.name ?? '').trim();
       if (!name) throw new Error('Nome é obrigatório');
@@ -92,8 +93,8 @@ de plugin). Exemplos reais completos: `resources/forms.ts`, `resources/pages.ts`
 import { resourceCoisas } from './resource-coisas';
 export const postgrestResources = {
   ...resourceHolidays,
-  ...(resourceForms as Record<string, ResourceConfig>),   // plugins do core: importa + spread
-  ...resourceCoisas,                                       // recurso do app
+  ...(resourceForms as Record<string, ResourceConfig>), // plugins do core: importa + spread
+  ...resourceCoisas, // recurso do app
 };
 ```
 

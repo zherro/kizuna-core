@@ -18,31 +18,31 @@ O CLI resolve `coreDir` a partir do próprio `import.meta.url` e `projectDir` a 
 
 ### Opções globais
 
-| Flag | Efeito |
-| --- | --- |
-| `--project <dir>` | raiz do projeto (padrão: `cwd`) |
-| `--yes` | responde "sim" a toda confirmação; `choose` pega a 1ª opção |
-| `--no-input` | falha em vez de perguntar (útil em CI) |
-| `--db-url <url>` | URL do Postgres para `install` / `db` / `update` (senão usa `$DATABASE_URL`) |
-| `--skip-db` | `install` / `plugin add` / `update` não tocam o banco |
-| `--no-pull` | `update` não roda `git pull` no submódulo antes de aplicar |
-| `--force` | `sync` roda mesmo com o submódulo em `main`/`master`/HEAD destacado |
-| `--help` | ajuda |
+| Flag              | Efeito                                                                       |
+| ----------------- | ---------------------------------------------------------------------------- |
+| `--project <dir>` | raiz do projeto (padrão: `cwd`)                                              |
+| `--yes`           | responde "sim" a toda confirmação; `choose` pega a 1ª opção                  |
+| `--no-input`      | falha em vez de perguntar (útil em CI)                                       |
+| `--db-url <url>`  | URL do Postgres para `install` / `db` / `update` (senão usa `$DATABASE_URL`) |
+| `--skip-db`       | `install` / `plugin add` / `update` não tocam o banco                        |
+| `--no-pull`       | `update` não roda `git pull` no submódulo antes de aplicar                   |
+| `--force`         | `sync` roda mesmo com o submódulo em `main`/`master`/HEAD destacado          |
+| `--help`          | ajuda                                                                        |
 
 ## Comandos
 
-| Comando | Propósito | Direção | Flags principais |
-| --- | --- | --- | --- |
-| `install` | 1ª vez num projeto. Cria `kizuna.plugins.json` (interativo se faltar) → valida manifests (um dono por path) → materializa `template/` (managed + seed) → faz merge do `package.json` → roda `scripts/install.sh` (SQL core + plugins) → escreve `kizuna.lock` → pergunta "`npm install` agora?" | core → projeto | `--db-url`, `--skip-db`, `--yes`, `--no-input` |
-| `update` | `git -C kizuna-core pull` (read-only no submódulo) → aplica pra frente: migrations novas (core + plugins ativos, da `migrations`+1 em diante) + fast-forward / 3-way dos managed → regrava `kizuna.lock` | core → projeto | `--no-pull`, `--db-url`, `--skip-db` |
-| `sync` | **Dev only.** Diff dos managed do projeto contra `template/` → empurra as mudanças escolhidas para `kizuna-core/template/` (ou `plugins/<n>/shell/`) → você commita/push no submódulo. Não toca o `kizuna.lock` do projeto — o `update` seguinte reconcilia. | projeto → core | `--force` |
-| `plugin add <nome>` | Habilita em `kizuna.plugins.json` → valida conflito de path (aborta ANTES de persistir) → materializa só `plugins/<nome>/shell/` → aplica as migrations do plugin → atualiza `kizuna.lock` | core → projeto | `--db-url`, `--skip-db` |
-| `plugin list` | Ativos (do `kizuna.plugins.json`) vs disponíveis (subdirs de `plugins/` com ao menos um `NNNN_*.sql`) | — | — |
-| `lock` | Marca o estado atual do submódulo como "visto": atualiza `version`/`sha`/`syncedAt` e as contagens de migration, **sem** aplicar nada nem mexer nos hashes. Silencia o warn de um bump irrelevante. | — | `--yes` |
-| `check` | O que o `predev` chama. Imprime o banner de divergência lock ↔ submódulo. **Sempre sai com código 0** — nunca bloqueia `npm run dev`. | — | `--verbose` |
-| `adopt` | Gera o `kizuna.lock` de um projeto que **já** tem a casca (retrofit). Assume que cada managed presente está sincronizado com o core; não copia nada. Deps do `package.kizuna.json` que o projeto já tem com valor idêntico entram em `ownedKeys`. | — | — |
-| `db install` | Wrapper sobre `scripts/install.sh`: aplica SQL do core + de todos os plugins ativos. Idempotente (instalador do zero, não histórico de migração). | — | `--db-url` |
-| `db migrate` | Aplica só as migrations pendentes por plugin (+ core) a partir das contagens no `kizuna.lock`, e regrava as contagens. | — | `--db-url` |
+| Comando             | Propósito                                                                                                                                                                                                                                                                                       | Direção        | Flags principais                               |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- | ---------------------------------------------- |
+| `install`           | 1ª vez num projeto. Cria `kizuna.plugins.json` (interativo se faltar) → valida manifests (um dono por path) → materializa `template/` (managed + seed) → faz merge do `package.json` → roda `scripts/install.sh` (SQL core + plugins) → escreve `kizuna.lock` → pergunta "`npm install` agora?" | core → projeto | `--db-url`, `--skip-db`, `--yes`, `--no-input` |
+| `update`            | `git -C kizuna-core pull` (read-only no submódulo) → aplica pra frente: migrations novas (core + plugins ativos, da `migrations`+1 em diante) + fast-forward / 3-way dos managed → regrava `kizuna.lock`                                                                                        | core → projeto | `--no-pull`, `--db-url`, `--skip-db`           |
+| `sync`              | **Dev only.** Diff dos managed do projeto contra `template/` → empurra as mudanças escolhidas para `kizuna-core/template/` (ou `plugins/<n>/shell/`) → você commita/push no submódulo. Não toca o `kizuna.lock` do projeto — o `update` seguinte reconcilia.                                    | projeto → core | `--force`                                      |
+| `plugin add <nome>` | Habilita em `kizuna.plugins.json` → valida conflito de path (aborta ANTES de persistir) → materializa só `plugins/<nome>/shell/` → aplica as migrations do plugin → atualiza `kizuna.lock`                                                                                                      | core → projeto | `--db-url`, `--skip-db`                        |
+| `plugin list`       | Ativos (do `kizuna.plugins.json`) vs disponíveis (subdirs de `plugins/` com ao menos um `NNNN_*.sql`)                                                                                                                                                                                           | —              | —                                              |
+| `lock`              | Marca o estado atual do submódulo como "visto": atualiza `version`/`sha`/`syncedAt` e as contagens de migration, **sem** aplicar nada nem mexer nos hashes. Silencia o warn de um bump irrelevante.                                                                                             | —              | `--yes`                                        |
+| `check`             | O que o `predev` chama. Imprime o banner de divergência lock ↔ submódulo. **Sempre sai com código 0** — nunca bloqueia `npm run dev`.                                                                                                                                                           | —              | `--verbose`                                    |
+| `adopt`             | Gera o `kizuna.lock` de um projeto que **já** tem a casca (retrofit). Assume que cada managed presente está sincronizado com o core; não copia nada. Deps do `package.kizuna.json` que o projeto já tem com valor idêntico entram em `ownedKeys`.                                               | —              | —                                              |
+| `db install`        | Wrapper sobre `scripts/install.sh`: aplica SQL do core + de todos os plugins ativos. Idempotente (instalador do zero, não histórico de migração).                                                                                                                                               | —              | `--db-url`                                     |
+| `db migrate`        | Aplica só as migrations pendentes por plugin (+ core) a partir das contagens no `kizuna.lock`, e regrava as contagens.                                                                                                                                                                          | —              | `--db-url`                                     |
 
 ### Wiring no `package.json` do projeto (vem do `package.kizuna.json` pelo merge)
 
@@ -71,9 +71,9 @@ Shape real (ver `cli/lib/lockfile.mjs` → `emptyLock()`):
     }
   },
   "plugins": {
-    "agenda":    { "migrations": 2, "shellFiles": { "app/api/agenda/ufs/route.ts": "sha256:…" } },
-    "storage":   { "migrations": 1, "shellFiles": { "app/api/storage/files/route.ts": "sha256:…" } },
-    "core":      { "migrations": 25 }
+    "agenda": { "migrations": 2, "shellFiles": { "app/api/agenda/ufs/route.ts": "sha256:…" } },
+    "storage": { "migrations": 1, "shellFiles": { "app/api/storage/files/route.ts": "sha256:…" } },
+    "core": { "migrations": 25 }
   },
   "packageJson": {
     "ownedKeys": {
@@ -87,17 +87,17 @@ Shape real (ver `cli/lib/lockfile.mjs` → `emptyLock()`):
 
 Campo a campo:
 
-| Campo | O que dirige |
-| --- | --- |
-| `lockVersion` | versão do schema do próprio lock (hoje `1`). |
-| `kizunaCore.version` | comparado a `kizuna-core/VERSION`: se diferente → o `check` mostra o banner (sinal humano do gate). |
-| `kizunaCore.sha` | ponto de partida do `git -C kizuna-core log <sha>..HEAD --oneline` que compõe o "Mudanças:" do banner. |
-| `kizunaCore.syncedAt` | ISO timestamp do último `install`/`update`/`lock`. Informativo. |
-| `template.version` | versão do core na última materialização do template; comparada à viva para o banner. |
-| `template.files["<path>"]` | hash `sha256:` (EOL normalizado CRLF→LF) do managed **como o projeto o tem**. Entra no `classify(live, locked, current)`: `current === locked` → fast-forward seguro; senão → conflito 3-way. |
-| `plugins.<n>.shellFiles["<path>"]` | idem para os managed do shell de cada plugin. |
-| `plugins.<n>.migrations` | quantos arquivos `plugins/<n>/NNNN_*.sql` já foram aplicados; `update`/`db migrate` rodam de `N`+1 em diante. |
-| `plugins.core.migrations` | idem para `sql/*.sql` do core. |
+| Campo                                                          | O que dirige                                                                                                                                                                                                                                                                                        |
+| -------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `lockVersion`                                                  | versão do schema do próprio lock (hoje `1`).                                                                                                                                                                                                                                                        |
+| `kizunaCore.version`                                           | comparado a `kizuna-core/VERSION`: se diferente → o `check` mostra o banner (sinal humano do gate).                                                                                                                                                                                                 |
+| `kizunaCore.sha`                                               | ponto de partida do `git -C kizuna-core log <sha>..HEAD --oneline` que compõe o "Mudanças:" do banner.                                                                                                                                                                                              |
+| `kizunaCore.syncedAt`                                          | ISO timestamp do último `install`/`update`/`lock`. Informativo.                                                                                                                                                                                                                                     |
+| `template.version`                                             | versão do core na última materialização do template; comparada à viva para o banner.                                                                                                                                                                                                                |
+| `template.files["<path>"]`                                     | hash `sha256:` (EOL normalizado CRLF→LF) do managed **como o projeto o tem**. Entra no `classify(live, locked, current)`: `current === locked` → fast-forward seguro; senão → conflito 3-way.                                                                                                       |
+| `plugins.<n>.shellFiles["<path>"]`                             | idem para os managed do shell de cada plugin.                                                                                                                                                                                                                                                       |
+| `plugins.<n>.migrations`                                       | quantos arquivos `plugins/<n>/NNNN_*.sql` já foram aplicados; `update`/`db migrate` rodam de `N`+1 em diante.                                                                                                                                                                                       |
+| `plugins.core.migrations`                                      | idem para `sql/*.sql` do core.                                                                                                                                                                                                                                                                      |
 | `packageJson.ownedKeys.{dependencies,devDependencies,scripts}` | `Record<string,string>` — proveniência do merge. O que o core escreveu da última vez. No merge seguinte: se o valor atual do projeto == `ownedKeys` (core controlava) → atualiza; se difere (usuário mexeu) → mantém o do usuário e registra conflito. Nunca remove chave que o core não contribui. |
 
 ## Estratégias `managed` / `seed` / `merge`
@@ -118,12 +118,12 @@ Cada path da casca é classificado em `template/kizuna.manifest.json` (e nos
 
 `classify(liveHash, lockedHash, currentHash)`:
 
-| Condição | Resultado | Ação |
-| --- | --- | --- |
-| `live === locked` | `noop` | core não mudou desde o lock — nada a fazer |
-| `current == null` (arquivo ausente no projeto) | `fast-forward` | copia `template/` → projeto |
-| `current === locked` | `fast-forward` | projeto não editou — copia a versão nova do core |
-| todos diferem | `conflict` | pergunta (`sobrescreve` / `mantém` / `ver diff`) |
+| Condição                                       | Resultado      | Ação                                             |
+| ---------------------------------------------- | -------------- | ------------------------------------------------ |
+| `live === locked`                              | `noop`         | core não mudou desde o lock — nada a fazer       |
+| `current == null` (arquivo ausente no projeto) | `fast-forward` | copia `template/` → projeto                      |
+| `current === locked`                           | `fast-forward` | projeto não editou — copia a versão nova do core |
+| todos diferem                                  | `conflict`     | pergunta (`sobrescreve` / `mantém` / `ver diff`) |
 
 Um conflito que o usuário opta por **manter** não avança o lock: `update` restaura o hash anterior
 para aquele path, então o conflito reaparece no próximo `update` até ser resolvido.
@@ -158,7 +158,7 @@ node kizuna-core/cli db install --db-url "$DATABASE_URL"   # re-rodar: seeds que
 
 - **Melhorou algo no projeto** que devia estar no core: `kizuna sync` (o submódulo precisa estar
   num branch de trabalho, não `main`) → escolhe os arquivos → `cd kizuna-core && git add -A &&
-  git commit && git push`. Bumpa o `VERSION` se a mudança for relevante (ver acima).
+git commit && git push`. Bumpa o `VERSION` se a mudança for relevante (ver acima).
 - **Melhorou o core** (você ou outro projeto): `git -C kizuna-core pull` + `kizuna update` no
   projeto → revisa fast-forward / conflitos → o `kizuna.lock` avança.
 
@@ -167,14 +167,14 @@ node kizuna-core/cli db install --db-url "$DATABASE_URL"   # re-rodar: seeds que
 Seis módulos do core ainda importam do espaço do **projeto consumidor** via `@/`. Um projeto só
 precisa satisfazê-los **se importar aquele módulo específico do core**:
 
-| Back-reference | Quem no core usa | Nota |
-| --- | --- | --- |
-| `@/i18n/messages` | `AppPreferencesProvider` | a casca base **não** monta esse provider (é concern do plugin `account_preferences`) |
-| `@/lib/server/resources` | rotas `resources` (`postgrest-crud`) | **semeado pelo template** (`src/lib/server/resources.ts`, seed) — já resolvido num projeto novo |
-| `@/lib/server/app-preferences-config` | telas de preferências | só quem usa a tela de preferências |
-| `@/lib/server/user-data-fields-config` | `system-config-screen` | só quem usa essa tela |
-| `@/components/services/service-type` | showcase de serviços | só quem importa esse showcase |
-| `@/types/chat` | componentes de chat | só quem usa o plugin de mensageria |
+| Back-reference                         | Quem no core usa                     | Nota                                                                                            |
+| -------------------------------------- | ------------------------------------ | ----------------------------------------------------------------------------------------------- |
+| `@/i18n/messages`                      | `AppPreferencesProvider`             | a casca base **não** monta esse provider (é concern do plugin `account_preferences`)            |
+| `@/lib/server/resources`               | rotas `resources` (`postgrest-crud`) | **semeado pelo template** (`src/lib/server/resources.ts`, seed) — já resolvido num projeto novo |
+| `@/lib/server/app-preferences-config`  | telas de preferências                | só quem usa a tela de preferências                                                              |
+| `@/lib/server/user-data-fields-config` | `system-config-screen`               | só quem usa essa tela                                                                           |
+| `@/components/services/service-type`   | showcase de serviços                 | só quem importa esse showcase                                                                   |
+| `@/types/chat`                         | componentes de chat                  | só quem usa o plugin de mensageria                                                              |
 
 A **casca base + os 5 shells de plugin limpos** (`storage`, `location`, `pages`, `onboarding`,
 `agenda`) **não** tocam nenhum desses — verificado no smoke (projeto novo, `next build` verde).

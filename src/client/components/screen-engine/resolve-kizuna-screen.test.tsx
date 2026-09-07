@@ -33,7 +33,10 @@ describe('resolveKizunaScreen', () => {
 
   it('adminOnly: redirect quando não é ADMIN nem root', async () => {
     const { getSession } = await import('../../../server');
-    (getSession as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ is_root: false, tenant_type: 'USER' });
+    (getSession as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      is_root: false,
+      tenant_type: 'USER',
+    });
     FAKE_REGISTRY['adm/x'] = { title: 'X', component: () => null, adminOnly: true };
     await expect(resolveKizunaScreen(['adm', 'x'])).rejects.toThrow('REDIRECT:/painel');
     delete FAKE_REGISTRY['adm/x'];

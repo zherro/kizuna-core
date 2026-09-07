@@ -1,10 +1,5 @@
 import { AdminPageReader } from '../ui-better-soft/headers/admin-page-reader';
-import {
-  getPermissionsCatalog,
-  getRoleGrants,
-  getRoles,
-  groupPermissions,
-} from './rbac-data';
+import { getPermissionsCatalog, getRoleGrants, getRoles, groupPermissions } from './rbac-data';
 import { RolesMatrix } from './roles-matrix';
 
 /**
@@ -35,11 +30,7 @@ export async function RolesManagerScreen() {
           foram aplicados.
         </p>
       ) : (
-        <RolesMatrix
-          roles={roles}
-          groups={groupPermissions(permissions)}
-          initialGrants={grants}
-        />
+        <RolesMatrix roles={roles} groups={groupPermissions(permissions)} initialGrants={grants} />
       )}
     </div>
   );

@@ -25,7 +25,9 @@ export async function run(ctx) {
     let available = [];
     try {
       available = listAvailable(coreDir);
-    } catch { /* plugins/ ausente no core */ }
+    } catch {
+      /* plugins/ ausente no core */
+    }
     if (flags.input === false || !prompt) {
       writeFileSync(pluginsFilePath, `${JSON.stringify({ plugins: [] }, null, 2)}\n`);
     } else {
@@ -57,7 +59,12 @@ export async function run(ctx) {
   // (4) materializa. --force re-materializa TUDO por cima de um projeto existente
   // (managed sobrescreve, seeds também) — para re-sincronizar a casca inteira.
   const report = await materialize(set, {
-    projectDir, coreDir, direction: 'apply', lock: undefined, prompt, dryRun: false,
+    projectDir,
+    coreDir,
+    direction: 'apply',
+    lock: undefined,
+    prompt,
+    dryRun: false,
     force: flags.force === true,
     reseed: flags.force === true,
   });
@@ -67,7 +74,9 @@ export async function run(ctx) {
   if (dbUrl && !flags.skipDb) {
     runCoreInstall({ dbUrl, coreDir, plugins: enabled, psql: flags.psql });
   } else {
-    console.log('pulei o banco (sem --db-url/$DATABASE_URL ou com --skip-db) — rode depois: node kizuna-core/cli db install --db-url <url>');
+    console.log(
+      'pulei o banco (sem --db-url/$DATABASE_URL ou com --skip-db) — rode depois: node kizuna-core/cli db install --db-url <url>'
+    );
   }
 
   // (5b) órfãos de um layout anterior (ex.: app/ → src/app/)
@@ -76,10 +85,14 @@ export async function run(ctx) {
   if (orphans.length) {
     if (flags.force === true || flags.prune === true) {
       removeOrphans(projectDir, orphans);
-      console.log(`removidos ${orphans.length} arquivo(s) de layout anterior: ${orphans.join(', ')}`);
+      console.log(
+        `removidos ${orphans.length} arquivo(s) de layout anterior: ${orphans.join(', ')}`
+      );
     } else {
       console.log('');
-      console.log(`⚠ ${orphans.length} arquivo(s) de um layout ANTERIOR ainda existem — o Next pode usá-los em vez dos novos:`);
+      console.log(
+        `⚠ ${orphans.length} arquivo(s) de um layout ANTERIOR ainda existem — o Next pode usá-los em vez dos novos:`
+      );
       for (const p of orphans) console.log(`      ${p}`);
       console.log('    rode com --prune (ou --force) para remover.');
     }
@@ -91,8 +104,9 @@ export async function run(ctx) {
   writeLock(projectDir, lock);
 
   // (8) npm install
-  const wantNpm = flags.yes === true
-    || (prompt && flags.input !== false && await prompt.confirm('rodar npm install agora?'));
+  const wantNpm =
+    flags.yes === true ||
+    (prompt && flags.input !== false && (await prompt.confirm('rodar npm install agora?')));
   if (wantNpm) {
     try {
       execFileSync('npm', ['install'], { cwd: projectDir, stdio: 'inherit' });
@@ -102,6 +116,8 @@ export async function run(ctx) {
   }
 
   const verb = flags.force === true ? 'sobrescrito(s)' : 'conflito(s)';
-  console.log(`casca instalada: ${report.applied.length} novo(s)/atualizado(s), ${report.conflicts.length} ${verb}`);
+  console.log(
+    `casca instalada: ${report.applied.length} novo(s)/atualizado(s), ${report.conflicts.length} ${verb}`
+  );
   return 0;
 }

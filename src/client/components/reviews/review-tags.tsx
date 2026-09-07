@@ -19,7 +19,12 @@ type ReviewTagsProps = {
  *  - display (`readOnly`) — used inside `ReviewCard`.
  * Colored state uses `bg-*`/`text-*` (border-color utilities are dead here).
  */
-export function ReviewTags({ tags, selected = [], onToggle, readOnly = false }: Readonly<ReviewTagsProps>) {
+export function ReviewTags({
+  tags,
+  selected = [],
+  onToggle,
+  readOnly = false,
+}: Readonly<ReviewTagsProps>) {
   if (!tags.length) return null;
 
   return (
@@ -31,10 +36,7 @@ export function ReviewTags({ tags, selected = [], onToggle, readOnly = false }: 
 
         if (readOnly || !onToggle) {
           return (
-            <span
-              key={tag.slug}
-              className={cn(base, 'bg-muted text-muted-foreground')}
-            >
+            <span key={tag.slug} className={cn(base, 'bg-muted text-muted-foreground')}>
               {tag.label}
             </span>
           );

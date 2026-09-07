@@ -10,7 +10,8 @@ export function classify(liveHash, lockedHash, currentHash) {
 
 // Diff textual simples linha-a-linha (' ' igual, '-' só em a, '+' só em b).
 export function renderDiff(a, b) {
-  const al = a.split('\n'), bl = b.split('\n');
+  const al = a.split('\n'),
+    bl = b.split('\n');
   const out = [];
   const max = Math.max(al.length, bl.length);
   for (let i = 0; i < max; i++) {

@@ -2,9 +2,7 @@
 // edições do projeto de volta para o core (direction 'push').
 // Assinatura async: 'conflict' consulta prompt.choose, que é async.
 
-import {
-  existsSync, mkdirSync, copyFileSync, readFileSync, writeFileSync,
-} from 'node:fs';
+import { existsSync, mkdirSync, copyFileSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { hashFile } from './hash.mjs';
 import { classify } from './diff3.mjs';
@@ -26,8 +24,13 @@ function safeHash(absPath) {
 
 export async function materialize(manifestSet, opts) {
   const {
-    projectDir, direction = 'apply', lock, prompt, dryRun = false,
-    reseed = false, force = false,
+    projectDir,
+    direction = 'apply',
+    lock,
+    prompt,
+    dryRun = false,
+    reseed = false,
+    force = false,
   } = opts;
   const report = {
     applied: [],
@@ -141,9 +144,7 @@ export async function materialize(manifestSet, opts) {
   if (direction === 'apply') {
     for (const merge of manifestSet.merges) {
       const target = join(projectDir, merge.projectPath);
-      const targetJson = existsSync(target)
-        ? JSON.parse(readFileSync(target, 'utf8'))
-        : {};
+      const targetJson = existsSync(target) ? JSON.parse(readFileSync(target, 'utf8')) : {};
       const contribJson = JSON.parse(readFileSync(merge.contribAbsPath, 'utf8'));
       const prevOwned = lock?.packageJson?.ownedKeys ?? {};
       const merged = mergePackageJson(targetJson, contribJson, prevOwned);

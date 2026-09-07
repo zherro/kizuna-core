@@ -46,7 +46,7 @@ writeFileSync(join(coreDir, 'bundle', 'core-schema.sql'), core);
 
 // --- plugins -----------------------------------------------------------
 const enabled = JSON.parse(
-  readFileSync(join(coreDir, 'starter', 'kizuna.plugins.json'), 'utf8'),
+  readFileSync(join(coreDir, 'starter', 'kizuna.plugins.json'), 'utf8')
 ).plugins;
 
 let plugins = '-- kizuna-core — migrations dos PLUGINS compiladas\n';

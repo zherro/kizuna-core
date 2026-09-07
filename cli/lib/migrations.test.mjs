@@ -32,7 +32,8 @@ describe('resolvePsql', () => {
   });
   it('quebra um comando com args (docker exec)', () => {
     expect(resolvePsql('docker exec -i pg psql -U myuser')).toEqual({
-      cmd: 'docker', args: ['exec', '-i', 'pg', 'psql', '-U', 'myuser'],
+      cmd: 'docker',
+      args: ['exec', '-i', 'pg', 'psql', '-U', 'myuser'],
     });
   });
   it('caminho único existente com espaços vira cmd sem args', () => {
@@ -42,7 +43,8 @@ describe('resolvePsql', () => {
   });
   it('respeita aspas na tokenização', () => {
     expect(resolvePsql('psql "-U" "meu user"')).toEqual({
-      cmd: 'psql', args: ['-U', 'meu user'],
+      cmd: 'psql',
+      args: ['-U', 'meu user'],
     });
   });
   it('flag explícita ganha do env', () => {

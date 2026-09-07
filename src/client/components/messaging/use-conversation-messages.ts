@@ -96,8 +96,7 @@ export function useConversationMessages(uid: string | null) {
       let delay: number;
       if (backoffRef.current > 0) delay = cfg.pollBackoffMs[backoffRef.current - 1];
       else
-        delay =
-          Date.now() - lastActivityRef.current < 60_000 ? cfg.pollActiveMs : cfg.pollIdleMs;
+        delay = Date.now() - lastActivityRef.current < 60_000 ? cfg.pollActiveMs : cfg.pollIdleMs;
       timerRef.current = setTimeout(tick, delay);
     };
 

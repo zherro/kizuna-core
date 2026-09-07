@@ -36,7 +36,9 @@ it('mantém dep que o usuário mexeu e registra conflito', () => {
 
 it('nunca remove dep do usuário', () => {
   const { result } = mergePackageJson(
-    { dependencies: { lodash: '^4' } }, { dependencies: {} }, empty
+    { dependencies: { lodash: '^4' } },
+    { dependencies: {} },
+    empty
   );
   expect(result.dependencies.lodash).toBe('^4');
 });
@@ -48,9 +50,12 @@ it('scripts: adiciona por nome', () => {
     empty
   );
   expect(result.scripts).toEqual({
-    dev: 'next dev', kizuna: 'node kizuna-core/cli', predev: 'node kizuna-core/cli check',
+    dev: 'next dev',
+    kizuna: 'node kizuna-core/cli',
+    predev: 'node kizuna-core/cli check',
   });
   expect(ownedKeys.scripts).toEqual({
-    kizuna: 'node kizuna-core/cli', predev: 'node kizuna-core/cli check',
+    kizuna: 'node kizuna-core/cli',
+    predev: 'node kizuna-core/cli check',
   });
 });

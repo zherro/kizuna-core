@@ -9,10 +9,17 @@ const CORE = resolve(fileURLToPath(import.meta.url), '..', '..', '..');
 
 it('round-trip preserva _comment_taxonomy e adiciona plugin', () => {
   const dir = mkdtempSync(join(tmpdir(), 'kz-pf-'));
-  writeFileSync(join(dir, 'kizuna.plugins.json'), JSON.stringify({
-    _comment_taxonomy: 'ordem importa',
-    plugins: ['storage'],
-  }, null, 2) + '\n');
+  writeFileSync(
+    join(dir, 'kizuna.plugins.json'),
+    JSON.stringify(
+      {
+        _comment_taxonomy: 'ordem importa',
+        plugins: ['storage'],
+      },
+      null,
+      2
+    ) + '\n'
+  );
   addEnabled(dir, 'agenda');
   const raw = readFileSync(join(dir, 'kizuna.plugins.json'), 'utf8');
   expect(raw).toContain('_comment_taxonomy');

@@ -8,9 +8,10 @@ description: Use ao iniciar um projeto novo em cima do kizuna-core — submódul
 ## Overview
 
 Um projeto novo entra pelo **`kizuna-starter`** (repo fino: `kizuna.plugins.json` + `.env.example`
-+ `README.md` + o submódulo `kizuna-core`) ou começando de um dir vazio e adicionando o submódulo
-à mão. Em ambos os casos o conteúdo real da casca **não é copiado no repo** — é **materializado
-por `node kizuna-core/cli install`** a partir do `kizuna-core/template/`.
+
+- `README.md` + o submódulo `kizuna-core`) ou começando de um dir vazio e adicionando o submódulo
+  à mão. Em ambos os casos o conteúdo real da casca **não é copiado no repo** — é **materializado
+  por `node kizuna-core/cli install`** a partir do `kizuna-core/template/`.
 
 O `kizuna-core` é consumido por path alias (`@kizuna/core/*` → `./kizuna-core/src/*`), igual num
 projeto existente. Depois do `install` + `npm install` + `db install` você tem **auth + RBAC +
@@ -22,34 +23,42 @@ Referência de comandos: **`kizuna-core/docs/CLI.md`**.
 ## Checklist
 
 1. **Submódulo.**
+
    ```bash
    git clone --recurse-submodules <kizuna-starter> meu-projeto && cd meu-projeto
    # OU, de um dir vazio:
    git init && git submodule add <url-do-kizuna-core> kizuna-core
    ```
+
    (esqueceu `--recurse-submodules`? `git submodule update --init --recursive`).
 
 2. **Materializar a casca.**
+
    ```bash
    node kizuna-core/cli install
    ```
+
    Cria `kizuna.plugins.json` (pergunta plugin a plugin se o arquivo faltar), materializa
    `template/` (managed + seed), faz merge do `package.json` (scripts `kizuna`/`predev` + deps
    pinadas), e no fim pergunta **"rodar `npm install` agora?"**. Sem `--db-url`/`$DATABASE_URL`
    ele pula o banco (passo 4). Flags úteis: `--yes`, `--no-input`, `--skip-db`.
 
 3. **Env.**
+
    ```bash
    cp .env.example .env
    ```
+
    Preencher **`PGRST_JWT_SECRET`** (ou `JWT_SECRET` — tem que bater com o secret que o PostgREST
    verifica) e **`POSTGREST_URL`**. Todo o resto (SMTP, TinyPNG, Gemini, `SHOWCASE_ENABLED`,
    `DEBUG_HTTP`) é opcional.
 
 4. **Banco.**
+
    ```bash
    node kizuna-core/cli db install --db-url "$DATABASE_URL"
    ```
+
    Aplica `kizuna-core/sql/*` (auth, RBAC, plugin_registry) em ordem, depois cada plugin de
    `kizuna.plugins.json`. Idempotente — é um instalador do zero, não histórico de migração.
 
@@ -60,6 +69,7 @@ Referência de comandos: **`kizuna-core/docs/CLI.md`**.
 6. **Re-rodar o `db install`** — agora os seeds de plugin que dependem de um tenant/root existirem
    pegam (ex.: `plugins/pages/0002_pages_seed.sql` semeia `sobre`/`quem-somos`/`termos-de-uso` sob
    o tenant do primeiro root; era no-op silencioso antes).
+
    ```bash
    node kizuna-core/cli db install --db-url "$DATABASE_URL"
    ```
@@ -88,15 +98,15 @@ Detalhes de cada comando, do `kizuna.lock` e da regra de bump do `VERSION`: **`k
 
 ## Env que o core lê
 
-| Var | Obrigatória | Para quê |
-| --- | --- | --- |
-| `PGRST_JWT_SECRET` / `JWT_SECRET` | sim | assinar/verificar o JWT de sessão (bater com o PostgREST) |
-| `POSTGREST_URL` | sim | base das chamadas `pgrstTable`/`pgrstRpc` |
-| `SMTP_*` | não | email (`kizuna-core/docs/EMAIL.md`) |
-| `TINYPNG_API_KEY` / `TINIFY_API_KEY` | não | otimização de imagem no upload |
-| `GEMINI_API_KEY` | não | features de AI |
-| `SHOWCASE_ENABLED` | não | liga `/showcase` |
-| `DEBUG_HTTP=1` | não | loga um `curl` equivalente por chamada ao PostgREST |
+| Var                                  | Obrigatória | Para quê                                                  |
+| ------------------------------------ | ----------- | --------------------------------------------------------- |
+| `PGRST_JWT_SECRET` / `JWT_SECRET`    | sim         | assinar/verificar o JWT de sessão (bater com o PostgREST) |
+| `POSTGREST_URL`                      | sim         | base das chamadas `pgrstTable`/`pgrstRpc`                 |
+| `SMTP_*`                             | não         | email (`kizuna-core/docs/EMAIL.md`)                       |
+| `TINYPNG_API_KEY` / `TINIFY_API_KEY` | não         | otimização de imagem no upload                            |
+| `GEMINI_API_KEY`                     | não         | features de AI                                            |
+| `SHOWCASE_ENABLED`                   | não         | liga `/showcase`                                          |
+| `DEBUG_HTTP=1`                       | não         | loga um `curl` equivalente por chamada ao PostgREST       |
 
 ## Verificação (fim do setup)
 

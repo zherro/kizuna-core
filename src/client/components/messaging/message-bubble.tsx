@@ -5,7 +5,9 @@ import { cn } from '../../../lib/utils';
 import { MessageSourceBadge } from './message-source-badge';
 
 function time(iso: string) {
-  return new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' }).format(new Date(iso));
+  return new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' }).format(
+    new Date(iso)
+  );
 }
 
 export function MessageBubble({

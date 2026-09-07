@@ -23,7 +23,9 @@ type RecordValue = Record<string, unknown>;
 
 /** "Maria Silva Souza" -> "Maria S." ; "" / null -> "Cliente". */
 function maskAuthorName(raw: unknown): string {
-  const name = String(raw ?? '').trim().replace(/\s+/g, ' ');
+  const name = String(raw ?? '')
+    .trim()
+    .replace(/\s+/g, ' ');
   if (!name) return 'Cliente';
   const [first, second] = name.split(' ');
   return second ? `${first} ${second[0].toUpperCase()}.` : first;
@@ -151,7 +153,9 @@ const REVIEW_MODERATION_REQUESTS_RESOURCE: ResourceConfig = {
   mapInput: (input) => {
     const out: RecordValue = {};
     if (input.status !== undefined) {
-      const s = String(input.status ?? '').trim().toLowerCase();
+      const s = String(input.status ?? '')
+        .trim()
+        .toLowerCase();
       if (['pending', 'approved', 'rejected', 'cancelled'].includes(s)) out.status = s;
     }
     if (input.moderatorComment !== undefined || input.moderator_comment !== undefined) {

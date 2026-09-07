@@ -11,16 +11,18 @@ async function json<T>(res: Response): Promise<T> {
   return body as T;
 }
 
-export const fetchConfig = () => fetch('/api/chat/config').then((r) => json<MessagingClientConfig>(r));
+export const fetchConfig = () =>
+  fetch('/api/chat/config').then((r) => json<MessagingClientConfig>(r));
 
 export const fetchConversations = (before?: string | null) =>
-  fetch(`/api/chat/conversations${before ? `?before=${encodeURIComponent(before)}` : ''}`).then((r) =>
-    json<{
-      items: ChatConversationSummary[];
-      nextCursor: string | null;
-      hasMore: boolean;
-      badgeCount?: number;
-    }>(r)
+  fetch(`/api/chat/conversations${before ? `?before=${encodeURIComponent(before)}` : ''}`).then(
+    (r) =>
+      json<{
+        items: ChatConversationSummary[];
+        nextCursor: string | null;
+        hasMore: boolean;
+        badgeCount?: number;
+      }>(r)
   );
 
 export const fetchMessages = (

@@ -154,7 +154,9 @@ async function listFilesPostgres(args: {
 
   if (args.ids && args.ids.length > 0) {
     // `files.id` is a uuid (see plugins/storage/0001_storage.sql), not a numeric id.
-    const ids = args.ids.map((value) => String(value).trim()).filter((value) => UUID_RE.test(value));
+    const ids = args.ids
+      .map((value) => String(value).trim())
+      .filter((value) => UUID_RE.test(value));
 
     if (ids.length > 0) {
       query.set('id', `in.(${ids.join(',')})`);

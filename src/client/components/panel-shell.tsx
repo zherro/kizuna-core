@@ -75,8 +75,7 @@ export function PanelShellBase({
   const fullBleed = isFullBleedRoute?.(pathname) ?? false;
 
   const menuTitle = branding.menuTitle ?? 'Menu do painel';
-  const menuDescription =
-    branding.menuDescription ?? 'Navegue entre os modulos administrativos.';
+  const menuDescription = branding.menuDescription ?? 'Navegue entre os modulos administrativos.';
 
   const visibleNavigationGroups = navGroups
     .map((group) => ({

@@ -75,7 +75,9 @@ export async function run(ctx) {
   stampCore(lock, { coreDir, enabled });
   writeLock(projectDir, lock);
 
-  console.log(`kizuna.lock gerado (${Object.keys(lock.template.files).length} managed do template)`);
+  console.log(
+    `kizuna.lock gerado (${Object.keys(lock.template.files).length} managed do template)`
+  );
   if (missing.length) {
     console.warn('managed do template AUSENTES no projeto (resolva com `kizuna update`):');
     for (const p of missing) console.warn(`  ${p}`);

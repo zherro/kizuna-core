@@ -17,13 +17,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: 'Acesso negado.' }, { status: 403 });
   }
 
-  const body = (await request.json().catch(() => null)) as
-    | { slug?: unknown; previousSlug?: unknown }
-    | null;
+  const body = (await request.json().catch(() => null)) as {
+    slug?: unknown;
+    previousSlug?: unknown;
+  } | null;
 
   const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-  const targets = [body?.slug, body?.previousSlug]
-    .filter((value): value is string => typeof value === 'string' && slugPattern.test(value));
+  const targets = [body?.slug, body?.previousSlug].filter(
+    (value): value is string => typeof value === 'string' && slugPattern.test(value)
+  );
 
   if (targets.length === 0) {
     return NextResponse.json({ message: 'Nenhum slug válido informado.' }, { status: 400 });

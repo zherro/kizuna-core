@@ -32,7 +32,7 @@ function setupRequiredHtml(missing: MissingEnv[]): string {
         `<li style="border:1px solid #26262c;border-radius:10px;padding:12px 14px;background:#141417">
            <code style="font-size:14px;font-weight:700;color:#f4b8b8">${m.name}</code>
            <p style="margin:6px 0 0;font-size:13px;color:#9a9aa4;line-height:1.5">${m.hint}</p>
-         </li>`,
+         </li>`
     )
     .join('');
   const envLines = missing.map((m) => `${m.name}=`).join('\n');
@@ -85,10 +85,7 @@ export function createKizunaProxy(options: KizunaProxyOptions = {}) {
 
     // TRAVA DE AMBIENTE — sem PostgREST + segredo de JWT nada roda.
     // Só deixa passar assets e o HMR do dev.
-    if (
-      !pathname.startsWith('/_next') &&
-      pathname !== '/favicon.ico'
-    ) {
+    if (!pathname.startsWith('/_next') && pathname !== '/favicon.ico') {
       const env = checkKizunaEnv();
       if (!env.ok) {
         return new NextResponse(setupRequiredHtml(env.missing), {

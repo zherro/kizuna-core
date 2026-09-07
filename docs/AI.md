@@ -2,7 +2,7 @@
 
 > **Status:** there is no AI module in the core today. The one live consumer (foco-total's Gemini
 > marketplace-description generator) is domain-specific and stays in the consuming project. This
-> doc captures the *pattern* to reuse when adding AI features, so a new one is built the same way.
+> doc captures the _pattern_ to reuse when adding AI features, so a new one is built the same way.
 
 ## Pattern
 
@@ -20,11 +20,11 @@ const result = await generateSomething(input);
 
 ## Env (Gemini example)
 
-| Var | Default | Notes |
-|---|---|---|
-| `AI_PROVIDER` | `gemini` | only gemini wired today |
-| `GEMINI_MODEL` | `gemini-2.0-flash` | |
-| `GEMINI_API_KEY` | — | required for real calls |
-| `AI_FALLBACK_TO_TEMPLATE` | `false` | force the template path |
+| Var                       | Default            | Notes                   |
+| ------------------------- | ------------------ | ----------------------- |
+| `AI_PROVIDER`             | `gemini`           | only gemini wired today |
+| `GEMINI_MODEL`            | `gemini-2.0-flash` |                         |
+| `GEMINI_API_KEY`          | —                  | required for real calls |
+| `AI_FALLBACK_TO_TEMPLATE` | `false`            | force the template path |
 
 All optional — with no key the feature falls back to its template.

@@ -2,14 +2,7 @@
 // telas de plugin que o kizuna-core já entrega (resolvidas por /painel/[...kizuna]).
 // Adicione as telas do seu app aqui.
 import Link from 'next/link';
-import {
-  CalendarDays,
-  FileText,
-  FolderTree,
-  GitFork,
-  NotebookPen,
-  UserRound,
-} from 'lucide-react';
+import { CalendarDays, FileText, FolderTree, GitFork, NotebookPen, UserRound } from 'lucide-react';
 import { buttonVariants } from '@kizuna/core/client/components/ui/button';
 import {
   Card,

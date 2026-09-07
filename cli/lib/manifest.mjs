@@ -3,8 +3,10 @@ import { join, dirname } from 'node:path';
 
 export class DuplicateOwnerError extends Error {
   constructor(conflicts) {
-    super('paths reivindicados por mais de um dono: ' +
-      conflicts.map((c) => `${c.projectPath} (${c.owners.join(', ')})`).join('; '));
+    super(
+      'paths reivindicados por mais de um dono: ' +
+        conflicts.map((c) => `${c.projectPath} (${c.owners.join(', ')})`).join('; ')
+    );
     this.name = 'DuplicateOwnerError';
     this.conflicts = conflicts;
   }
@@ -14,20 +16,24 @@ function readOne(manifestPath, resolveSource) {
   const raw = JSON.parse(readFileSync(manifestPath, 'utf8'));
   const owner = raw.owner;
   const entries = Object.entries(raw.files ?? {}).map(([projectPath, mode]) => ({
-    projectPath, mode, owner, sourceAbsPath: resolveSource(projectPath),
+    projectPath,
+    mode,
+    owner,
+    sourceAbsPath: resolveSource(projectPath),
   }));
   const merges = Object.entries(raw.merge ?? {}).map(([projectPath, contribRel]) => ({
-    projectPath, owner, contribAbsPath: join(dirname(manifestPath), contribRel),
+    projectPath,
+    owner,
+    contribAbsPath: join(dirname(manifestPath), contribRel),
   }));
   return { entries, merges };
 }
 
 export function loadManifests(coreDir, enabledPlugins) {
   const parts = [];
-  parts.push(readOne(
-    join(coreDir, 'template', 'kizuna.manifest.json'),
-    (p) => join(coreDir, 'template', p),
-  ));
+  parts.push(
+    readOne(join(coreDir, 'template', 'kizuna.manifest.json'), (p) => join(coreDir, 'template', p))
+  );
   for (const name of enabledPlugins) {
     const mp = join(coreDir, 'plugins', name, 'shell', 'manifest.json');
     if (!existsSync(mp)) continue;

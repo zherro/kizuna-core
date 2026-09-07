@@ -1,9 +1,13 @@
 export type MessageChannel =
-  | 'platform' | 'whatsapp' | 'instagram' | 'telegram' | 'email' | 'system';
+  | 'platform'
+  | 'whatsapp'
+  | 'instagram'
+  | 'telegram'
+  | 'email'
+  | 'system';
 export type MessageDirection = 'inbound' | 'outbound';
 export type MessageStatus = 'pending' | 'sent' | 'delivered' | 'read' | 'failed';
-export type MessageContentType =
-  | 'text' | 'image' | 'video' | 'audio' | 'document' | 'system';
+export type MessageContentType = 'text' | 'image' | 'video' | 'audio' | 'document' | 'system';
 
 export interface ChatMessage {
   id: number;
@@ -35,8 +39,8 @@ export interface ChatConversationSummary {
 }
 
 export interface MessagesPage {
-  items: ChatMessage[];       // ordem cronológica ASC
-  nextCursor: number | null;  // id da mais antiga da página (pra buscar anteriores)
+  items: ChatMessage[]; // ordem cronológica ASC
+  nextCursor: number | null; // id da mais antiga da página (pra buscar anteriores)
   hasMore: boolean;
 }
 

@@ -56,14 +56,24 @@ export async function run(ctx) {
   const preShell = deepCopyShellFiles(lock.plugins);
 
   // --reseed all  → todos os seeds divergentes;  --reseed "a,b"  → só esses.
-  const reseed = flags.reseed === 'all'
-    ? true
-    : typeof flags.reseed === 'string'
-      ? flags.reseed.split(',').map((s) => s.trim()).filter(Boolean)
-      : false;
+  const reseed =
+    flags.reseed === 'all'
+      ? true
+      : typeof flags.reseed === 'string'
+        ? flags.reseed
+            .split(',')
+            .map((s) => s.trim())
+            .filter(Boolean)
+        : false;
 
   const report = await materialize(set, {
-    projectDir, coreDir, direction: 'apply', lock, prompt, dryRun: false, reseed,
+    projectDir,
+    coreDir,
+    direction: 'apply',
+    lock,
+    prompt,
+    dryRun: false,
+    reseed,
   });
 
   // migrations
@@ -104,10 +114,14 @@ export async function run(ctx) {
   if (orphans.length) {
     if (flags.prune === true) {
       removeOrphans(projectDir, orphans);
-      console.log(`removidos ${orphans.length} arquivo(s) de layout anterior: ${orphans.join(', ')}`);
+      console.log(
+        `removidos ${orphans.length} arquivo(s) de layout anterior: ${orphans.join(', ')}`
+      );
     } else {
       console.log('');
-      console.log(`⚠ ${orphans.length} arquivo(s) de um layout ANTERIOR — o Next pode usá-los em vez dos novos:`);
+      console.log(
+        `⚠ ${orphans.length} arquivo(s) de um layout ANTERIOR — o Next pode usá-los em vez dos novos:`
+      );
       for (const p of orphans) console.log(`      ${p}`);
       console.log('    rode  node kizuna-core/cli update --prune  para remover.');
     }
@@ -117,14 +131,20 @@ export async function run(ctx) {
   stampCore(lock, { coreDir, enabled });
   writeLock(projectDir, lock);
 
-  console.log(`update: ${report.applied.length} aplicado(s), ${report.skipped.length} sem mudança, ${report.conflicts.length} conflito(s)`);
+  console.log(
+    `update: ${report.applied.length} aplicado(s), ${report.skipped.length} sem mudança, ${report.conflicts.length} conflito(s)`
+  );
   if (report.applied.length) console.log(`  aplicados: ${report.applied.join(', ')}`);
   if (report.conflicts.length) console.log(`  conflitos: ${report.conflicts.join(', ')}`);
   if (report.seedDrift?.length) {
     console.log('');
-    console.log(`  ⚠ ${report.seedDrift.length} seed(s) mudaram no template e NÃO foram tocados (você pode ter customizado):`);
+    console.log(
+      `  ⚠ ${report.seedDrift.length} seed(s) mudaram no template e NÃO foram tocados (você pode ter customizado):`
+    );
     for (const p of report.seedDrift) console.log(`      ${p}`);
-    console.log('    revise o diff, ou rode:  node kizuna-core/cli update --reseed "<path,path>"  (sobrescreve com a versão do template)');
+    console.log(
+      '    revise o diff, ou rode:  node kizuna-core/cli update --reseed "<path,path>"  (sobrescreve com a versão do template)'
+    );
     console.log('    ou  --reseed all  para todos.');
   }
   return 0;

@@ -6,12 +6,7 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../ui/tabs';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../ui/sheet';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '../ui/accordion';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../ui/accordion';
 import {
   AlertTriangle,
   Code,

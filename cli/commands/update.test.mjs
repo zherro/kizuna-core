@@ -1,7 +1,5 @@
 import { it, expect, vi, beforeEach, afterEach } from 'vitest';
-import {
-  mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync,
-} from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { run as install } from './install.mjs';
@@ -17,10 +15,13 @@ function fakeCore(proxyBody, version) {
   mkdirSync(join(core, 'sql'), { recursive: true });
   mkdirSync(join(core, 'plugins'), { recursive: true });
   writeFileSync(join(core, 'VERSION'), `${version}\n`);
-  writeFileSync(join(core, 'template', 'kizuna.manifest.json'), JSON.stringify({
-    owner: 'base',
-    files: { 'app/proxy.ts': 'managed' },
-  }));
+  writeFileSync(
+    join(core, 'template', 'kizuna.manifest.json'),
+    JSON.stringify({
+      owner: 'base',
+      files: { 'app/proxy.ts': 'managed' },
+    })
+  );
   writeFileSync(join(core, 'template', 'app', 'proxy.ts'), proxyBody);
 }
 

@@ -68,9 +68,7 @@ export function RatingDisplay({
       </span>
       {showValue ? <span className="font-semibold">{ptNumber(safe)}</span> : null}
       {typeof count === 'number' ? (
-        <span className="text-muted-foreground">
-          · {count.toLocaleString('pt-BR')}
-        </span>
+        <span className="text-muted-foreground">· {count.toLocaleString('pt-BR')}</span>
       ) : null}
     </span>
   );

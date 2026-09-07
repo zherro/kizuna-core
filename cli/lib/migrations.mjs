@@ -16,9 +16,7 @@ import { join } from 'node:path';
 const NUM_RE = /^(\d{4})_.*\.sql$/;
 
 function migrationsDir(coreDir, plugin) {
-  return plugin === 'core'
-    ? join(coreDir, 'sql')
-    : join(coreDir, 'plugins', plugin);
+  return plugin === 'core' ? join(coreDir, 'sql') : join(coreDir, 'plugins', plugin);
 }
 
 // Índice numérico do arquivo (0 se não prefixado).
@@ -51,9 +49,10 @@ export function listMigrationFiles(coreDir, plugin) {
   } catch {
     return [];
   }
-  const filtered = plugin === 'core'
-    ? names.filter((n) => n.endsWith('.sql'))
-    : names.filter((n) => NUM_RE.test(n));
+  const filtered =
+    plugin === 'core'
+      ? names.filter((n) => n.endsWith('.sql'))
+      : names.filter((n) => NUM_RE.test(n));
   return filtered
     .sort((a, b) => indexOf(a) - indexOf(b) || a.localeCompare(b))
     .map((n) => join(dir, n));
@@ -66,11 +65,11 @@ export function countMigrations(coreDir, plugin) {
 // Roda um .sql mandando o conteúdo por stdin (cross-platform / docker-safe).
 function applyFile(psql, dbUrl, file) {
   const sql = readFileSync(file, 'utf8');
-  execFileSync(
-    psql.cmd,
-    [...psql.args, dbUrl, '-v', 'ON_ERROR_STOP=1'],
-    { input: sql, encoding: 'utf8', stdio: ['pipe', 'inherit', 'inherit'] }
-  );
+  execFileSync(psql.cmd, [...psql.args, dbUrl, '-v', 'ON_ERROR_STOP=1'], {
+    input: sql,
+    encoding: 'utf8',
+    stdio: ['pipe', 'inherit', 'inherit'],
+  });
 }
 
 // Aplica os arquivos com índice > from. from = 0 aplica todos.

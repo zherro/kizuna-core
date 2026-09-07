@@ -34,8 +34,7 @@ export async function resolveKizunaScreen(
     const isRoot = session?.is_root === true;
     const ok = entry.adminOnly
       ? isRoot || (session?.tenant_type ?? '').toUpperCase() === 'ADMIN'
-      : !!session &&
-        (isRoot || session.perms?.[entry.permResource!]?.view === true);
+      : !!session && (isRoot || session.perms?.[entry.permResource!]?.view === true);
     if (!ok) {
       redirect('/painel');
     }

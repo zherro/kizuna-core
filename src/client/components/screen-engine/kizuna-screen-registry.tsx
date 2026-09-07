@@ -37,7 +37,10 @@ function screenComponent(config: ScreenConfig): ComponentType {
 function FormulariosScreen() {
   return (
     <PageContainerWrapper>
-      <PageHeaderWrapper title="Formulários" description="Definições de formulário reutilizáveis e as respostas capturadas." />
+      <PageHeaderWrapper
+        title="Formulários"
+        description="Definições de formulário reutilizáveis e as respostas capturadas."
+      />
       <FormsAdmin />
     </PageContainerWrapper>
   );
@@ -46,7 +49,10 @@ function FormulariosScreen() {
 function PaginasScreen() {
   return (
     <PageContainerWrapper>
-      <PageHeaderWrapper title="Páginas" description="Conteúdo institucional em Markdown, servido por /[slug]." />
+      <PageHeaderWrapper
+        title="Páginas"
+        description="Conteúdo institucional em Markdown, servido por /[slug]."
+      />
       <PagesAdmin reservedSlugs={DEFAULT_RESERVED_SLUGS} />
     </PageContainerWrapper>
   );
@@ -63,12 +69,28 @@ function PaginasScreen() {
  */
 export const KIZUNA_SCREEN_REGISTRY: Record<string, KizunaScreenEntry> = {
   // plugin `taxonomy`
-  'taxonomia/arvore': { title: 'Árvore de categorias', component: screenComponent(TAXONOMIA_SCREEN_GROUP.arvore), adminOnly: true },
-  'taxonomia/categorias': { title: 'Categorias', component: screenComponent(TAXONOMIA_SCREEN_GROUP.categorias), adminOnly: true },
-  'taxonomia/subcategorias': { title: 'Subcategorias', component: screenComponent(TAXONOMIA_SCREEN_GROUP.subcategorias), adminOnly: true },
+  'taxonomia/arvore': {
+    title: 'Árvore de categorias',
+    component: screenComponent(TAXONOMIA_SCREEN_GROUP.arvore),
+    adminOnly: true,
+  },
+  'taxonomia/categorias': {
+    title: 'Categorias',
+    component: screenComponent(TAXONOMIA_SCREEN_GROUP.categorias),
+    adminOnly: true,
+  },
+  'taxonomia/subcategorias': {
+    title: 'Subcategorias',
+    component: screenComponent(TAXONOMIA_SCREEN_GROUP.subcategorias),
+    adminOnly: true,
+  },
 
   // plugin `forms`
-  'administracao/formularios': { title: 'Formulários', component: FormulariosScreen, permResource: 'forms' },
+  'administracao/formularios': {
+    title: 'Formulários',
+    component: FormulariosScreen,
+    permResource: 'forms',
+  },
 
   // plugin `pages`
   'administracao/paginas': { title: 'Páginas', component: PaginasScreen, permResource: 'pages' },

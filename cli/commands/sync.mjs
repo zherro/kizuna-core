@@ -18,10 +18,14 @@ export async function run(ctx) {
   let branch = null;
   try {
     branch = currentBranch(coreDir);
-  } catch { /* não é repo git */ }
+  } catch {
+    /* não é repo git */
+  }
   const blocked = isDetachedSafe(coreDir) || branch === 'main' || branch === 'master';
   if (blocked && !flags.force) {
-    console.error(`kizuna-core está em "${branch ?? 'HEAD destacado'}" — troque para uma branch de trabalho ou use --force`);
+    console.error(
+      `kizuna-core está em "${branch ?? 'HEAD destacado'}" — troque para uma branch de trabalho ou use --force`
+    );
     return 1;
   }
 
@@ -40,7 +44,12 @@ export async function run(ctx) {
 
   const lock = readLock(projectDir) ?? undefined;
   const dry = await materialize(set, {
-    projectDir, coreDir, direction: 'push', lock, prompt, dryRun: true,
+    projectDir,
+    coreDir,
+    direction: 'push',
+    lock,
+    prompt,
+    dryRun: true,
   });
 
   if (!dry.applied.length) {
