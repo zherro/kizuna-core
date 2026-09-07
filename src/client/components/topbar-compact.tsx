@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
-import { LogIn, LogOut, MapPin, Menu, Moon, Search, Sun, X } from 'lucide-react';
+import { LayoutDashboard, LogIn, LogOut, MapPin, Menu, Moon, Search, Sun } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useAppPreferences } from '../providers/app-preferences-provider';
 import { useAuth } from '../providers/auth-provider';
@@ -84,6 +84,21 @@ export function TopbarCompact({
               {item.label}
             </Link>
           ))}
+          {/* mesma regra do Topbar classic: só logado */}
+          {user ? (
+            <Link
+              href="/painel"
+              className={cn(
+                'flex items-center gap-1.5 text-sm font-medium transition-colors',
+                pathname.startsWith('/painel')
+                  ? 'text-primary'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              <LayoutDashboard className="h-4 w-4" />
+              {messages.default.dashboard}
+            </Link>
+          ) : null}
         </nav>
 
         <div className="flex items-center gap-2">
@@ -172,6 +187,16 @@ export function TopbarCompact({
                 {item.label}
               </Link>
             ))}
+            {user ? (
+              <Link
+                href="/painel"
+                onClick={() => setMenuOpen(false)}
+                className="flex items-center gap-3 rounded-md px-3 py-2 text-base font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+              >
+                <LayoutDashboard className="h-4 w-4" />
+                {messages.default.dashboard}
+              </Link>
+            ) : null}
             {searchHref && (
               <Link
                 href={searchHref}
