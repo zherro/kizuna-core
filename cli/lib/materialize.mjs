@@ -25,7 +25,10 @@ function safeHash(absPath) {
 }
 
 export async function materialize(manifestSet, opts) {
-  const { projectDir, direction = 'apply', lock, prompt, dryRun = false, reseed = false } = opts;
+  const {
+    projectDir, direction = 'apply', lock, prompt, dryRun = false,
+    reseed = false, force = false,
+  } = opts;
   const report = {
     applied: [],
     skipped: [],
@@ -122,10 +125,9 @@ export async function materialize(manifestSet, opts) {
       continue;
     }
     // conflict
-    const choice = await prompt.choose(
-      `conflito em ${entry.projectPath}`,
-      ['sobrescreve', 'mantém'],
-    );
+    const choice = force
+      ? 'sobrescreve'
+      : await prompt.choose(`conflito em ${entry.projectPath}`, ['sobrescreve', 'mantém']);
     report.conflicts.push(entry.projectPath);
     if (choice === 'sobrescreve') {
       write(source, target);

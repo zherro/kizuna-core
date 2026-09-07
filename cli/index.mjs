@@ -58,6 +58,8 @@ opções globais:
   --psql "<cmd>"     comando psql (ou env KIZUNA_PSQL); ex.: "docker exec -i pg psql -U myuser"
   --yes              responde "sim" a toda confirmação
   --no-input         falha em vez de perguntar
+  --force            (install) re-materializa TODA a casca por cima do projeto
+  --reseed <paths>   (update) re-copia seeds do template ("all" ou "a,b,c")
   --help             esta ajuda
 `;
 

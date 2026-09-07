@@ -53,9 +53,12 @@ export async function run(ctx) {
     throw err;
   }
 
-  // (4) materializa
+  // (4) materializa. --force re-materializa TUDO por cima de um projeto existente
+  // (managed sobrescreve, seeds também) — para re-sincronizar a casca inteira.
   const report = await materialize(set, {
     projectDir, coreDir, direction: 'apply', lock: undefined, prompt, dryRun: false,
+    force: flags.force === true,
+    reseed: flags.force === true,
   });
 
   // (5) banco
