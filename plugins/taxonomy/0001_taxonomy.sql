@@ -43,6 +43,10 @@ CREATE TABLE IF NOT EXISTS public.categories_group (
   CONSTRAINT categories_group_slug_key UNIQUE (slug)
 );
 
+ALTER TABLE public.categories_group ALTER COLUMN tenant_id SET DEFAULT auth.fun_auth_current_tenant_id();
+ALTER TABLE public.categories_group ALTER COLUMN created_by SET DEFAULT auth.fun_auth_user_id();
+
+
 -- ---------------------------------------------------------------------------------------------
 -- 2) categories gains the columns the taxonomy feature needs on top of whatever base shape the
 --    consuming project already defines for it: a group + icon + description (icon: a
