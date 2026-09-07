@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useAppPreferences } from '@kizuna/core/client/providers/app-preferences-provider';
+import { DiscoverCta } from '@kizuna/core/client/components/home/discover-cta';
 import { HomeHero } from './home/home-hero';
 import { CategoryRail } from './home/category-rail';
 import { NearbyGrid } from './home/nearby-grid';
@@ -22,9 +23,15 @@ type HomeContentProps = {
   showHero?: boolean;
   /** layout do carrossel de categorias — vem de KIZUNA_HOME_CATEGORIES */
   categoriesVariant?: 'classic' | 'compact';
+  /** mostra o banner "Descobrir no swipe" — vem de KIZUNA_HOME_DISCOVER */
+  showDiscover?: boolean;
 };
 
-export function HomeContent({ showHero = true, categoriesVariant = 'classic' }: HomeContentProps = {}) {
+export function HomeContent({
+  showHero = true,
+  categoriesVariant = 'classic',
+  showDiscover = false,
+}: HomeContentProps = {}) {
   const { messages } = useAppPreferences();
   const t = messages.home;
 
@@ -58,6 +65,11 @@ export function HomeContent({ showHero = true, categoriesVariant = 'classic' }: 
       style={getHomeInkStyle(inkLevel)}
     >
       {showHero ? <HomeHero t={t} /> : null}
+      {showDiscover ? (
+        <div className="pt-6">
+          <DiscoverCta />
+        </div>
+      ) : null}
       <CategoryRail t={t} variant={categoriesVariant} />
       <NearbyGrid t={t} />
       <HowItWorks t={t} />
