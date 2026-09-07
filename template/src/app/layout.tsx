@@ -13,6 +13,10 @@ import { getSession, checkKizunaEnv } from '@kizuna/core/server';
 import { SetupRequiredScreen } from '@kizuna/core/client/components/setup-required-screen';
 import { getAppPreferencesFabVisible } from '@/lib/server/app-preferences-config';
 
+// App inteiro é dirigido por sessão + PostgREST — nada é realmente estático, e
+// a trava de ambiente abaixo precisa rodar a cada request (não no build).
+export const dynamic = 'force-dynamic';
+
 // Match the reference template: Roboto (Google Fonts wght 400/500/700/900).
 const robotoSans = Roboto({
   variable: '--font-roboto',
