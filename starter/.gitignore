@@ -5,6 +5,6 @@ dist/
 
 # Estes são MATERIALIZADOS por `node kizuna-core/cli install` e passam a ser
 # do SEU projeto — commite-os no repo do seu app:
-#   app/  src/  proxy.ts  package.json  package-lock.json
+#   src/  (app, proxy.ts, lib)  package.json  package-lock.json
 #   tsconfig.json  tsconfig.kizuna.json  postcss.config.mjs  next.config.ts
 #   next-env.d.ts  kizuna.lock

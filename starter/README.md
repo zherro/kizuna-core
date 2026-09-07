@@ -35,7 +35,7 @@ cd meu-app
 
 # 1.1  escolher plugins — editar kizuna.plugins.json (lista + descrição: kizuna-core/docs/PLUGINS.md)
 
-# 1.2  materializar a casca (cria app/, src/, proxy.ts, package.json, configs…)
+# 1.2  materializar a casca (cria src/app, src/proxy.ts, src/lib, package.json, configs…)
 node kizuna-core/cli install
 #      → pergunta se roda `npm install`
 
@@ -62,7 +62,7 @@ node kizuna-core/cli db install --db-url "postgresql://user:pass@host:5432/meu_d
 ### O que commitar no seu repo depois do install
 
 ```
-app/  src/  proxy.ts  package.json  package-lock.json
+src/  package.json  package-lock.json
 tsconfig.json  tsconfig.kizuna.json  postcss.config.mjs  next.config.ts  next-env.d.ts
 kizuna.lock
 ```
@@ -92,7 +92,7 @@ instalou:
 cd kizuna-core && git pull && cd ..     # ou: git submodule update --remote kizuna-core
 node kizuna-core/cli update              # aplica migrations novas + arquivos "managed" da casca
 node kizuna-core/cli db migrate --db-url "$DATABASE_URL"   # aplica só as migrations pendentes
-git add kizuna-core kizuna.lock app/ proxy.ts && git commit -m "chore: bump kizuna-core"
+git add kizuna-core kizuna.lock src/ && git commit -m "chore: bump kizuna-core"
 ```
 
 `update` faz **fast-forward** dos arquivos `managed` que você não editou; nos que
@@ -107,7 +107,7 @@ node kizuna-core/cli plugin add reviews
 #   → aplica plugins/reviews/*.sql
 #   → materializa o fragmento de casca do plugin (rotas /api/reviews/*), se tiver
 node kizuna-core/cli db migrate --db-url "$DATABASE_URL"
-git add kizuna.plugins.json kizuna.lock app/ && git commit -m "chore: + plugin reviews"
+git add kizuna.plugins.json kizuna.lock src/ && git commit -m "chore: + plugin reviews"
 ```
 
 `node kizuna-core/cli plugin list` mostra os ativos e os disponíveis.
