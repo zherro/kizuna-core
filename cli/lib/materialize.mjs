@@ -25,12 +25,13 @@ function safeHash(absPath) {
 }
 
 export async function materialize(manifestSet, opts) {
-  const { projectDir, direction = 'apply', lock, prompt, dryRun = false } = opts;
+  const { projectDir, direction = 'apply', lock, prompt, dryRun = false, reseed = false } = opts;
   const report = {
     applied: [],
     skipped: [],
     conflicts: [],
     merges: [],
+    seedDrift: [],
     newLockFragment: { templateFiles: {}, pluginShellFiles: {}, packageOwnedKeys: null },
   };
 
@@ -76,11 +77,25 @@ export async function materialize(manifestSet, opts) {
 
     // direction === 'apply'
     if (entry.mode === 'seed') {
-      if (existsSync(target)) {
-        report.skipped.push(entry.projectPath);
-      } else {
+      const reseedThis =
+        reseed === true || (Array.isArray(reseed) && reseed.includes(entry.projectPath));
+      if (!existsSync(target)) {
         write(source, target);
         report.applied.push(entry.projectPath);
+      } else if (reseedThis) {
+        if (safeHash(target) === safeHash(source)) {
+          report.skipped.push(entry.projectPath);
+        } else {
+          write(source, target);
+          report.applied.push(entry.projectPath);
+        }
+      } else {
+        report.skipped.push(entry.projectPath);
+        // Seed que já existe mas divergiu do template — o usuário pode ter
+        // customizado, ou pode estar numa versão antiga. Só sinaliza.
+        if (safeHash(target) !== safeHash(source)) {
+          report.seedDrift.push(entry.projectPath);
+        }
       }
       continue;
     }

@@ -111,3 +111,34 @@ it('dryRun não escreve', async () => {
   expect(report.newLockFragment.templateFiles['app/proxy.ts']).toMatch(/^sha256:/);
   cleanup();
 });
+
+it('seed que já existe e divergiu: reporta seedDrift, não sobrescreve', async () => {
+  const { core, proj, cleanup } = scaffold();
+  await materialize(loadManifests(core, []), {
+    projectDir: proj, direction: 'apply', lock: emptyLock(), prompt: { choose: vi.fn() }, dryRun: false,
+  });
+  writeFileSync(join(proj, 'app', 'page.tsx'), 'export default () => "customizado";\n'); // usuário editou
+  writeFileSync(join(core, 'template', 'app', 'page.tsx'), 'export default () => "v2";\n'); // template mudou
+  const r = await materialize(loadManifests(core, []), {
+    projectDir: proj, direction: 'apply', lock: emptyLock(), prompt: { choose: vi.fn() }, dryRun: false,
+  });
+  expect(r.seedDrift).toContain('app/page.tsx');
+  expect(readFileSync(join(proj, 'app', 'page.tsx'), 'utf8')).toContain('customizado');
+  cleanup();
+});
+
+it('--reseed sobrescreve o seed divergente', async () => {
+  const { core, proj, cleanup } = scaffold();
+  await materialize(loadManifests(core, []), {
+    projectDir: proj, direction: 'apply', lock: emptyLock(), prompt: { choose: vi.fn() }, dryRun: false,
+  });
+  writeFileSync(join(proj, 'app', 'page.tsx'), 'antigo\n');
+  writeFileSync(join(core, 'template', 'app', 'page.tsx'), 'novo do template\n');
+  const r = await materialize(loadManifests(core, []), {
+    projectDir: proj, direction: 'apply', lock: emptyLock(), prompt: { choose: vi.fn() }, dryRun: false,
+    reseed: ['app/page.tsx'],
+  });
+  expect(r.applied).toContain('app/page.tsx');
+  expect(readFileSync(join(proj, 'app', 'page.tsx'), 'utf8')).toBe('novo do template\n');
+  cleanup();
+});

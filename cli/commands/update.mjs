@@ -54,8 +54,15 @@ export async function run(ctx) {
   const preTemplate = { ...(lock.template?.files ?? {}) };
   const preShell = deepCopyShellFiles(lock.plugins);
 
+  // --reseed all  → todos os seeds divergentes;  --reseed "a,b"  → só esses.
+  const reseed = flags.reseed === 'all'
+    ? true
+    : typeof flags.reseed === 'string'
+      ? flags.reseed.split(',').map((s) => s.trim()).filter(Boolean)
+      : false;
+
   const report = await materialize(set, {
-    projectDir, coreDir, direction: 'apply', lock, prompt, dryRun: false,
+    projectDir, coreDir, direction: 'apply', lock, prompt, dryRun: false, reseed,
   });
 
   // migrations
@@ -96,5 +103,12 @@ export async function run(ctx) {
   console.log(`update: ${report.applied.length} aplicado(s), ${report.skipped.length} sem mudança, ${report.conflicts.length} conflito(s)`);
   if (report.applied.length) console.log(`  aplicados: ${report.applied.join(', ')}`);
   if (report.conflicts.length) console.log(`  conflitos: ${report.conflicts.join(', ')}`);
+  if (report.seedDrift?.length) {
+    console.log('');
+    console.log(`  ⚠ ${report.seedDrift.length} seed(s) mudaram no template e NÃO foram tocados (você pode ter customizado):`);
+    for (const p of report.seedDrift) console.log(`      ${p}`);
+    console.log('    revise o diff, ou rode:  node kizuna-core/cli update --reseed "<path,path>"  (sobrescreve com a versão do template)');
+    console.log('    ou  --reseed all  para todos.');
+  }
   return 0;
 }

@@ -10,7 +10,7 @@ import { makePrompt } from './lib/prompt.mjs';
 const COMMANDS = ['install', 'update', 'sync', 'check', 'lock', 'adopt', 'db', 'plugin'];
 
 // Flags globais que consomem o próximo token como valor.
-const VALUE_FLAGS = new Set(['--project', '--db-url', '--plugin', '--psql']);
+const VALUE_FLAGS = new Set(['--project', '--db-url', '--plugin', '--psql', '--reseed']);
 
 function parseArgv(argv) {
   const flags = {};
