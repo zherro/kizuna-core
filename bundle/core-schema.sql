@@ -1,7 +1,8 @@
 -- kizuna-core — schema do CORE compilado (auth + RBAC + plugin_registry)
--- GERADO de sql/*.sql na ordem que o CLI aplica. NÃO edite à mão.
--- Regenere:  node bundle/build.mjs
--- Aplicar:   psql "$DB_URL" -v ON_ERROR_STOP=1 -f bundle/core-schema.sql
+-- GERADO de sql/*.sql. NÃO edite à mão. Regenere: node bundle/build.mjs
+-- Aplicar em base LIMPA:  psql "$DB_URL" -v ON_ERROR_STOP=1 -f bundle/core-schema.sql
+-- (nem todo .sql de origem é idempotente — re-rodar numa base já provisionada dá erro;
+--  pra atualização incremental use `node kizuna-core/cli db migrate`)
 -- Arquivos: 25
 
 
