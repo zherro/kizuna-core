@@ -2,6 +2,7 @@
 
 Backlog do mecanismo de IA (plugin `ai_assistant`). Itens explicitamente fora do escopo da v1.
 
+- [ ] **Naví no wizard — afordância inútil no step 1.** O botão "Preencher com IA" da engine passa `userText: ''` (a engine não tem campo de texto livre próprio) e `useNaviAnuncio.send('')` faz early-return em texto vazio → clicar não faz nada (sem crash, sem travar). O `service-wizard.tsx` antigo usava o conteúdo do textarea do título como input. Opções: o `step-start` do core alimenta o título como `userText`; ou a afordância lê um campo declarado pelo step; ou religar o `NaviAssistant` (chat modal) na engine. Ver `.claude/domains/services.md` §"Naví no cadastro".
 - [ ] `OpenAiProvider` — structured output via `response_format: json_schema`.
 - [ ] `ClaudeProvider` — structured output via tool-use forçado.
 - [ ] Tabela `ai_assistant_usage` (quem, skill, provider, tokens, latência, ok/erro) + grant só backend.
