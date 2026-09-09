@@ -112,6 +112,7 @@ CREATE POLICY services_owner_update ON public.services FOR UPDATE TO auth_user
 
 ALTER TABLE public.service_categories_sub ENABLE ROW LEVEL SECURITY;
 GRANT SELECT, INSERT, UPDATE ON TABLE public.service_categories_sub TO auth_user;
+GRANT DELETE ON TABLE public.service_categories_sub TO auth_user;
 GRANT SELECT ON TABLE public.service_categories_sub TO anon;
 REVOKE DELETE ON TABLE public.service_categories_sub FROM anon;
 

@@ -51,4 +51,10 @@ EXCEPTION
   WHEN insufficient_privilege THEN RAISE NOTICE 'rls deny OK';
 END $$;
 
+-- 7) auth_user tem grant de DELETE em service_categories_sub (remoção de especialidade em edição)
+--    Nota: a distinção owner/não-owner é via RLS policy (scs_owner_write) e não dá para
+--    exercitar aqui — este script roda como superuser (BYPASSRLS) e só seta jwt.claims,
+--    sem SET ROLE. Aqui verificamos apenas que o privilégio de tabela existe.
+SELECT 'scs DELETE grant OK' WHERE has_table_privilege('auth_user', 'public.service_categories_sub', 'DELETE');
+
 ROLLBACK;
