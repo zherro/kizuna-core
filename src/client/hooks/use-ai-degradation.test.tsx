@@ -30,6 +30,22 @@ describe('useAiDegradation', () => {
     expect(result.current.status).toBe('unavailable');
   });
 
+  it('reportReason("blocked") vira unavailable direto', () => {
+    const { result } = renderHook(() => useAiDegradation('x'));
+    act(() => result.current.reportReason('blocked'));
+    expect(result.current.status).toBe('unavailable');
+  });
+
+  it('reportReason("transient") x5 vira unavailable', () => {
+    const { result } = renderHook(() => useAiDegradation('x'));
+    for (let i = 0; i < 4; i++) {
+      act(() => result.current.reportReason('transient'));
+    }
+    expect(result.current.status).toBe('degraded');
+    act(() => result.current.reportReason('transient'));
+    expect(result.current.status).toBe('unavailable');
+  });
+
   it('retry limpa degraded', () => {
     const { result } = renderHook(() => useAiDegradation('x'));
     act(() => result.current.report(new Error('connection timeout')));

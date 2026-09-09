@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useRef, useState } from 'react';
-import { classifyAiError } from '../../shared/ai-error';
+import { classifyAiError, type AiUnavailableReason } from '../../shared/ai-error';
 
 /** Falhas transitórias seguidas antes de desistir da IA (vira modo manual permanente). */
 const MAX_FAILURES = 5;
@@ -12,6 +12,8 @@ export interface UseAiDegradation {
   status: AiDegradationStatus;
   /** Classifica o erro e avança a máquina de degradação. */
   report(error: unknown): void;
+  /** Avança a máquina com um `reason` já classificado (ex.: 503 que devolve `reason` no corpo). */
+  reportReason(reason: AiUnavailableReason): void;
   /** Só tira de `'degraded'` de volta para `'ready'` (o contador transitório fica). */
   retry(): void;
   /** Volta tudo ao estado inicial: `'ready'`, contador zerado. */
@@ -36,12 +38,16 @@ export function useAiDegradation(contextKey: string): UseAiDegradation {
   const [status, setStatus] = useState<AiDegradationStatus>('ready');
   const failureCountRef = useRef(0);
 
-  const report = useCallback((error: unknown) => {
-    const reason = classifyAiError(error);
+  const reportReason = useCallback((reason: AiUnavailableReason) => {
     if (reason === 'transient') failureCountRef.current += 1;
     const permanent = reason === 'blocked' || failureCountRef.current >= MAX_FAILURES;
     setStatus((prev) => (prev === 'unavailable' || permanent ? 'unavailable' : 'degraded'));
   }, []);
+
+  const report = useCallback(
+    (error: unknown) => reportReason(classifyAiError(error)),
+    [reportReason]
+  );
 
   const retry = useCallback(() => {
     setStatus((s) => (s === 'degraded' ? 'ready' : s));
@@ -52,5 +58,5 @@ export function useAiDegradation(contextKey: string): UseAiDegradation {
     setStatus('ready');
   }, []);
 
-  return { status, report, retry, reset };
+  return { status, report, reportReason, retry, reset };
 }
