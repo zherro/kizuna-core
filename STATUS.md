@@ -108,6 +108,21 @@ a materializa num projeto e mantém projeto ↔ core alinhados. Ver **`docs/CLI.
   `maskEmail`, `getDisplayNameFromEmail`, `isValidEmail`, `getDisplayName`, `isConfigError`,
   `createLoginHandler`, `createRegisterHandler`, `createLogoutHandler`, `pgrstTable`, `pgrstRpc`,
   `getStorageService`, `apiError`, `PermissionMap`
+- `@kizuna/core/server/ai/*`: `runSkill`, `registerSkill`, `getSkill`, `listSkillContexts`,
+  `AiSkill`, `AiSkillContext`, `AiProvider` (+ `AiStructuredRequest`), `resolveProvider`,
+  `AiUnavailableError`, `classifyAiError`, `isRecoverableAiError`, `checkRateLimit`,
+  `readSystemConfig`. Server-only mechanism for the `ai_assistant` plugin — provider abstraction
+  (`GeminiProvider` real; `openai`/`claude` = `NotImplementedProvider`), `runSkill` orchestrator
+  (context toggle + rate limit + graceful degradation via `AiUnavailableError` → route returns
+  503 `{ fallback, reason }`). Skills live in the consuming app.
+- `@kizuna/core/client/components/ai-assistant`: `AiAssistantConfigPage` (+ `AiAssistantConfigPageProps`,
+  `AiAssistantConfigValue`) — provider/model/contexts config form; core does NOT touch
+  `system_config`, takes `value` + `onSave` by prop.
+- `@kizuna/core/client/hooks/use-ai-degradation`: `useAiDegradation(contextKey)` →
+  `{ status: 'ready'|'degraded'|'unavailable', report, retry, reset }` — sticky per-session
+  degradation state machine.
+- `@kizuna/core/shared/ai-error`: `classifyAiError`, `AiUnavailableReason` — isomorphic
+  (server + client) AI error classifier.
 - `@kizuna/core/lib/utils`: `cn`, `isShowcaseEnabled`
 - `@kizuna/core/lib/temporal-global`: side-effect import, polyfills `globalThis.Temporal`
 - `@kizuna/core/lib/api-error-message`: `translateApiErrorMessage` (PostgREST/DB message → pt-BR)
