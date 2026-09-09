@@ -35,6 +35,7 @@ a materializa num projeto e mantém projeto ↔ core alinhados. Ver **`docs/CLI.
 - `docs/UTILS.md` — `lib/utils`, `api-error-message`, `temporal-global`, BR helpers (UFs, currency mask, CPF/CNPJ).
 - `docs/EMAIL.md` — nodemailer pattern + env (no core impl yet — Fase A promotion target).
 - `docs/AI.md` — "no SDK, template fallback" pattern + env.
+- `docs/WIZARD.md` — engine de wizard multi-step (contrato de step, `defineWizard`, persistência read-merge-write, chrome layout-foco, slot de IA).
 
 `STATUS.md` is still the only doc index — it needs the "índice curto" restructure (pending, `docs/PENDENCIAS.md`).
 
@@ -83,7 +84,22 @@ a materializa num projeto e mantém projeto ↔ core alinhados. Ver **`docs/CLI.
   - `submitReview` / `requestModeration` / `moderateReview` / `coerceReview`; types `ReviewView`,
     `ReviewStats`, `ReviewTagOption`, `ReviewStatus`, `ModerationAction`, `ReviewModerationEvent`,
     … (re-exported from the folder barrel; NOT yet in the `@kizuna/core/types` barrel). Backed by the
-    `reviews` plugin (`public.reviews` + 5 sibling tables + `fn_review_*` RPCs).
+    `reviews` plugin (`public.reviews` + 5 sibling tables + `fn_review_*` RPCs, incl.
+    `fn_review_moderate`). The `services` wizard writes moderation decisions through the
+    `fn_service_moderate` RPC (see `docs/PLUGINS.md`).
+- `@kizuna/core/client/components/wizard/*`: `Wizard`, `defineWizard`, `useWizardState`,
+  `resolveSteps`, `applyAssistPatch`, `createResourcePersister`, plus the contract types
+  `WizardStep`, `WizardStepProps`, `WizardStepContext`, `WizardConfig`, `WizardMode`,
+  `WizardEntities`, `WizardAssistant`. Generic config-driven multi-step engine against ONE
+  PostgREST resource (read-merge-write persistence, layout-foco chrome, optional AI slot).
+  Domain-agnostic — see `docs/WIZARD.md`.
+- `@kizuna/core/client/components/services/*`: `ServiceConfigSummary`, and from `service-type`
+  the helpers/types `defaultPriceUnitForCategory`, `SERVICE_PRICE_UNIT_OPTIONS`,
+  `ServiceWizardState` (+ `SERVICE_WIZARD_INITIAL_STATE`, price/status/location labels).
+  `wizard-steps/*` exports `SERVICE_WIZARD_STEPS` — the ready-made 8-step registry for the
+  services wizard (`start` / `category` / `location` / `price` / `images` / `description` /
+  `dynamic-form` / `moderation`; `images` needs the app's image manager injected). Backed by the
+  `services` plugin.
 - `@kizuna/core/client/components/showcase/*`: `ShowcaseShell`, `ShowcaseSectionPage`,
   `showcase-sections` (`SHOWCASE_SECTIONS`, `DEFAULT_SHOWCASE_SECTION`, `normalizeShowcaseSection`)
 - `@kizuna/core/client/components/ui/*` and `ui-better-soft/*` — see `docs/COMPONENTS.md`
