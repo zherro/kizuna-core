@@ -32,7 +32,6 @@ export interface UseWizardStateReturn<S> {
   isLastStep: boolean;
   submitting: boolean;
   error: string;
-  touched: Set<keyof S>;
   goBack: () => void;
   goContinue: () => Promise<void>;
   jumpTo: (i: number) => Promise<void>;
@@ -176,7 +175,6 @@ export function useWizardState<S extends Record<string, unknown>>(
     isLastStep,
     submitting,
     error,
-    touched: touchedRef.current,
     goBack,
     goContinue,
     jumpTo,

@@ -24,6 +24,7 @@ export interface WizardStepContext<S = Record<string, unknown>> {
   mode: WizardMode;
   assist?: WizardAssistant;
   persist: (overrides: Partial<S>) => Promise<{ ok: boolean }>;
+  touched: ReadonlySet<keyof S>;
 }
 
 export interface WizardStepProps<S = Record<string, unknown>> extends WizardStepContext<S> {}
