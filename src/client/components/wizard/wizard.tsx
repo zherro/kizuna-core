@@ -52,9 +52,6 @@ export function Wizard<S extends Record<string, unknown> = Record<string, unknow
     steps,
     currentIndex,
     furthestIndex,
-    state,
-    patch,
-    resourceId,
     canContinue,
     isLastStep,
     submitting,
@@ -84,20 +81,7 @@ export function Wizard<S extends Record<string, unknown> = Record<string, unknow
   };
 
   const Step = steps[currentIndex]?.Component;
-
-  const ctx = {
-    state,
-    patch,
-    entities,
-    resourceId,
-    mode,
-    assist: resolvedAssistant,
-    persist: async (overrides: Partial<S>) => {
-      // step-driven persist is handled by useWizardState; expose a no-op-safe passthrough
-      return { ok: true };
-    },
-    touched: new Set<keyof S>() as ReadonlySet<keyof S>,
-  };
+  const { ctx } = wz;
 
   return (
     <WizardShell

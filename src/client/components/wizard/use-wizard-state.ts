@@ -22,6 +22,7 @@ export interface UseWizardStateOptions<S> {
 }
 
 export interface UseWizardStateReturn<S> {
+  ctx: WizardStepContext<S>;
   steps: WizardStep<S>[];
   currentIndex: number;
   furthestIndex: number;
@@ -165,6 +166,7 @@ export function useWizardState<S extends Record<string, unknown>>(
   }, [runStepPersist, currentStep, config, mode]);
 
   return {
+    ctx,
     steps,
     currentIndex: clampedIndex,
     furthestIndex,
