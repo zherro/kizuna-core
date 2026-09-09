@@ -104,6 +104,36 @@ describe('useWizardState', () => {
     expect(payload).toMatchObject({ status: 'active', description: 'D', title: 'novo' });
   });
 
+  it('ctx.persist resolve com { ok, item } quando submitResource devolve o registro', async () => {
+    submitResource.mockReset();
+    submitResource.mockResolvedValue({ ok: true, data: { item: { id: '42', title: 'novo' } } });
+    let persistResult: unknown;
+    const cfg = makeConfig({
+      registry: {
+        a: step('a', {
+          persist: async (c: any) => {
+            persistResult = await c.persist({ title: 'novo' });
+          },
+        }),
+        b: step('b'),
+        c: step('c'),
+      },
+    });
+    const { result } = renderHook(() =>
+      useWizardState({
+        config: cfg,
+        mode: 'edit',
+        entities: {},
+        initialState: { name: 'ok' },
+        initialResourceId: null,
+      }),
+    );
+    await act(async () => {
+      await result.current.goContinue();
+    });
+    expect(persistResult).toEqual({ ok: true, item: { id: '42', title: 'novo' } });
+  });
+
   it('jumpTo não passa de furthestIndex', async () => {
     const { result } = renderHook(() =>
       useWizardState({

@@ -53,9 +53,8 @@ export const SERVICE_WIZARD_STEPS: Record<string, WizardStep<ServiceWizardState>
         categoryGroupId: groupId,
         categoryId,
       });
-      if (!r.ok) throw new Error('Nao foi possivel salvar o servico.');
-      const serviceId = ctx.resourceId != null ? String(ctx.resourceId) : null;
-      if (!serviceId) throw new Error('Nao foi possivel salvar o servico.');
+      if (!r.ok || !r.item) throw new Error('Nao foi possivel salvar o servico.');
+      const serviceId = String(r.item.id);
       const prevLinks =
         (ctx.entities.serviceSubcategoryLinks as ServiceSubcategoryLink[] | undefined) ?? [];
       const next = await syncServiceSubcategories(

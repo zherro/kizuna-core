@@ -75,12 +75,16 @@ export function useWizardState<S extends Record<string, unknown>>(
   }, []);
 
   const doPersist = useCallback(
-    async (overrides: Record<string, unknown>): Promise<{ ok: boolean }> => {
+    async (
+      overrides: Record<string, unknown>,
+    ): Promise<{ ok: boolean; item: Record<string, unknown> | null }> => {
       setSubmitting(true);
       try {
         setError('');
         const r = await persister.persist(overrides);
-        return { ok: r.ok };
+        return { ok: r.ok, item: r.item ?? null };
+      } catch {
+        return { ok: false, item: null };
       } finally {
         setSubmitting(false);
       }
@@ -89,12 +93,16 @@ export function useWizardState<S extends Record<string, unknown>>(
   );
 
   const doPersistExtras = useCallback(
-    async (partialExtras: Record<string, unknown>): Promise<{ ok: boolean }> => {
+    async (
+      partialExtras: Record<string, unknown>,
+    ): Promise<{ ok: boolean; item: Record<string, unknown> | null }> => {
       setSubmitting(true);
       try {
         setError('');
         const r = await persister.persistExtras(partialExtras);
-        return { ok: r.ok };
+        return { ok: r.ok, item: (r as { item?: Record<string, unknown> }).item ?? null };
+      } catch {
+        return { ok: false, item: null };
       } finally {
         setSubmitting(false);
       }
