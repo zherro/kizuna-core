@@ -28,8 +28,16 @@ export function ChatShell() {
   const me = user?.user_id ?? '';
 
   return (
-    <div className="grid h-[calc(100dvh-8rem)] gap-4 lg:grid-cols-[340px_minmax(0,1fr)]">
-      <div className={active ? 'hidden lg:block' : 'block'}>
+    // flex + min-h-0 (não grid com altura fixa) para o ChatWindow herdar a altura real
+    // do container e manter o input de envio sempre colado embaixo, no desktop e no mobile.
+    // Requer que o pai seja uma coluna flex com altura definida (ver page da tela de chat).
+    <div className="flex min-h-0 flex-1 gap-4">
+      <div
+        className={
+          'min-h-0 w-full lg:w-[340px] lg:shrink-0 ' +
+          (active ? 'hidden lg:block' : 'block')
+        }
+      >
         <ConversationList
           items={items}
           activeUid={activeUid}
@@ -38,7 +46,7 @@ export function ChatShell() {
           onRefresh={refresh}
         />
       </div>
-      <div className={active ? 'block' : 'hidden lg:block'}>
+      <div className={'min-h-0 min-w-0 flex-1 ' + (active ? 'block' : 'hidden lg:block')}>
         {active ? (
           <ChatWindow conversation={active} me={me} onBack={() => setActiveUid(null)} />
         ) : (
