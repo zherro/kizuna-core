@@ -56,6 +56,9 @@ a materializa num projeto e mantém projeto ↔ core alinhados. Ver **`docs/CLI.
     `resourceTaxonomy` into its `postgrestResources`), `resources/reviews` (`resourceReviews` —
     `reviews` / `review_tags` / `review_moderation_requests` / `review_moderation_events` /
     `review_stats`; the `reviews` plugin owns them). Registry also has the `review-moderation` block.
+    `resources/services` (`resourceServices` — `services` / `service_categories_sub` /
+    `service_moderations`; the `services` plugin owns them, writes to `service_moderations` go
+    through the `fn_service_moderate` RPC).
     `resources/agenda-config` (`resourceAgendaConfig` — `agenda_schedule` / `agenda_schedule_hours` /
     `agenda_booking_preferences` / `agenda_notification_preferences`; the `agenda` plugin v1.1.0 owns
     them, a consuming project spreads `resourceAgendaConfig` into its `postgrestResources`).
