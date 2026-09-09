@@ -56,15 +56,15 @@ false` (de `GET /api/ai/status`) mostra um aviso de chave ausente.
 | Chave | Default | Nota |
 | --- | --- | --- |
 | `ai_assistant.provider` | `"gemini"` | `gemini` \| `openai` \| `claude` |
-| `ai_assistant.model` | `"gemini-2.0-flash"` | env `GEMINI_MODEL` sobrepõe |
-| `ai_assistant.contexts` | `{ "search": true, "service-wizard": true }` | mapa contexto→bool |
+| `ai_assistant.model` | `"gemini-3.6-flash"` | tem **precedência** sobre `GEMINI_MODEL` (ver `resolveModel`) |
+| `ai_assistant.contexts` | `{}` (seed) — contexto ausente = ligado | mapa contexto→bool; a tela admin liga/desliga |
 
 ## Env
 
 | Var | Default | Nota |
 | --- | --- | --- |
 | `GEMINI_API_KEY` | — | obrigatória para chamadas reais; ausência ⇒ degrada para manual |
-| `GEMINI_MODEL` | `gemini-2.0-flash` | sobrepõe `ai_assistant.model` |
+| `GEMINI_MODEL` | — | usado só quando `ai_assistant.model` não está setado (`resolveModel`: system_config → env → `gemini-3.6-flash`) |
 | `AI_TIMEOUT_MS` | `18000` | timeout de uma chamada |
 
 A chave de API **nunca** entra em `system_config` — só env. `GET /api/ai/status` devolve

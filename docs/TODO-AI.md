@@ -12,3 +12,5 @@ Backlog do mecanismo de IA (plugin `ai_assistant`). Itens explicitamente fora do
 - [ ] Streaming (hoje 1-shot; ok pra extração estruturada, não pra chat longo).
 - [ ] `generate-marketplace-description` vira skill `describe-service` (mantendo fallback de template).
 - [ ] Tela de config: seletor de modelo por lista (hoje texto livre) quando houver > 1 provider.
+- [ ] Rota `/api/ai/criar-anuncio`: rate-limit agora volta 503/`transient` (via `skill.rateLimit` → `AiUnavailableError`), não 429. Queima um strike de degradação e mostra a copy genérica; o branch 429 em `use-navi-anuncio.ts` virou morto p/ essa rota. `runSkill` precisaria de um tipo de erro distinto p/ rate-limit restaurar o 429.
+- [ ] `ia-config-client.tsx` hardcoda `AI_CONTEXTS` — `listSkillContexts()` existe no core mas não é usado (rodaria server-side; a página é client). Um endpoint `GET /api/ai/contexts` fecharia isso.
