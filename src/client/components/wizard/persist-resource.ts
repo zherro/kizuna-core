@@ -3,7 +3,9 @@ import { submitResource } from '../../../lib/resource-submit';
 export interface ResourcePersister<S> {
   readonly baseline: Record<string, unknown> | null;
   setBaseline(item: Record<string, unknown>): void;
-  persist(overrides: Partial<S>): Promise<{ ok: boolean; item: Record<string, unknown> | null }>;
+  persist(
+    overrides: Record<string, unknown>,
+  ): Promise<{ ok: boolean; item: Record<string, unknown> | null }>;
   persistExtras(
     partialExtras: Record<string, unknown>,
   ): Promise<{ ok: boolean; item: Record<string, unknown> | null }>;
@@ -65,7 +67,7 @@ export function createResourcePersister<S extends Record<string, unknown>>(opts:
     setBaseline(item: Record<string, unknown>) {
       baseline = item;
     },
-    persist: (overrides: Partial<S>) => run(overrides as Record<string, unknown>),
+    persist: (overrides: Record<string, unknown>) => run(overrides),
     persistExtras: (partial: Record<string, unknown>) =>
       run({
         extras: { ...((baseline?.extras as Record<string, unknown>) ?? {}), ...partial },

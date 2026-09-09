@@ -27,7 +27,8 @@ export interface WizardStepContext<S = Record<string, unknown>> {
   resourceId: string | number | null;
   mode: WizardMode;
   assist?: WizardAssistant;
-  persist: (overrides: Partial<S>) => Promise<{ ok: boolean }>;
+  /** Persisting is a resource-payload operation — keys are resource column names, not state keys. */
+  persist: (overrides: Record<string, unknown>) => Promise<{ ok: boolean }>;
   /** Merge a partial object into the resource row's `extras` jsonb and save (read-merge-write). */
   persistExtras: (partialExtras: Record<string, unknown>) => Promise<{ ok: boolean }>;
   touched: ReadonlySet<keyof S>;

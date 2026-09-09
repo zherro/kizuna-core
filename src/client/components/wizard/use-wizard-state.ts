@@ -18,6 +18,8 @@ export interface UseWizardStateOptions<S> {
   entities: WizardEntities;
   initialState: S;
   initialResourceId: string | null;
+  /** Full resource record to seed the persister baseline (edit/review) so the first partial persist merges onto the real row instead of resetting unset columns. */
+  initialRecord?: Record<string, unknown>;
   assistant?: WizardAssistant;
 }
 
@@ -42,7 +44,7 @@ export interface UseWizardStateReturn<S> {
 export function useWizardState<S extends Record<string, unknown>>(
   opts: UseWizardStateOptions<S>,
 ): UseWizardStateReturn<S> {
-  const { config, mode, entities, initialState, initialResourceId, assistant } = opts;
+  const { config, mode, entities, initialState, initialResourceId, initialRecord, assistant } = opts;
 
   const [state, setState] = useState<S>(initialState);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -61,6 +63,9 @@ export function useWizardState<S extends Record<string, unknown>>(
       onError: (msg) => setError(msg),
       onId: (id) => setResourceId(id),
     });
+    if (initialRecord) {
+      persisterRef.current.setBaseline(initialRecord);
+    }
   }
   const persister = persisterRef.current;
 
@@ -70,7 +75,7 @@ export function useWizardState<S extends Record<string, unknown>>(
   }, []);
 
   const doPersist = useCallback(
-    async (overrides: Partial<S>): Promise<{ ok: boolean }> => {
+    async (overrides: Record<string, unknown>): Promise<{ ok: boolean }> => {
       setSubmitting(true);
       try {
         setError('');

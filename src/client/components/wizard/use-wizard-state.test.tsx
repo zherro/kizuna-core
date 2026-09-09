@@ -4,6 +4,11 @@ import { renderHook, act, cleanup } from '@testing-library/react';
 import { defineWizard } from './define-wizard';
 import { useWizardState } from './use-wizard-state';
 
+const submitResource = vi.fn();
+vi.mock('../../../lib/resource-submit', () => ({
+  submitResource: (...a: unknown[]) => submitResource(...a),
+}));
+
 const step = (key: string, extra: Record<string, unknown> = {}) => ({
   key,
   label: key,
@@ -62,6 +67,41 @@ describe('useWizardState', () => {
     }); // b -> c, roda persist de b
     expect(result.current.currentIndex).toBe(2);
     expect((cfg.registry!.b.persist as any)).toHaveBeenCalled();
+  });
+
+  it('initialRecord hidrata o baseline do persister (edit não reseta colunas)', async () => {
+    submitResource.mockReset();
+    submitResource.mockResolvedValue({
+      ok: true,
+      data: { item: { id: '7', status: 'active', description: 'D', title: 'novo' } },
+    });
+    const cfg = makeConfig({
+      registry: {
+        a: step('a', {
+          persist: async (c: any) => {
+            await c.persist({ title: 'novo' });
+          },
+        }),
+        b: step('b'),
+        c: step('c'),
+      },
+    });
+    const { result } = renderHook(() =>
+      useWizardState({
+        config: cfg,
+        mode: 'edit',
+        entities: {},
+        initialState: { name: 'ok' },
+        initialResourceId: '7',
+        initialRecord: { id: '7', status: 'active', description: 'D' },
+      }),
+    );
+    await act(async () => {
+      await result.current.goContinue();
+    });
+    const call = submitResource.mock.calls[0][0];
+    const payload = call.toPayload(call.values);
+    expect(payload).toMatchObject({ status: 'active', description: 'D', title: 'novo' });
   });
 
   it('jumpTo não passa de furthestIndex', async () => {

@@ -86,6 +86,8 @@ export interface WizardProps<S extends Record<string, unknown> = Record<string, 
   entities: WizardEntities;
   initialResourceId: string | null;
   initialState?: S;
+  /** Full resource record (edit/review) to hydrate the persister baseline before the first partial persist. */
+  initialRecord?: Record<string, unknown>;
   modeLabels?: Partial<Record<WizardMode, string>>;
   assistant?: WizardAssistant | (() => WizardAssistant);
   onExit?: () => void;
@@ -97,6 +99,7 @@ export function Wizard<S extends Record<string, unknown> = Record<string, unknow
   entities,
   initialResourceId,
   initialState,
+  initialRecord,
   modeLabels,
   assistant,
   onExit,
@@ -115,6 +118,7 @@ export function Wizard<S extends Record<string, unknown> = Record<string, unknow
     entities,
     initialState: (initialState ?? ({} as S)),
     initialResourceId,
+    initialRecord,
     assistant: resolvedAssistant,
   });
 

@@ -36,7 +36,7 @@ export const SERVICE_WIZARD_STEPS: Record<string, WizardStep<ServiceWizardState>
     persist: async (ctx) => {
       // In create mode the row is born in the `category` step — nothing to save here.
       if (ctx.mode === 'create') return;
-      await ctx.persist({ title: ctx.state.title } as Partial<ServiceWizardState>);
+      await ctx.persist({ title: ctx.state.title });
     },
   },
 
@@ -52,7 +52,7 @@ export const SERVICE_WIZARD_STEPS: Record<string, WizardStep<ServiceWizardState>
         title,
         categoryGroupId: groupId,
         categoryId,
-      } as unknown as Partial<ServiceWizardState>);
+      });
       if (!r.ok) throw new Error('Nao foi possivel salvar o servico.');
       const serviceId = ctx.resourceId != null ? String(ctx.resourceId) : null;
       if (!serviceId) throw new Error('Nao foi possivel salvar o servico.');
