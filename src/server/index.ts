@@ -36,6 +36,7 @@ export {
 } from './postgrest-crud';
 
 export { pgrstTable, pgrstRpc } from './postrest/conn';
+export { isOnboardingCompletedServer } from './onboarding';
 export { getStorageService } from './storage-service';
 export { apiError } from './api-error';
 export type { PermissionMap } from '../types/auth';

@@ -107,7 +107,7 @@ a materializa num projeto e mantém projeto ↔ core alinhados. Ver **`docs/CLI.
   `getTokenFromCookies`, `getAuthHeaderFromCookies`, `getServiceAuthHeader`, `getSession`,
   `maskEmail`, `getDisplayNameFromEmail`, `isValidEmail`, `getDisplayName`, `isConfigError`,
   `createLoginHandler`, `createRegisterHandler`, `createLogoutHandler`, `pgrstTable`, `pgrstRpc`,
-  `getStorageService`, `apiError`, `PermissionMap`
+  `getStorageService`, `apiError`, `PermissionMap`, `isOnboardingCompletedServer`
 - `@kizuna/core/server/ai/*`: `runSkill`, `registerSkill`, `getSkill`, `listSkillContexts`,
   `AiSkill`, `AiSkillContext`, `AiProvider` (+ `AiStructuredRequest`), `resolveProvider`,
   `AiUnavailableError`, `classifyAiError`, `isRecoverableAiError`, `checkRateLimit`,
