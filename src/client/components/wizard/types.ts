@@ -6,6 +6,10 @@ export interface WizardEntities {
   [k: string]: unknown;
 }
 
+/**
+ * Frozen contract — also implemented by the ai_assistant plugin (sibling subproject).
+ * Do not change the shape.
+ */
 export interface WizardAssistant {
   suggest(input: { userText: string; state: Record<string, unknown>; stepKey: string }): Promise<{
     message: string;

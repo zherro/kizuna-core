@@ -1,14 +1,84 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useWizardState } from './use-wizard-state';
 import { WizardShell } from './wizard-shell';
+import { applyAssistPatch } from './apply-assist-patch';
+import { Button } from '../ui/button';
 import type {
   WizardAssistant,
   WizardConfig,
   WizardEntities,
   WizardMode,
 } from './types';
+
+function WizardAssistControl<S extends Record<string, unknown>>({
+  assistant,
+  stepKey,
+  state,
+  touched,
+  patch,
+}: {
+  assistant: WizardAssistant;
+  stepKey: string;
+  state: S;
+  touched: ReadonlySet<keyof S>;
+  patch: (p: Partial<S>) => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+
+  if (assistant.status === 'unavailable') return null;
+
+  if (assistant.status === 'degraded') {
+    return (
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => assistant.retry?.()}
+      >
+        Tentar de novo
+      </Button>
+    );
+  }
+
+  const run = async () => {
+    setBusy(true);
+    setMessage(null);
+    try {
+      const res = await assistant.suggest({
+        userText: '',
+        state: state as Record<string, unknown>,
+        stepKey,
+      });
+      const filtered = applyAssistPatch(
+        res.patch as Partial<S>,
+        state,
+        touched as Set<keyof S>,
+      );
+      patch(filtered);
+      setMessage(res.needsMore ? `${res.message} (mais informações ajudam)` : res.message);
+    } catch {
+      setMessage('Não foi possível gerar uma sugestão.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <span className="flex items-center gap-2">
+      {message ? (
+        <span className="text-xs text-muted-foreground" role="status">
+          {message}
+        </span>
+      ) : null}
+      <Button variant="ghost" size="sm" onClick={() => void run()} disabled={busy}>
+        {busy ? 'Preenchendo...' : 'Preencher com IA'}
+      </Button>
+    </span>
+  );
+}
 
 export interface WizardProps<S extends Record<string, unknown> = Record<string, unknown>> {
   config: WizardConfig<S>;
@@ -83,8 +153,21 @@ export function Wizard<S extends Record<string, unknown> = Record<string, unknow
   const Step = steps[currentIndex]?.Component;
   const { ctx } = wz;
 
+  const activeStep = steps[currentIndex];
+  const headerActions =
+    resolvedAssistant && activeStep?.assist ? (
+      <WizardAssistControl
+        assistant={resolvedAssistant}
+        stepKey={activeStep.key}
+        state={ctx.state}
+        touched={ctx.touched}
+        patch={ctx.patch}
+      />
+    ) : undefined;
+
   return (
     <WizardShell
+      headerActions={headerActions}
       mode={mode}
       modeLabels={modeLabels}
       currentStep={currentStep}
