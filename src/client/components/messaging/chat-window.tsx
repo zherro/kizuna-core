@@ -3,6 +3,7 @@ import { ArrowLeft } from 'lucide-react';
 import type { ChatConversationSummary } from '../../../types';
 import { useConversationMessages } from './use-conversation-messages';
 import { MessageList } from './message-list';
+import { MessageListSkeleton } from './message-list-skeleton';
 import { MessageInput } from './message-input';
 
 export function ChatWindow({
@@ -42,6 +43,8 @@ export function ChatWindow({
         <div className="flex flex-1 items-center justify-center p-6 text-center text-sm text-muted-foreground">
           Não foi possível carregar as mensagens.
         </div>
+      ) : status === 'loading' || status === 'idle' ? (
+        <MessageListSkeleton />
       ) : (
         <MessageList
           messages={messages}

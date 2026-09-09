@@ -1,7 +1,8 @@
 'use client';
-import { useEffect, useRef } from 'react';
+import { Fragment, useEffect, useRef } from 'react';
 import type { ChatMessage } from '../../../types';
 import { MessageBubble } from './message-bubble';
+import { groupByDay } from './day-label';
 
 export function MessageList({
   messages,
@@ -43,8 +44,17 @@ export function MessageList({
           </button>
         </div>
       )}
-      {messages.map((m) => (
-        <MessageBubble key={m.uid} message={m} me={me} onRetry={onRetry} />
+      {groupByDay(messages).map((group) => (
+        <Fragment key={group.key}>
+          <div className="sticky top-0 z-10 flex justify-center py-1">
+            <span className="rounded-full bg-muted/80 px-3 py-1 text-[11px] font-medium text-muted-foreground backdrop-blur-sm">
+              {group.label}
+            </span>
+          </div>
+          {group.items.map((m) => (
+            <MessageBubble key={m.uid} message={m} me={me} onRetry={onRetry} />
+          ))}
+        </Fragment>
       ))}
     </div>
   );
