@@ -133,6 +133,51 @@ CREATE POLICY sm_read ON public.service_moderations FOR SELECT TO auth_user
          OR EXISTS (SELECT 1 FROM public.services s WHERE s.id = service_id AND s.created_by = auth.fun_auth_user_id()));
 
 -- =========================================================================
+-- 4) RPC — fn_service_moderate: insere a moderação E deriva services.status, atômico.
+-- =========================================================================
+CREATE OR REPLACE FUNCTION public.fn_service_moderate(
+  p_service_id       bigint,
+  p_decision         text,
+  p_note             text DEFAULT NULL,
+  p_rejection_reason text DEFAULT NULL
+) RETURNS public.service_moderations
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth
+AS $function$
+DECLARE
+  v_row    public.service_moderations;
+  v_status public.service_status;
+BEGIN
+  IF NOT auth.fun_auth_has_perm('services','moderate') THEN
+    RAISE EXCEPTION 'forbidden' USING errcode = '42501';
+  END IF;
+  IF p_decision NOT IN ('approved','rejected','escalated') THEN
+    RAISE EXCEPTION 'decisão inválida: %', p_decision USING errcode = '22023';
+  END IF;
+
+  v_status := CASE p_decision
+    WHEN 'approved' THEN 'active'::public.service_status
+    WHEN 'rejected' THEN 'archived'::public.service_status
+    ELSE 'pending'::public.service_status
+  END;
+
+  INSERT INTO public.service_moderations (service_id, decision, decision_note, rejection_reason)
+  VALUES (
+    p_service_id, p_decision, NULLIF(btrim(coalesce(p_note,'')),''),
+    CASE WHEN p_decision = 'rejected' THEN p_rejection_reason ELSE NULL END
+  )
+  RETURNING * INTO v_row;
+
+  UPDATE public.services SET status = v_status, updated_at = now() WHERE id = p_service_id;
+
+  RETURN v_row;
+END;
+$function$;
+
+GRANT EXECUTE ON FUNCTION public.fn_service_moderate(bigint, text, text, text) TO auth_user;
+
+-- =========================================================================
 -- 5) RBAC + registro do plugin
 -- =========================================================================
 INSERT INTO auth.permissions (resource, action, name) VALUES
