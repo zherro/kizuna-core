@@ -1,5 +1,5 @@
 'use client';
-import { Fragment, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import type { ChatMessage } from '../../../types';
 import { MessageBubble } from './message-bubble';
 import { groupByDay } from './day-label';
@@ -44,17 +44,20 @@ export function MessageList({
           </button>
         </div>
       )}
+      {/* Cada dia é um bloco próprio: assim o separador sticky só "flutua" enquanto
+          o bloco daquele dia está visível — o bloco seguinte empurra o anterior
+          pra cima (um de cada vez), em vez de empilharem todos no topo. */}
       {groupByDay(messages).map((group) => (
-        <Fragment key={group.key}>
+        <section key={group.key} className="space-y-3">
           <div className="sticky top-0 z-10 flex justify-center py-1">
-            <span className="rounded-full bg-muted/80 px-3 py-1 text-[11px] font-medium text-muted-foreground backdrop-blur-sm">
+            <span className="rounded-full bg-muted px-3 py-1 text-[11px] font-medium text-muted-foreground shadow-sm">
               {group.label}
             </span>
           </div>
           {group.items.map((m) => (
             <MessageBubble key={m.uid} message={m} me={me} onRetry={onRetry} />
           ))}
-        </Fragment>
+        </section>
       ))}
     </div>
   );
