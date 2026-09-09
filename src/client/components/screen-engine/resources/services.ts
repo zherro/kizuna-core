@@ -6,10 +6,10 @@ import type { ResourceConfig } from '../types/resource-config';
  * `/api/resources/[resource]` proxy. A consuming project imports `resourceServices` and
  * spreads it into its own `postgrestResources` registry.
  *
- * - `services` — the provider's service listing. `mapInput` does read-merge-write: it spreads
- *   the raw `input` first, then overrides the derived/normalized columns, so a caller sending
- *   `{ title }` alone does not blank the other columns. `tenant_id` / `created_by` are never
- *   emitted — DB defaults own them.
+ * - `services` — the provider's service listing. `mapInput` is a clean snake-only projection:
+ *   it reads camelCase or snake_case aliases for every field and returns only snake_case
+ *   columns, never spreading the raw `input` (which would leak camelCase keys to PostgREST).
+ *   `tenant_id` / `created_by` are never emitted — DB defaults own them.
  * - `service_categories_sub` — the `services` <-> taxonomy join table.
  * - `service_moderations` — one row per moderation decision. The route NEVER writes it
  *   (`mapInput: () => ({})`); all writes go through the `fn_service_moderate` RPC, which inserts
@@ -43,10 +43,7 @@ export const resourceServices: Record<string, ResourceConfig> = {
       // null, never the empty-string default a not-yet-selected form field starts with.
       const serviceLocation = String(input.serviceLocation ?? input.service_location ?? '').trim();
 
-      // read-merge-write: spread the raw input first so any column the caller sent that this
-      // mapInput does not derive survives to the payload, THEN set the derived/normalized ones.
       return {
-        ...input,
         title,
         category_group_id: Number.isFinite(categoryGroupId) ? categoryGroupId : null,
         category_id: Number.isFinite(categoryId) ? categoryId : null,

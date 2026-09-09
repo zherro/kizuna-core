@@ -8,14 +8,26 @@ describe('resourceServices', () => {
     );
   });
 
-  it('services.mapInput preserva campos não mencionados (read-merge-write)', () => {
+  it('services.mapInput lê aliases camelCase', () => {
     const out = resourceServices.services.mapInput!({
-      status: 'active', description: '<p>x</p>', title: ' Barbeiro ',
-      categoryId: '10', categoryGroupId: '3',
+      categoryId: '10', categoryGroupId: '3', startingPrice: 50, priceUnit: 'hour', title: 'x',
+    });
+    expect(out.category_id).toBe(10);
+    expect(out.category_group_id).toBe(3);
+    expect(out.starting_price).toBe(50);
+    expect(out.price_unit).toBe('hour');
+  });
+
+  it('services.mapInput projeta todas as colunas snake_case a partir de um registro snake', () => {
+    const out = resourceServices.services.mapInput!({
+      title: ' Barbeiro ', category_id: 7, category_group_id: 2, status: 'active',
+      service_location: 'remoto', starting_price: 120, price_unit: 'quote',
     });
     expect(out.title).toBe('Barbeiro');
-    expect(out.status).toBe('active'); // não resetou pra 'pending'
-    expect(out.category_id).toBe(10);
+    expect(out.category_id).toBe(7);
+    expect(out.status).toBe('active');
+    expect(out.service_location).toBe('remoto');
+    expect(out.starting_price).toBe(120);
   });
 
   it('services.mapInput normaliza service_location vazio pra null', () => {
