@@ -83,6 +83,20 @@ export function useWizardState<S extends Record<string, unknown>>(
     [persister],
   );
 
+  const doPersistExtras = useCallback(
+    async (partialExtras: Record<string, unknown>): Promise<{ ok: boolean }> => {
+      setSubmitting(true);
+      try {
+        setError('');
+        const r = await persister.persistExtras(partialExtras);
+        return { ok: r.ok };
+      } finally {
+        setSubmitting(false);
+      }
+    },
+    [persister],
+  );
+
   const ctx = useMemo<WizardStepContext<S>>(
     () => ({
       state,
@@ -92,9 +106,10 @@ export function useWizardState<S extends Record<string, unknown>>(
       mode,
       assist: assistant,
       persist: doPersist,
+      persistExtras: doPersistExtras,
       touched: touchedRef.current,
     }),
-    [state, patch, entities, resourceId, mode, assistant, doPersist],
+    [state, patch, entities, resourceId, mode, assistant, doPersist, doPersistExtras],
   );
 
   const steps = useMemo(() => resolveSteps(config, ctx), [config, ctx]);
