@@ -22,6 +22,14 @@ describe('useAiDegradation', () => {
     expect(result.current.status).toBe('unavailable');
   });
 
+  it('unavailable trava: transient depois não volta a degraded', () => {
+    const { result } = renderHook(() => useAiDegradation('x'));
+    act(() => result.current.report(new Error('quota exceeded')));
+    expect(result.current.status).toBe('unavailable');
+    act(() => result.current.report(new Error('connection timeout')));
+    expect(result.current.status).toBe('unavailable');
+  });
+
   it('retry limpa degraded', () => {
     const { result } = renderHook(() => useAiDegradation('x'));
     act(() => result.current.report(new Error('connection timeout')));

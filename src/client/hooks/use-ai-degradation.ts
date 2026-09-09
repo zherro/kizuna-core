@@ -40,7 +40,7 @@ export function useAiDegradation(contextKey: string): UseAiDegradation {
     const reason = classifyAiError(error);
     if (reason === 'transient') failureCountRef.current += 1;
     const permanent = reason === 'blocked' || failureCountRef.current >= MAX_FAILURES;
-    setStatus(permanent ? 'unavailable' : 'degraded');
+    setStatus((prev) => (prev === 'unavailable' || permanent ? 'unavailable' : 'degraded'));
   }, []);
 
   const retry = useCallback(() => {
