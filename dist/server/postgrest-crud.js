@@ -330,7 +330,13 @@ export async function serverFetchResource(resource, filters = {}, options = {}) 
     if (options.limit != null) {
         query.set('limit', String(options.limit));
     }
-    const response = await pgrstTable(`/${config.table}?${query.toString()}`, { method: 'GET', headers: getSchemaHeaders(config, 'GET') }, { auth: options.auth ?? null });
+    const response = await pgrstTable(`/${config.table}?${query.toString()}`, {
+        method: 'GET',
+        headers: getSchemaHeaders(config, 'GET'),
+        ...(options.revalidate != null
+            ? { cache: undefined, next: { revalidate: options.revalidate } }
+            : {}),
+    }, { auth: options.auth ?? null });
     if (!response.ok) {
         const err = parsePgError(await response.json().catch(() => null));
         throw new Error(err.message);

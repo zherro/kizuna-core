@@ -1,7 +1,7 @@
 import { type AppLanguage, type AppMessages } from '@/i18n/messages';
 type AppTheme = 'light' | 'dark' | 'system';
 type ResolvedTheme = 'light' | 'dark';
-export type AppThemeColor = 'blue' | 'green' | 'purple' | 'teal' | 'red' | 'orange' | 'coral';
+export type AppThemeColor = 'blue' | 'green' | 'purple' | 'teal' | 'red' | 'orange' | 'coral' | 'terracotta';
 type AppPreferencesContextValue = {
     language: AppLanguage;
     setLanguage: (language: AppLanguage) => void;
@@ -14,6 +14,7 @@ type AppPreferencesContextValue = {
     languageNames: Record<AppLanguage, string>;
     messages: AppMessages;
 };
+export declare const THEME_COLORS: readonly AppThemeColor[];
 export declare function AppPreferencesProvider({ children }: {
     children: React.ReactNode;
 }): import("react/jsx-runtime").JSX.Element;

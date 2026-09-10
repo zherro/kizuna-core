@@ -4,6 +4,7 @@ import { Check } from 'lucide-react';
 import { QuillEditor } from '../../ui/quill-editor';
 import { cn } from '../../../../lib/utils';
 import type { WizardStepProps } from '../../wizard/types';
+import { useWizardLayout } from '../../wizard/wizard-layout';
 import { stripHtml, type ServiceCategory, type ServiceWizardState } from '../service-type';
 import { ServiceConfigSummary } from '../service-config-summary';
 import { StepHeader } from './step-header';
@@ -16,6 +17,10 @@ export function StepDescription({ state, patch, entities }: WizardStepProps<Serv
   const value = state.description ?? '';
   const length = stripHtml(value).length;
   const met = length >= DESCRIPTION_MIN_LENGTH;
+
+  // In the stacked (scroll) layout every field the summary recaps is already visible above — drop
+  // it to cut the redundant block and the extra scroll distance.
+  const { stacked } = useWizardLayout();
 
   const groups = (entities.groups as Array<{ id: string | number; name: string }> | undefined) ?? [];
   const categories = (entities.categories as ServiceCategory[] | undefined) ?? [];
@@ -64,16 +69,18 @@ export function StepDescription({ state, patch, entities }: WizardStepProps<Serv
         cliente certo.
       </StepHint>
 
-      <ServiceConfigSummary
-        groupName={selectedGroup?.name}
-        categoryName={selectedCategory?.name}
-        subcategoryNames={selectedSubcategoryNames}
-        title={state.title}
-        serviceLocation={state.serviceLocation}
-        startingPrice={state.startingPrice}
-        priceUnit={state.priceUnit}
-        imageIds={state.imageIds}
-      />
+      {stacked ? null : (
+        <ServiceConfigSummary
+          groupName={selectedGroup?.name}
+          categoryName={selectedCategory?.name}
+          subcategoryNames={selectedSubcategoryNames}
+          title={state.title}
+          serviceLocation={state.serviceLocation}
+          startingPrice={state.startingPrice}
+          priceUnit={state.priceUnit}
+          imageIds={state.imageIds}
+        />
+      )}
     </div>
   );
 }

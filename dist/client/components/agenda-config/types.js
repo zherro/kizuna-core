@@ -46,7 +46,12 @@ export const DEFAULT_NOTIFICATION_PREFERENCES = {
 };
 export function buildDefaultHour(dayOfWeek) {
     if (dayOfWeek === LUNCH_DAY_OF_WEEK) {
-        return { day_of_week: LUNCH_DAY_OF_WEEK, open_time: '12:00', close_time: '13:00', active: false };
+        return {
+            day_of_week: LUNCH_DAY_OF_WEEK,
+            open_time: '12:00',
+            close_time: '13:00',
+            active: false,
+        };
     }
     return {
         day_of_week: dayOfWeek,

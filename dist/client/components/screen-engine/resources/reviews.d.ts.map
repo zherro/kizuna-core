@@ -1,1 +1,1 @@
-{"version":3,"file":"reviews.d.ts","sourceRoot":"","sources":["../../../../../src/client/components/screen-engine/resources/reviews.ts"],"names":[],"mappings":"AACA,OAAO,KAAK,EAAE,cAAc,EAAE,MAAM,0BAA0B,CAAC;AA0O/D,eAAO,MAAM,eAAe,EAAE,MAAM,CAAC,MAAM,EAAE,cAAc,CAM1D,CAAC"}
+{"version":3,"file":"reviews.d.ts","sourceRoot":"","sources":["../../../../../src/client/components/screen-engine/resources/reviews.ts"],"names":[],"mappings":"AACA,OAAO,KAAK,EAAE,cAAc,EAAE,MAAM,0BAA0B,CAAC;AA8O/D,eAAO,MAAM,eAAe,EAAE,MAAM,CAAC,MAAM,EAAE,cAAc,CAM1D,CAAC"}

@@ -23,7 +23,7 @@ function getSystemTheme() {
         return 'light';
     return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
-const THEME_COLORS = [
+export const THEME_COLORS = [
     'blue',
     'green',
     'purple',
@@ -31,6 +31,7 @@ const THEME_COLORS = [
     'red',
     'orange',
     'coral',
+    'terracotta',
 ];
 function parseThemeColor(value) {
     if (value && THEME_COLORS.includes(value)) {

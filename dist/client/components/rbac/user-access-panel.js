@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import { useToast } from '../../hooks/use-toast';
 import { useAuth } from '../../providers/auth-provider';
 import { callRbacRpc } from './rbac-rpc';
-export function UserAccessPanel({ users, roles, groups, roleGrants, initialOverrides, }) {
+export function UserAccessPanel({ users, roles, groups, roleGrants, initialOverrides }) {
     const { user: me } = useAuth();
     const { success, error } = useToast();
     const isRoot = me?.is_root === true;
@@ -85,8 +85,10 @@ export function UserAccessPanel({ users, roles, groups, roleGrants, initialOverr
     if (users.length === 0) {
         return (_jsx("p", { className: "rounded-xl border border-border bg-muted/30 p-6 text-sm text-muted-foreground", children: "Nenhum membro neste tenant." }));
     }
-    const currentRoleId = selected ? userRole[selected.user_id] ?? null : null;
-    const inheritedIds = currentRoleId ? roleGrantIds.get(currentRoleId) ?? new Set() : new Set();
+    const currentRoleId = selected ? (userRole[selected.user_id] ?? null) : null;
+    const inheritedIds = currentRoleId
+        ? (roleGrantIds.get(currentRoleId) ?? new Set())
+        : new Set();
     return (_jsxs("div", { className: "grid gap-6 md:grid-cols-[260px_1fr]", children: [_jsx("aside", { className: "rounded-xl border border-border", children: _jsx("ul", { className: "max-h-[70vh] divide-y divide-border overflow-y-auto", children: users.map((u) => {
                         const label = u.display_name || u.full_name || u.email || u.user_id.slice(0, 8);
                         const active = u.user_id === selectedId;
@@ -103,7 +105,11 @@ export function UserAccessPanel({ users, roles, groups, roleGrants, initialOverr
                                         const canAllow = callerCanGrant(perm);
                                         return (_jsxs("li", { className: "flex flex-wrap items-center justify-between gap-3 px-3 py-2 text-sm", children: [_jsxs("span", { children: [_jsx("span", { className: "font-medium", children: perm.action }), perm.name ? (_jsx("span", { className: "ml-2 text-xs text-muted-foreground", children: perm.name })) : null, _jsxs("span", { className: "ml-2 text-[11px] text-muted-foreground", children: ["(papel: ", inherited ? 'concede' : 'não concede', ")"] })] }), _jsx("span", { className: "flex gap-1", children: ['inherit', 'allow', 'deny'].map((opt) => (_jsx("button", { type: "button", disabled: busy || (opt === 'allow' && !canAllow), onClick: () => void changeOverride(perm, opt), className: `rounded-md border px-2 py-1 text-xs transition disabled:opacity-40 ${state === opt
                                                             ? 'border-primary bg-primary text-primary-foreground'
-                                                            : 'border-border hover:bg-accent'}`, children: opt === 'inherit' ? 'Herdar' : opt === 'allow' ? 'Permitir' : 'Negar' }, opt))) })] }, perm.id));
+                                                            : 'border-border hover:bg-accent'}`, children: opt === 'inherit'
+                                                            ? 'Herdar'
+                                                            : opt === 'allow'
+                                                                ? 'Permitir'
+                                                                : 'Negar' }, opt))) })] }, perm.id));
                                     }) })] }, group.resource))) })] })) : null] }));
 }
 //# sourceMappingURL=user-access-panel.js.map

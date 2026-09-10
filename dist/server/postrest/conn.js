@@ -70,10 +70,13 @@ export async function pgrstTable(path, init, opts) {
     const method = (init?.method || 'GET').toUpperCase();
     const body = typeof init?.body === 'string' ? init.body : undefined;
     logCurl(url, method, headers, body);
+    // `no-store` é o default (leitura sempre fresca), mas o caller pode optar por cache
+    // passando `cache` / `next` no `init` — ex.: uma leitura pública de config global que
+    // pode ser ISR (ver docs/HARDENING.md §1/§2). O spread depois do default deixa o caller vencer.
     return fetch(url, {
+        cache: 'no-store',
         ...(init || {}),
         headers,
-        cache: 'no-store',
     });
 }
 //# sourceMappingURL=conn.js.map

@@ -22,7 +22,7 @@ export function FormResultViewer({ schema, values }) {
                     .map((f) => {
                     const key = fieldKey(f);
                     const visible = isFieldVisible(f, values);
-                    return (_jsxs("div", { className: "grid grid-cols-[minmax(0,1fr)_minmax(0,2fr)] gap-3 px-3 py-2 text-sm", children: [_jsx("span", { className: "truncate font-medium text-muted-foreground", children: f.label || key }), _jsx("span", { className: "truncate", children: visible ? formatValue(values[key]) : _jsx("em", { className: "text-muted-foreground", children: "oculto" }) })] }, f.id));
+                    return (_jsxs("div", { className: "grid grid-cols-[minmax(0,1fr)_minmax(0,2fr)] gap-3 px-3 py-2 text-sm", children: [_jsx("span", { className: "truncate font-medium text-muted-foreground", children: f.label || key }), _jsx("span", { className: "truncate", children: visible ? (formatValue(values[key])) : (_jsx("em", { className: "text-muted-foreground", children: "oculto" })) })] }, f.id));
                 }) })) : (_jsx("pre", { className: "max-h-72 overflow-auto rounded-md bg-muted p-3 text-xs", children: JSON.stringify(output, null, 2) }))] }));
 }
 //# sourceMappingURL=FormResultViewer.js.map

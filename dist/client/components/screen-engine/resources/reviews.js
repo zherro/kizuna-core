@@ -1,7 +1,9 @@
 import { makeSlug, parseActive } from '../utils/resource-utils';
 /** "Maria Silva Souza" -> "Maria S." ; "" / null -> "Cliente". */
 function maskAuthorName(raw) {
-    const name = String(raw ?? '').trim().replace(/\s+/g, ' ');
+    const name = String(raw ?? '')
+        .trim()
+        .replace(/\s+/g, ' ');
     if (!name)
         return 'Cliente';
     const [first, second] = name.split(' ');
@@ -126,7 +128,9 @@ const REVIEW_MODERATION_REQUESTS_RESOURCE = {
     mapInput: (input) => {
         const out = {};
         if (input.status !== undefined) {
-            const s = String(input.status ?? '').trim().toLowerCase();
+            const s = String(input.status ?? '')
+                .trim()
+                .toLowerCase();
             if (['pending', 'approved', 'rejected', 'cancelled'].includes(s))
                 out.status = s;
         }

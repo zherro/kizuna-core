@@ -1,4 +1,4 @@
-import { AiUnavailableError } from './errors';
+import { AiRateLimitedError, AiUnavailableError } from './errors';
 import { checkRateLimit } from './rate-limit';
 import { readSystemConfig } from './system-config';
 import { resolveProvider } from './provider/resolve';
@@ -29,7 +29,9 @@ export async function runSkill<I, O>(
     skill.rateLimit &&
     !checkRateLimit(`${skillKey}:${ctx.userId}`, skill.rateLimit.max, skill.rateLimit.windowMs)
   ) {
-    throw new AiUnavailableError('rate limit.', { reason: 'transient' });
+    throw new AiRateLimitedError('rate limit.', {
+      retryAfterSec: Math.ceil(skill.rateLimit.windowMs / 1000),
+    });
   }
 
   const provider = await resolveProvider();

@@ -10,6 +10,6 @@ type Props = {
     roleGrants: RoleGrantRow[];
     initialOverrides: UserOverrideRow[];
 };
-export declare function UserAccessPanel({ users, roles, groups, roleGrants, initialOverrides, }: Props): import("react/jsx-runtime").JSX.Element;
+export declare function UserAccessPanel({ users, roles, groups, roleGrants, initialOverrides }: Props): import("react/jsx-runtime").JSX.Element;
 export {};
 //# sourceMappingURL=user-access-panel.d.ts.map

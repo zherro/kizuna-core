@@ -1,6 +1,6 @@
 'use client';
 import { jsx as _jsx } from "react/jsx-runtime";
-import { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, } from 'react';
 function buildAuthUser(raw) {
     const displayName = raw.display_name?.trim();
     const login = raw.login?.trim();
@@ -58,6 +58,26 @@ export function AuthProvider({ children, initialUser, }) {
     const [user, setUserRaw] = useState(initialUser ? buildAuthUser(initialUser) : null);
     const setUser = useCallback((raw) => {
         setUserRaw(raw ? buildAuthUser(raw) : null);
+    }, []);
+    // Hidratação client-side: quando o layout raiz NÃO passa `initialUser` (para
+    // as páginas públicas poderem ser estáticas — ver docs/HARDENING.md), busca a
+    // sessão uma vez via `GET /api/auth/me`. Se `initialUser` veio do servidor
+    // (ex.: layout de /painel), pula. Um `setUser` manual (pós login/registro)
+    // também trava a hidratação.
+    const hydrated = useRef(initialUser != null);
+    useEffect(() => {
+        if (hydrated.current)
+            return;
+        hydrated.current = true;
+        const ac = new AbortController();
+        fetch('/api/auth/me', { credentials: 'same-origin', signal: ac.signal })
+            .then((r) => (r.ok ? r.json() : { user: null }))
+            .then((d) => {
+            if (d?.user)
+                setUserRaw(buildAuthUser(d.user));
+        })
+            .catch(() => { });
+        return () => ac.abort();
     }, []);
     const logout = useCallback(async () => {
         await fetch('/api/auth/logout', { method: 'POST' });

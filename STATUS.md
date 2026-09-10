@@ -88,11 +88,16 @@ a materializa num projeto e mantém projeto ↔ core alinhados. Ver **`docs/CLI.
     `fn_review_moderate`). The `services` wizard writes moderation decisions through the
     `fn_service_moderate` RPC (see `docs/PLUGINS.md`).
 - `@kizuna/core/client/components/wizard/*`: `Wizard`, `defineWizard`, `useWizardState`,
-  `resolveSteps`, `applyAssistPatch`, `createResourcePersister`, plus the contract types
-  `WizardStep`, `WizardStepProps`, `WizardStepContext`, `WizardConfig`, `WizardMode`,
-  `WizardEntities`, `WizardAssistant`. Generic config-driven multi-step engine against ONE
-  PostgREST resource (read-merge-write persistence, layout-foco chrome, optional AI slot).
-  Domain-agnostic — see `docs/WIZARD.md`.
+  `resolveSteps`, `applyAssistPatch`, `createResourcePersister`, `WizardShell`,
+  `WizardScrollShell`, `WizardLayoutToggle`, `useWizardLayout`, `WizardLayoutContext`,
+  `layoutStorageKey` / `readStoredLayout` / `writeStoredLayout` / `isWizardLayout` /
+  `WIZARD_LAYOUTS`, plus the contract types `WizardStep`, `WizardStepProps`,
+  `WizardStepContext`, `WizardConfig`, `WizardMode`, `WizardEntities`, `WizardAssistant`,
+  `WizardLayout`. Generic config-driven multi-step engine against ONE PostgREST resource
+  (read-merge-write persistence, optional AI slot). Two step layouts via the `Wizard` prop
+  `variant?: 'stepper' | 'scroll'` — the classic layout-foco stepper and an immersive vertical
+  questionnaire; the header toggle switches them live (create only) and the choice is remembered
+  per resource in `localStorage`. Domain-agnostic — see `docs/WIZARD.md`.
 - `@kizuna/core/client/components/services/*`: `ServiceConfigSummary`; from `service-type`
   `defaultPriceUnitForCategory`, `SERVICE_PRICE_UNIT_OPTIONS`, `ServiceWizardState`
   (+ `SERVICE_WIZARD_INITIAL_STATE`), `ServiceRecord`; from `service-labels`

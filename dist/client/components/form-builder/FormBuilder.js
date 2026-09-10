@@ -5,7 +5,7 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../ui/tabs';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../ui/sheet';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger, } from '../ui/accordion';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../ui/accordion';
 import { AlertTriangle, Code, Copy, Eye, GripVertical, Laptop, Monitor, Plus, Settings2, Smartphone, Tablet, Trash2, } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import { collectKeyIssues, createField, FIELD_TYPE_LABELS, uid, } from './types';

@@ -10,6 +10,7 @@ import { Input } from '../ui/input';
 import { Progress } from '../ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { ExperiencePill } from '../ui-better-soft/experience-pill';
+import { WizardLayoutToggle } from '../wizard/wizard-layout-toggle';
 import { FixedBottomProgress } from '../ui-better-soft/fixed-bottom-progress';
 import { MosaicGrid } from '../ui-better-soft/mosaic-grid';
 import { AdminPageReader } from '../ui-better-soft/headers/admin-page-reader';
@@ -77,6 +78,10 @@ function ProgressDemo() {
 }
 function UiBetterSoftDemo() {
     return (_jsxs("div", { className: "flex flex-wrap items-center gap-3", children: [_jsx(ExperiencePill, {}), _jsx(ExperiencePill, { text: "Publicacao em menos de 2 minutos" })] }));
+}
+function WizardLayoutToggleDemo() {
+    const [layout, setLayout] = useState('scroll');
+    return (_jsxs("div", { className: "flex flex-col gap-2", children: [_jsx(WizardLayoutToggle, { value: layout, onChange: setLayout }), _jsxs("p", { className: "text-xs text-muted-foreground", children: ["Layout selecionado: ", _jsx("span", { className: "font-medium text-foreground", children: layout })] })] }));
 }
 const MOSAIC_DEMO_ITEMS = [
     {
@@ -353,6 +358,8 @@ function SectionDemo({ sectionId }) {
         return _jsx(FormsShowcaseDemo, {});
     if (sectionId === 'pages-admin')
         return _jsx(PagesAdminShowcaseDemo, {});
+    if (sectionId === 'wizard-layout-toggle')
+        return _jsx(WizardLayoutToggleDemo, {});
     return _jsx(UiBetterSoftDemo, {});
 }
 export function ShowcaseSectionPage({ sectionId }) {

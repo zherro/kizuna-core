@@ -6,7 +6,7 @@ import { NumberField } from '../ui-better-soft/forms/number-field';
 import { Section } from '../ui-better-soft/section';
 import { ToggleRow } from '../ui-better-soft/toggle-row';
 import { useTenantResource } from '../../hooks/use-tenant-resource';
-import { DEFAULT_NOTIFICATION_PREFERENCES, } from './types';
+import { DEFAULT_NOTIFICATION_PREFERENCES } from './types';
 export function AgendaNotificationsSection() {
     const prefs = useTenantResource({
         resource: 'agenda_notification_preferences',

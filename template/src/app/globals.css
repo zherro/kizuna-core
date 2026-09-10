@@ -701,6 +701,66 @@ html {
   }
 }
 
+/* Layout toggle — segmented control in the wizard chrome. Active pill via `data-active`. */
+.wz-layout-toggle {
+  background-color: color-mix(in oklch, var(--muted) 55%, var(--background));
+  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--border) 80%, transparent);
+}
+
+.wz-layout-toggle [data-active='true'] {
+  background-color: var(--background);
+  box-shadow:
+    0 1px 2px color-mix(in oklch, var(--foreground) 10%, transparent),
+    inset 0 0 0 1px color-mix(in oklch, var(--primary) 35%, transparent);
+}
+
+/* Scroll (questionnaire) layout — stacked step sections that accumulate as they're answered. */
+.wz-scroll-step {
+  padding-left: 0.875rem;
+}
+
+.wz-scroll-step + .wz-scroll-step {
+  border-top: 1px solid color-mix(in oklch, var(--border) 45%, transparent);
+  padding-top: 2.5rem;
+}
+
+/* Answered steps recede but stay on screen and editable; a soft left thread ties them together.
+   Inset shadow, not a border/margin — no layout shift as sections flip to answered. */
+.wz-scroll-step[data-answered] {
+  box-shadow: inset 2px 0 0 color-mix(in oklch, var(--primary) 28%, transparent);
+  opacity: 0.66;
+  transition:
+    opacity 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.wz-scroll-step[data-answered]:hover,
+.wz-scroll-step[data-answered]:focus-within {
+  opacity: 1;
+  box-shadow: inset 2px 0 0 color-mix(in oklch, var(--primary) 55%, transparent);
+}
+
+@keyframes wz-scroll-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.wz-scroll-reveal {
+  animation: wz-scroll-reveal 0.36s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wz-scroll-reveal {
+    animation: none;
+  }
+}
+
 /* Provider profile → service detail drawer. Enter/exit are CSS-driven (no JS frame juggling);
    the parent flips `data-closing` and unmounts after the exit animation. */
 @keyframes drawer-overlay-in {

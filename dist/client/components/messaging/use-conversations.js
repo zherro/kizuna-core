@@ -22,6 +22,9 @@ export function useConversations() {
         }
     }, []);
     useEffect(() => {
+        // busca inicial + assina o polling da lista — sincronização com o backend (setState só após
+        // o await dentro de refresh), não um setState derivável de render.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         refresh();
         const loop = () => {
             if (typeof document !== 'undefined' && document.hidden)

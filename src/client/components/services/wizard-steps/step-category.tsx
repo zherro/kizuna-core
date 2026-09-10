@@ -5,6 +5,7 @@ import { Pencil } from 'lucide-react';
 import { TaxonomyIcon } from '../../taxonomy/taxonomy-icon';
 import { IconChoiceGrid } from '../../ui-better-soft/lists/icon-choice-grid';
 import type { WizardStepProps } from '../../wizard/types';
+import { useWizardLayout } from '../../wizard/wizard-layout';
 import {
   defaultPriceUnitForCategory,
   type ServiceCategory,
@@ -43,7 +44,12 @@ export function StepCategory(props: WizardStepProps<ServiceWizardState>) {
     (category) => String(category.id) === String(categoryId)
   );
 
-  const [pickerOpen, setPickerOpen] = useState(() => Boolean(groupId) && !categoryId);
+  // Stacked (scroll) layout: don't pop the modal on mount — the step is visible in a long list and
+  // an unprompted dialog is jarring. The "Abrir/Trocar" button still opens it on demand.
+  const { stacked } = useWizardLayout();
+  const [pickerOpen, setPickerOpen] = useState(
+    () => Boolean(groupId) && !categoryId && !stacked,
+  );
 
   function handleGroupSelect(nextGroupId: string) {
     const changed = nextGroupId !== groupId;

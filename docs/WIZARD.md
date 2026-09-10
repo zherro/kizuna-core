@@ -12,9 +12,12 @@ steps e pelo `registry`.
 ## O que o core exporta
 
 `Wizard`, `defineWizard`, `useWizardState`, `resolveSteps`, `applyAssistPatch`,
-`createResourcePersister` + os tipos `WizardStep`, `WizardStepProps`, `WizardStepContext`,
-`WizardConfig`, `WizardMode` (`'create' | 'edit' | 'review'`), `WizardEntities`,
-`WizardAssistant`.
+`createResourcePersister`, `WizardShell`, `WizardScrollShell`, `WizardLayoutToggle`,
+`useWizardLayout`, `WizardLayoutContext`, `layoutStorageKey` / `readStoredLayout` /
+`writeStoredLayout` / `isWizardLayout` / `WIZARD_LAYOUTS` + os tipos `WizardStep`,
+`WizardStepProps`, `WizardStepContext`, `WizardConfig`, `WizardMode`
+(`'create' | 'edit' | 'review'`), `WizardEntities`, `WizardAssistant`,
+`WizardLayout` (`'stepper' | 'scroll'`).
 
 ## Contrato de step (`WizardStep<S>`)
 
@@ -67,19 +70,10 @@ posições `after`/`before`, avalia `enabled(ctx)`.
 ```ts
 import { defineWizard } from '@kizuna/core/client/components/wizard';
 import { SERVICE_WIZARD_STEPS } from '@kizuna/core/client/components/services';
-import { AdImagesManager } from '@/components/ads/ad-images-manager';
-import { StepImages } from '@kizuna/core/client/components/services';
 
 export const servicoWizard = defineWizard({
   resource: 'services',
-  registry: {
-    ...SERVICE_WIZARD_STEPS,
-    // `images` precisa do image-manager do app injetado:
-    images: {
-      ...SERVICE_WIZARD_STEPS.images,
-      Component: (p) => <StepImages {...p} ImagesManager={AdImagesManager} />,
-    },
-  },
+  registry: SERVICE_WIZARD_STEPS,
   steps: [
     'start', 'category', 'location', 'price', 'images', 'description',
     'dynamic-form',   // condicional — enabled() checa o formKey da categoria
@@ -128,11 +122,38 @@ num container normal no fluxo do documento:
   opcional à esquerda, step ativo à direita (`key={currentStep}` + animação `.wz-step-in`).
 - **Bottom bar** sticky: "Voltar" (`invisible` no passo 1), "Continuar" / "Salvar e
   continuar", "Concluir" no último.
-- O header padrão do painel fica escondido enquanto a rota é de wizard (via `isAdWizardRoute`
-  no `panel-shell`), mas sem `position: fixed`.
+- O header padrão do painel fica escondido enquanto a rota é de wizard (o app consumidor casa a
+  rota via um predicado `isFullBleedRoute` no `panel-shell`), mas sem `position: fixed`.
 - Outlines de card ativo via `.wz-selectable` / `.wz-disc-current` no `globals.css` do core
   (utilitários `border-*` do Tailwind estão mortos no projeto — ver memória
   `tailwind-border-color-unlayered`).
+
+## Layouts (`stepper` / `scroll`)
+
+A mesma config/steps/state renderiza em dois layouts. É **prop do `<Wizard>`**, não da config, e
+é **ortogonal a `WizardMode`** — `WizardMode` é regra de negócio, layout é só apresentação.
+
+```tsx
+<Wizard config={servicoWizard} mode="create" variant="scroll" ... />
+```
+
+| `variant`   | O quê |
+| ----------- | ----- |
+| `'stepper'` (default) | O chrome layout-foco acima: um step por vez, Voltar/Continuar, rail. |
+| `'scroll'`  | Questionário vertical imersivo: os steps respondidos ficam empilhados e editáveis, o próximo aparece quando o atual valida (`canContinue`) e a página desliza até ele. Só **"Concluir"** no rodapé. |
+
+- **Toggle no header** (`WizardLayoutToggle`) troca ao vivo; a escolha é lembrada por recurso em
+  `localStorage` na chave `wizard:layout:<resource>`.
+- O layout `scroll` vale **só em `create`** — `edit`/`review` sempre usam o `stepper` (o `scroll`
+  não tem história de persistir sem avançar). O toggle nem aparece fora de `create`.
+- O reveal progressivo é apenas `goContinue()` disparado de um `useEffect` no `WizardScrollShell`
+  — o mesmo caminho do botão "Continuar", então `step.persist` roda em cada avanço como sempre.
+  `useWizardState` **não muda**.
+- Steps que precisam se adaptar ao empilhamento leem `useWizardLayout()` → `{ layout, stacked }`
+  (default `{ 'stepper', false }` fora de qualquer shell). Hoje: `StepCategory` não abre o modal
+  sozinho quando `stacked`; `StepDescription` esconde o `ServiceConfigSummary` redundante.
+- CSS: `.wz-layout-toggle`, `.wz-scroll-step`, `@keyframes wz-scroll-reveal` no `globals.css`
+  (core + template, mantidos em sincronia).
 
 ## Slot de IA (`WizardAssistant`)
 

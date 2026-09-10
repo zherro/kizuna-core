@@ -7,7 +7,7 @@ import { cn } from '../../../lib/utils';
  *  - display (`readOnly`) — used inside `ReviewCard`.
  * Colored state uses `bg-*`/`text-*` (border-color utilities are dead here).
  */
-export function ReviewTags({ tags, selected = [], onToggle, readOnly = false }) {
+export function ReviewTags({ tags, selected = [], onToggle, readOnly = false, }) {
     if (!tags.length)
         return null;
     return (_jsx("div", { className: "flex flex-wrap gap-2", children: tags.map((tag) => {

@@ -3,7 +3,7 @@
  * summary, a suggested name, and client-side validation. No React, no I/O: unit-testable on
  * their own (foco-total's vitest covers these, same as the `reviews` resource configs).
  */
-import { DAY_SHORT, LUNCH_DAY_OF_WEEK, WEEK_DAYS, } from './types';
+import { DAY_SHORT, LUNCH_DAY_OF_WEEK, WEEK_DAYS } from './types';
 const HM = /^([01]\d|2[0-3]):([0-5]\d)$/;
 export function hmToMinutes(value) {
     const m = HM.exec(value.trim());

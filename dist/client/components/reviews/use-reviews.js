@@ -275,9 +275,7 @@ export function useReviewTags(domain) {
                 const all = asArray(body?.items)
                     .map(coerceTagOption)
                     .filter((t) => t !== null);
-                const scoped = domain
-                    ? all.filter((t) => t.domain === null || t.domain === domain)
-                    : all;
+                const scoped = domain ? all.filter((t) => t.domain === null || t.domain === domain) : all;
                 setTags(scoped);
             }
             catch {

@@ -17,55 +17,51 @@ export function getStoredCityId() {
     const cityId = getStoredLocation()?.cityId;
     return cityId && cityId > 0 ? String(cityId) : 'all';
 }
-async function ibgeStateByCoords(lat, lon) {
+async function reverseGeocode(lat, lon) {
     try {
-        const geo = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=pt-BR`, { headers: { 'User-Agent': 'location-picker/1.0' } });
+        const geo = await fetch(`/api/location/reverse?lat=${lat}&lng=${lon}`);
         if (!geo.ok)
             return null;
         const data = await geo.json();
-        const stateCode = data.address?.['ISO3166-2-lvl4']?.replace('BR-', '') ?? '';
-        const stateName = data.address?.state ?? '';
-        if (!stateCode || !stateName)
+        const stateCode = data.state ?? '';
+        const cityName = data.city ?? '';
+        if (!stateCode || !cityName)
             return null;
-        return { sigla: stateCode, nome: stateName };
+        return { stateCode, stateName: data.stateName ?? '', cityName };
     }
     catch {
         return null;
     }
 }
-async function ibgeCityByCoords(lat, lon, stateCode) {
+async function cityIdByName(stateCode, cityName) {
     try {
-        const geo = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=pt-BR`, { headers: { 'User-Agent': 'location-picker/1.0' } });
-        if (!geo.ok)
-            return null;
-        const data = await geo.json();
-        const cityName = data.address?.city ?? data.address?.town ?? data.address?.village ?? '';
-        if (!cityName)
-            return null;
-        const ibge = await fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${stateCode}/municipios?orderBy=nome`);
-        if (!ibge.ok)
-            return null;
-        const cities = await ibge.json();
-        const match = cities.find((c) => c.nome.toLowerCase() === cityName.toLowerCase());
-        return match ?? { id: 0, nome: cityName };
+        const res = await fetch(`/api/location/cities?uf=${encodeURIComponent(stateCode)}`);
+        if (res.ok) {
+            const data = await res.json();
+            const items = Array.isArray(data.items) ? data.items : [];
+            const match = items.find((c) => c.label.toLowerCase() === cityName.toLowerCase());
+            if (match)
+                return { id: Number(match.value) || 0, nome: match.label };
+        }
     }
     catch {
-        return null;
+        // cai no fallback abaixo
     }
+    return { id: 0, nome: cityName };
 }
 async function detectByIP() {
     try {
-        const res = await fetch('https://ip-api.com/json/?lang=pt-BR&fields=status,regionName,region,city');
+        const res = await fetch('/api/location/ip');
         if (!res.ok)
             return null;
         const data = await res.json();
-        if (data.status !== 'success')
+        if (!data.stateCode || !data.cityName)
             return null;
         return {
-            stateCode: data.region,
-            stateName: data.regionName,
+            stateCode: data.stateCode,
+            stateName: data.stateName ?? '',
             cityId: 0,
-            cityName: data.city,
+            cityName: data.cityName,
             source: 'ip',
         };
     }
@@ -119,14 +115,14 @@ export function useUserLocation() {
             try {
                 const pos = await new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, { timeout: 6000 }));
                 const { latitude, longitude } = pos.coords;
-                const state = await ibgeStateByCoords(latitude, longitude);
-                if (state) {
-                    const city = await ibgeCityByCoords(latitude, longitude, state.sigla);
+                const geo = await reverseGeocode(latitude, longitude);
+                if (geo) {
+                    const city = await cityIdByName(geo.stateCode, geo.cityName);
                     setLocation({
-                        stateCode: state.sigla,
-                        stateName: state.nome,
-                        cityId: city?.id ?? 0,
-                        cityName: city?.nome ?? '',
+                        stateCode: geo.stateCode,
+                        stateName: geo.stateName,
+                        cityId: city.id,
+                        cityName: city.nome,
                         source: 'gps',
                     });
                     setStatus('found');

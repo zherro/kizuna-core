@@ -5,7 +5,7 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { InlineAlert } from '../ui-better-soft/inline-alert';
 import { ScheduleRow } from '../ui-better-soft/schedule-row';
-import { DAY_LABELS, LUNCH_DAY_OF_WEEK, } from './types';
+import { DAY_LABELS, LUNCH_DAY_OF_WEEK } from './types';
 import { crossesMidnight, summarizeSchedule } from './schedule-summary';
 /**
  * The schedule editor body rendered inside the side Sheet: name + one `ScheduleRow` per weekday

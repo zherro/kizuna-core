@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { optimizeImageBuffer } from './image-optimizer';
+import { readImageDimensions } from './image-dimensions';
 import { pgrstTable } from './postrest/conn';
 const ALLOWED_PURPOSES = new Set([
     'ad_image',
@@ -86,7 +87,9 @@ async function listFilesPostgres(args) {
     });
     if (args.ids && args.ids.length > 0) {
         // `files.id` is a uuid (see plugins/storage/0001_storage.sql), not a numeric id.
-        const ids = args.ids.map((value) => String(value).trim()).filter((value) => UUID_RE.test(value));
+        const ids = args.ids
+            .map((value) => String(value).trim())
+            .filter((value) => UUID_RE.test(value));
         if (ids.length > 0) {
             query.set('id', `in.(${ids.join(',')})`);
         }
@@ -131,14 +134,19 @@ async function uploadSingleFilePostgres(args) {
         finalBuffer = optimized.buffer;
     }
     const storagePath = makeStoragePath(purpose, file.name);
+    // Dimensões lidas do cabeçalho do arquivo original (antes da otimização — o TinyPNG
+    // preserva as dimensões). Formato não-imagem / desconhecido → null, sem quebrar o upload.
+    const dimensions = mimeType && mimeType.startsWith(IMAGE_MIME_PREFIX)
+        ? readImageDimensions(originalBuffer, mimeType)
+        : null;
     const payload = {
         original_name: file.name,
         storage_path: storagePath,
         public_url: null,
         mime_type: mimeType,
         size_bytes: finalBuffer.length,
-        width: null,
-        height: null,
+        width: dimensions?.width ?? null,
+        height: dimensions?.height ?? null,
         content: toPgBytea(finalBuffer),
         purpose,
         active: true,

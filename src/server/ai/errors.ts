@@ -23,6 +23,23 @@ export class AiUnavailableError extends Error {
   }
 }
 
+/**
+ * Rate limit local do orquestrador (`runSkill` → `checkRateLimit`) estourado — o usuário mandou
+ * pedidos demais rápido demais. Distinto de `AiUnavailableError`: não é a IA que falhou, é o
+ * gate. Estende `AiUnavailableError` só para os `catch (instanceof AiUnavailableError)` genéricos
+ * continuarem degradando de leve em vez de 500; a rota que quer o 429 correto checa esta classe
+ * primeiro. Nunca deve queimar strike da máquina de degradação.
+ */
+export class AiRateLimitedError extends AiUnavailableError {
+  readonly retryAfterSec?: number;
+
+  constructor(message: string, options?: ErrorOptions & { retryAfterSec?: number }) {
+    super(message, { ...options, reason: 'transient' });
+    this.name = 'AiRateLimitedError';
+    this.retryAfterSec = options?.retryAfterSec;
+  }
+}
+
 export function isTruthyEnv(value: string | undefined) {
   const normalized = String(value ?? '')
     .trim()

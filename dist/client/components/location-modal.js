@@ -4,17 +4,22 @@ import { useEffect, useRef, useState } from 'react';
 import { MapPin, Search, X, ChevronRight, ChevronDown, Loader2, LocateFixed, Navigation, } from 'lucide-react';
 import { useUserLocation } from '../hooks/use-user-location';
 // ─── API ──────────────────────────────────────────────────────────────────────
+// Estados e municípios vêm das rotas server-side do plugin `location` (proxy do IBGE com
+// cache) — o navegador não fala direto com o servicodados.ibge.gov.br.
 async function fetchStates() {
-    const res = await fetch('https://servicodados.ibge.gov.br/api/v1/localidades/estados?orderBy=nome');
+    const res = await fetch('/api/location/states');
     if (!res.ok)
         throw new Error();
-    return res.json();
+    const data = await res.json();
+    return Array.isArray(data.items) ? data.items : [];
 }
 async function fetchCities(stateCode) {
-    const res = await fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${stateCode}/municipios?orderBy=nome`);
+    const res = await fetch(`/api/location/cities?uf=${encodeURIComponent(stateCode)}`);
     if (!res.ok)
         throw new Error();
-    return res.json();
+    const data = await res.json();
+    const items = Array.isArray(data.items) ? data.items : [];
+    return items.map((c) => ({ id: Number(c.value) || 0, nome: c.label }));
 }
 // ─── Trigger (parece select) ──────────────────────────────────────────────────
 export function LocationTrigger({ onClick }) {

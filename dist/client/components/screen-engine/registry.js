@@ -1,9 +1,14 @@
+import dynamic from 'next/dynamic';
 import { PageHeaderBlock } from '../page-header-block';
-import { ResourceScreen } from '../resource-screen';
-import { ListBlock } from '../list-block';
-import { TaxonomyManager } from '../taxonomy/taxonomy-manager';
-import { AccountForm } from '../onboarding/user-data-form';
-import { ReviewModerationTable } from '../reviews';
+// Blocos client pesados (editor markdown/quill em `account-form`, tabelas em `list`/`resource-screen`,
+// etc.) entram por `next/dynamic` — cada um vira seu próprio chunk, carregado só quando uma tela
+// realmente referencia o bloco. Sem isto toda página do screen-engine puxa o registry inteiro.
+// `page-header` fica com import estático: é leve, `serverSafe`, e serve pra streamar HTML na hora.
+const ResourceScreen = dynamic(() => import('../resource-screen').then((m) => m.ResourceScreen));
+const ListBlock = dynamic(() => import('../list-block').then((m) => m.ListBlock));
+const TaxonomyManager = dynamic(() => import('../taxonomy/taxonomy-manager').then((m) => m.TaxonomyManager));
+const AccountForm = dynamic(() => import('../onboarding/user-data-form').then((m) => m.AccountForm));
+const ReviewModerationTable = dynamic(() => import('../reviews').then((m) => m.ReviewModerationTable));
 /**
  * Every component a screen config can reference by name. Adding a screen
  * never means writing a one-off page component — it means either reusing a

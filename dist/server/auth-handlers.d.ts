@@ -10,12 +10,15 @@
 export type LoginRequestBody = {
     email?: string;
     password?: string;
+    /** Token do Cloudflare Turnstile — só verificado quando `isCaptchaEnabled()` (keys nas envs). */
+    captchaToken?: string | null;
 };
 export type RegisterRequestBody = {
     name?: string;
     email?: string;
     password?: string;
     acceptTerms?: boolean;
+    captchaToken?: string | null;
 };
 export type LogoutRequestBody = Record<string, never>;
 type PgrstRpc = (name: string, payload: any, opts?: any) => Promise<Response>;
@@ -32,5 +35,13 @@ export declare function createRegisterHandler(pgrstRpc: PgrstRpc): (request: Req
  * Factory para criar handler de LOGOUT.
  */
 export declare function createLogoutHandler(): (_request: Request) => Promise<Response>;
+/**
+ * `GET /api/auth/me` — devolve a sessão atual (`{ user }`) ou `{ user: null }`,
+ * lendo o cookie de sessão. Serve para o `AuthProvider` hidratar do lado
+ * cliente quando o layout raiz NÃO lê cookie (páginas públicas estáticas —
+ * ver docs/HARDENING.md). O payload é o mesmo shape que `createLoginHandler`
+ * retorna em `user`.
+ */
+export declare function createMeHandler(): () => Promise<any>;
 export {};
 //# sourceMappingURL=auth-handlers.d.ts.map

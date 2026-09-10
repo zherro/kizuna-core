@@ -4,4 +4,5 @@ export { useDelete } from './use-delete';
 export { useResourceOptions, type ResourceOption } from './use-resource-options';
 export { useResourceMap, type ResourceMapEntry, type UseResourceMapResult, } from './use-resource-map';
 export { useToggleActive } from './use-toggle-active';
+export { useAiDegradation, type AiDegradationStatus, type UseAiDegradation, } from './use-ai-degradation';
 //# sourceMappingURL=index.d.ts.map

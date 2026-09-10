@@ -8,7 +8,7 @@ import { Label } from '../ui/label';
 import { Checkbox } from '../ui/checkbox';
 import { Switch } from '../ui/switch';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, } from '../ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Separator } from '../ui/separator';
 import { Button } from '../ui/button';
 import { Tooltip } from '../ui/tooltip';
@@ -71,7 +71,7 @@ function BaseField({ field, value, error, onChange, options, }) {
     const commonId = field.id;
     const Icon = resolveLucideIcon(field.appearance.icon);
     const labelRow = field.label ? (_jsxs(Label, { htmlFor: commonId, className: "flex items-center gap-1", children: [field.label, field.behavior.required && _jsx("span", { className: "text-destructive", children: "*" }), field.appearance.tooltip && (_jsx(Tooltip, { content: field.appearance.tooltip, children: _jsx(HelpCircle, { className: "h-3.5 w-3.5 text-muted-foreground" }) }))] })) : null;
-    const withLabel = (children) => (_jsxs("div", { className: "space-y-1.5", children: [labelRow, field.description && (_jsx("p", { className: "text-xs text-muted-foreground", children: field.description })), children, field.appearance.helpText && (_jsx("p", { className: "text-xs text-muted-foreground", children: field.appearance.helpText })), error && _jsx("p", { className: "text-xs font-medium text-destructive", children: error })] }));
+    const withLabel = (children) => (_jsxs("div", { className: "space-y-1.5", children: [labelRow, field.description && _jsx("p", { className: "text-xs text-muted-foreground", children: field.description }), children, field.appearance.helpText && (_jsx("p", { className: "text-xs text-muted-foreground", children: field.appearance.helpText })), error && _jsx("p", { className: "text-xs font-medium text-destructive", children: error })] }));
     const adornInput = (input) => Icon ? (_jsxs("div", { className: "relative", children: [_jsx(Icon, { className: "pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" }), input] })) : (input);
     switch (field.type) {
         case 'text':
@@ -99,9 +99,7 @@ function BaseField({ field, value, error, onChange, options, }) {
         case 'datetime':
             return withLabel(_jsx(Input, { id: commonId, type: field.type === 'date' ? 'date' : field.type === 'time' ? 'time' : 'datetime-local', value: value ?? '', onChange: (e) => onChange(e.target.value), disabled: disabled, readOnly: readOnly }));
         case 'select':
-            return withLabel(_jsxs(Select, { value: value ?? '', onValueChange: (v) => onChange(v), children: [_jsx(SelectTrigger, { id: commonId, className: "h-10 w-full text-sm", children: _jsx(SelectValue, { children: options.find((o) => o.value === value)?.label ??
-                                field.placeholder ??
-                                'Selecione...' }) }), _jsx(SelectContent, { children: options.map((o) => (_jsx(SelectItem, { value: o.value, children: o.label }, o.value))) })] }));
+            return withLabel(_jsxs(Select, { value: value ?? '', onValueChange: (v) => onChange(v), children: [_jsx(SelectTrigger, { id: commonId, className: "h-10 w-full text-sm", children: _jsx(SelectValue, { children: options.find((o) => o.value === value)?.label ?? field.placeholder ?? 'Selecione...' }) }), _jsx(SelectContent, { children: options.map((o) => (_jsx(SelectItem, { value: o.value, children: o.label }, o.value))) })] }));
         case 'multiselect': {
             const arr = value ?? [];
             return withLabel(_jsx("div", { className: "flex flex-wrap gap-2", children: options.map((o) => {
@@ -114,7 +112,7 @@ function BaseField({ field, value, error, onChange, options, }) {
         case 'radio':
             return withLabel(_jsx(RadioGroup, { value: value ?? '', onValueChange: (v) => onChange(v), disabled: disabled, children: options.map((o) => (_jsxs("div", { className: "flex items-center gap-2", children: [_jsx(RadioGroupItem, { value: o.value, id: `${commonId}-${o.value}` }), _jsx(Label, { htmlFor: `${commonId}-${o.value}`, className: "font-normal", children: o.label })] }, o.value))) }));
         case 'checkbox':
-            return (_jsxs("div", { className: "space-y-1.5", children: [_jsxs("div", { className: "flex items-start gap-2", children: [_jsx(Checkbox, { id: commonId, checked: !!value, onCheckedChange: (c) => onChange(!!c), disabled: disabled }), _jsxs("div", { className: "space-y-0.5", children: [_jsxs(Label, { htmlFor: commonId, className: "font-normal", children: [field.label, field.behavior.required && (_jsx("span", { className: "ml-1 text-destructive", children: "*" }))] }), field.description && (_jsx("p", { className: "text-xs text-muted-foreground", children: field.description }))] })] }), error && _jsx("p", { className: "text-xs font-medium text-destructive", children: error })] }));
+            return (_jsxs("div", { className: "space-y-1.5", children: [_jsxs("div", { className: "flex items-start gap-2", children: [_jsx(Checkbox, { id: commonId, checked: !!value, onCheckedChange: (c) => onChange(!!c), disabled: disabled }), _jsxs("div", { className: "space-y-0.5", children: [_jsxs(Label, { htmlFor: commonId, className: "font-normal", children: [field.label, field.behavior.required && _jsx("span", { className: "ml-1 text-destructive", children: "*" })] }), field.description && (_jsx("p", { className: "text-xs text-muted-foreground", children: field.description }))] })] }), error && _jsx("p", { className: "text-xs font-medium text-destructive", children: error })] }));
         case 'switch':
             return (_jsxs("div", { className: "space-y-1.5", children: [_jsxs("div", { className: "flex items-center justify-between rounded-md border p-3", children: [_jsxs("div", { className: "space-y-0.5", children: [_jsx(Label, { htmlFor: commonId, children: field.label }), field.description && (_jsx("p", { className: "text-xs text-muted-foreground", children: field.description }))] }), _jsx(Switch, { id: commonId, checked: !!value, onCheckedChange: (c) => onChange(c), disabled: disabled })] }), error && _jsx("p", { className: "text-xs font-medium text-destructive", children: error })] }));
         case 'slider': {
@@ -134,9 +132,7 @@ function BaseField({ field, value, error, onChange, options, }) {
         case 'upload':
         case 'image':
             return withLabel(_jsx(Input, { id: commonId, type: "file", accept: field.type === 'image' ? 'image/*' : undefined, multiple: field.type === 'image', onChange: (e) => {
-                    const files = e.target.files
-                        ? Array.from(e.target.files).map((f) => f.name)
-                        : [];
+                    const files = e.target.files ? Array.from(e.target.files).map((f) => f.name) : [];
                     onChange(field.type === 'image' ? files : (files[0] ?? ''));
                 }, disabled: disabled }));
         case 'hidden':

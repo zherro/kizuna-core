@@ -79,6 +79,7 @@ function buildInitialValues(config) {
         zipCode: '',
         state: '',
         city: '',
+        cityIbge: '',
         bio: '',
         avatarUrl: '',
     };
@@ -392,6 +393,7 @@ export function AccountForm({ role = 'advertiser', fieldsConfig = DEFAULT_USER_D
             zipCode: String(existingRecord.zipCode ?? ''),
             state: String(existingRecord.state ?? ''),
             city: String(existingRecord.city ?? ''),
+            cityIbge: String(existingRecord.cityIbge ?? ''),
             bio: String(existingRecord.bio ?? ''),
             avatarUrl: String(existingRecord.avatarUrl ?? ''),
         });
@@ -424,6 +426,9 @@ export function AccountForm({ role = 'advertiser', fieldsConfig = DEFAULT_USER_D
                 void formik.setFieldValue('state', data.uf);
             if (data.localidade)
                 void formik.setFieldValue('city', data.localidade);
+            // ViaCEP carries the IBGE municipality code — keep it so the exact-city match works
+            // without the user re-picking the city from the dropdown.
+            void formik.setFieldValue('cityIbge', data.ibge ?? '');
         })
             .catch(() => {
             // noop: CEP lookup is a convenience — user can still fill state/city manually
@@ -438,8 +443,9 @@ export function AccountForm({ role = 'advertiser', fieldsConfig = DEFAULT_USER_D
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [formik.values.zipCode]);
     // City options for the selected state — reuses the same IBGE-backed endpoint the search page
-    // uses (`/api/agenda/cities?uf=`). Options are keyed by city name (not the IBGE id) since
-    // `user_data.city` is a plain text column, not an FK.
+    // uses (`/api/agenda/cities?uf=`), whose `value` is the IBGE municipality code. The select
+    // operates on that code (persisted to `user_data.city_ibge`); the plain-text `city` name is
+    // kept in sync from the chosen option's label.
     useEffect(() => {
         const uf = formik.values.state.trim().toUpperCase();
         if (!uf) {
@@ -454,7 +460,7 @@ export function AccountForm({ role = 'advertiser', fieldsConfig = DEFAULT_USER_D
             if (!active)
                 return;
             const items = Array.isArray(data.items) ? data.items : [];
-            setCityOptions(items.map((item) => ({ value: item.label, label: item.label })));
+            setCityOptions(items.map((item) => ({ value: item.value, label: item.label })));
         })
             .catch(() => {
             if (active)
@@ -469,6 +475,17 @@ export function AccountForm({ role = 'advertiser', fieldsConfig = DEFAULT_USER_D
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [formik.values.state]);
+    // Legacy rows have `city` (name) but no `city_ibge` — once the option list for the state is
+    // loaded, resolve the code by matching the stored name so the select shows the city and the
+    // exact-match filter has something to work with.
+    useEffect(() => {
+        if (formik.values.cityIbge || !formik.values.city || cityOptions.length === 0)
+            return;
+        const match = cityOptions.find((o) => o.label.trim().toLowerCase() === formik.values.city.trim().toLowerCase());
+        if (match)
+            void formik.setFieldValue('cityIbge', match.value);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [cityOptions, formik.values.city, formik.values.cityIbge]);
     // `documentNumber` is displayed masked, but the hydration effect above sets it straight from
     // the server's digits-only value — re-mask whenever it drifts from its own masked form. No-op
     // while typing: every keystroke already goes through `handleDocumentNumberChange`, which sets
@@ -594,7 +611,10 @@ export function AccountForm({ role = 'advertiser', fieldsConfig = DEFAULT_USER_D
                                                                 ? 'flex items-center gap-1 text-xs text-emerald-600'
                                                                 : 'flex items-center gap-1 text-xs text-amber-600', children: [_jsx(CheckCircle2, { className: phoneVerified
                                                                         ? 'h-3.5 w-3.5 text-emerald-500'
-                                                                        : 'h-3.5 w-3.5 text-amber-500' }), phoneVerified ? 'Telefone verificado' : 'Telefone pendente de verificacao'] })] })] })] }), _jsxs("fieldset", { className: "space-y-4", children: [_jsx("legend", { className: "text-xs font-semibold uppercase tracking-widest text-muted-foreground", children: "Localiza\u00E7\u00E3o" }), _jsxs("div", { className: "grid gap-4 sm:grid-cols-3", children: [_jsxs("div", { className: "space-y-1.5", children: [_jsxs(Label, { htmlFor: "zipCode", children: ["CEP", ' ', cepLookupLoading && (_jsx("span", { className: "text-muted-foreground", children: "(buscando...)" }))] }), _jsx(Input, { id: "zipCode", placeholder: "00000-000", maxLength: 9, ...formik.getFieldProps('zipCode') }), _jsx("p", { className: "text-xs text-muted-foreground", children: "Informe o CEP para preencher estado e cidade automaticamente." })] }), _jsxs("div", { className: "space-y-1.5", children: [_jsxs(Label, { htmlFor: "state", children: ["Estado ", _jsx("span", { className: "text-destructive", children: "*" })] }), _jsxs("select", { id: "state", className: "flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring", ...formik.getFieldProps('state'), children: [_jsx("option", { value: "", children: "Selecione" }), STATES_BR.map((s) => (_jsx("option", { value: s, children: s }, s)))] }), formik.touched.state && formik.errors.state && (_jsx("p", { className: errorTextClass, children: formik.errors.state }))] }), _jsxs("div", { className: "space-y-1.5", children: [_jsxs(Label, { htmlFor: "city", children: ["Cidade ", _jsx("span", { className: "text-destructive", children: "*" })] }), _jsx(SearchableSelect, { id: "city", value: formik.values.city, onChange: (value) => formik.setFieldValue('city', value), onBlur: () => formik.setFieldTouched('city', true), options: cityOptions, disabled: !formik.values.state, placeholder: !formik.values.state
+                                                                        : 'h-3.5 w-3.5 text-amber-500' }), phoneVerified ? 'Telefone verificado' : 'Telefone pendente de verificacao'] })] })] })] }), _jsxs("fieldset", { className: "space-y-4", children: [_jsx("legend", { className: "text-xs font-semibold uppercase tracking-widest text-muted-foreground", children: "Localiza\u00E7\u00E3o" }), _jsxs("div", { className: "grid gap-4 sm:grid-cols-3", children: [_jsxs("div", { className: "space-y-1.5", children: [_jsxs(Label, { htmlFor: "zipCode", children: ["CEP", ' ', cepLookupLoading && (_jsx("span", { className: "text-muted-foreground", children: "(buscando...)" }))] }), _jsx(Input, { id: "zipCode", placeholder: "00000-000", maxLength: 9, ...formik.getFieldProps('zipCode') }), _jsx("p", { className: "text-xs text-muted-foreground", children: "Informe o CEP para preencher estado e cidade automaticamente." })] }), _jsxs("div", { className: "space-y-1.5", children: [_jsxs(Label, { htmlFor: "state", children: ["Estado ", _jsx("span", { className: "text-destructive", children: "*" })] }), _jsxs("select", { id: "state", className: "flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring", ...formik.getFieldProps('state'), children: [_jsx("option", { value: "", children: "Selecione" }), STATES_BR.map((s) => (_jsx("option", { value: s, children: s }, s)))] }), formik.touched.state && formik.errors.state && (_jsx("p", { className: errorTextClass, children: formik.errors.state }))] }), _jsxs("div", { className: "space-y-1.5", children: [_jsxs(Label, { htmlFor: "city", children: ["Cidade ", _jsx("span", { className: "text-destructive", children: "*" })] }), _jsx(SearchableSelect, { id: "city", value: formik.values.cityIbge, onChange: (value) => {
+                                                                void formik.setFieldValue('cityIbge', value);
+                                                                void formik.setFieldValue('city', cityOptions.find((o) => o.value === value)?.label ?? '');
+                                                            }, onBlur: () => formik.setFieldTouched('city', true), options: cityOptions, disabled: !formik.values.state, placeholder: !formik.values.state
                                                                 ? 'Selecione o estado primeiro'
                                                                 : cityOptionsLoading
                                                                     ? 'Carregando cidades...'

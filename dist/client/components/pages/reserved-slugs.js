@@ -9,7 +9,9 @@ export const DEFAULT_RESERVED_SLUGS = ['api', 'login', 'logout', 'register'];
  * names. Case-insensitive; trims surrounding whitespace.
  */
 export function isReservedSlug(slug, extra = []) {
-    const normalized = String(slug ?? '').trim().toLowerCase();
+    const normalized = String(slug ?? '')
+        .trim()
+        .toLowerCase();
     if (!normalized)
         return true;
     const all = new Set([...DEFAULT_RESERVED_SLUGS, ...extra].map((s) => s.toLowerCase()));

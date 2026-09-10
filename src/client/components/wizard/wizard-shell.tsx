@@ -38,6 +38,7 @@ export interface WizardShellProps {
   onFinish: () => void;
   onCancel: () => void;
   headerActions?: ReactNode;
+  layoutToggle?: ReactNode;
   railExtra?: ReactNode;
   children: ReactNode;
 }
@@ -65,6 +66,7 @@ export function WizardShell({
   onFinish,
   onCancel,
   headerActions,
+  layoutToggle,
   railExtra,
   children,
 }: WizardShellProps) {
@@ -76,6 +78,7 @@ export function WizardShell({
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-2 sm:px-6">
           <p className="text-sm font-semibold text-foreground">{modeLabel}</p>
           <div className="flex shrink-0 items-center gap-2">
+            {layoutToggle}
             {headerActions}
             <Button variant="ghost" size="sm" onClick={onCancel}>
               Cancelar

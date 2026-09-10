@@ -17,10 +17,10 @@ de provider + degradação graciosa, servindo N contextos (busca, wizard, depois
 | `NotImplementedProvider` (`provider/not-implemented.ts`) | `openai` / `claude` — `generateStructured` lança `AiUnavailableError(..., { reason: 'blocked' })`. Ligar um provider sem adapter degrada limpo. |
 | `resolveProvider()` (`provider/resolve.ts`) | Lê `system_config` `ai_assistant.provider` / `ai_assistant.model` + env `GEMINI_API_KEY` / `GEMINI_MODEL`. Sem chave ⇒ `AiUnavailableError('… não configurada', { reason: 'blocked' })`. |
 | `AiSkill` + `registerSkill` / `getSkill` / `listSkillContexts` (`skill.ts`) | Uma skill empacota `{ key, context, loadContext?, buildPrompt, schema, validate, rateLimit? }`. O **app** registra as suas num módulo importado pelo bootstrap server. `context` agrupa skills para o liga/desliga. |
-| `runSkill(skillKey, input, ctx)` (`run-skill.ts`) | Orquestrador: resolve a skill → checa o toggle `ai_assistant.contexts[skill.context]` (`=== false` desliga; ausente = ligado) → `checkRateLimit` opcional → `resolveProvider` → `loadContext` → `buildPrompt` → `provider.generateStructured` → `skill.validate`. Qualquer falha vira `AiUnavailableError`. |
+| `runSkill(skillKey, input, ctx)` (`run-skill.ts`) | Orquestrador: resolve a skill → checa o toggle `ai_assistant.contexts[skill.context]` (`=== false` desliga; ausente = ligado) → `checkRateLimit` opcional → `resolveProvider` → `loadContext` → `buildPrompt` → `provider.generateStructured` → `skill.validate`. Falha da IA vira `AiUnavailableError`; rate-limit local estourado vira `AiRateLimitedError`. |
 | `checkRateLimit(key, max, windowMs)` (`rate-limit.ts`) | In-memory, por processo. Persistência ⇒ `TODO-AI.md`. |
 | `readSystemConfig<T>(key)` (`system-config.ts`) | Lê um valor de `auth.system_config` via PostgREST. |
-| `AiUnavailableError`, `classifyAiError`, `isRecoverableAiError` (`errors.ts` + `@kizuna/core/shared/ai-error`) | `classifyAiError` é isomórfico (string matching puro) — server e client. `'blocked'` (sem retry) vs `'transient'` (vale tentar). |
+| `AiUnavailableError`, `AiRateLimitedError`, `classifyAiError`, `isRecoverableAiError` (`errors.ts` + `@kizuna/core/shared/ai-error`) | `classifyAiError` é isomórfico (string matching puro) — server e client. `'blocked'` (sem retry) vs `'transient'` (vale tentar). `AiRateLimitedError extends AiUnavailableError` (`retryAfterSec?`): a rota checa antes → **429** em vez de 503, e o cliente não queima strike de degradação. |
 
 ### Rota do app (padrão)
 

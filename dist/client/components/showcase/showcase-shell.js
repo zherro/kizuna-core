@@ -13,6 +13,7 @@ const ICON_BY_SECTION = {
     alerts: Bell,
     progress: Gauge,
     'experience-pill': Zap,
+    'wizard-layout-toggle': Rows3,
     'bottom-progress-bar': PanelBottom,
     'mosaic-grid': LayoutGrid,
     'admin-page-reader': PanelTop,

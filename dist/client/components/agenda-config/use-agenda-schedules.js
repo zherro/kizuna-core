@@ -92,9 +92,7 @@ export function useAgendaSchedules() {
                     ...schedPayload.item,
                     hours: mergeHoursByDay(savedHours),
                 };
-                return isUpdate
-                    ? prev.map((s) => (s.id === scheduleId ? next : s))
-                    : [...prev, next];
+                return isUpdate ? prev.map((s) => (s.id === scheduleId ? next : s)) : [...prev, next];
             });
             toastSuccess(isUpdate
                 ? 'Horário atualizado.'
@@ -160,7 +158,12 @@ export function useAgendaSchedules() {
         return saveSchedule({
             name: `${source.name} (cópia)`,
             timezone: source.timezone,
-            hours: source.hours.map(({ id: _id, schedule_id: _s, ...rest }) => rest),
+            hours: source.hours.map((h) => ({
+                day_of_week: h.day_of_week,
+                open_time: h.open_time,
+                close_time: h.close_time,
+                active: h.active,
+            })),
         });
     }, [saveSchedule]);
     return {

@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { classifyAiError, isRecoverableAiError, AiUnavailableError } from './errors';
+import {
+  classifyAiError,
+  isRecoverableAiError,
+  AiUnavailableError,
+  AiRateLimitedError,
+} from './errors';
 
 describe('classifyAiError', () => {
   it('quota → blocked', () => expect(classifyAiError('quota exceeded')).toBe('blocked'));
@@ -12,4 +17,13 @@ describe('isRecoverableAiError', () => {
 describe('AiUnavailableError', () => {
   it('deriva reason da mensagem quando não passado', () =>
     expect(new AiUnavailableError('429 rate limit').reason).toBe('blocked'));
+});
+describe('AiRateLimitedError', () => {
+  it('é um AiUnavailableError transient com retryAfterSec', () => {
+    const err = new AiRateLimitedError('rate limit.', { retryAfterSec: 300 });
+    expect(err).toBeInstanceOf(AiUnavailableError);
+    expect(err.name).toBe('AiRateLimitedError');
+    expect(err.reason).toBe('transient');
+    expect(err.retryAfterSec).toBe(300);
+  });
 });

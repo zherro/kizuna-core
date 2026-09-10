@@ -1,0 +1,19 @@
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import Image from 'next/image';
+import { Camera, MapPin, Tag } from 'lucide-react';
+import { SERVICE_LOCATION_LABEL, formatServicePrice } from './service-type';
+/** Resumo do que já foi preenchido nos passos anteriores. Dois usos:
+ *  - `compact`: cartão fino — fixo no trilho lateral (desktop) e acima do conteúdo (mobile).
+ *  - completo (default): mini-preview no passo de Descrição, com as fotos em quadradinhos. */
+export function ServiceConfigSummary({ groupName, categoryName, subcategoryNames, title, serviceLocation, startingPrice, priceUnit, imageIds = [], compact = false, }) {
+    const hasLocation = Boolean(serviceLocation);
+    const locationLabel = SERVICE_LOCATION_LABEL[serviceLocation] ?? 'A definir';
+    const hasPrice = priceUnit === 'quote' || startingPrice > 0;
+    const priceLabel = formatServicePrice(startingPrice, priceUnit || 'quote');
+    const context = [groupName, categoryName].filter(Boolean).join(' · ');
+    if (compact) {
+        return (_jsxs("div", { className: "rounded-xl bg-muted/50 p-3.5 text-sm", children: [_jsx("p", { className: "text-xs font-medium text-muted-foreground", children: "Resumo do an\u00FAncio" }), _jsx("p", { className: "mt-1.5 font-semibold leading-snug text-foreground", children: title || 'Sem título ainda' }), context ? _jsx("p", { className: "mt-0.5 text-xs text-muted-foreground", children: context }) : null, subcategoryNames.length > 0 ? (_jsxs("p", { className: "mt-2 flex items-start gap-1.5 text-xs text-muted-foreground", children: [_jsx(Tag, { className: "mt-0.5 h-3 w-3 shrink-0" }), _jsxs("span", { children: [subcategoryNames.slice(0, 3).join(', '), subcategoryNames.length > 3 ? ` +${subcategoryNames.length - 3}` : ''] })] })) : null, _jsxs("div", { className: "mt-2 space-y-1 text-xs text-muted-foreground", children: [hasPrice ? _jsx("p", { className: "font-medium text-foreground", children: priceLabel }) : null, hasLocation ? (_jsxs("p", { className: "flex items-center gap-1.5", children: [_jsx(MapPin, { className: "h-3 w-3 shrink-0" }), " ", locationLabel] })) : null] })] }));
+    }
+    return (_jsxs("div", { className: "overflow-hidden rounded-xl border border-border bg-background", children: [_jsx("div", { className: "border-b border-border bg-muted/40 px-4 py-2 text-xs font-medium text-muted-foreground", children: "Pr\u00E9via do an\u00FAncio" }), _jsxs("div", { className: "space-y-3 p-4", children: [imageIds.length > 0 ? (_jsx("div", { className: "flex flex-wrap gap-2", children: imageIds.map((id, index) => (_jsx("div", { className: "relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-border", children: _jsx(Image, { src: `/api/storage/files/${id}/content`, alt: `Foto ${index + 1}`, fill: true, unoptimized: true, className: "object-cover" }) }, id))) })) : (_jsxs("div", { className: "flex h-16 items-center gap-2 rounded-lg border border-dashed border-border px-3 text-xs text-muted-foreground", children: [_jsx(Camera, { className: "h-4 w-4" }), " Sem fotos"] })), _jsxs("div", { children: [context ? _jsx("p", { className: "text-xs text-muted-foreground", children: context }) : null, _jsx("p", { className: "font-display text-lg font-semibold leading-tight text-foreground", children: title || 'Sem título' })] }), subcategoryNames.length > 0 ? (_jsx("div", { className: "flex flex-wrap gap-1.5", children: subcategoryNames.map((name) => (_jsx("span", { className: "rounded-full bg-muted px-2.5 py-1 text-xs", children: name }, name))) })) : null, _jsxs("div", { className: "flex flex-wrap items-center gap-4 border-t border-border pt-3 text-xs text-muted-foreground", children: [_jsxs("span", { className: "flex items-center gap-1.5", children: [_jsx(MapPin, { className: "h-3.5 w-3.5" }), " ", locationLabel] }), _jsx("span", { className: "font-semibold text-foreground", children: priceLabel })] })] })] }));
+}
+//# sourceMappingURL=service-config-summary.js.map

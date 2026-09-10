@@ -13,6 +13,6 @@ type ReviewTagsProps = {
  *  - display (`readOnly`) — used inside `ReviewCard`.
  * Colored state uses `bg-*`/`text-*` (border-color utilities are dead here).
  */
-export declare function ReviewTags({ tags, selected, onToggle, readOnly }: Readonly<ReviewTagsProps>): import("react/jsx-runtime").JSX.Element | null;
+export declare function ReviewTags({ tags, selected, onToggle, readOnly, }: Readonly<ReviewTagsProps>): import("react/jsx-runtime").JSX.Element | null;
 export {};
 //# sourceMappingURL=review-tags.d.ts.map

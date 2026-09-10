@@ -6,7 +6,7 @@ import { Textarea } from '../ui/textarea';
 import { Label } from '../ui/label';
 import { Switch } from '../ui/switch';
 import { Button } from '../ui/button';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger, } from '../ui/accordion';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../ui/accordion';
 import { Copy, Trash2, GripVertical, Plus, Lock, Unlock } from 'lucide-react';
 import { KEY_REGEX, OPTION_TYPES, slugifyKey, uid, } from './types';
 const BPS = ['xs', 'sm', 'md', 'lg', 'xl', '2xl'];

@@ -25,20 +25,26 @@ export const PAGES_RESOURCE = {
             if (input.title !== undefined)
                 out.title = String(input.title ?? '').trim();
             if (input.slug !== undefined)
-                out.slug = String(input.slug ?? '').trim().toLowerCase();
+                out.slug = String(input.slug ?? '')
+                    .trim()
+                    .toLowerCase();
             if (input.description !== undefined)
                 out.description = String(input.description ?? '').trim() || null;
             if (input.content !== undefined)
                 out.content = String(input.content ?? '');
             if (input.status !== undefined) {
-                const status = String(input.status ?? '').trim().toLowerCase();
+                const status = String(input.status ?? '')
+                    .trim()
+                    .toLowerCase();
                 out.status = status === 'published' ? 'published' : 'draft';
             }
             if (input.active !== undefined) {
                 out.active =
                     typeof input.active === 'boolean'
                         ? input.active
-                        : String(input.active ?? 'true').trim().toLowerCase() !== 'false';
+                        : String(input.active ?? 'true')
+                            .trim()
+                            .toLowerCase() !== 'false';
             }
             return out;
         },

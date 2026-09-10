@@ -45,11 +45,11 @@ describe('runSkill', () => {
     await expect(runSkill('zzz', {}, { userId: 'u', tenantId: 't' })).rejects.toThrow(/zzz/);
   });
 
-  it('rate limit estourado → transient', async () => {
+  it('rate limit estourado → AiRateLimitedError com retryAfterSec', async () => {
     readSystemConfig.mockResolvedValue({});
-    registerSkill({ ...skill, key: 'rl', rateLimit: { max: 0, windowMs: 1000 } } as never);
+    registerSkill({ ...skill, key: 'rl', rateLimit: { max: 0, windowMs: 5000 } } as never);
     await expect(
       runSkill('rl', {}, { userId: 'u', tenantId: 't' }),
-    ).rejects.toMatchObject({ reason: 'transient' });
+    ).rejects.toMatchObject({ name: 'AiRateLimitedError', reason: 'transient', retryAfterSec: 5 });
   });
 });

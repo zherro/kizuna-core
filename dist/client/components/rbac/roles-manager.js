@@ -1,6 +1,6 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { AdminPageReader } from '../ui-better-soft/headers/admin-page-reader';
-import { getPermissionsCatalog, getRoleGrants, getRoles, groupPermissions, } from './rbac-data';
+import { getPermissionsCatalog, getRoleGrants, getRoles, groupPermissions } from './rbac-data';
 import { RolesMatrix } from './roles-matrix';
 /**
  * ROOT screen (slug `papeis`, group `root` — see `root-screens/registry.ts`). Edits which

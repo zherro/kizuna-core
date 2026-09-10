@@ -18,6 +18,12 @@ export declare function serverFetchResource<T = RecordValue>(resource: string, f
     limit?: number;
     orderBy?: string;
     orderDirection?: 'asc' | 'desc';
+    /**
+     * Segundos de cache (ISR) para esta leitura. Só use em leitura pública, estável e sem
+     * `auth` — ex.: config global lida no layout raiz (ver docs/HARDENING.md §1/§2). Omitido =
+     * `no-store` (default, sempre fresco).
+     */
+    revalidate?: number;
 }): Promise<T[]>;
 export declare function isRpcResource(resource: string): boolean;
 export declare function executeRpcResource(resource: string, request: Request): Promise<any>;

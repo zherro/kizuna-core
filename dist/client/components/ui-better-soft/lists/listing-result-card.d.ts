@@ -24,10 +24,14 @@ export type ListingResultCardProps = {
     /** Nome + avatar do responsável pelo anúncio. */
     providerName?: string | null;
     providerAvatarUrl?: string | null;
+    /** Nota média das avaliações, ex. 4.7. `null`/`undefined` = ainda sem avaliações. */
+    rating?: number | null;
+    /** Total de avaliações publicadas. Default 0. */
+    reviewCount?: number;
     /** Texto do botão de ação. Default "Ver". */
     ctaLabel?: string;
     variant?: 'grid' | 'strip';
     className?: string;
 };
-export declare function ListingResultCard({ href, title, priceLabel, tagLabel, subtitleLabel, imageUrl, highlighted, highlightLabel, providerName, providerAvatarUrl, ctaLabel, variant, className, }: Readonly<ListingResultCardProps>): import("react/jsx-runtime").JSX.Element;
+export declare function ListingResultCard({ href, title, priceLabel, tagLabel, subtitleLabel, imageUrl, highlighted, highlightLabel, providerName, providerAvatarUrl, rating, reviewCount, ctaLabel, variant, className, }: Readonly<ListingResultCardProps>): import("react/jsx-runtime").JSX.Element;
 //# sourceMappingURL=listing-result-card.d.ts.map

@@ -220,5 +220,28 @@ export const resourceTaxonomy = {
             updatedAt: record.updated_at ?? record.updatedAt,
         }),
     },
+    // Leitura pública da view `vw_category_subcategory_stats` (plugin taxonomy,
+    // 0002) — 1 linha por subcategoria ativa, carregando a categoria pai. Só
+    // aparecem categorias que têm ao menos uma subcategoria ativa ("só as que
+    // têm"). Usada pelo <CategoryCarousel> (dedupe por categoria no cliente).
+    category_stats: {
+        schema: 'public',
+        table: 'vw_category_subcategory_stats',
+        listRequiresAuth: false,
+        select: 'category_id,category_name,category_group_id,subcategory_id,subcategory_name,qtd',
+        primaryKey: 'subcategory_id',
+        defaultOrder: 'category_name',
+        searchableColumns: ['category_name', 'subcategory_name'],
+        mapOutput: (record) => ({
+            id: record.subcategory_id,
+            categoryId: record.category_id,
+            name: record.category_name,
+            categoryName: record.category_name,
+            categoryGroupId: record.category_group_id ?? record.categoryGroupId,
+            subcategoryId: record.subcategory_id ?? record.subcategoryId,
+            subcategoryName: record.subcategory_name ?? record.subcategoryName,
+            qtd: Number(record.qtd ?? 0),
+        }),
+    },
 };
 //# sourceMappingURL=taxonomy.js.map
