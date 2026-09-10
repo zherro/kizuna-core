@@ -103,6 +103,7 @@ export async function GET(request: NextRequest) {
       zipCode,
       city,
       state: uf,
+      stateName,
       latitude: String(latitude),
       longitude: String(longitude),
     });

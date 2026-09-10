@@ -4,6 +4,9 @@
   "files": {
     "src/app/api/location/cep/route.ts": "managed",
     "src/app/api/location/reverse/route.ts": "managed",
-    "src/app/api/location/address/search/route.ts": "managed"
+    "src/app/api/location/address/search/route.ts": "managed",
+    "src/app/api/location/states/route.ts": "managed",
+    "src/app/api/location/cities/route.ts": "managed",
+    "src/app/api/location/ip/route.ts": "managed"
   }
 }

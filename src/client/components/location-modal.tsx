@@ -27,20 +27,22 @@ interface IBGECity {
 
 // ─── API ──────────────────────────────────────────────────────────────────────
 
+// Estados e municípios vêm das rotas server-side do plugin `location` (proxy do IBGE com
+// cache) — o navegador não fala direto com o servicodados.ibge.gov.br.
+
 async function fetchStates(): Promise<IBGEState[]> {
-  const res = await fetch(
-    'https://servicodados.ibge.gov.br/api/v1/localidades/estados?orderBy=nome'
-  );
+  const res = await fetch('/api/location/states');
   if (!res.ok) throw new Error();
-  return res.json();
+  const data = await res.json();
+  return Array.isArray(data.items) ? (data.items as IBGEState[]) : [];
 }
 
 async function fetchCities(stateCode: string): Promise<IBGECity[]> {
-  const res = await fetch(
-    `https://servicodados.ibge.gov.br/api/v1/localidades/estados/${stateCode}/municipios?orderBy=nome`
-  );
+  const res = await fetch(`/api/location/cities?uf=${encodeURIComponent(stateCode)}`);
   if (!res.ok) throw new Error();
-  return res.json();
+  const data = await res.json();
+  const items: { value: string; label: string }[] = Array.isArray(data.items) ? data.items : [];
+  return items.map((c) => ({ id: Number(c.value) || 0, nome: c.label }));
 }
 
 // ─── Trigger (parece select) ──────────────────────────────────────────────────
