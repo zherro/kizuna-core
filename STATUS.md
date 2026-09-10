@@ -93,13 +93,19 @@ a materializa num projeto e mantém projeto ↔ core alinhados. Ver **`docs/CLI.
   `WizardEntities`, `WizardAssistant`. Generic config-driven multi-step engine against ONE
   PostgREST resource (read-merge-write persistence, layout-foco chrome, optional AI slot).
   Domain-agnostic — see `docs/WIZARD.md`.
-- `@kizuna/core/client/components/services/*`: `ServiceConfigSummary`, and from `service-type`
-  the helpers/types `defaultPriceUnitForCategory`, `SERVICE_PRICE_UNIT_OPTIONS`,
-  `ServiceWizardState` (+ `SERVICE_WIZARD_INITIAL_STATE`, price/status/location labels).
+- `@kizuna/core/client/components/services/*`: `ServiceConfigSummary`; from `service-type`
+  `defaultPriceUnitForCategory`, `SERVICE_PRICE_UNIT_OPTIONS`, `ServiceWizardState`
+  (+ `SERVICE_WIZARD_INITIAL_STATE`), `ServiceRecord`; from `service-labels`
+  `SERVICE_STATUS_LABEL` / `SERVICE_LOCATION_LABEL` / `PRICE_UNIT_LABEL` (rótulos dos enums do
+  plugin `services`); from `service-helpers` `coverImage` / `formatServicePrice` / `fileUrl`.
   `wizard-steps/*` exports `SERVICE_WIZARD_STEPS` — the ready-made 8-step registry for the
   services wizard (`start` / `category` / `location` / `price` / `images` / `description` /
-  `dynamic-form` / `moderation`; `images` needs the app's image manager injected). Backed by the
+  `dynamic-form` / `moderation`; `images` renders an injected image manager). Backed by the
   `services` plugin.
+- `@kizuna/core/client/components/storage/*`: `ImageGalleryManager` (+ `ImageGalleryManagerProps`)
+  — client image gallery: upload (`POST /api/storage/files`), preview, reorder, cover. `onPersist`
+  required (`(referenceId, nextIds) => Promise<ids>`); `purpose` goes into the upload. See
+  `docs/STORAGE.md`.
 - `@kizuna/core/client/components/showcase/*`: `ShowcaseShell`, `ShowcaseSectionPage`,
   `showcase-sections` (`SHOWCASE_SECTIONS`, `DEFAULT_SHOWCASE_SECTION`, `normalizeShowcaseSection`)
 - `@kizuna/core/client/components/ui/*` and `ui-better-soft/*` — see `docs/COMPONENTS.md`
