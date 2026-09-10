@@ -54,4 +54,5 @@ node kizuna-core/cli lock                  # marca versão como "vista" sem apli
 
 - `kizuna-core/docs/CLI.md` — comandos + formato do `kizuna.lock`
 - `kizuna-core/docs/PLUGINS.md` — plugins (`taxonomy` fica fora da lista de propósito)
-- `kizuna-core/docs/HARDENING.md` — performance/segurança + backlog
+- `kizuna-core/docs/HARDENING.md` — stub; o tracker de performance/segurança mora no
+  `docs/PENDENCIAS.md` do projeto consumidor
