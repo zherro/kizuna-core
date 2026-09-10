@@ -88,33 +88,12 @@ export const SERVICE_WIZARD_INITIAL_STATE: ServiceWizardState = {
   dynamicFormValid: true,
 };
 
-export const SERVICE_STATUS_LABEL: Record<string, string> = {
-  pending: 'Pendente',
-  active: 'Ativo',
-  paused: 'Pausado',
-  archived: 'Arquivado',
-};
-
-export const SERVICE_LOCATION_LABEL: Record<string, string> = {
-  no_cliente: 'No cliente',
-  no_estabelecimento: 'No estabelecimento',
-  remoto: 'A Distância',
-};
-
-export const PRICE_UNIT_LABEL: Record<string, string> = {
-  quote: 'sob consulta',
-  service: 'por serviço',
-  hour: 'por hora',
-  fixed: 'fixo',
-  unit: 'por unidade',
-  visit: 'por visita',
-  m2_metro_quadrado: 'por m²',
-  project: 'por projeto',
-  package: 'por pacote',
-  monthly: 'mensal',
-  day: 'por diária',
-  km: 'por km',
-};
+/** Enum display labels moved to `./service-labels`; re-exported for back-compat. */
+export {
+  SERVICE_STATUS_LABEL,
+  SERVICE_LOCATION_LABEL,
+  PRICE_UNIT_LABEL,
+} from './service-labels';
 
 /** Curated subset of `price_unit` shown in the service wizard — the SAME list for every group and
  * category. O enum no banco continua com o conjunto completo; aqui ficam só as opções do nicho de
@@ -148,29 +127,5 @@ export function defaultPriceUnitForCategory(categorySlug?: string | null): strin
   }
 }
 
-export function fileUrl(id: string | number) {
-  return `/api/public/storage/files/${id}/content`;
-}
-
-/** First image url for a service's card/hero — `extras.coverFileId`, falling back to the first of
- * `extras.images`. `services` has no dedicated image columns yet, so both live in `extras`. */
-export function coverImage(service: Pick<ServiceRecord, 'extras'>): string | null {
-  const images = service.extras?.images;
-  const list = Array.isArray(images) ? images : [];
-  const coverFileId = service.extras?.coverFileId;
-  const cover = coverFileId ?? list[0] ?? null;
-  return cover != null && cover !== '' ? fileUrl(cover as string | number) : null;
-}
-
-export function formatServicePrice(startingPrice: number, priceUnit: string) {
-  if (priceUnit === 'quote' || !startingPrice) return 'Sob consulta';
-
-  const amount = new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-    minimumFractionDigits: 2,
-  }).format(Number(startingPrice));
-
-  const unitLabel = PRICE_UNIT_LABEL[priceUnit] ?? priceUnit;
-  return `${amount} · ${unitLabel}`;
-}
+/** `extras`/`ServiceRecord` helpers moved to `./service-helpers`; re-exported for back-compat. */
+export { fileUrl, coverImage, formatServicePrice } from './service-helpers';
