@@ -22,9 +22,8 @@ const DESCRIPTION_MIN_LENGTH = 20;
  * The 8 domain steps of the `services` wizard, as ready-made `WizardStep` objects. Consuming
  * apps pass this as the `Wizard` config `registry` and list the keys in `steps`.
  *
- * `step-images` needs the app's image manager injected — override that entry's `Component`:
- *   { ...SERVICE_WIZARD_STEPS.images,
- *     Component: (p) => <StepImages {...p} ImagesManager={AdImagesManager} /> }
+ * `step-images` renders the core `ImageGalleryManager` directly; its `onPersist` (via
+ * `ctx.persistExtras`) writes `extras.images` / `extras.coverFileId`.
  */
 export const SERVICE_WIZARD_STEPS: Record<string, WizardStep<ServiceWizardState>> = {
   start: {
@@ -97,7 +96,7 @@ export const SERVICE_WIZARD_STEPS: Record<string, WizardStep<ServiceWizardState>
     Component: StepImages,
     enabled: (ctx) => ctx.resourceId != null,
     canContinue: (ctx) => (ctx.state.imageIds ?? []).length > 0,
-    // Persistence happens inside the injected manager's `onPersist` → ctx.persistExtras.
+    // Persistence happens inside ImageGalleryManager's `onPersist` → ctx.persistExtras.
   },
 
   description: {
@@ -148,7 +147,7 @@ export { StepStart } from './step-start';
 export { StepCategory } from './step-category';
 export { StepLocation } from './step-location';
 export { StepPrice } from './step-price';
-export { StepImages, type ServiceImagesManager } from './step-images';
+export { StepImages } from './step-images';
 export { StepDescription } from './step-description';
 export { StepDynamicForm } from './step-dynamic-form';
 export { StepModeration } from './step-moderation';

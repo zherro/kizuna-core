@@ -100,7 +100,7 @@ a materializa num projeto e mantém projeto ↔ core alinhados. Ver **`docs/CLI.
   plugin `services`); from `service-helpers` `coverImage` / `formatServicePrice` / `fileUrl`.
   `wizard-steps/*` exports `SERVICE_WIZARD_STEPS` — the ready-made 8-step registry for the
   services wizard (`start` / `category` / `location` / `price` / `images` / `description` /
-  `dynamic-form` / `moderation`; `images` renders an injected image manager). Backed by the
+  `dynamic-form` / `moderation`; `images` renders `ImageGalleryManager`). Backed by the
   `services` plugin.
 - `@kizuna/core/client/components/storage/*`: `ImageGalleryManager` (+ `ImageGalleryManagerProps`)
   — client image gallery: upload (`POST /api/storage/files`, `purpose` field), preview
