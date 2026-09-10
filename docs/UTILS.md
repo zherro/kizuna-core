@@ -34,8 +34,9 @@ Side-effect import — polyfills `globalThis.Temporal`. Import once at the app r
   DB as **integer cents** — convert before saving, format on display.
 - `lib/helper/date.helper` → `formatDate(iso)`, `formatDateTime(value)`, `nowDateString()`,
   `nowDateTimeString()`.
-- `lib/helper/text.helper` → `textWrap(text, limit)` (word-boundary truncate with `…`; prefer CSS
-  `text-ellipsis` in the DOM, keep this for email/meta text).
+- `lib/helper/text.helper` → `stripHtml(value)` (strip tags/entities, collapse whitespace — for
+  length checks/counters on rich-text output). For truncation in the DOM use CSS
+  (`text-ellipsis overflow-hidden` / `line-clamp`), not JS.
 - `lib/feature-flags` → `isShowcaseEnabled` (also re-exported from `lib/utils`).
 
 A consuming project keeps its own country/document-specific helpers (CPF/CNPJ validators, a
