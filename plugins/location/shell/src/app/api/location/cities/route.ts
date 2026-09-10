@@ -10,6 +10,9 @@ type IBGECity = { id: number; nome: string };
 const TTL_MS = 24 * 60 * 60_000;
 const cache = new Map<string, { at: number; items: Array<{ value: string; label: string }> }>();
 
+// Municípios de uma UF mudam raríssimo — cache de CDN/proxy além do cache em memória.
+const CACHE_CONTROL = 'public, s-maxage=604800, stale-while-revalidate=86400';
+
 export async function GET(request: NextRequest) {
   const uf = request.nextUrl.searchParams.get('uf')?.trim().toUpperCase() ?? '';
 
@@ -19,7 +22,10 @@ export async function GET(request: NextRequest) {
 
   const cached = cache.get(uf);
   if (cached && Date.now() - cached.at < TTL_MS) {
-    return NextResponse.json({ items: cached.items });
+    return NextResponse.json(
+      { items: cached.items },
+      { headers: { 'Cache-Control': CACHE_CONTROL } }
+    );
   }
 
   try {
@@ -40,7 +46,7 @@ export async function GET(request: NextRequest) {
       ? data.map((city) => ({ value: String(city.id), label: city.nome }))
       : [];
     cache.set(uf, { at: Date.now(), items });
-    return NextResponse.json({ items });
+    return NextResponse.json({ items }, { headers: { 'Cache-Control': CACHE_CONTROL } });
   } catch {
     return NextResponse.json(
       { items: [], message: 'Nao foi possivel carregar as cidades.' },

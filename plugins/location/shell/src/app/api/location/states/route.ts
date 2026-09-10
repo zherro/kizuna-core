@@ -10,9 +10,15 @@ type IBGEState = { sigla: string; nome: string };
 const TTL_MS = 7 * 24 * 60 * 60_000;
 let cache: { at: number; items: IBGEState[] } | null = null;
 
+// UFs praticamente nunca mudam — cache de CDN/proxy agressivo além do cache em memória.
+const CACHE_CONTROL = 'public, s-maxage=604800, stale-while-revalidate=86400';
+
 export async function GET() {
   if (cache && Date.now() - cache.at < TTL_MS) {
-    return NextResponse.json({ items: cache.items });
+    return NextResponse.json(
+      { items: cache.items },
+      { headers: { 'Cache-Control': CACHE_CONTROL } }
+    );
   }
 
   try {
@@ -31,7 +37,7 @@ export async function GET() {
     const data = (await response.json().catch(() => [])) as IBGEState[];
     const items = Array.isArray(data) ? data.map((s) => ({ sigla: s.sigla, nome: s.nome })) : [];
     cache = { at: Date.now(), items };
-    return NextResponse.json({ items });
+    return NextResponse.json({ items }, { headers: { 'Cache-Control': CACHE_CONTROL } });
   } catch {
     return NextResponse.json(
       { items: [], message: 'Nao foi possivel carregar os estados.' },
