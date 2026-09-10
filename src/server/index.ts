@@ -39,8 +39,16 @@ export { pgrstTable, pgrstRpc } from './postrest/conn';
 export { isOnboardingCompletedServer } from './onboarding';
 export { getStorageService } from './storage-service';
 export { apiError } from './api-error';
+export { isCaptchaEnabled, verifyCaptcha, type VerifyCaptchaResult } from './captcha';
 // `sendEmail` / `EmailTemplate` are NOT re-exported here on purpose — import them from
 // `@kizuna/core/server/email` so a project that doesn't send email never pulls `nodemailer`.
 export type { PermissionMap } from '../types/auth';
 
 export { checkKizunaEnv, type EnvCheck, type MissingEnv } from '../lib/env-guard';
+
+export {
+  checkLockout,
+  recordLoginFailure,
+  clearLoginFailures,
+  LOCKOUT_TIERS_ENV,
+} from './login-lockout';
