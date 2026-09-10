@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { optimizeImageBuffer } from './image-optimizer';
+import { readImageDimensions } from './image-dimensions';
 import { pgrstTable } from './postrest/conn';
 
 export type StorageFileRecord = {
@@ -222,14 +223,21 @@ async function uploadSingleFilePostgres(args: {
 
   const storagePath = makeStoragePath(purpose, file.name);
 
+  // Dimensões lidas do cabeçalho do arquivo original (antes da otimização — o TinyPNG
+  // preserva as dimensões). Formato não-imagem / desconhecido → null, sem quebrar o upload.
+  const dimensions =
+    mimeType && mimeType.startsWith(IMAGE_MIME_PREFIX)
+      ? readImageDimensions(originalBuffer, mimeType)
+      : null;
+
   const payload = {
     original_name: file.name,
     storage_path: storagePath,
     public_url: null,
     mime_type: mimeType,
     size_bytes: finalBuffer.length,
-    width: null,
-    height: null,
+    width: dimensions?.width ?? null,
+    height: dimensions?.height ?? null,
     content: toPgBytea(finalBuffer),
     purpose,
     active: true,
