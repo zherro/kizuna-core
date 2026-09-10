@@ -103,9 +103,9 @@ a materializa num projeto e mantém projeto ↔ core alinhados. Ver **`docs/CLI.
   `dynamic-form` / `moderation`; `images` renders an injected image manager). Backed by the
   `services` plugin.
 - `@kizuna/core/client/components/storage/*`: `ImageGalleryManager` (+ `ImageGalleryManagerProps`)
-  — client image gallery: upload (`POST /api/storage/files`), preview, reorder, cover. `onPersist`
-  required (`(referenceId, nextIds) => Promise<ids>`); `purpose` goes into the upload. See
-  `docs/STORAGE.md`.
+  — client image gallery: upload (`POST /api/storage/files`, `purpose` field), preview
+  (`/api/storage/files/{id}/content`), remove. `onPersist` required
+  (`(referenceId, nextIds) => Promise<ids>`, returns the saved-id list). See `docs/STORAGE.md`.
 - `@kizuna/core/client/components/showcase/*`: `ShowcaseShell`, `ShowcaseSectionPage`,
   `showcase-sections` (`SHOWCASE_SECTIONS`, `DEFAULT_SHOWCASE_SECTION`, `normalizeShowcaseSection`)
 - `@kizuna/core/client/components/ui/*` and `ui-better-soft/*` — see `docs/COMPONENTS.md`
