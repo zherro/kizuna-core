@@ -1,9 +1,8 @@
 # Email
 
-> **Status:** the sender + template implementation currently lives in the consuming project
-> (foco-total's `src/lib/server/email-sender.ts` / `email-templates.ts`). Promotion to
-> `@kizuna/core/server` (nodemailer wrapper + templates as slots) is a Fase A candidate — check
-> `STATUS.md` for whether it has landed. This doc describes the generic pattern either way.
+> **Status:** o **transporte** vive no core — `@kizuna/core/server` → `sendEmail` + `type EmailTemplate`
+> (`src/server/email/`). As **templates** (código de cada e-mail — verificação, boas-vindas, …) são
+> copy/branding do projeto consumidor e ficam nele, como funções puras `(input) => EmailTemplate`.
 
 ## Pattern
 

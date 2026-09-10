@@ -39,6 +39,7 @@ export { pgrstTable, pgrstRpc } from './postrest/conn';
 export { isOnboardingCompletedServer } from './onboarding';
 export { getStorageService } from './storage-service';
 export { apiError } from './api-error';
+export { sendEmail, type EmailTemplate } from './email';
 export type { PermissionMap } from '../types/auth';
 
 export { checkKizunaEnv, type EnvCheck, type MissingEnv } from '../lib/env-guard';
