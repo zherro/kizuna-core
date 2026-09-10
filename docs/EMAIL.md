@@ -1,6 +1,6 @@
 # Email
 
-> **Status:** o **transporte** vive no core — `@kizuna/core/server` → `sendEmail` + `type EmailTemplate`
+> **Status:** o **transporte** vive no core — `@kizuna/core/server/email` → `sendEmail` + `type EmailTemplate`
 > (`src/server/email/`). As **templates** (código de cada e-mail — verificação, boas-vindas, …) são
 > copy/branding do projeto consumidor e ficam nele, como funções puras `(input) => EmailTemplate`.
 

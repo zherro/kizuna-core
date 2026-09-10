@@ -33,7 +33,7 @@ a materializa num projeto e mantém projeto ↔ core alinhados. Ver **`docs/CLI.
 - `docs/SCREEN-ENGINE.md` — full screen-engine manual (pt): `createScreenPage`, context refs, `ResourceScreen`, `DynamicField`, limits, worked examples.
 - `docs/STORAGE.md` — `getStorageService()`, bytea, `optimizeImageBuffer`, routes, env.
 - `docs/UTILS.md` — `lib/utils`, `api-error-message`, `temporal-global`, BR helpers (UFs, currency mask, CPF/CNPJ).
-- `docs/EMAIL.md` — nodemailer transport in the core (`@kizuna/core/server` → `sendEmail` / `EmailTemplate`); templates stay in the app.
+- `docs/EMAIL.md` — nodemailer transport in the core (`@kizuna/core/server/email` → `sendEmail` / `EmailTemplate`); templates stay in the app.
 - `docs/AI.md` — "no SDK, template fallback" pattern + env.
 - `docs/WIZARD.md` — engine de wizard multi-step (contrato de step, `defineWizard`, persistência read-merge-write, chrome layout-foco, slot de IA).
 
@@ -113,8 +113,10 @@ a materializa num projeto e mantém projeto ↔ core alinhados. Ver **`docs/CLI.
   `getTokenFromCookies`, `getAuthHeaderFromCookies`, `getServiceAuthHeader`, `getSession`,
   `maskEmail`, `getDisplayNameFromEmail`, `isValidEmail`, `getDisplayName`, `isConfigError`,
   `createLoginHandler`, `createRegisterHandler`, `createLogoutHandler`, `pgrstTable`, `pgrstRpc`,
-  `getStorageService`, `apiError`, `PermissionMap`, `isOnboardingCompletedServer`, `sendEmail`,
-  `EmailTemplate`
+  `getStorageService`, `apiError`, `PermissionMap`, `isOnboardingCompletedServer`
+- `@kizuna/core/server/email`: `sendEmail`, `EmailTemplate` — nodemailer transport. Its own
+  subpath (NOT in the `./server` barrel) so a project that doesn't send email never pulls
+  `nodemailer` (an optional peer dep). Templates are pure builders in the consuming app.
 - `@kizuna/core/server/ai/*`: `runSkill`, `registerSkill`, `getSkill`, `listSkillContexts`,
   `AiSkill`, `AiSkillContext`, `AiProvider` (+ `AiStructuredRequest`), `resolveProvider`,
   `AiUnavailableError`, `classifyAiError`, `isRecoverableAiError`, `checkRateLimit`,
