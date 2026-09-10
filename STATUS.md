@@ -5,8 +5,25 @@ layer, a JSON-driven screen-engine, and a UI kit. Genuinely independent of any o
 project-specific env var names, no app-specific imports. `sql/` + `plugins/` is the DB side;
 `src/` is the TS side. Consumed via a tsconfig path alias (`@kizuna/core/*`), not an npm package.
 
+## CLI + template/ (starter)
+
+O core não é só biblioteca: ele carrega a **casca base** de um app Next.js e um **CLI Node** que
+a materializa num projeto e mantém projeto ↔ core alinhados. Ver **`docs/CLI.md`**.
+
+- `VERSION` — string semver única (hoje `0.5.0`); sinal do version-gate. Bumpa só em mudança
+  relevante pro consumidor (`template/`, shell de plugin, migration nova, API pública). `git log`
+  é o changelog — sem `CHANGELOG`.
+- `cli/` — `index.mjs` (dispatcher) + `commands/{install,update,sync,lock,check,adopt,plugin,db}.mjs`
+  - `lib/*.mjs`. Zero deps, ESM, Node ≥ 20. Testes: `npx vitest run cli/`.
+- `template/` — `kizuna.manifest.json` (21 paths: `managed` / `seed` / `merge`) + os arquivos da
+  casca base.
+- `plugins/<n>/shell/` — fragmento de casca por plugin (rotas limpas + registry): hoje
+  `storage`, `location`, `pages`, `onboarding`, `agenda`.
+- `kizuna.lock` (no projeto consumidor, não aqui) — hashes + versões do que foi instalado.
+
 ## Docs
 
+- `docs/CLI.md` — o CLI (`install`/`update`/`sync`/`plugin`/`lock`/`check`/`adopt`/`db`), o `kizuna.lock`, managed/seed/merge, regra de bump do `VERSION`.
 - `docs/ARCHITECTURE.md` — folder layout, `ResourceConfig`/`ScreenConfig` split, context refs.
 - `docs/AUTH.md` — JWT/session, login/register/logout, `is_root`, RBAC, route protection (proxy).
 - `docs/PLUGINS.md` — what a plugin is, the plugins that exist today, how to activate them.
@@ -16,8 +33,9 @@ project-specific env var names, no app-specific imports. `sql/` + `plugins/` is 
 - `docs/SCREEN-ENGINE.md` — full screen-engine manual (pt): `createScreenPage`, context refs, `ResourceScreen`, `DynamicField`, limits, worked examples.
 - `docs/STORAGE.md` — `getStorageService()`, bytea, `optimizeImageBuffer`, routes, env.
 - `docs/UTILS.md` — `lib/utils`, `api-error-message`, `temporal-global`, BR helpers (UFs, currency mask, CPF/CNPJ).
-- `docs/EMAIL.md` — nodemailer pattern + env (no core impl yet — Fase A promotion target).
+- `docs/EMAIL.md` — nodemailer transport in the core (`@kizuna/core/server/email` → `sendEmail` / `EmailTemplate`); templates stay in the app.
 - `docs/AI.md` — "no SDK, template fallback" pattern + env.
+- `docs/WIZARD.md` — engine de wizard multi-step (contrato de step, `defineWizard`, persistência read-merge-write, chrome layout-foco, slot de IA).
 
 `STATUS.md` is still the only doc index — it needs the "índice curto" restructure (pending, `docs/PENDENCIAS.md`).
 
@@ -35,8 +53,21 @@ project-specific env var names, no app-specific imports. `sql/` + `plugins/` is 
   `ResourceScreen`, `ListBlock`, `PageHeaderBlock`, `DynamicField`, `DynamicStepForm`, `screens/*`,
   `resources/forms`, `resources/form-results`, `resources/pages`, `resources/taxonomy`
   (`resourceTaxonomy` — `categories` / `categories_group` / `subcategories` / `categories_sub_tags`
-  + `*_public` read variants; the `taxonomy` plugin owns them, a consuming project just spreads
-  `resourceTaxonomy` into its `postgrestResources`)
+  - `*_public` read variants; the `taxonomy` plugin owns them, a consuming project just spreads
+    `resourceTaxonomy` into its `postgrestResources`), `resources/reviews` (`resourceReviews` —
+    `reviews` / `review_tags` / `review_moderation_requests` / `review_moderation_events` /
+    `review_stats`; the `reviews` plugin owns them). Registry also has the `review-moderation` block.
+    `resources/services` (`resourceServices` — `services` / `service_categories_sub` /
+    `service_moderations`; the `services` plugin owns them, writes to `service_moderations` go
+    through the `fn_service_moderate` RPC).
+    `resources/agenda-config` (`resourceAgendaConfig` — `agenda_schedule` / `agenda_schedule_hours` /
+    `agenda_booking_preferences` / `agenda_notification_preferences`; the `agenda` plugin v1.1.0 owns
+    them, a consuming project spreads `resourceAgendaConfig` into its `postgrestResources`).
+- `@kizuna/core/client/components/agenda-config/*`: `AgendaConfigPage` (tenant agenda
+  configuration screen — schedule list + booking rules + notification preferences),
+  `useAgendaSchedules`, `ScheduleSheet`, `ScheduleForm`, `ScheduleCard`, `SchedulesEmptyState`,
+  and pure helpers `summarizeSchedule` / `suggestScheduleName` / `validateSchedule` /
+  `crossesMidnight` / `hmToMinutes`. Backed by the `agenda` plugin v1.1.0.
 - `@kizuna/core/client/components/form-builder/*`: `FormBuilder`, `FormRenderer`, `FieldEditor`,
   `FormResultViewer`, `validate`, `collectOutput`, `isFieldVisible`, `evalVisibleWhen`, plus the
   schema model types (`FormSchema`, `FormField`, `FieldType`, `VisibleWhen`, `OptionsSource`,
@@ -46,7 +77,40 @@ project-specific env var names, no app-specific imports. `sql/` + `plugins/` is 
   (`public.forms` / `public.form_results` / `fn_form_result_upsert`).
 - `@kizuna/core/client/components/pages/*`: `PageView` (server component), `PagesAdmin`,
   `DEFAULT_RESERVED_SLUGS`, `isReservedSlug`, `slugify`. Backed by the `pages` plugin (`public.pages`,
-  + `0002_pages_seed.sql` project-neutral default pages: `sobre` / `quem-somos` / `termos-de-uso`).
+  - `0002_pages_seed.sql` project-neutral default pages: `sobre` / `quem-somos` / `termos-de-uso`).
+- `@kizuna/core/client/components/reviews/*`: `RatingInput`, `RatingDisplay`, `ReviewTags`,
+  `ReviewSummary`, `ReviewCard`, `ReviewList`, `ReviewModal`, `ReviewModerationRequestModal`,
+  `ReviewModerationTable`; hooks `useReviewStats` / `useReviewList` / `useReviewTags` / `useMyReview`
+  - `submitReview` / `requestModeration` / `moderateReview` / `coerceReview`; types `ReviewView`,
+    `ReviewStats`, `ReviewTagOption`, `ReviewStatus`, `ModerationAction`, `ReviewModerationEvent`,
+    … (re-exported from the folder barrel; NOT yet in the `@kizuna/core/types` barrel). Backed by the
+    `reviews` plugin (`public.reviews` + 5 sibling tables + `fn_review_*` RPCs, incl.
+    `fn_review_moderate`). The `services` wizard writes moderation decisions through the
+    `fn_service_moderate` RPC (see `docs/PLUGINS.md`).
+- `@kizuna/core/client/components/wizard/*`: `Wizard`, `defineWizard`, `useWizardState`,
+  `resolveSteps`, `applyAssistPatch`, `createResourcePersister`, `WizardShell`,
+  `WizardScrollShell`, `WizardLayoutToggle`, `useWizardLayout`, `WizardLayoutContext`,
+  `layoutStorageKey` / `readStoredLayout` / `writeStoredLayout` / `isWizardLayout` /
+  `WIZARD_LAYOUTS`, plus the contract types `WizardStep`, `WizardStepProps`,
+  `WizardStepContext`, `WizardConfig`, `WizardMode`, `WizardEntities`, `WizardAssistant`,
+  `WizardLayout`. Generic config-driven multi-step engine against ONE PostgREST resource
+  (read-merge-write persistence, optional AI slot). Two step layouts via the `Wizard` prop
+  `variant?: 'stepper' | 'scroll'` — the classic layout-foco stepper and an immersive vertical
+  questionnaire; the header toggle switches them live (create only) and the choice is remembered
+  per resource in `localStorage`. Domain-agnostic — see `docs/WIZARD.md`.
+- `@kizuna/core/client/components/services/*`: `ServiceConfigSummary`; from `service-type`
+  `defaultPriceUnitForCategory`, `SERVICE_PRICE_UNIT_OPTIONS`, `ServiceWizardState`
+  (+ `SERVICE_WIZARD_INITIAL_STATE`), `ServiceRecord`; from `service-labels`
+  `SERVICE_STATUS_LABEL` / `SERVICE_LOCATION_LABEL` / `PRICE_UNIT_LABEL` (rótulos dos enums do
+  plugin `services`); from `service-helpers` `coverImage` / `formatServicePrice` / `fileUrl`.
+  `wizard-steps/*` exports `SERVICE_WIZARD_STEPS` — the ready-made 8-step registry for the
+  services wizard (`start` / `category` / `location` / `price` / `images` / `description` /
+  `dynamic-form` / `moderation`; `images` renders `ImageGalleryManager`). Backed by the
+  `services` plugin.
+- `@kizuna/core/client/components/storage/*`: `ImageGalleryManager` (+ `ImageGalleryManagerProps`)
+  — client image gallery: upload (`POST /api/storage/files`, `purpose` field), preview
+  (`/api/storage/files/{id}/content`), remove. `onPersist` required
+  (`(referenceId, nextIds) => Promise<ids>`, returns the saved-id list). See `docs/STORAGE.md`.
 - `@kizuna/core/client/components/showcase/*`: `ShowcaseShell`, `ShowcaseSectionPage`,
   `showcase-sections` (`SHOWCASE_SECTIONS`, `DEFAULT_SHOWCASE_SECTION`, `normalizeShowcaseSection`)
 - `@kizuna/core/client/components/ui/*` and `ui-better-soft/*` — see `docs/COMPONENTS.md`
@@ -54,7 +118,25 @@ project-specific env var names, no app-specific imports. `sql/` + `plugins/` is 
   `getTokenFromCookies`, `getAuthHeaderFromCookies`, `getServiceAuthHeader`, `getSession`,
   `maskEmail`, `getDisplayNameFromEmail`, `isValidEmail`, `getDisplayName`, `isConfigError`,
   `createLoginHandler`, `createRegisterHandler`, `createLogoutHandler`, `pgrstTable`, `pgrstRpc`,
-  `getStorageService`, `apiError`, `PermissionMap`
+  `getStorageService`, `apiError`, `PermissionMap`, `isOnboardingCompletedServer`
+- `@kizuna/core/server/email`: `sendEmail`, `EmailTemplate` — nodemailer transport. Its own
+  subpath (NOT in the `./server` barrel) so a project that doesn't send email never pulls
+  `nodemailer` (an optional peer dep). Templates are pure builders in the consuming app.
+- `@kizuna/core/server/ai/*`: `runSkill`, `registerSkill`, `getSkill`, `listSkillContexts`,
+  `AiSkill`, `AiSkillContext`, `AiProvider` (+ `AiStructuredRequest`), `resolveProvider`,
+  `AiUnavailableError`, `classifyAiError`, `isRecoverableAiError`, `checkRateLimit`,
+  `readSystemConfig`. Server-only mechanism for the `ai_assistant` plugin — provider abstraction
+  (`GeminiProvider` real; `openai`/`claude` = `NotImplementedProvider`), `runSkill` orchestrator
+  (context toggle + rate limit + graceful degradation via `AiUnavailableError` → route returns
+  503 `{ fallback, reason }`). Skills live in the consuming app.
+- `@kizuna/core/client/components/ai-assistant`: `AiAssistantConfigPage` (+ `AiAssistantConfigPageProps`,
+  `AiAssistantConfigValue`) — provider/model/contexts config form; core does NOT touch
+  `system_config`, takes `value` + `onSave` by prop.
+- `@kizuna/core/client/hooks/use-ai-degradation`: `useAiDegradation(contextKey)` →
+  `{ status: 'ready'|'degraded'|'unavailable', report, retry, reset }` — sticky per-session
+  degradation state machine.
+- `@kizuna/core/shared/ai-error`: `classifyAiError`, `AiUnavailableReason` — isomorphic
+  (server + client) AI error classifier.
 - `@kizuna/core/lib/utils`: `cn`, `isShowcaseEnabled`
 - `@kizuna/core/lib/temporal-global`: side-effect import, polyfills `globalThis.Temporal`
 - `@kizuna/core/lib/api-error-message`: `translateApiErrorMessage` (PostgREST/DB message → pt-BR)
@@ -78,11 +160,11 @@ project-specific env var names, no app-specific imports. `sql/` + `plugins/` is 
   language switcher over the `account_preferences` plugin.
 - `@kizuna/core/client/components/login-page` / `register-page`: `LoginPageContent` /
   `RegisterPageContent` are now full working forms (formik + Yup + `useForm`, `POST
-  /api/auth/{login,register}`, themed `ui/` components). Props: `redirectTo`, `onLoginSuccess` /
+/api/auth/{login,register}`, themed `ui/` components). Props: `redirectTo`, `onLoginSuccess` /
   `onRegisterSuccess`, `loginEndpoint` / `registerEndpoint`, `registerHref` / `loginHref` /
   `termsHref`. A consuming project renders them directly inside its own page wrapper.
 - `@kizuna/core/server/proxy`: `createKizunaProxy({ protectedPrefixes, authPages, loginPath,
-  panelPath, sessionCookie })` → a Next 16 `proxy` function. The consumer's `src/proxy.ts` is this
+panelPath, sessionCookie })` → a Next 16 `proxy` function. The consumer's `src/proxy.ts` is this
   call plus a static `export const config = { matcher: [...] }`.
 
 ## PostgREST layer

@@ -57,6 +57,7 @@ const ICON_BY_SECTION: Record<ShowcaseSectionId, React.ComponentType<{ className
   alerts: Bell,
   progress: Gauge,
   'experience-pill': Zap,
+  'wizard-layout-toggle': Rows3,
   'bottom-progress-bar': PanelBottom,
   'mosaic-grid': LayoutGrid,
   'admin-page-reader': PanelTop,

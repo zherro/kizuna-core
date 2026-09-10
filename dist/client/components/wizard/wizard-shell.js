@@ -1,0 +1,17 @@
+'use client';
+import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
+import { Check, ChevronLeft, ChevronRight } from 'lucide-react';
+import { cn } from '../../../lib/utils';
+import { Button } from '../ui/button';
+import { WizardRail } from './wizard-rail';
+import { WizardProgress } from './wizard-progress';
+const DEFAULT_MODE_LABELS = {
+    create: 'Novo',
+    edit: 'Editar',
+    review: 'Revisão',
+};
+export function WizardShell({ mode, modeLabels, currentStep, currentIndex, totalSteps, stepLabel, progress, railSteps, furthest, onJump, isLastStep, showContinue, continueLabel, canContinue, finishBlocked, submitting, error, onBack, onContinue, onFinish, onCancel, headerActions, layoutToggle, railExtra, children, }) {
+    const modeLabel = modeLabels?.[mode] ?? DEFAULT_MODE_LABELS[mode];
+    return (_jsxs("div", { className: "flex min-h-[calc(100vh-56px)] flex-col bg-background", children: [_jsxs("div", { className: "sticky top-0 z-30 border-b border-border bg-background/95 backdrop-blur", children: [_jsxs("div", { className: "mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-2 sm:px-6", children: [_jsx("p", { className: "text-sm font-semibold text-foreground", children: modeLabel }), _jsxs("div", { className: "flex shrink-0 items-center gap-2", children: [layoutToggle, headerActions, _jsx(Button, { variant: "ghost", size: "sm", onClick: onCancel, children: "Cancelar" })] })] }), _jsx(WizardProgress, { stepLabel: stepLabel, currentStep: currentStep, totalSteps: totalSteps, progress: progress, steps: railSteps, current: currentStep, furthest: furthest, onJump: onJump })] }), _jsx("main", { className: "min-h-0 flex-1 overflow-y-auto", children: _jsxs("div", { className: "mx-auto grid max-w-5xl gap-8 px-4 py-8 sm:px-6 md:grid-cols-[13rem_1fr] md:gap-12 md:py-12", children: [_jsx("aside", { className: "hidden md:block", children: _jsxs("div", { className: "sticky top-4 space-y-5", children: [_jsx(WizardRail, { steps: railSteps, current: currentStep, furthest: furthest, onJump: onJump }), railExtra] }) }), _jsxs("div", { className: "min-w-0", children: [error ? (_jsx("div", { className: "mb-4", children: _jsx("div", { role: "alert", className: "rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive", children: error }) })) : null, _jsx("div", { className: "wz-step-in", children: children }, currentIndex)] })] }) }), _jsx("div", { className: "sticky bottom-0 z-30 border-t border-border bg-background/95 backdrop-blur", children: _jsxs("div", { className: "mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3 sm:px-6", children: [_jsxs(Button, { variant: "ghost", onClick: onBack, disabled: currentStep === 1 || submitting, className: cn(currentStep === 1 && 'invisible'), children: [_jsx(ChevronLeft, { className: "mr-1 h-4 w-4" }), " Voltar"] }), isLastStep ? (_jsx(Button, { onClick: onFinish, disabled: submitting || Boolean(finishBlocked), children: submitting ? ('Salvando...') : (_jsxs(_Fragment, { children: [_jsx(Check, { className: "mr-1 h-4 w-4" }), " Concluir"] })) })) : showContinue ? (_jsxs(Button, { onClick: onContinue, disabled: submitting || !canContinue, children: [submitting ? 'Salvando...' : continueLabel, !submitting ? _jsx(ChevronRight, { className: "ml-1 h-4 w-4" }) : null] })) : null] }) })] }));
+}
+//# sourceMappingURL=wizard-shell.js.map

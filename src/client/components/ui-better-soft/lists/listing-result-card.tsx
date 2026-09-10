@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Star } from 'lucide-react';
 import { cn } from '../../../../lib/utils';
 import { MediaResultCard } from './media-result-card';
 
@@ -29,6 +29,10 @@ export type ListingResultCardProps = {
   /** Nome + avatar do responsável pelo anúncio. */
   providerName?: string | null;
   providerAvatarUrl?: string | null;
+  /** Nota média das avaliações, ex. 4.7. `null`/`undefined` = ainda sem avaliações. */
+  rating?: number | null;
+  /** Total de avaliações publicadas. Default 0. */
+  reviewCount?: number;
   /** Texto do botão de ação. Default "Ver". */
   ctaLabel?: string;
   variant?: 'grid' | 'strip';
@@ -37,6 +41,26 @@ export type ListingResultCardProps = {
 
 function initials(name?: string | null): string {
   return (name ?? '').trim().slice(0, 2).toUpperCase();
+}
+
+/** Chip de nota média — só renderiza quando há avaliações publicadas. */
+function RatingChip({
+  rating,
+  reviewCount = 0,
+  className,
+}: {
+  rating?: number | null;
+  reviewCount?: number;
+  className?: string;
+}) {
+  if (rating == null || reviewCount <= 0) return null;
+  return (
+    <span className={cn('inline-flex items-center gap-1 text-[11px] font-semibold', className)}>
+      <Star className="h-3 w-3 fill-current text-amber-500" />
+      {rating.toFixed(1).replace('.', ',')}
+      <span className="font-normal text-muted-foreground">({reviewCount})</span>
+    </span>
+  );
 }
 
 function ProviderRow({
@@ -95,10 +119,13 @@ export function ListingResultCard({
   highlightLabel = 'Destaque',
   providerName,
   providerAvatarUrl,
+  rating,
+  reviewCount = 0,
   ctaLabel = 'Ver',
   variant = 'grid',
   className,
 }: Readonly<ListingResultCardProps>) {
+  const hasRating = rating != null && reviewCount > 0;
   if (variant === 'strip') {
     return (
       <Link
@@ -128,6 +155,7 @@ export function ListingResultCard({
           {subtitleLabel && (
             <p className="line-clamp-1 text-[11px] text-muted-foreground">{subtitleLabel}</p>
           )}
+          <RatingChip rating={rating} reviewCount={reviewCount} />
           <div className="mt-auto pt-1 text-sm font-black leading-none">{priceLabel}</div>
         </div>
       </Link>
@@ -156,7 +184,16 @@ export function ListingResultCard({
           </span>
         ) : undefined
       }
-      leading={<ProviderRow providerName={providerName} providerAvatarUrl={providerAvatarUrl} />}
+      leading={
+        hasRating ? (
+          <div className="flex flex-col gap-2">
+            <RatingChip rating={rating} reviewCount={reviewCount} />
+            <ProviderRow providerName={providerName} providerAvatarUrl={providerAvatarUrl} />
+          </div>
+        ) : (
+          <ProviderRow providerName={providerName} providerAvatarUrl={providerAvatarUrl} />
+        )
+      }
       footer={
         <>
           <div className="text-lg font-black leading-none">{priceLabel}</div>

@@ -25,6 +25,16 @@ export type {
   PermissionCheck,
   PermissionResult,
 } from './auth';
+export type {
+  MessageChannel,
+  MessageDirection,
+  MessageStatus,
+  MessageContentType,
+  ChatMessage,
+  ChatConversationSummary,
+  MessagesPage,
+  MessagingClientConfig,
+} from './messaging';
 
 // Aliases para convenência
 export type ResourceRegistry = Record<string, ResourceConfig>;

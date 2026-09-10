@@ -1,0 +1,10 @@
+{
+  "owner": "storage",
+  "_deferred": "rotas que ainda dependem de @/lib/server/* e virão numa promoção de Fase A: nenhuma",
+  "files": {
+    "src/app/api/storage/files/route.ts": "managed",
+    "src/app/api/storage/files/[id]/route.ts": "managed",
+    "src/app/api/storage/files/[id]/content/route.ts": "managed",
+    "src/app/api/public/storage/files/[id]/content/route.ts": "managed"
+  }
+}

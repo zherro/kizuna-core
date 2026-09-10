@@ -23,13 +23,7 @@ type Props = {
   initialOverrides: UserOverrideRow[];
 };
 
-export function UserAccessPanel({
-  users,
-  roles,
-  groups,
-  roleGrants,
-  initialOverrides,
-}: Props) {
+export function UserAccessPanel({ users, roles, groups, roleGrants, initialOverrides }: Props) {
   const { user: me } = useAuth();
   const { success, error } = useToast();
   const isRoot = me?.is_root === true;
@@ -120,8 +114,10 @@ export function UserAccessPanel({
     );
   }
 
-  const currentRoleId = selected ? userRole[selected.user_id] ?? null : null;
-  const inheritedIds = currentRoleId ? roleGrantIds.get(currentRoleId) ?? new Set<number>() : new Set<number>();
+  const currentRoleId = selected ? (userRole[selected.user_id] ?? null) : null;
+  const inheritedIds = currentRoleId
+    ? (roleGrantIds.get(currentRoleId) ?? new Set<number>())
+    : new Set<number>();
 
   return (
     <div className="grid gap-6 md:grid-cols-[260px_1fr]">
@@ -239,7 +235,11 @@ export function UserAccessPanel({
                                   : 'border-border hover:bg-accent'
                               }`}
                             >
-                              {opt === 'inherit' ? 'Herdar' : opt === 'allow' ? 'Permitir' : 'Negar'}
+                              {opt === 'inherit'
+                                ? 'Herdar'
+                                : opt === 'allow'
+                                  ? 'Permitir'
+                                  : 'Negar'}
                             </button>
                           ))}
                         </span>

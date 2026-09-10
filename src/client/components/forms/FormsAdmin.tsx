@@ -78,8 +78,7 @@ export function FormsAdmin() {
       description: row.description ?? '',
       isReusable: row.isReusable,
       active: row.active,
-      schema:
-        row.schema && Object.keys(row.schema).length > 0 ? row.schema : EMPTY_SCHEMA,
+      schema: row.schema && Object.keys(row.schema).length > 0 ? row.schema : EMPTY_SCHEMA,
     });
   }, []);
 
@@ -134,10 +133,7 @@ export function FormsAdmin() {
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3">
         <form {...table.searchFormProps} className="flex-1">
-          <Input
-            {...table.searchInputProps}
-            placeholder="Buscar por chave, titulo ou descricao"
-          />
+          <Input {...table.searchInputProps} placeholder="Buscar por chave, titulo ou descricao" />
         </form>
         <Button onClick={openNew}>
           <Plus className="mr-1 h-4 w-4" /> Novo formulario
@@ -150,21 +146,14 @@ export function FormsAdmin() {
         {table.loading ? (
           <li className="px-3 py-3 text-sm text-muted-foreground">Carregando...</li>
         ) : table.items.length === 0 ? (
-          <li className="px-3 py-3 text-sm text-muted-foreground">
-            Nenhum formulario cadastrado.
-          </li>
+          <li className="px-3 py-3 text-sm text-muted-foreground">Nenhum formulario cadastrado.</li>
         ) : (
           table.items.map((row) => (
-            <li
-              key={String(row.id)}
-              className="flex items-center justify-between gap-3 px-3 py-3"
-            >
+            <li key={String(row.id)} className="flex items-center justify-between gap-3 px-3 py-3">
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium text-foreground">
                   {row.title}{' '}
-                  <span className="text-xs font-normal text-muted-foreground">
-                    ({row.formKey})
-                  </span>
+                  <span className="text-xs font-normal text-muted-foreground">({row.formKey})</span>
                 </p>
                 <p className="truncate text-xs text-muted-foreground">
                   v{row.version} · {row.isReusable ? 'reutilizavel' : 'exclusivo'} ·{' '}
@@ -247,9 +236,7 @@ export function FormsAdmin() {
               <Input
                 id="form-title"
                 value={edit.title}
-                onChange={(e) =>
-                  setEdit((cur) => (cur ? { ...cur, title: e.target.value } : cur))
-                }
+                onChange={(e) => setEdit((cur) => (cur ? { ...cur, title: e.target.value } : cur))}
               />
             </div>
             <div className="space-y-2">

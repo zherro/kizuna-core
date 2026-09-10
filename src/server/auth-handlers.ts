@@ -14,16 +14,21 @@ import type { PermissionMap } from '../types/auth';
 import { apiError } from './api-error';
 import {
   signSession,
+  getSession,
   maskEmail,
   getDisplayNameFromEmail,
   getDisplayName,
   isValidEmail,
   isConfigError,
 } from './auth';
+import { verifyCaptcha } from './captcha';
+import { checkLockout, recordLoginFailure, clearLoginFailures } from './login-lockout';
 
 export type LoginRequestBody = {
   email?: string;
   password?: string;
+  /** Token do Cloudflare Turnstile — só verificado quando `isCaptchaEnabled()` (keys nas envs). */
+  captchaToken?: string | null;
 };
 
 export type RegisterRequestBody = {
@@ -31,6 +36,7 @@ export type RegisterRequestBody = {
   email?: string;
   password?: string;
   acceptTerms?: boolean;
+  captchaToken?: string | null;
 };
 
 export type LogoutRequestBody = Record<string, never>;
@@ -40,6 +46,24 @@ type PgrstRpc = (name: string, payload: any, opts?: any) => Promise<Response>;
 function asError(error: unknown): Error {
   if (error instanceof Error) return error;
   return new Error(typeof error === 'string' ? error : JSON.stringify(error));
+}
+
+/** IP do cliente pelos headers de proxy — `''` quando não há (dev sem proxy). */
+function clientIp(request: Request): string {
+  const forwarded = request.headers.get('x-forwarded-for');
+  if (forwarded) return forwarded.split(',')[0]!.trim();
+  return request.headers.get('x-real-ip')?.trim() || '';
+}
+
+/** Resposta 400 padrão para captcha ausente/inválido. */
+function captchaRejection(reason: string): Response {
+  return NextResponse.json(
+    {
+      message: 'Verificacao de seguranca falhou. Recarregue a pagina e tente novamente.',
+      error: apiError({ code: '400', message: 'captcha_failed', details: reason }),
+    },
+    { status: 400 }
+  );
 }
 
 /**
@@ -78,6 +102,41 @@ export function createLoginHandler(pgrstRpc: PgrstRpc) {
       return NextResponse.json({ message: 'Informe email e senha.' }, { status: 400 });
     }
 
+    // Lockout progressivo: bloqueia por login e por IP após senhas erradas repetidas (escala
+    // conforme o número de falhas). Complementa o rate-limit por IP do projeto consumidor.
+    const ip = clientIp(request);
+    const lockKeys = [`login:${email.toLowerCase()}`, ...(ip ? [`ip:${ip}`] : [])];
+    for (const key of lockKeys) {
+      const lock = checkLockout(key);
+      if (lock.locked) {
+        console.warn('[auth.login] locked_out', {
+          requestId,
+          path: new URL(request.url).pathname,
+          email: emailMasked,
+          key: key.startsWith('login:') ? 'login' : 'ip',
+          retryAfterSec: lock.retryAfterSec,
+        });
+        return NextResponse.json(
+          {
+            message: 'Muitas tentativas com senha incorreta. Aguarde antes de tentar de novo.',
+          },
+          { status: 429, headers: { 'Retry-After': String(lock.retryAfterSec) } }
+        );
+      }
+    }
+
+    // Captcha (Cloudflare Turnstile) — no-op quando desabilitado / sem key nas envs.
+    const captcha = await verifyCaptcha(body.captchaToken, ip || null);
+    if (!captcha.ok) {
+      console.warn('[auth.login] captcha_failed', {
+        requestId,
+        path: new URL(request.url).pathname,
+        email: emailMasked,
+        reason: captcha.reason,
+      });
+      return captchaRejection(captcha.reason);
+    }
+
     try {
       const rpcRes = await pgrstRpc(
         'fun_auth__login_with_perms',
@@ -107,6 +166,8 @@ export function createLoginHandler(pgrstRpc: PgrstRpc) {
           details,
         });
 
+        for (const key of lockKeys) recordLoginFailure(key);
+
         return NextResponse.json(
           {
             message: 'Credenciais invalidas.',
@@ -125,8 +186,14 @@ export function createLoginHandler(pgrstRpc: PgrstRpc) {
           hasTenantId: Boolean(tenantId),
           responseKeys: data ? Object.keys(data) : [],
         });
+        // Login inexistente também é falha de autenticação (a RPC devolve 200 + corpo vazio
+        // quando o email não existe) — conta pro lockout igual a senha errada.
+        for (const key of lockKeys) recordLoginFailure(key);
         return NextResponse.json({ message: 'Credenciais invalidas.' }, { status: 401 });
       }
+
+      // Login OK — zera o contador de falhas do login e do IP.
+      for (const key of lockKeys) clearLoginFailures(key);
 
       const displayName = getDisplayNameFromEmail(email);
       const token = signSession({
@@ -255,6 +322,18 @@ export function createRegisterHandler(pgrstRpc: PgrstRpc) {
         { message: 'Voce precisa aceitar os termos para criar a conta.' },
         { status: 400 }
       );
+    }
+
+    // Captcha (Cloudflare Turnstile) — no-op quando desabilitado / sem key nas envs.
+    const captcha = await verifyCaptcha(body.captchaToken, clientIp(request) || null);
+    if (!captcha.ok) {
+      console.warn('[auth.register] captcha_failed', {
+        requestId,
+        path: new URL(request.url).pathname,
+        email: emailMasked,
+        reason: captcha.reason,
+      });
+      return captchaRejection(captcha.reason);
     }
 
     try {
@@ -450,5 +529,29 @@ export function createLogoutHandler() {
     });
 
     return response;
+  };
+}
+
+/**
+ * `GET /api/auth/me` — devolve a sessão atual (`{ user }`) ou `{ user: null }`,
+ * lendo o cookie de sessão. Serve para o `AuthProvider` hidratar do lado
+ * cliente quando o layout raiz NÃO lê cookie (páginas públicas estáticas —
+ * ver docs/HARDENING.md). O payload é o mesmo shape que `createLoginHandler`
+ * retorna em `user`.
+ */
+export function createMeHandler() {
+  return async function GET() {
+    const session = await getSession();
+    if (!session) return NextResponse.json({ user: null });
+    return NextResponse.json({
+      user: {
+        user_id: session.user_id,
+        display_name: session.display_name,
+        login: session.login,
+        tenant_type: session.tenant_type,
+        perms: session.perms,
+        is_root: session.is_root,
+      },
+    });
   };
 }

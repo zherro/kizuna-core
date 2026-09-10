@@ -1,7 +1,11 @@
 'use client';
 
 import { Languages, MonitorCog, Moon, Sun } from 'lucide-react';
-import { useAppPreferences } from '../providers/app-preferences-provider';
+import { useAppPreferences, THEME_COLORS } from '../providers/app-preferences-provider';
+
+const COLOR_FALLBACK_LABEL: Record<string, string> = {
+  terracotta: 'Terracota',
+};
 import { Button } from './ui/button';
 import {
   DropdownMenu,
@@ -67,13 +71,13 @@ export function PreferencesFab() {
             value={themeColor}
             onValueChange={(next) => setThemeColor(next as typeof themeColor)}
           >
-            <DropdownMenuRadioItem value="blue">{messages.nav.blue}</DropdownMenuRadioItem>
-            <DropdownMenuRadioItem value="green">{messages.nav.green}</DropdownMenuRadioItem>
-            <DropdownMenuRadioItem value="purple">{messages.nav.purple}</DropdownMenuRadioItem>
-            <DropdownMenuRadioItem value="teal">{messages.nav.teal}</DropdownMenuRadioItem>
-            <DropdownMenuRadioItem value="red">{messages.nav.red}</DropdownMenuRadioItem>
-            <DropdownMenuRadioItem value="orange">{messages.nav.orange}</DropdownMenuRadioItem>
-            <DropdownMenuRadioItem value="coral">{messages.nav.coral}</DropdownMenuRadioItem>
+            {THEME_COLORS.map((c) => (
+              <DropdownMenuRadioItem key={c} value={c}>
+                {(messages.nav as Record<string, string>)[c] ??
+                  COLOR_FALLBACK_LABEL[c] ??
+                  c.charAt(0).toUpperCase() + c.slice(1)}
+              </DropdownMenuRadioItem>
+            ))}
           </DropdownMenuRadioGroup>
 
           <DropdownMenuSeparator />

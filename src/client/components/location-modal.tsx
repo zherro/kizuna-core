@@ -27,20 +27,22 @@ interface IBGECity {
 
 // ─── API ──────────────────────────────────────────────────────────────────────
 
+// Estados e municípios vêm das rotas server-side do plugin `location` (proxy do IBGE com
+// cache) — o navegador não fala direto com o servicodados.ibge.gov.br.
+
 async function fetchStates(): Promise<IBGEState[]> {
-  const res = await fetch(
-    'https://servicodados.ibge.gov.br/api/v1/localidades/estados?orderBy=nome'
-  );
+  const res = await fetch('/api/location/states');
   if (!res.ok) throw new Error();
-  return res.json();
+  const data = await res.json();
+  return Array.isArray(data.items) ? (data.items as IBGEState[]) : [];
 }
 
 async function fetchCities(stateCode: string): Promise<IBGECity[]> {
-  const res = await fetch(
-    `https://servicodados.ibge.gov.br/api/v1/localidades/estados/${stateCode}/municipios?orderBy=nome`
-  );
+  const res = await fetch(`/api/location/cities?uf=${encodeURIComponent(stateCode)}`);
   if (!res.ok) throw new Error();
-  return res.json();
+  const data = await res.json();
+  const items: { value: string; label: string }[] = Array.isArray(data.items) ? data.items : [];
+  return items.map((c) => ({ id: Number(c.value) || 0, nome: c.label }));
 }
 
 // ─── Trigger (parece select) ──────────────────────────────────────────────────
@@ -54,12 +56,12 @@ export function LocationTrigger({ onClick }: { onClick: () => void }) {
       onClick={onClick}
       disabled={isDetecting}
       aria-label="Selecionar localização"
-      className="inline-flex h-9 items-center gap-1.5 rounded-md border border-input bg-background px-2.5 text-sm text-foreground outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
+      className="inline-flex h-9 items-center gap-1.5 rounded-md border border-input bg-primary/5 px-2.5 text-[15px] font-medium text-primary outline-none transition-colors hover:bg-primary/10 focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
     >
       {isDetecting ? (
-        <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-muted-foreground" />
+        <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-primary" />
       ) : (
-        <MapPin className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+        <MapPin className="h-3.5 w-3.5 shrink-0 text-primary" />
       )}
 
       <span className="max-w-[150px] truncate">

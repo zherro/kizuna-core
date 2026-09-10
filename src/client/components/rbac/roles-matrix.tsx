@@ -26,10 +26,7 @@ export function RolesMatrix({ roles, groups, initialGrants }: Props) {
   );
   const [pending, setPending] = useState<Set<string>>(() => new Set());
 
-  const canEditRole = useMemo(
-    () => (role: RoleRow) => isRoot || role.tenant_id != null,
-    [isRoot]
-  );
+  const canEditRole = useMemo(() => (role: RoleRow) => isRoot || role.tenant_id != null, [isRoot]);
 
   const callerCanGrant = (perm: PermissionRow) =>
     isRoot ||
@@ -146,8 +143,7 @@ function FragmentGroup({
           </td>
           {roles.map((role) => {
             const k = key(role.id, perm.id);
-            const disabled =
-              pending.has(k) || !canEditRole(role) || !callerCanGrant(perm);
+            const disabled = pending.has(k) || !canEditRole(role) || !callerCanGrant(perm);
             return (
               <td key={role.id} className="px-3 py-2 text-center">
                 <input

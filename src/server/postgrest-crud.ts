@@ -444,6 +444,12 @@ export async function serverFetchResource<T = RecordValue>(
     limit?: number;
     orderBy?: string;
     orderDirection?: 'asc' | 'desc';
+    /**
+     * Segundos de cache (ISR) para esta leitura. Só use em leitura pública, estável e sem
+     * `auth` — ex.: config global lida no layout raiz (ver docs/HARDENING.md §1/§2). Omitido =
+     * `no-store` (default, sempre fresco).
+     */
+    revalidate?: number;
   } = {}
 ): Promise<T[]> {
   const config = getResourceConfig(resource);
@@ -464,7 +470,13 @@ export async function serverFetchResource<T = RecordValue>(
 
   const response = await pgrstTable(
     `/${config.table}?${query.toString()}`,
-    { method: 'GET', headers: getSchemaHeaders(config, 'GET') },
+    {
+      method: 'GET',
+      headers: getSchemaHeaders(config, 'GET'),
+      ...(options.revalidate != null
+        ? { cache: undefined, next: { revalidate: options.revalidate } }
+        : {}),
+    },
     { auth: options.auth ?? null }
   );
 

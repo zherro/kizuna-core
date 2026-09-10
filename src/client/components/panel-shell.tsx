@@ -75,8 +75,7 @@ export function PanelShellBase({
   const fullBleed = isFullBleedRoute?.(pathname) ?? false;
 
   const menuTitle = branding.menuTitle ?? 'Menu do painel';
-  const menuDescription =
-    branding.menuDescription ?? 'Navegue entre os modulos administrativos.';
+  const menuDescription = branding.menuDescription ?? 'Navegue entre os modulos administrativos.';
 
   const visibleNavigationGroups = navGroups
     .map((group) => ({
@@ -105,7 +104,10 @@ export function PanelShellBase({
     notFound();
   };
 
-  if (enforcePagePermission) {
+  // Só aplica o gate quando já sabemos quem é o usuário. `user` null aqui =
+  // hidratação pendente (o layout de /painel já redireciona pra /login se não há
+  // sessão), não "acesso negado" — bloquear nesse estado manda pra notFound() no F5.
+  if (enforcePagePermission && user) {
     void checkPagePermission();
   }
 

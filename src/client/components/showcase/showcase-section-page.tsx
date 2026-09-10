@@ -23,6 +23,8 @@ import { Input } from '../ui/input';
 import { Progress } from '../ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { ExperiencePill } from '../ui-better-soft/experience-pill';
+import { WizardLayoutToggle } from '../wizard/wizard-layout-toggle';
+import type { WizardLayout } from '../wizard/wizard-layout';
 import { FixedBottomProgress } from '../ui-better-soft/fixed-bottom-progress';
 import { MosaicGrid, type MosaicGridItem } from '../ui-better-soft/mosaic-grid';
 import { AdminPageReader } from '../ui-better-soft/headers/admin-page-reader';
@@ -240,6 +242,18 @@ function UiBetterSoftDemo() {
     <div className="flex flex-wrap items-center gap-3">
       <ExperiencePill />
       <ExperiencePill text="Publicacao em menos de 2 minutos" />
+    </div>
+  );
+}
+
+function WizardLayoutToggleDemo() {
+  const [layout, setLayout] = useState<WizardLayout>('scroll');
+  return (
+    <div className="flex flex-col gap-2">
+      <WizardLayoutToggle value={layout} onChange={setLayout} />
+      <p className="text-xs text-muted-foreground">
+        Layout selecionado: <span className="font-medium text-foreground">{layout}</span>
+      </p>
     </div>
   );
 }
@@ -908,6 +922,7 @@ function SectionDemo({ sectionId }: { sectionId: ShowcaseSectionId }) {
   if (sectionId === 'form-builder') return <FormBuilderShowcaseDemo />;
   if (sectionId === 'forms-manager') return <FormsShowcaseDemo />;
   if (sectionId === 'pages-admin') return <PagesAdminShowcaseDemo />;
+  if (sectionId === 'wizard-layout-toggle') return <WizardLayoutToggleDemo />;
   return <UiBetterSoftDemo />;
 }
 

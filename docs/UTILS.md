@@ -4,12 +4,12 @@ Small, dependency-light helpers shipped by the core. Entry points:
 
 ## `@kizuna/core/lib/utils`
 
-| Export | Signature | Notes |
-|---|---|---|
-| `cn` | `cn(...inputs: ClassValue[]): string` | `clsx` + `tailwind-merge` |
-| `submitResource` | see `API.md` §4 | POST/PUT against `/api/resources/:resource`; used by `useForm`'s `resourceSubmit` |
+| Export              | Signature                                       | Notes                                                                                                        |
+| ------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `cn`                | `cn(...inputs: ClassValue[]): string`           | `clsx` + `tailwind-merge`                                                                                    |
+| `submitResource`    | see `API.md` §4                                 | POST/PUT against `/api/resources/:resource`; used by `useForm`'s `resourceSubmit`                            |
 | `resolveLucideIcon` | `(name?: string \| null) => LucideIcon \| null` | resolves a DB-stored `lucide-react` export name (e.g. `"Wrench"`) to the component; `null` for unknown/empty |
-| `isShowcaseEnabled` | `() => boolean` | reads `SHOWCASE_ENABLED` / `NEXT_PUBLIC_SHOWCASE_ENABLED` (`1`/`true`/`on`/`yes`) |
+| `isShowcaseEnabled` | `() => boolean`                                 | reads `SHOWCASE_ENABLED` / `NEXT_PUBLIC_SHOWCASE_ENABLED` (`1`/`true`/`on`/`yes`)                            |
 
 ## `@kizuna/core/lib/api-error-message`
 
@@ -34,8 +34,9 @@ Side-effect import — polyfills `globalThis.Temporal`. Import once at the app r
   DB as **integer cents** — convert before saving, format on display.
 - `lib/helper/date.helper` → `formatDate(iso)`, `formatDateTime(value)`, `nowDateString()`,
   `nowDateTimeString()`.
-- `lib/helper/text.helper` → `textWrap(text, limit)` (word-boundary truncate with `…`; prefer CSS
-  `text-ellipsis` in the DOM, keep this for email/meta text).
+- `lib/helper/text.helper` → `stripHtml(value)` (strip tags/entities, collapse whitespace — for
+  length checks/counters on rich-text output). For truncation in the DOM use CSS
+  (`text-ellipsis overflow-hidden` / `line-clamp`), not JS.
 - `lib/feature-flags` → `isShowcaseEnabled` (also re-exported from `lib/utils`).
 
 A consuming project keeps its own country/document-specific helpers (CPF/CNPJ validators, a

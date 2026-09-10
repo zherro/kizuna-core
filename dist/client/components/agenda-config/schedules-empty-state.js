@@ -1,0 +1,12 @@
+'use client';
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { Plus } from 'lucide-react';
+import { Button } from '../ui/button';
+/**
+ * Empty state for the schedules list — a light, CSS-only animated clock/calendar illustration.
+ * `motion-reduce:*` disables the drift/tick for users who ask for reduced motion.
+ */
+export function SchedulesEmptyState({ onCreate }) {
+    return (_jsxs("div", { className: "flex flex-col items-center rounded-2xl border border-dashed border-border bg-card px-6 py-12 text-center", children: [_jsxs("div", { className: "relative h-28 w-28", children: [_jsx("span", { className: "absolute left-1 top-2 text-brand/70 motion-safe:animate-pulse", children: "\u2726" }), _jsx("span", { className: "absolute right-0 top-6 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground motion-safe:animate-bounce", children: "08:00" }), _jsxs("svg", { viewBox: "0 0 96 96", className: "h-full w-full", role: "img", "aria-label": "Rel\u00F3gio", children: [_jsx("circle", { cx: "48", cy: "52", r: "30", className: "fill-brand-soft stroke-brand/40", strokeWidth: "2" }), _jsx("line", { x1: "48", y1: "52", x2: "48", y2: "32", className: "stroke-brand", strokeWidth: "3", strokeLinecap: "round", children: _jsx("animateTransform", { attributeName: "transform", type: "rotate", from: "0 48 52", to: "360 48 52", dur: "8s", repeatCount: "indefinite" }) }), _jsx("line", { x1: "48", y1: "52", x2: "62", y2: "52", className: "stroke-brand/70", strokeWidth: "3", strokeLinecap: "round", children: _jsx("animateTransform", { attributeName: "transform", type: "rotate", from: "0 48 52", to: "360 48 52", dur: "24s", repeatCount: "indefinite" }) }), _jsx("circle", { cx: "48", cy: "52", r: "3", className: "fill-brand" })] })] }), _jsx("h3", { className: "mt-4 text-base font-semibold", children: "Voc\u00EA ainda n\u00E3o configurou seus hor\u00E1rios" }), _jsx("p", { className: "mx-auto mt-1 max-w-sm text-sm text-muted-foreground", children: "Defina quando voc\u00EA est\u00E1 dispon\u00EDvel para receber novos atendimentos." }), _jsxs(Button, { type: "button", onClick: onCreate, className: "mt-5", children: [_jsx(Plus, { className: "mr-1.5 h-4 w-4" }), "Criar disponibilidade"] })] }));
+}
+//# sourceMappingURL=schedules-empty-state.js.map

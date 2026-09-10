@@ -1,0 +1,1 @@
+{"version":3,"file":"use-onboarding-steps.d.ts","sourceRoot":"","sources":["../../../src/client/hooks/use-onboarding-steps.ts"],"names":[],"mappings":"AAIA,KAAK,cAAc,GAAG;IACpB,EAAE,EAAE,MAAM,CAAC;IACX,IAAI,EAAE,MAAM,CAAC;IACb,IAAI,EAAE,MAAM,CAAC;IACb,WAAW,EAAE,MAAM,CAAC;IACpB,SAAS,EAAE,MAAM,CAAC;IAClB,UAAU,EAAE,OAAO,CAAC;CACrB,CAAC;AAMF,wBAAgB,kBAAkB,CAAC,IAAI,SAAe;;;;EAwCrD"}

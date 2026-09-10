@@ -1,9 +1,8 @@
 # Email
 
-> **Status:** the sender + template implementation currently lives in the consuming project
-> (foco-total's `src/lib/server/email-sender.ts` / `email-templates.ts`). Promotion to
-> `@kizuna/core/server` (nodemailer wrapper + templates as slots) is a Fase A candidate — check
-> `STATUS.md` for whether it has landed. This doc describes the generic pattern either way.
+> **Status:** o **transporte** vive no core — `@kizuna/core/server/email` → `sendEmail` + `type EmailTemplate`
+> (`src/server/email/`). As **templates** (código de cada e-mail — verificação, boas-vindas, …) são
+> copy/branding do projeto consumidor e ficam nele, como funções puras `(input) => EmailTemplate`.
 
 ## Pattern
 
@@ -26,12 +25,12 @@ to the user or fail silently (e.g. a verification email failing should not 500 t
 
 ## Env
 
-| Var | Notes |
-|---|---|
-| `SMTP_HOST` | server hostname |
-| `SMTP_PORT` | 465 (SSL) or 587 (TLS) |
-| `SMTP_USER` / `SMTP_PASS` | auth |
-| `SMTP_FROM` | `"App Name <noreply@example.com>"` |
+| Var                       | Notes                              |
+| ------------------------- | ---------------------------------- |
+| `SMTP_HOST`               | server hostname                    |
+| `SMTP_PORT`               | 465 (SSL) or 587 (TLS)             |
+| `SMTP_USER` / `SMTP_PASS` | auth                               |
+| `SMTP_FROM`               | `"App Name <noreply@example.com>"` |
 
 All optional — with no SMTP config the app runs, email sends just fail. Project-specific templates
 (verification code, welcome, …) stay documented in the consuming project.

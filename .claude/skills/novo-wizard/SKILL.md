@@ -41,13 +41,17 @@ mandando só os campos do passo atual:
 ```ts
 async function persist(overrides: Partial<FormShape>) {
   const payload = {
-    ...toPayload(record),   // espalha o ÚLTIMO registro carregado/salvo
-    ...overrides,           // sobrescreve só os campos deste passo
+    ...toPayload(record), // espalha o ÚLTIMO registro carregado/salvo
+    ...overrides, // sobrescreve só os campos deste passo
   };
-  const result = await submitResource({ resource: 'coisas', values: payload, selectedId: id, /* … */ });
+  const result = await submitResource({
+    resource: 'coisas',
+    values: payload,
+    selectedId: id /* … */,
+  });
   if (result.ok) {
-    setRecord(result.data.item);            // atualiza a baseline pro próximo persist()
-    if (!id) setId(result.data.item.id);    // create → edit mode
+    setRecord(result.data.item); // atualiza a baseline pro próximo persist()
+    if (!id) setId(result.data.item.id); // create → edit mode
   }
   return result;
 }

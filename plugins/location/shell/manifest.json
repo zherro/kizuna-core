@@ -1,0 +1,12 @@
+{
+  "owner": "location",
+  "_deferred": "rotas que ainda dependem de @/lib/server/* e virão numa promoção de Fase A: nenhuma",
+  "files": {
+    "src/app/api/location/cep/route.ts": "managed",
+    "src/app/api/location/reverse/route.ts": "managed",
+    "src/app/api/location/address/search/route.ts": "managed",
+    "src/app/api/location/states/route.ts": "managed",
+    "src/app/api/location/cities/route.ts": "managed",
+    "src/app/api/location/ip/route.ts": "managed"
+  }
+}

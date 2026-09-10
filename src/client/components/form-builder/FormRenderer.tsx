@@ -9,13 +9,7 @@ import { Label } from '../ui/label';
 import { Checkbox } from '../ui/checkbox';
 import { Switch } from '../ui/switch';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Separator } from '../ui/separator';
 import { Button } from '../ui/button';
 import { Tooltip } from '../ui/tooltip';
@@ -143,9 +137,7 @@ function BaseField({
   const withLabel = (children: React.ReactNode) => (
     <div className="space-y-1.5">
       {labelRow}
-      {field.description && (
-        <p className="text-xs text-muted-foreground">{field.description}</p>
-      )}
+      {field.description && <p className="text-xs text-muted-foreground">{field.description}</p>}
       {children}
       {field.appearance.helpText && (
         <p className="text-xs text-muted-foreground">{field.appearance.helpText}</p>
@@ -229,9 +221,7 @@ function BaseField({
       return withLabel(
         <Input
           id={commonId}
-          type={
-            field.type === 'date' ? 'date' : field.type === 'time' ? 'time' : 'datetime-local'
-          }
+          type={field.type === 'date' ? 'date' : field.type === 'time' ? 'time' : 'datetime-local'}
           value={(value as string) ?? ''}
           onChange={(e) => onChange(e.target.value)}
           disabled={disabled}
@@ -243,9 +233,7 @@ function BaseField({
         <Select value={(value as string) ?? ''} onValueChange={(v) => onChange(v)}>
           <SelectTrigger id={commonId} className="h-10 w-full text-sm">
             <SelectValue>
-              {options.find((o) => o.value === value)?.label ??
-                field.placeholder ??
-                'Selecione...'}
+              {options.find((o) => o.value === value)?.label ?? field.placeholder ?? 'Selecione...'}
             </SelectValue>
           </SelectTrigger>
           <SelectContent>
@@ -315,9 +303,7 @@ function BaseField({
             <div className="space-y-0.5">
               <Label htmlFor={commonId} className="font-normal">
                 {field.label}
-                {field.behavior.required && (
-                  <span className="ml-1 text-destructive">*</span>
-                )}
+                {field.behavior.required && <span className="ml-1 text-destructive">*</span>}
               </Label>
               {field.description && (
                 <p className="text-xs text-muted-foreground">{field.description}</p>
@@ -412,9 +398,7 @@ function BaseField({
           accept={field.type === 'image' ? 'image/*' : undefined}
           multiple={field.type === 'image'}
           onChange={(e) => {
-            const files = e.target.files
-              ? Array.from(e.target.files).map((f) => f.name)
-              : [];
+            const files = e.target.files ? Array.from(e.target.files).map((f) => f.name) : [];
             onChange(field.type === 'image' ? files : (files[0] ?? ''));
           }}
           disabled={disabled}
@@ -480,8 +464,7 @@ export function FormRenderer({
       )}
       <div className="grid grid-cols-12 gap-4">
         {visibleFields.map((f) => {
-          const fullWidth =
-            f.type === 'divider' || f.type === 'heading' || f.type === 'info';
+          const fullWidth = f.type === 'divider' || f.type === 'heading' || f.type === 'info';
           const span = fullWidth ? 12 : activeSpan(f.grid, width);
           const key = fieldKey(f);
           return (

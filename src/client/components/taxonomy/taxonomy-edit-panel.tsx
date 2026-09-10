@@ -506,9 +506,7 @@ export function TaxonomyEditPanel({
               id="taxonomy-form-key"
               name="formKey"
               value={formik.values.formKey}
-              onChange={(event) =>
-                void formik.setFieldValue('formKey', event.target.value.trim())
-              }
+              onChange={(event) => void formik.setFieldValue('formKey', event.target.value.trim())}
               placeholder="ex.: eventos_som_iluminacao (opcional)"
             />
             <p className="text-xs text-muted-foreground">
@@ -541,8 +539,8 @@ export function TaxonomyEditPanel({
               <a href="/painel/administracao/formularios" className="underline">
                 Formularios
               </a>
-              . Quando preenchida, o comprador preenche esse formulario ao solicitar um orcamento
-              ou fechar um pedido nesta categoria.
+              . Quando preenchida, o comprador preenche esse formulario ao solicitar um orcamento ou
+              fechar um pedido nesta categoria.
             </p>
           </div>
         ) : null}

@@ -13,3 +13,8 @@ export {
   type UseResourceMapResult,
 } from './use-resource-map';
 export { useToggleActive } from './use-toggle-active';
+export {
+  useAiDegradation,
+  type AiDegradationStatus,
+  type UseAiDegradation,
+} from './use-ai-degradation';
