@@ -1,10 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import * as Yup from 'yup';
 import { useAuth, type PublicSession } from '../providers/auth-provider';
+import { TurnstileWidget } from './captcha';
 import { useForm } from '../hooks/use-form';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
@@ -37,6 +38,8 @@ export function LoginPageContent({
 }: LoginPageProps) {
   const router = useRouter();
   const { user, setUser } = useAuth();
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const captchaRequired = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
 
   useEffect(() => {
     if (user) router.replace(redirectTo);
@@ -55,13 +58,14 @@ export function LoginPageContent({
         const response = await fetch(loginEndpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(values),
+          body: JSON.stringify({ ...values, captchaToken }),
         });
 
         const data = (await response.json()) as LoginResponse;
 
         if (!response.ok) {
           setError(data.message || 'Nao foi possivel autenticar.');
+          setCaptchaToken(null);
           return;
         }
 
@@ -133,7 +137,13 @@ export function LoginPageContent({
             </p>
           ) : null}
 
-          <Button type="submit" className="w-full" disabled={form.submitting}>
+          <TurnstileWidget onToken={setCaptchaToken} />
+
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={form.submitting || (captchaRequired && !captchaToken)}
+          >
             {form.submitting ? 'Entrando...' : 'Entrar'}
           </Button>
 
