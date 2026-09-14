@@ -93,11 +93,19 @@ a materializa num projeto e mantém projeto ↔ core alinhados. Ver **`docs/CLI.
   `layoutStorageKey` / `readStoredLayout` / `writeStoredLayout` / `isWizardLayout` /
   `WIZARD_LAYOUTS`, plus the contract types `WizardStep`, `WizardStepProps`,
   `WizardStepContext`, `WizardConfig`, `WizardMode`, `WizardEntities`, `WizardAssistant`,
-  `WizardLayout`. Generic config-driven multi-step engine against ONE PostgREST resource
+  `WizardLayout`. Conversational Naví (additive, beside the frozen `WizardAssistant`):
+  `useWizardConversation`, `WizardConversationView`, `NaviLayer`, `NaviDock`, `NaviPanel`,
+  `NaviComposer`, `NaviIcon`, `WizardHeaderPortal` + types `WizardConversation*` —
+  `<Wizard conversation={…}>` renders a persistent, step-by-step interview layer (scroll-following
+  dock + side/full-screen panel + accordion for answered steps) that fills fields and drives the
+  advance. Generic config-driven multi-step engine against ONE PostgREST resource
   (read-merge-write persistence, optional AI slot). Two step layouts via the `Wizard` prop
   `variant?: 'stepper' | 'scroll'` — the classic layout-foco stepper and an immersive vertical
   questionnaire; the header toggle switches them live (create only) and the choice is remembered
   per resource in `localStorage`. Domain-agnostic — see `docs/WIZARD.md`.
+- `@kizuna/core/client/components/panel-shell`: `PanelShellBase` gained `fullBleedHeaderExtra`
+  (right-of-header slot) + the `#wz-header-slot` portal target; the full-bleed header now carries
+  the nav ("Menu" button → drawer) so a wizard route needs no second header.
 - `@kizuna/core/client/components/services/*`: `ServiceConfigSummary`; from `service-type`
   `defaultPriceUnitForCategory`, `SERVICE_PRICE_UNIT_OPTIONS`, `ServiceWizardState`
   (+ `SERVICE_WIZARD_INITIAL_STATE`), `ServiceRecord`; from `service-labels`

@@ -320,9 +320,19 @@ export function ImageGalleryManager({
 
         <div className="space-y-2">
           {loading ? (
-            <div className="flex items-center gap-2 rounded-md border border-border bg-card px-3 py-3 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Carregando arquivos...
+            <div className="space-y-2" aria-busy="true" aria-label="Carregando imagens">
+              {[0, 1].map((i) => (
+                <div
+                  key={i}
+                  className="flex items-center gap-3 rounded-xl border border-border/60 bg-card p-2 pr-3"
+                >
+                  <div className="h-14 w-14 shrink-0 animate-pulse rounded-lg bg-muted" />
+                  <div className="min-w-0 flex-1 space-y-2">
+                    <div className="h-3 w-2/3 animate-pulse rounded bg-muted" />
+                    <div className="h-2.5 w-1/3 animate-pulse rounded bg-muted" />
+                  </div>
+                </div>
+              ))}
             </div>
           ) : null}
 
@@ -333,15 +343,16 @@ export function ImageGalleryManager({
           ) : null}
 
           {!loading && visibleItems.length > 0 ? (
-            <div className="grid gap-3 rounded-md border border-border p-3 sm:grid-cols-2 lg:grid-cols-3">
-              {visibleItems.map((item) => {
+            <div className="space-y-2">
+              {visibleItems.map((item, index) => {
                 const deleting = busyDeleteIds.has(String(item.id));
                 const isImage = (item.mimeType ?? '').startsWith('image/');
+                const isCover = index === 0;
 
                 return (
                   <div
                     key={item.id}
-                    className="rounded-md border border-border/60 bg-background p-2"
+                    className="flex items-center gap-3 rounded-xl border border-border/60 bg-card p-2 pr-3 transition-colors hover:border-border"
                   >
                     <button
                       type="button"
@@ -350,51 +361,58 @@ export function ImageGalleryManager({
                           setPreviewItem(item);
                         }
                       }}
-                      className="mb-2 block w-full overflow-hidden rounded-md border border-border bg-muted/20"
+                      className="relative block h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-border bg-muted/20"
                       disabled={!isImage}
                     >
                       {isImage ? (
                         <Image
                           src={`/api/storage/files/${item.id}/content`}
                           alt={item.originalName}
-                          width={360}
-                          height={220}
-                          className="h-36 w-full object-cover"
+                          width={112}
+                          height={112}
+                          className="h-14 w-14 object-cover"
                           loading="lazy"
                           unoptimized
                         />
                       ) : (
-                        <div className="flex h-36 items-center justify-center text-xs text-muted-foreground">
+                        <div className="flex h-14 w-14 items-center justify-center text-[10px] text-muted-foreground">
                           Sem miniatura
                         </div>
                       )}
                     </button>
 
-                    <div className="mb-2 min-w-0 px-1">
-                      <p className="truncate text-sm font-medium text-foreground">
-                        {item.originalName}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {item.mimeType ?? 'arquivo'} - {formatBytes(item.sizeBytes)} - ID {item.id}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5">
+                        <p className="truncate text-sm font-medium text-foreground">
+                          {item.originalName}
+                        </p>
+                        {isCover ? (
+                          <span className="shrink-0 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
+                            Capa
+                          </span>
+                        ) : null}
+                      </div>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {formatBytes(item.sizeBytes)}
                       </p>
                     </div>
 
                     <Button
                       type="button"
-                      variant="outline"
-                      size="sm"
-                      className="w-full"
+                      variant="ghost"
+                      size="icon"
+                      className="shrink-0 text-muted-foreground hover:text-destructive"
                       onClick={() => {
                         void handleRemove(String(item.id));
                       }}
                       disabled={deleting}
+                      aria-label={`Desvincular ${item.originalName}`}
                     >
                       {deleting ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
                         <Trash2 className="h-4 w-4" />
                       )}
-                      {deleting ? 'Desvinculando...' : 'Desvincular'}
                     </Button>
                   </div>
                 );

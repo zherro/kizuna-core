@@ -25,8 +25,12 @@ export const resourceTaxonomy: Record<string, ResourceConfig> = {
   categories: {
     schema: 'public',
     table: 'categories',
+    // `categories_group_link(category_group_id)` is a PostgREST embed via the 0003 join table's
+    // FK to `categories.id` — resolves to `record.categories_group_link: {category_group_id}[]`,
+    // the category's secondary ("also shows under") groups. `category_group_id` itself stays the
+    // one primary/home group. See plugins/taxonomy/0003_taxonomy_group_link.sql.
     select:
-      'id,name,slug,description,icon,form_key,request_form_key,category_group_id,active,created_at,updated_at',
+      'id,name,slug,description,icon,form_key,request_form_key,category_group_id,active,created_at,updated_at,categories_group_link(category_group_id)',
     primaryKey: 'id',
     defaultOrder: 'name',
     searchableColumns: ['name', 'description', 'slug'],
@@ -64,9 +68,38 @@ export const resourceTaxonomy: Record<string, ResourceConfig> = {
       formKey: record.form_key ?? record.formKey ?? null,
       requestFormKey: record.request_form_key ?? record.requestFormKey ?? null,
       categoryGroupId: record.category_group_id ?? record.categoryGroupId ?? null,
+      extraGroupIds: Array.isArray(record.categories_group_link)
+        ? (record.categories_group_link as Array<{ category_group_id: string | number }>).map(
+            (link) => link.category_group_id
+          )
+        : [],
       active: parseActive(record.active),
       createdAt: record.created_at ?? record.createdAt,
       updatedAt: record.updated_at ?? record.updatedAt,
+    }),
+  },
+  category_group_links: {
+    schema: 'public',
+    table: 'categories_group_link',
+    select: 'id,category_id,category_group_id,created_at',
+    primaryKey: 'id',
+    defaultOrder: 'id',
+    searchableColumns: [],
+    maxPageSize: 1000,
+    requiredFields: ['categoryId', 'categoryGroupId'],
+    mapInput: (input) => {
+      const categoryIdRaw = input.categoryId ?? input.category_id;
+      const categoryGroupIdRaw = input.categoryGroupId ?? input.category_group_id;
+      return {
+        category_id: Number(categoryIdRaw),
+        category_group_id: Number(categoryGroupIdRaw),
+      };
+    },
+    mapOutput: (record) => ({
+      id: record.id,
+      categoryId: record.category_id ?? record.categoryId,
+      categoryGroupId: record.category_group_id ?? record.categoryGroupId,
+      createdAt: record.created_at ?? record.createdAt,
     }),
   },
   categories_group: {
@@ -194,7 +227,8 @@ export const resourceTaxonomy: Record<string, ResourceConfig> = {
     schema: 'public',
     table: 'categories',
     listRequiresAuth: false,
-    select: 'id,name,slug,description,active,created_at,updated_at',
+    select:
+      'id,name,slug,description,category_group_id,active,created_at,updated_at,categories_group_link(category_group_id)',
     primaryKey: 'id',
     defaultOrder: 'name',
     searchableColumns: ['name', 'description', 'slug'],
@@ -203,6 +237,12 @@ export const resourceTaxonomy: Record<string, ResourceConfig> = {
       name: record.name,
       slug: record.slug,
       description: record.description ?? '',
+      categoryGroupId: record.category_group_id ?? record.categoryGroupId ?? null,
+      extraGroupIds: Array.isArray(record.categories_group_link)
+        ? (record.categories_group_link as Array<{ category_group_id: string | number }>).map(
+            (link) => link.category_group_id
+          )
+        : [],
       active: parseActive(record.active),
       createdAt: record.created_at ?? record.createdAt,
       updatedAt: record.updated_at ?? record.updatedAt,

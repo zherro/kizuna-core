@@ -1,4 +1,6 @@
 import type { ComponentType } from 'react';
+import type { WizardConversationAdapter } from './conversation-types';
+export * from './conversation-types';
 export type WizardMode = 'create' | 'edit' | 'review';
 export interface WizardEntities {
     [k: string]: unknown;
@@ -61,6 +63,7 @@ export interface WizardConfig<S = Record<string, unknown>> {
     registry?: Record<string, WizardStep<S>>;
     disable?: string[];
     assistant?: WizardAssistant | (() => WizardAssistant);
+    conversation?: WizardConversationAdapter | (() => WizardConversationAdapter);
     finishHrefByMode?: Partial<Record<WizardMode, string>>;
 }
 //# sourceMappingURL=types.d.ts.map

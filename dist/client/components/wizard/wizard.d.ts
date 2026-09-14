@@ -1,5 +1,5 @@
 import { type WizardLayout } from './wizard-layout';
-import type { WizardAssistant, WizardConfig, WizardEntities, WizardMode } from './types';
+import type { WizardAssistant, WizardConfig, WizardConversationAdapter, WizardEntities, WizardMode } from './types';
 export interface WizardProps<S extends Record<string, unknown> = Record<string, unknown>> {
     config: WizardConfig<S>;
     mode: WizardMode;
@@ -10,6 +10,12 @@ export interface WizardProps<S extends Record<string, unknown> = Record<string, 
     initialRecord?: Record<string, unknown>;
     modeLabels?: Partial<Record<WizardMode, string>>;
     assistant?: WizardAssistant | (() => WizardAssistant);
+    /**
+     * Conversational Naví (additive contract, `WizardConversation`). When present and not
+     * `unavailable`, the wizard renders the assisted layer (dock + panel) and the one-shot
+     * `assistant` button is suppressed. `create`-only by convention (the app decides).
+     */
+    conversation?: WizardConversationAdapter | (() => WizardConversationAdapter);
     onExit?: () => void;
     /**
      * Initial step layout. The header toggle can switch it live and the choice is remembered per
@@ -18,6 +24,6 @@ export interface WizardProps<S extends Record<string, unknown> = Record<string, 
      */
     variant?: WizardLayout;
 }
-export declare function Wizard<S extends Record<string, unknown> = Record<string, unknown>>({ config, mode, entities, initialResourceId, initialState, initialRecord, modeLabels, assistant, onExit, variant, }: WizardProps<S>): import("react/jsx-runtime").JSX.Element;
+export declare function Wizard<S extends Record<string, unknown> = Record<string, unknown>>({ config, mode, entities, initialResourceId, initialState, initialRecord, modeLabels, assistant, conversation, onExit, variant, }: WizardProps<S>): import("react/jsx-runtime").JSX.Element;
 export default Wizard;
 //# sourceMappingURL=wizard.d.ts.map

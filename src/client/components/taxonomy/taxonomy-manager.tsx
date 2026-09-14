@@ -15,6 +15,7 @@ import type {
   TaxonomyCategory,
   TaxonomyEditTarget,
   TaxonomyGroup,
+  TaxonomyGroupLink,
   TaxonomyItem,
   TaxonomyLevel,
   TaxonomySubcategory,
@@ -63,6 +64,12 @@ export function TaxonomyManager() {
     defaultItems: [],
     pageSize: 1000,
     loadErrorMessage: 'Nao foi possivel carregar as tags.',
+  });
+  const groupLinksRes = useTenantResource<TaxonomyGroupLink>({
+    resource: 'category_group_links',
+    defaultItems: [],
+    pageSize: 1000,
+    loadErrorMessage: 'Nao foi possivel carregar os vinculos de grupo.',
   });
 
   const [search, setSearch] = useState('');
@@ -446,6 +453,15 @@ export function TaxonomyManager() {
         groups={groupsRes.items}
         categories={categoriesRes.items}
         subcategories={subcategoriesRes.items}
+        groupLinks={groupLinksRes.items}
+        onLinkCreate={async (categoryId, categoryGroupId) => {
+          const ok = await groupLinksRes.saveOne({
+            categoryId,
+            categoryGroupId,
+          } as unknown as TaxonomyGroupLink);
+          return ok;
+        }}
+        onLinkDelete={(linkId) => groupLinksRes.remove(linkId)}
         onClose={() => setEditTarget(null)}
         onSaved={handleSaved}
       />

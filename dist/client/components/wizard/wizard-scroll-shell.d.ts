@@ -1,8 +1,6 @@
 import { type ReactNode } from 'react';
-import type { WizardMode, WizardStep } from './types';
+import type { WizardStep } from './types';
 export interface WizardScrollShellProps<S extends Record<string, unknown>> {
-    mode: WizardMode;
-    modeLabels?: Partial<Record<WizardMode, string>>;
     steps: WizardStep<S>[];
     /** index of the step currently driving `canContinue` — also the count of answered steps */
     currentIndex: number;
@@ -13,19 +11,24 @@ export interface WizardScrollShellProps<S extends Record<string, unknown>> {
     /** persist the current step and reveal the next (= `goContinue`) */
     onAdvance: () => void;
     onFinish: () => void;
-    onCancel: () => void;
     finishBlocked?: boolean;
-    headerActions?: ReactNode;
-    layoutToggle?: ReactNode;
+    /**
+     * When false, the automatic reveal-on-valid is suppressed — the conversational Naví drives the
+     * advance instead. Defaults to `true` (classic questionnaire behaviour).
+     */
+    autoReveal?: boolean;
+    /** `'navi'` washes the ground with a soft brand tint (conversational Naví active). */
+    ground?: 'default' | 'navi';
+    /** Persistent Naví dock, rendered once at the end of the scroll column (sticks to the bottom). */
+    naviSlot?: ReactNode;
     renderStep: (step: WizardStep<S>, index: number) => ReactNode;
 }
 /**
- * Immersive vertical questionnaire layout (create mode only — see `Wizard`). Answered steps stay
- * stacked and editable; the next step is revealed once the current one validates and the page
- * glides to it. One "Concluir" at the end — no per-step Voltar/Continuar. Reuses `useWizardState`
- * untouched: reveal is just `goContinue()` fired from an effect, the same path the stepper button
- * takes, so per-step `persist` still runs on every advance.
+ * Immersive vertical questionnaire layout (create mode only — see `Wizard`). Answered steps
+ * collapse into accordion rows (label + ✓, click to reopen) so the page never turns into one
+ * long scroll; the current step is always open and the next is revealed once it validates. Chrome
+ * (mode label + toggle + Cancelar) is projected into the app's single header by `<Wizard>`.
  */
-export declare function WizardScrollShell<S extends Record<string, unknown>>({ mode, modeLabels, steps, currentIndex, canContinue, submitting, error, isLastStep, onAdvance, onFinish, onCancel, finishBlocked, headerActions, layoutToggle, renderStep, }: WizardScrollShellProps<S>): import("react/jsx-runtime").JSX.Element;
+export declare function WizardScrollShell<S extends Record<string, unknown>>({ steps, currentIndex, canContinue, submitting, error, isLastStep, onAdvance, onFinish, finishBlocked, autoReveal, ground, naviSlot, renderStep, }: WizardScrollShellProps<S>): import("react/jsx-runtime").JSX.Element;
 export default WizardScrollShell;
 //# sourceMappingURL=wizard-scroll-shell.d.ts.map

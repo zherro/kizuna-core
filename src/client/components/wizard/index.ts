@@ -7,6 +7,17 @@ export { createResourcePersister } from './persist-resource';
 export { WizardShell } from './wizard-shell';
 export { WizardScrollShell } from './wizard-scroll-shell';
 export { WizardLayoutToggle } from './wizard-layout-toggle';
+export { WizardHeaderPortal } from './wizard-header-portal';
+export { NaviDock } from './navi-dock';
+export { NaviPanel } from './navi-panel';
+export { NaviComposer } from './navi-composer';
+export { NaviIcon } from './navi-icon';
+export { NaviLayer } from './navi-layer';
+export {
+  useWizardConversation,
+  type WizardConversationView,
+  type UseWizardConversationOptions,
+} from './use-wizard-conversation';
 export {
   WizardLayoutContext,
   useWizardLayout,

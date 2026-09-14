@@ -18,6 +18,7 @@ import {
   type TaxonomyCategory,
   type TaxonomyEditTarget,
   type TaxonomyGroup,
+  type TaxonomyGroupLink,
   type TaxonomyItem,
   type TaxonomyLevel,
   type TaxonomySubcategory,
@@ -216,6 +217,11 @@ type TaxonomyEditPanelProps = {
   groups: TaxonomyGroup[];
   categories: TaxonomyCategory[];
   subcategories: TaxonomySubcategory[];
+  /** Secondary group memberships (plugins/taxonomy/0003_taxonomy_group_link.sql) — a category can
+   * ALSO show up under these groups' vitrines, on top of its primary `categoryGroupId`. */
+  groupLinks: TaxonomyGroupLink[];
+  onLinkCreate: (categoryId: string | number, categoryGroupId: string | number) => Promise<boolean>;
+  onLinkDelete: (linkId: string | number) => Promise<boolean>;
   onClose: () => void;
   onSaved: (level: TaxonomyLevel, item: TaxonomyItem) => void;
 };
@@ -225,10 +231,15 @@ export function TaxonomyEditPanel({
   groups,
   categories,
   subcategories,
+  groupLinks,
+  onLinkCreate,
+  onLinkDelete,
   onClose,
   onSaved,
 }: Readonly<TaxonomyEditPanelProps>) {
   const [slugStatus, setSlugStatus] = useState<SlugStatus>('idle');
+  const [extraGroupIds, setExtraGroupIds] = useState<string[]>([]);
+  const [syncingLinks, setSyncingLinks] = useState(false);
   const level: TaxonomyLevel = target?.level ?? 'tag';
   const resource = TAXONOMY_RESOURCE_BY_LEVEL[level];
   const levelLabel = TAXONOMY_LEVEL_LABEL[level];
@@ -298,11 +309,36 @@ export function TaxonomyEditPanel({
       successMessage: `${levelLabel.charAt(0).toUpperCase()}${levelLabel.slice(1)} salva com sucesso.`,
       connectionErrorMessage: 'Erro de conexao com a API.',
       onSuccess: async (data) => {
+        if (data.item && level === 'category') {
+          const categoryId = (data.item as TaxonomyCategory).id;
+          await syncExtraGroups(categoryId);
+        }
         if (data.item) onSaved(level, data.item);
         onClose();
       },
     },
   });
+
+  async function syncExtraGroups(categoryId: string | number) {
+    const primaryGroupId = formik.values.groupId;
+    const existing = groupLinks.filter((link) => String(link.categoryId) === String(categoryId));
+    const wanted = new Set(extraGroupIds.filter((id) => id !== primaryGroupId));
+
+    setSyncingLinks(true);
+    try {
+      const toRemove = existing.filter((link) => !wanted.has(String(link.categoryGroupId)));
+      const toAdd = [...wanted].filter(
+        (groupId) => !existing.some((link) => String(link.categoryGroupId) === groupId)
+      );
+
+      await Promise.all([
+        ...toRemove.map((link) => onLinkDelete(link.id)),
+        ...toAdd.map((groupId) => onLinkCreate(categoryId, groupId)),
+      ]);
+    } finally {
+      setSyncingLinks(false);
+    }
+  }
 
   const { formik } = form;
 
@@ -317,6 +353,13 @@ export function TaxonomyEditPanel({
       formik.setTouched({});
       formik.setErrors({});
       setSlugStatus('idle');
+      setExtraGroupIds(
+        target.level === 'category' && target.item
+          ? groupLinks
+              .filter((link) => String(link.categoryId) === String(target.item?.id))
+              .map((link) => String(link.categoryGroupId))
+          : []
+      );
     }, 0);
     return () => window.clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -375,8 +418,12 @@ export function TaxonomyEditPanel({
           <Button type="button" variant="ghost" onClick={onClose}>
             Cancelar
           </Button>
-          <Button type="button" onClick={() => void formik.submitForm()} disabled={form.submitting}>
-            {form.submitting ? 'Salvando...' : 'Salvar'}
+          <Button
+            type="button"
+            onClick={() => void formik.submitForm()}
+            disabled={form.submitting || syncingLinks}
+          >
+            {form.submitting || syncingLinks ? 'Salvando...' : 'Salvar'}
           </Button>
         </>
       }
@@ -394,6 +441,49 @@ export function TaxonomyEditPanel({
               placeholder="Selecione um grupo"
               disabled={groupOptions.length === 0}
             />
+          </div>
+        ) : null}
+
+        {level === 'category' ? (
+          <div className="space-y-2">
+            <Label>Também aparece em</Label>
+            <p className="text-xs text-muted-foreground">
+              Grupos extras onde esta categoria também fica visível na busca/vitrine, além do
+              grupo principal acima — o mesmo cadastro, sem duplicar.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {groupOptions
+                .filter((option) => option.value !== formik.values.groupId)
+                .map((option) => {
+                  const checked = extraGroupIds.includes(option.value);
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() =>
+                        setExtraGroupIds((prev) =>
+                          checked
+                            ? prev.filter((id) => id !== option.value)
+                            : [...prev, option.value]
+                        )
+                      }
+                      aria-pressed={checked}
+                      className={`rounded-full border px-3 py-1 text-xs transition ${
+                        checked
+                          ? 'border-primary bg-primary/10 text-primary'
+                          : 'border-border bg-background text-muted-foreground hover:border-primary/50'
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  );
+                })}
+              {groupOptions.length <= 1 ? (
+                <p className="text-xs text-muted-foreground">
+                  Cadastre outro grupo para poder linká-lo aqui.
+                </p>
+              ) : null}
+            </div>
           </div>
         ) : null}
 

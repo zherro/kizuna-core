@@ -41,10 +41,15 @@ export type PanelShellBaseProps = {
     /** Optional trailing badge for a nav item (e.g. an unread count). */
     renderItemBadge?: (item: PanelNavItem, collapsed: boolean) => ReactNode;
     /**
+     * Extra content rendered on the right of the single full-bleed header (e.g. a wizard's
+     * mode label + layout toggle). Only shown on full-bleed routes.
+     */
+    fullBleedHeaderExtra?: ReactNode;
+    /**
      * When true (default), a pathname that matches no visible nav item calls `notFound()`.
      * Set false to let the shell render any `/painel` route regardless of the nav list.
      */
     enforcePagePermission?: boolean;
 };
-export declare function PanelShellBase({ children, navGroups, branding, isFullBleedRoute, renderItemBadge, enforcePagePermission, }: PanelShellBaseProps): import("react/jsx-runtime").JSX.Element;
+export declare function PanelShellBase({ children, navGroups, branding, isFullBleedRoute, renderItemBadge, fullBleedHeaderExtra, enforcePagePermission, }: PanelShellBaseProps): import("react/jsx-runtime").JSX.Element;
 //# sourceMappingURL=panel-shell.d.ts.map

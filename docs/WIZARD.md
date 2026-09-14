@@ -174,3 +174,63 @@ interface WizardAssistant {
   respeita `touched`).
 - Degradação (`status: 'unavailable'` sticky) é responsabilidade do adapter; a engine só
   reage escondendo o botão.
+
+## Naví conversacional (`WizardConversation`)
+
+Contrato **novo e aditivo** (não mexe no `WizardAssistant` congelado). Troca o botão one-shot por
+uma **entrevista passo a passo**: a Naví cuida de UM passo por vez, pergunta, sugere opções em tag,
+preenche os campos daquele passo. **Ela nunca avança sozinha** — quando julga o passo pronto
+(`advance: 'ask'`) só oferece a tag **"Pode seguir"**; o avanço acontece por ela OU pelo botão
+"Continuar"/"Avançar" do rodapé (habilitado quando o passo valida). Ao avançar, abre a 1ª pergunta
+do próximo. Camada por cima — vale nos dois layouts, `create`-only por convenção do consumidor.
+
+```ts
+interface WizardConversationAdapter {
+  converse(input): Promise<{ message; choices; patch; advance: 'ask'|'hold'; needsMore }>;
+  status: 'ready' | 'degraded' | 'unavailable';
+  retry?: () => void;
+  greeting: string;
+}
+// input: { userText; turns; state; stepKey; intent: 'reply' | 'confirm-advance' }
+```
+
+- `<Wizard conversation={adapter} />` — presente + `status !== 'unavailable'` ⇒ a engine renderiza
+  a camada da Naví (`NaviLayer`) e esconde o botão one-shot. `unavailable` ⇒ shell puro. Cair pra
+  `unavailable` **no meio** da conversa (`endedMidway`) mostra só um aviso curto, não some seco.
+- `useWizardConversation` (interno) é **dono do fio** — `turns`/`choices`/`pending`, anexa turnos,
+  aplica `patch` via `applyAssistPatch` (só campos vazios/intocados). Em `advance: 'ask'` **só
+  adiciona a tag "Pode seguir"** (`__advance__`) — `pickChoice` dela chama `goContinue()`. Sempre
+  que `currentIndex` avança **pra frente** (tag, botão do rodapé ou rail), dispara
+  `converse({ intent: 'confirm-advance' })` pro passo novo abrir a 1ª pergunta (`goBack` não
+  dispara). Nunca avança sozinha, nunca pula passo. Continua rodando com o dock minimizado.
+- `NaviLayer` — a camada **persistente** da Naví: o shell renderiza uma vez, no fim da coluna de
+  passos, e ela **acompanha o scroll** (`.wz-navi-dock` = `sticky bottom`), presente em TODOS os
+  passos. Estados: `NaviDock` aberto · pílula `wz-navi-fab` (minimizado, com `wz-navi-fab-dot`
+  pulsando enquanto pensa) · aviso curto (`endedMidway`).
+- `NaviDock`: última fala em destaque + a penúltima desfocada + `NaviComposer` + minimizar +
+  Ver conversa. Largura = largura do form (`max-w-2xl`).
+- `NaviComposer` (compartilhado dock ↔ painel): label "Sugestões da Naví" + tags (`multi` mostra
+  checkbox e acumula → botão "Enviar N", `wz-navi-send` pulsa) + campo livre + validação (enviar
+  vazio com opções ⇒ aviso em **vermelho suave**, `.wz-navi-error`).
+- `NaviPanel`: fio completo + o mesmo `NaviComposer`. Desktop (`md+`) painel à direita (`w-[420px]`),
+  mobile tela cheia. Saudação só com `conv.fresh`.
+- `NaviIcon`: ícone com ripple (espelha o `AssistantIcon` da busca).
+- No layout `scroll`: passo respondido **colapsa em acordeão** (`.wz-scroll-summary` = `✓` + label
+  + chevron; clique reabre o passo inteiro editável); o passo atual fica sempre aberto. Com a
+  conversa ativa o auto-reveal fica suprimido (prop `autoReveal`) e o rodapé mostra **"Avançar"**
+  por passo (habilitado por `canContinue`) em vez de só "Concluir". Sem o rótulo "Passo N de M".
+- Visual: com a conversa ativa os shells recebem `ground="navi"` (wash suave da primária,
+  `.wz-navi-ground`); o dock (`.wz-navi-card`) é o elemento vivo da tela. Sair de um cadastro
+  **novo** pede confirmação (`window.confirm`); `edit`/`review` não. Os avisos de erro dos shells
+  usam `.wz-navi-error-box` (o token `text-destructive` não existe no projeto).
+- Cabeçalho único: o `<Wizard>` projeta rótulo do modo (`hidden < sm`) + toggle + IA + Cancelar no
+  `<div id="wz-header-slot">` do cabeçalho full-bleed do `PanelShellBase` (via `WizardHeaderPortal`).
+  Os shells não têm mais barra `sticky top-0` própria; rodapé é `shrink-0` num flex-column. O
+  `WizardLayoutToggle` tem alvo de toque maior no mobile.
+- Backend (foco-total): a skill `service-wizard` recebe `passoKey` + `STEP_FIELDS` (allowlist de
+  campos por passo); `scopePatchToStep` descarta no servidor tudo fora do passo atual. O prompt
+  manda a Naví preencher direto o que consegue deduzir (ex.: categoria) e **gerar a descrição
+  sozinha** no passo `description` (sem perguntar, só avisando). Ver `.claude/domains/services.md`.
+
+Exports: `useWizardConversation`, `WizardConversationView`, `NaviLayer`, `NaviDock`, `NaviPanel`,
+`NaviComposer`, `NaviIcon`, `WizardHeaderPortal` + os tipos `WizardConversation*`.

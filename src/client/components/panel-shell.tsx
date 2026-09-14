@@ -52,6 +52,11 @@ export type PanelShellBaseProps = {
   /** Optional trailing badge for a nav item (e.g. an unread count). */
   renderItemBadge?: (item: PanelNavItem, collapsed: boolean) => ReactNode;
   /**
+   * Extra content rendered on the right of the single full-bleed header (e.g. a wizard's
+   * mode label + layout toggle). Only shown on full-bleed routes.
+   */
+  fullBleedHeaderExtra?: ReactNode;
+  /**
    * When true (default), a pathname that matches no visible nav item calls `notFound()`.
    * Set false to let the shell render any `/painel` route regardless of the nav list.
    */
@@ -64,6 +69,7 @@ export function PanelShellBase({
   branding,
   isFullBleedRoute,
   renderItemBadge,
+  fullBleedHeaderExtra,
   enforcePagePermission = true,
 }: PanelShellBaseProps) {
   const { user, logout } = useAuth();
@@ -111,44 +117,21 @@ export function PanelShellBase({
     void checkPagePermission();
   }
 
-  if (fullBleed) {
-    return (
-      <div className="flex h-full min-h-full flex-1 flex-col bg-background">
-        <header className="sticky top-0 z-30 border-b border-border bg-background/95 backdrop-blur">
-          <div className="flex h-16 items-center px-4 md:px-6">
-            <Link href="/painel" className="inline-flex items-center gap-3">
-              <span
-                className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-sm font-semibold text-primary"
-                aria-hidden="true"
-              >
-                {branding.shortLabel}
-              </span>
-              <span className="text-sm font-semibold tracking-[0.2em] text-foreground uppercase">
-                {branding.fullLabel}
-              </span>
-            </Link>
-          </div>
-        </header>
-
-        <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex h-full min-h-0 overflow-hidden bg-muted/20">
+  const renderDrawer = (overlayOnly: boolean) => (
+    <>
       {mobileOpen ? (
         <button
           type="button"
           aria-label="Fechar menu lateral"
-          className="fixed inset-0 z-40 bg-black/40 lg:hidden"
+          className={cn('fixed inset-0 z-40 bg-black/40', !overlayOnly && 'lg:hidden')}
           onClick={() => setMobileOpen(false)}
         />
       ) : null}
 
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 flex border-r border-border bg-background transition-transform duration-200 lg:fixed lg:translate-x-0',
+          'fixed inset-y-0 left-0 z-50 flex border-r border-border bg-background transition-transform duration-200',
+          !overlayOnly && 'lg:fixed lg:translate-x-0',
           collapsed ? 'w-24' : 'w-72',
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         )}
@@ -242,6 +225,48 @@ export function PanelShellBase({
           </nav>
         </div>
       </aside>
+    </>
+  );
+
+  if (fullBleed) {
+    return (
+      <div className="flex h-full min-h-full flex-1 flex-col bg-background">
+        {renderDrawer(true)}
+        <header className="sticky top-0 z-30 shrink-0 border-b border-border bg-background/95 backdrop-blur">
+          <div className="flex h-16 items-center gap-3 px-4 md:px-6">
+            <button
+              type="button"
+              onClick={() => setMobileOpen(true)}
+              className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}
+              aria-label="Abrir menu"
+            >
+              <Menu className="mr-1 h-4 w-4" /> Menu
+            </button>
+            <Link href="/painel" className="inline-flex items-center gap-3">
+              <span
+                className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-primary/10 text-sm font-semibold text-primary"
+                aria-hidden="true"
+              >
+                {branding.shortLabel}
+              </span>
+              <span className="hidden text-sm font-semibold tracking-[0.2em] text-foreground uppercase sm:inline">
+                {branding.fullLabel}
+              </span>
+            </Link>
+            <div id="wz-header-slot" className="ml-auto flex min-w-0 items-center gap-2">
+              {fullBleedHeaderExtra}
+            </div>
+          </div>
+        </header>
+
+        <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex h-full min-h-0 overflow-hidden bg-muted/20">
+      {renderDrawer(false)}
 
       <div
         className={cn(

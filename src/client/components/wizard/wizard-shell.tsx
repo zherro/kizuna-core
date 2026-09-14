@@ -4,19 +4,10 @@ import type { ReactNode } from 'react';
 import { Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import { Button } from '../ui/button';
-import type { WizardMode } from './types';
 import { WizardRail, type WizardRailStep } from './wizard-rail';
 import { WizardProgress } from './wizard-progress';
 
-const DEFAULT_MODE_LABELS: Record<WizardMode, string> = {
-  create: 'Novo',
-  edit: 'Editar',
-  review: 'Revisão',
-};
-
 export interface WizardShellProps {
-  mode: WizardMode;
-  modeLabels?: Partial<Record<WizardMode, string>>;
   /** 1-based index of the current step, for display. */
   currentStep: number;
   currentIndex: number;
@@ -36,16 +27,20 @@ export interface WizardShellProps {
   onBack: () => void;
   onContinue: () => void;
   onFinish: () => void;
-  onCancel: () => void;
-  headerActions?: ReactNode;
-  layoutToggle?: ReactNode;
   railExtra?: ReactNode;
+  /** `'navi'` washes the ground with a soft brand tint (conversational Naví active). */
+  ground?: 'default' | 'navi';
+  /** Persistent Naví dock, rendered once at the end of the scroll column (sticks to the bottom). */
+  naviSlot?: ReactNode;
   children: ReactNode;
 }
 
+/**
+ * Stepper layout. Chrome (mode label + layout toggle + Cancelar) is projected into the app's
+ * single header by `<Wizard>` via `WizardHeaderPortal` — this shell renders no top bar of its
+ * own. Flex column of fixed height: progress `shrink-0`, step area scrolls, footer `shrink-0`.
+ */
 export function WizardShell({
-  mode,
-  modeLabels,
   currentStep,
   currentIndex,
   totalSteps,
@@ -64,29 +59,19 @@ export function WizardShell({
   onBack,
   onContinue,
   onFinish,
-  onCancel,
-  headerActions,
-  layoutToggle,
   railExtra,
+  ground = 'default',
+  naviSlot,
   children,
 }: WizardShellProps) {
-  const modeLabel = modeLabels?.[mode] ?? DEFAULT_MODE_LABELS[mode];
-
   return (
-    <div className="flex min-h-[calc(100vh-56px)] flex-col bg-background">
-      <div className="sticky top-0 z-30 border-b border-border bg-background/95 backdrop-blur">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-2 sm:px-6">
-          <p className="text-sm font-semibold text-foreground">{modeLabel}</p>
-          <div className="flex shrink-0 items-center gap-2">
-            {layoutToggle}
-            {headerActions}
-            <Button variant="ghost" size="sm" onClick={onCancel}>
-              Cancelar
-            </Button>
-          </div>
-        </div>
-
-        {/* Mobile progress — the desktop rail replaces this from md up. */}
+    <div
+      className={cn(
+        'flex h-full min-h-0 flex-col bg-background',
+        ground === 'navi' && 'wz-navi-ground'
+      )}
+    >
+      <div className="shrink-0 border-b border-border md:hidden">
         <WizardProgress
           stepLabel={stepLabel}
           currentStep={currentStep}
@@ -100,7 +85,7 @@ export function WizardShell({
       </div>
 
       <main className="min-h-0 flex-1 overflow-y-auto">
-        <div className="mx-auto grid max-w-5xl gap-8 px-4 py-8 sm:px-6 md:grid-cols-[13rem_1fr] md:gap-12 md:py-12">
+        <div className="mx-auto grid max-w-5xl gap-8 px-3 pt-8 pb-28 sm:px-6 md:grid-cols-[13rem_1fr] md:gap-12 md:pt-12 md:pb-28">
           <aside className="hidden md:block">
             <div className="sticky top-4 space-y-5">
               <WizardRail
@@ -116,10 +101,7 @@ export function WizardShell({
           <div className="min-w-0">
             {error ? (
               <div className="mb-4">
-                <div
-                  role="alert"
-                  className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-                >
+                <div role="alert" className="wz-navi-error-box rounded-md px-3 py-2 text-sm">
                   {error}
                 </div>
               </div>
@@ -128,12 +110,17 @@ export function WizardShell({
             <div key={currentIndex} className="wz-step-in">
               {children}
             </div>
+
+            {naviSlot ? <div className="pb-32">{naviSlot}</div> : null}
           </div>
         </div>
       </main>
 
-      <div className="sticky bottom-0 z-30 border-t border-border bg-background/95 backdrop-blur">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
+      <div
+        data-wz-footer
+        className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background/95 backdrop-blur"
+      >
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-3 py-3 sm:px-6">
           <Button
             variant="ghost"
             onClick={onBack}

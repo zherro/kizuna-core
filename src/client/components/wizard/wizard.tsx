@@ -1,20 +1,31 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useWizardState } from './use-wizard-state';
 import { WizardShell } from './wizard-shell';
 import { WizardScrollShell } from './wizard-scroll-shell';
 import { WizardLayoutToggle } from './wizard-layout-toggle';
+import { WizardHeaderPortal } from './wizard-header-portal';
+import { useWizardConversation } from './use-wizard-conversation';
+import { NaviLayer } from './navi-layer';
+import { NaviPanel } from './navi-panel';
 import { type WizardLayout, readStoredLayout, writeStoredLayout } from './wizard-layout';
 import { applyAssistPatch } from './apply-assist-patch';
 import { Button } from '../ui/button';
 import type {
   WizardAssistant,
   WizardConfig,
+  WizardConversationAdapter,
   WizardEntities,
   WizardMode,
 } from './types';
+
+const DEFAULT_MODE_LABELS: Record<WizardMode, string> = {
+  create: 'Novo',
+  edit: 'Editar',
+  review: 'Revisão',
+};
 
 function WizardAssistControl<S extends Record<string, unknown>>({
   assistant,
@@ -36,11 +47,7 @@ function WizardAssistControl<S extends Record<string, unknown>>({
 
   if (assistant.status === 'degraded') {
     return (
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => assistant.retry?.()}
-      >
+      <Button variant="ghost" size="sm" onClick={() => assistant.retry?.()}>
         Tentar de novo
       </Button>
     );
@@ -55,11 +62,7 @@ function WizardAssistControl<S extends Record<string, unknown>>({
         state: state as Record<string, unknown>,
         stepKey,
       });
-      const filtered = applyAssistPatch(
-        res.patch as Partial<S>,
-        state,
-        touched as Set<keyof S>,
-      );
+      const filtered = applyAssistPatch(res.patch as Partial<S>, state, touched as Set<keyof S>);
       patch(filtered);
       setMessage(res.needsMore ? `${res.message} (mais informações ajudam)` : res.message);
     } catch {
@@ -93,6 +96,12 @@ export interface WizardProps<S extends Record<string, unknown> = Record<string, 
   initialRecord?: Record<string, unknown>;
   modeLabels?: Partial<Record<WizardMode, string>>;
   assistant?: WizardAssistant | (() => WizardAssistant);
+  /**
+   * Conversational Naví (additive contract, `WizardConversation`). When present and not
+   * `unavailable`, the wizard renders the assisted layer (dock + panel) and the one-shot
+   * `assistant` button is suppressed. `create`-only by convention (the app decides).
+   */
+  conversation?: WizardConversationAdapter | (() => WizardConversationAdapter);
   onExit?: () => void;
   /**
    * Initial step layout. The header toggle can switch it live and the choice is remembered per
@@ -111,6 +120,7 @@ export function Wizard<S extends Record<string, unknown> = Record<string, unknow
   initialRecord,
   modeLabels,
   assistant,
+  conversation,
   onExit,
   variant,
 }: WizardProps<S>) {
@@ -135,17 +145,19 @@ export function Wizard<S extends Record<string, unknown> = Record<string, unknow
     <WizardLayoutToggle value={layout} onChange={changeLayout} />
   ) : undefined;
 
-  // assistant may be a hook-like factory — must be called unconditionally.
+  // assistant / conversation may be hook-like factories — must be called unconditionally.
   const resolvedAssistant =
-    typeof assistant === 'function'
-      ? (assistant as () => WizardAssistant)()
-      : assistant;
+    typeof assistant === 'function' ? (assistant as () => WizardAssistant)() : assistant;
+  const resolvedConversation =
+    typeof conversation === 'function'
+      ? (conversation as () => WizardConversationAdapter)()
+      : conversation;
 
   const wz = useWizardState<S>({
     config,
     mode,
     entities,
-    initialState: (initialState ?? ({} as S)),
+    initialState: initialState ?? ({} as S),
     initialResourceId,
     initialRecord,
     assistant: resolvedAssistant,
@@ -163,19 +175,53 @@ export function Wizard<S extends Record<string, unknown> = Record<string, unknow
     goContinue,
     jumpTo,
     finish,
+    ctx,
   } = wz;
+
+  const conv = useWizardConversation<S>({
+    adapter: resolvedConversation,
+    steps,
+    currentIndex,
+    ctx,
+    goContinue,
+    submitting,
+    canContinue,
+    isLastStep,
+  });
+
+  // Um passo pode pedir pra esconder a Naví por um tempo (ex.: categoria força seleção manual
+  // das tags de especialidade antes de liberar o avanço). Reseta ao trocar de passo — sem isto,
+  // um passo que suprimiu e nunca limpou (ex. saiu por "Voltar") deixaria a Naví escondida pro
+  // resto do wizard.
+  const [naviSuppressed, setNaviSuppressed] = useState(false);
+  useEffect(() => {
+    setNaviSuppressed(false);
+  }, [currentIndex]);
+
+  const stepCtx = useMemo(
+    () => ({ ...ctx, setNaviSuppressed }),
+    [ctx]
+  );
 
   const totalSteps = steps.length;
   const currentStep = currentIndex + 1;
   const stepLabel = steps[currentIndex]?.label ?? '';
-  const progress =
-    totalSteps > 1 ? Math.round((currentIndex / (totalSteps - 1)) * 100) : 100;
+  const progress = totalSteps > 1 ? Math.round((currentIndex / (totalSteps - 1)) * 100) : 100;
   const railSteps = steps.map((s) => ({ label: s.label }));
   const continueLabel = mode === 'edit' ? 'Salvar e continuar' : 'Continuar';
+  const modeLabel = modeLabels?.[mode] ?? DEFAULT_MODE_LABELS[mode];
 
-  const exit =
-    onExit ??
-    (() => router.push(config.finishHrefByMode?.[mode] ?? '/painel'));
+  const leave = onExit ?? (() => router.push(config.finishHrefByMode?.[mode] ?? '/painel'));
+  // Sair de um cadastro novo descarta o rascunho — confirma. Em edit/review a linha já existe.
+  const exit = () => {
+    if (mode === 'create') {
+      const ok =
+        typeof window === 'undefined' ||
+        window.confirm('Sair agora descarta este anúncio. Tem certeza?');
+      if (!ok) return;
+    }
+    leave();
+  };
 
   const handleFinish = () => {
     void finish().then(({ href }) => {
@@ -184,16 +230,14 @@ export function Wizard<S extends Record<string, unknown> = Record<string, unknow
   };
 
   const Step = steps[currentIndex]?.Component;
-  const { ctx } = wz;
-
   const activeStep = steps[currentIndex];
-  // In the stepper each step opts into the assist button (`step.assist`). In the scroll layout the
-  // whole form is on one screen, so keep the assistant reachable throughout as long as any step
-  // wants it — `suggest()` already operates on the full state, not a single step.
+
+  // The one-shot assist button only shows when there is NO conversational Naví active.
   const showAssist =
+    !conv.active &&
     Boolean(resolvedAssistant) &&
     (effectiveLayout === 'scroll' ? steps.some((s) => s.assist) : Boolean(activeStep?.assist));
-  const headerActions =
+  const assistControl =
     showAssist && resolvedAssistant ? (
       <WizardAssistControl
         assistant={resolvedAssistant}
@@ -204,54 +248,73 @@ export function Wizard<S extends Record<string, unknown> = Record<string, unknow
       />
     ) : undefined;
 
-  if (effectiveLayout === 'scroll') {
-    return (
+  // Single header: mode label + layout toggle + assist affordance + Cancelar, projected into the
+  // app's one full-bleed header via portal (no second header bar).
+  const chrome = (
+    <WizardHeaderPortal>
+      <span className="hidden truncate text-sm font-semibold text-foreground sm:inline">
+        {modeLabel}
+      </span>
+      {layoutToggle}
+      {assistControl}
+      <Button variant="ghost" size="sm" onClick={exit}>
+        Cancelar
+      </Button>
+    </WizardHeaderPortal>
+  );
+
+  const naviShown = (conv.active || conv.endedMidway) && !naviSuppressed;
+  const naviSlot = naviShown ? <NaviLayer conv={conv} /> : undefined;
+
+  const shell =
+    effectiveLayout === 'scroll' ? (
       <WizardScrollShell
-        mode={mode}
-        modeLabels={modeLabels}
         steps={steps}
         currentIndex={currentIndex}
+        state={ctx.state}
         canContinue={canContinue}
         submitting={submitting}
         error={error}
         isLastStep={isLastStep}
         onAdvance={() => void goContinue()}
         onFinish={handleFinish}
-        onCancel={exit}
-        headerActions={headerActions}
-        layoutToggle={layoutToggle}
-        renderStep={(step) => <step.Component {...ctx} />}
+        autoReveal={!naviShown || conv.minimized}
+        ground={conv.active ? 'navi' : 'default'}
+        naviSlot={naviSlot}
+        renderStep={(step) => <step.Component {...stepCtx} />}
       />
+    ) : (
+      <WizardShell
+        currentStep={currentStep}
+        currentIndex={currentIndex}
+        totalSteps={totalSteps}
+        stepLabel={stepLabel}
+        progress={progress}
+        railSteps={railSteps}
+        furthest={Math.min(furthestIndex + 1, totalSteps)}
+        onJump={(step) => void jumpTo(step - 1)}
+        isLastStep={isLastStep}
+        showContinue
+        continueLabel={continueLabel}
+        canContinue={canContinue}
+        submitting={submitting}
+        error={error}
+        onBack={goBack}
+        onContinue={() => void goContinue()}
+        onFinish={handleFinish}
+        ground={conv.active ? 'navi' : 'default'}
+        naviSlot={naviSlot}
+      >
+        {Step ? <Step {...stepCtx} /> : null}
+      </WizardShell>
     );
-  }
 
   return (
-    <WizardShell
-      headerActions={headerActions}
-      layoutToggle={layoutToggle}
-      mode={mode}
-      modeLabels={modeLabels}
-      currentStep={currentStep}
-      currentIndex={currentIndex}
-      totalSteps={totalSteps}
-      stepLabel={stepLabel}
-      progress={progress}
-      railSteps={railSteps}
-      furthest={Math.min(furthestIndex + 1, totalSteps)}
-      onJump={(step) => void jumpTo(step - 1)}
-      isLastStep={isLastStep}
-      showContinue
-      continueLabel={continueLabel}
-      canContinue={canContinue}
-      submitting={submitting}
-      error={error}
-      onBack={goBack}
-      onContinue={() => void goContinue()}
-      onFinish={handleFinish}
-      onCancel={exit}
-    >
-      {Step ? <Step {...ctx} /> : null}
-    </WizardShell>
+    <>
+      {chrome}
+      {shell}
+      {naviShown ? <NaviPanel conv={conv} /> : null}
+    </>
   );
 }
 

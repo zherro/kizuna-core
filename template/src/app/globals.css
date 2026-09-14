@@ -283,8 +283,8 @@
 
   /* fontes: só têm efeito se o layout usar var(--font-display)/var(--font-body)
      em vez das classes do next/font — ver docs. */
-  --font-display: "Playfair Display", Georgia, serif;
-  --font-body: "Inter", system-ui, sans-serif;
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-body: 'Inter', system-ui, sans-serif;
 }
 
 /* ================= DARK MODE ================= */
@@ -714,30 +714,19 @@ html {
     inset 0 0 0 1px color-mix(in oklch, var(--primary) 35%, transparent);
 }
 
-/* Scroll (questionnaire) layout — stacked step sections that accumulate as they're answered. */
-.wz-scroll-step {
-  padding-left: 0.875rem;
-}
-
-.wz-scroll-step + .wz-scroll-step {
-  border-top: 1px solid color-mix(in oklch, var(--border) 45%, transparent);
-  padding-top: 2.5rem;
-}
-
-/* Answered steps recede but stay on screen and editable; a soft left thread ties them together.
-   Inset shadow, not a border/margin — no layout shift as sections flip to answered. */
-.wz-scroll-step[data-answered] {
+/* Scroll (questionnaire) layout — answered steps collapse into accordion rows (`.wz-scroll-summary`);
+   the current step is always open. A re-opened answered step recedes a touch, stays editable. */
+.wz-scroll-step[data-answered][data-open] {
   box-shadow: inset 2px 0 0 color-mix(in oklch, var(--primary) 28%, transparent);
-  opacity: 0.66;
+  padding-left: 0.75rem;
+  opacity: 0.9;
   transition:
     opacity 0.25s ease,
     box-shadow 0.25s ease;
 }
-
-.wz-scroll-step[data-answered]:hover,
-.wz-scroll-step[data-answered]:focus-within {
+.wz-scroll-step[data-answered][data-open]:hover,
+.wz-scroll-step[data-answered][data-open]:focus-within {
   opacity: 1;
-  box-shadow: inset 2px 0 0 color-mix(in oklch, var(--primary) 55%, transparent);
 }
 
 @keyframes wz-scroll-reveal {
@@ -757,6 +746,148 @@ html {
 
 @media (prefers-reduced-motion: reduce) {
   .wz-scroll-reveal {
+    animation: none;
+  }
+}
+
+/* Naví conversacional no wizard — a conversa é o elemento vivo da tela; tudo em volta fica quieto. */
+.wz-navi-preview {
+  opacity: 0.9;
+}
+.wz-navi-ground {
+  background: radial-gradient(
+    120% 60% at 50% 0%,
+    color-mix(in oklch, var(--primary) 9%, var(--background)),
+    var(--background) 65%
+  );
+}
+/* vermelho suave — legível mas sem alarme */
+.wz-navi-error {
+  color: color-mix(in oklch, var(--danger) 68%, var(--muted-foreground) 32%);
+}
+.wz-navi-error-box {
+  color: color-mix(in oklch, var(--danger) 70%, var(--muted-foreground) 30%);
+  background: color-mix(in oklch, var(--danger) 8%, var(--card));
+  border: 1px solid color-mix(in oklch, var(--danger) 24%, transparent);
+}
+.wz-navi-dock {
+  position: sticky;
+  bottom: 1rem;
+  z-index: 30;
+}
+/* passo respondido colapsado (accordion) */
+.wz-scroll-summary {
+  border: 1px solid color-mix(in oklch, var(--primary) 18%, var(--border));
+  background: color-mix(in oklch, var(--primary) 4%, var(--card));
+}
+.wz-scroll-summary:hover {
+  background: color-mix(in oklch, var(--primary) 8%, var(--card));
+}
+.wz-navi-fab-dot {
+  position: absolute;
+  top: 0.15rem;
+  right: 0.15rem;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: var(--primary-foreground);
+  animation: wz-navi-pulse 1s ease-in-out infinite;
+}
+.wz-navi-card {
+  border-radius: 1.15rem;
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklch, var(--primary) 7%, var(--card)),
+    var(--card) 60%
+  );
+  border: 1px solid color-mix(in oklch, var(--primary) 26%, transparent);
+  box-shadow:
+    0 1px 0 color-mix(in oklch, var(--primary) 10%, transparent) inset,
+    0 16px 40px -16px color-mix(in oklch, var(--primary) 55%, transparent);
+}
+.wz-navi-badge {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 999px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  box-shadow: 0 0 0 4px color-mix(in oklch, var(--primary) 15%, transparent);
+}
+.wz-navi-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.8rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  line-height: 1.1;
+  border: 1px solid color-mix(in oklch, var(--primary) 42%, transparent);
+  color: var(--primary);
+  background: color-mix(in oklch, var(--primary) 8%, var(--card));
+  transition:
+    background 0.12s ease,
+    color 0.12s ease;
+}
+.wz-navi-chip:hover {
+  background: color-mix(in oklch, var(--primary) 16%, var(--card));
+}
+.wz-navi-chip[data-on] {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border-color: var(--primary);
+}
+.wz-navi-checkbox {
+  display: grid;
+  place-items: center;
+  width: 0.95rem;
+  height: 0.95rem;
+  border-radius: 0.3rem;
+  border: 1px solid currentColor;
+  opacity: 0.7;
+}
+.wz-navi-chip[data-on] .wz-navi-checkbox {
+  opacity: 1;
+}
+.wz-navi-send {
+  padding: 0.35rem 0.9rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  box-shadow: 0 4px 14px -2px color-mix(in oklch, var(--primary) 60%, transparent);
+  animation: wz-navi-pulse 1.9s ease-in-out infinite;
+}
+@keyframes wz-navi-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.045);
+  }
+}
+.wz-navi-fab {
+  position: fixed;
+  right: 1rem;
+  bottom: 5rem;
+  z-index: 40;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.55rem 0.95rem;
+  border-radius: 999px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  box-shadow: 0 8px 22px -6px color-mix(in oklch, var(--primary) 70%, transparent);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+@media (prefers-reduced-motion: reduce) {
+  .wz-navi-send {
     animation: none;
   }
 }

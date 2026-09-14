@@ -23,7 +23,16 @@ export type TaxonomyCategory = {
    * flow for entities in this category. Buyer-facing sibling of `formKey`. */
   requestFormKey?: string | null;
   categoryGroupId: string | number | null;
+  /** Secondary groups this category also shows under (plugins/taxonomy/0003_taxonomy_group_link.sql)
+   * — does NOT change `categoryGroupId` (the primary/home group a service inherits at creation). */
+  extraGroupIds: Array<string | number>;
   active: boolean;
+};
+
+export type TaxonomyGroupLink = {
+  id: string | number;
+  categoryId: string | number;
+  categoryGroupId: string | number;
 };
 
 export type TaxonomySubcategory = {

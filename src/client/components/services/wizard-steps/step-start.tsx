@@ -4,17 +4,11 @@ import type { WizardStepProps } from '../../wizard/types';
 import type { ServiceWizardState } from '../service-type';
 import { StepHeader } from './step-header';
 
-/** Exemplos curtos de título, como referência de formato. Clicar preenche o campo. */
-const TITLE_EXAMPLES = [
-  'Eletricista residencial — atendo emergência 24h',
-  'Diarista com experiência e produtos inclusos',
-  'Fotógrafo de eventos: casamento, aniversário e corporativo',
-];
-
 /**
  * Passo 1 do wizard — "Início". Só o nome/título do serviço. O antigo atalho da Naví virou
  * responsabilidade do engine: quando `assist` está disponível, o `Wizard` renderiza o próprio
- * botão "Preencher com IA" no header — este passo só mostra o campo de texto e os exemplos.
+ * botão "Preencher com IA" no header. Os exemplos estáticos saíram daqui — a Naví conversacional
+ * já sugere títulos personalizados no lugar (ver `use-navi-conversation.ts`).
  */
 export function StepStart({ state, patch }: WizardStepProps<ServiceWizardState>) {
   const title = state.title ?? '';
@@ -41,23 +35,6 @@ export function StepStart({ state, patch }: WizardStepProps<ServiceWizardState>)
             Escreva um pouco mais (mínimo 5 caracteres).
           </p>
         ) : null}
-      </div>
-
-      <div className="space-y-2">
-        <p className="text-xs font-medium text-muted-foreground">Exemplos</p>
-        <div className="flex flex-col gap-1.5">
-          {TITLE_EXAMPLES.map((example) => (
-            <button
-              key={example}
-              type="button"
-              onClick={() => handleChange(example)}
-              data-active={title.trim() === example.trim()}
-              className="wz-selectable rounded-lg border bg-background px-3 py-2 text-left text-sm"
-            >
-              {example}
-            </button>
-          ))}
-        </div>
       </div>
     </div>
   );

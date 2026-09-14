@@ -41,6 +41,16 @@ export function StepLocation({ state, patch }: WizardStepProps<ServiceWizardStat
   const [address, setAddress] = useState<AddressValue>(initialAddress);
   const isPresential = value === 'no_cliente' || value === 'no_estabelecimento';
 
+  // O endereço em si continua local-only (não vira coluna — ver comentário da função), mas o
+  // "completo?" precisa chegar no estado do wizard pra `canContinue` poder exigir o preenchimento
+  // antes de liberar o avanço (senão o auto-reveal do layout "Questionário" avançava assim que a
+  // opção presencial era escolhida, sem o usuário sequer ter visto o formulário de endereço).
+  const handleAddressChange = (next: AddressValue) => {
+    setAddress(next);
+    const complete = Boolean(next.postalCode.trim() && next.street.trim() && next.number.trim());
+    patch({ addressComplete: complete });
+  };
+
   return (
     <div className="space-y-6">
       <StepHeader
@@ -88,8 +98,10 @@ export function StepLocation({ state, patch }: WizardStepProps<ServiceWizardStat
           </div>
           <AddressForm
             value={address}
-            onChange={setAddress}
+            onChange={handleAddressChange}
             features={{ search: true, modalSearch: true, locationSelection: false, map: false }}
+            layout="compact"
+            searchLabel="Não sei meu CEP"
           />
         </div>
       ) : null}
