@@ -10,6 +10,13 @@ import { cn } from '../../lib/utils';
 
 export type PanelNavIcon = ComponentType<{ className?: string }>;
 
+export type PanelNavAccessCondition = {
+  /** Resource key from the JWT's `perms` claim — passes if `user.hasPerm(resource)` is true. */
+  permResource?: string;
+  /** Passes if `user.is_root` — a different axis from `permResource`/`hasPerm`. */
+  rootOnly?: boolean;
+};
+
 export type PanelNavItem = {
   title: string;
   href: string;
@@ -20,12 +27,54 @@ export type PanelNavItem = {
   devOnly?: boolean;
   /** Hidden unless `user.is_root` — a different axis from `permResource`/`hasPerm`. */
   rootOnly?: boolean;
+  /**
+   * Alternative to `permResource`/`rootOnly`: visible (and reachable via direct
+   * navigation) if ANY of these conditions passes. Used by "hub" items that
+   * aggregate access to several sub-resources — the hub link itself has no
+   * single `permResource` of its own.
+   */
+  visibleIf?: PanelNavAccessCondition[];
+  /**
+   * Hides the item from the rendered sidebar while keeping it valid for
+   * `checkPagePermission` — use when a real screen's navigation moved into a
+   * hub page but the screen's own URL didn't change.
+   */
+  sidebarHidden?: boolean;
 };
 
 export type PanelNavGroup = {
   title: string;
   items: PanelNavItem[];
 };
+
+/** User shape needed to evaluate access — a subset of `useAuth()`'s `user`. */
+export type PanelNavAccessUser = {
+  hasPerm?: (resource: string, action?: string) => boolean;
+  is_root?: boolean;
+} | null | undefined;
+
+/**
+ * Whether `item` is reachable by `user` — same rule `PanelShellBase` uses for
+ * both sidebar visibility and direct-navigation permission checks. Exported
+ * so other consumers (e.g. a command palette) apply the identical rule
+ * instead of re-implementing it.
+ */
+export function isPanelNavItemAccessible(
+  item: Pick<PanelNavItem, 'permResource' | 'rootOnly' | 'visibleIf'>,
+  user: PanelNavAccessUser
+): boolean {
+  if (item.visibleIf && item.visibleIf.length > 0) {
+    return item.visibleIf.some(
+      (cond) =>
+        (!cond.permResource || (user?.hasPerm?.(cond.permResource) ?? false)) &&
+        (!cond.rootOnly || (user?.is_root ?? false))
+    );
+  }
+  return (
+    (!item.permResource || (user?.hasPerm?.(item.permResource) ?? false)) &&
+    (!item.rootOnly || (user?.is_root ?? false))
+  );
+}
 
 export type PanelShellBranding = {
   /** Small uppercase kicker over the menu title and in the sidebar header. */
@@ -83,14 +132,16 @@ export function PanelShellBase({
   const menuTitle = branding.menuTitle ?? 'Menu do painel';
   const menuDescription = branding.menuDescription ?? 'Navegue entre os modulos administrativos.';
 
+  const passesAccessGate = (item: PanelNavItem) => isPanelNavItemAccessible(item, user);
+
   const visibleNavigationGroups = navGroups
     .map((group) => ({
       ...group,
       items: group.items.filter(
         (item) =>
-          (!item.permResource || (user?.hasPerm(item.permResource) ?? false)) &&
+          passesAccessGate(item) &&
           (!item.devOnly || isDevEnvironment) &&
-          (!item.rootOnly || (user?.is_root ?? false))
+          !item.sidebarHidden
       ),
     }))
     .filter((group) => group.items.length > 0);
@@ -98,13 +149,7 @@ export function PanelShellBase({
   const checkPagePermission = (path: string = pathname) => {
     const item = navGroups
       .flatMap((group) => group.items)
-      .find(
-        (candidate) =>
-          path?.startsWith(candidate.href) &&
-          (candidate.rootOnly
-            ? (user?.is_root ?? false)
-            : (user?.hasPerm(candidate.permResource ?? 'default') ?? false))
-      );
+      .find((candidate) => path?.startsWith(candidate.href) && passesAccessGate(candidate));
 
     if (item) return;
     notFound();
