@@ -49,7 +49,7 @@ export type PanelNavGroup = {
 
 /** User shape needed to evaluate access — a subset of `useAuth()`'s `user`. */
 export type PanelNavAccessUser = {
-  hasPerm?: (resource: string, action?: string) => boolean;
+  hasPerm?: (resource: string) => boolean;
   is_root?: boolean;
 } | null | undefined;
 
