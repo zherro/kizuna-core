@@ -48,10 +48,13 @@ export type PanelNavGroup = {
 };
 
 /** User shape needed to evaluate access — a subset of `useAuth()`'s `user`. */
-export type PanelNavAccessUser = {
-  hasPerm?: (resource: string) => boolean;
-  is_root?: boolean;
-} | null | undefined;
+export type PanelNavAccessUser =
+  | {
+      hasPerm?: (resource: string) => boolean;
+      is_root?: boolean;
+    }
+  | null
+  | undefined;
 
 /**
  * Whether `item` is reachable by `user` — same rule `PanelShellBase` uses for
@@ -106,6 +109,11 @@ export type PanelShellBaseProps = {
    */
   fullBleedHeaderExtra?: ReactNode;
   /**
+   * Extra content rendered on the right of the standard (non full-bleed)
+   * header, before the user card — e.g. a search trigger.
+   */
+  headerExtra?: ReactNode;
+  /**
    * When true (default), a pathname that matches no visible nav item calls `notFound()`.
    * Set false to let the shell render any `/painel` route regardless of the nav list.
    */
@@ -119,6 +127,7 @@ export function PanelShellBase({
   isFullBleedRoute,
   renderItemBadge,
   fullBleedHeaderExtra,
+  headerExtra,
   enforcePagePermission = true,
 }: PanelShellBaseProps) {
   const { user, logout } = useAuth();
@@ -139,9 +148,7 @@ export function PanelShellBase({
       ...group,
       items: group.items.filter(
         (item) =>
-          passesAccessGate(item) &&
-          (!item.devOnly || isDevEnvironment) &&
-          !item.sidebarHidden
+          passesAccessGate(item) && (!item.devOnly || isDevEnvironment) && !item.sidebarHidden
       ),
     }))
     .filter((group) => group.items.length > 0);
@@ -348,22 +355,25 @@ export function PanelShellBase({
               </button>
             </div>
 
-            <div className="ml-auto flex min-w-0 items-center gap-3 rounded-2xl border border-border bg-card px-3 py-2 shadow-sm">
-              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
-                {user?.initials}
+            <div className="ml-auto flex items-center gap-3">
+              {headerExtra}
+              <div className="flex min-w-0 items-center gap-3 rounded-2xl border border-border bg-card px-3 py-2 shadow-sm">
+                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+                  {user?.initials}
+                </div>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-foreground">{user?.name}</p>
+                  <p className="truncate text-xs text-muted-foreground">{user?.subtitle}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void logout()}
+                  className={buttonVariants({ variant: 'ghost', size: 'sm' })}
+                >
+                  <LogOut className="h-4 w-4" />
+                  <span className="hidden sm:inline">Sair</span>
+                </button>
               </div>
-              <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-foreground">{user?.name}</p>
-                <p className="truncate text-xs text-muted-foreground">{user?.subtitle}</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => void logout()}
-                className={buttonVariants({ variant: 'ghost', size: 'sm' })}
-              >
-                <LogOut className="h-4 w-4" />
-                <span className="hidden sm:inline">Sair</span>
-              </button>
             </div>
           </div>
         </header>
