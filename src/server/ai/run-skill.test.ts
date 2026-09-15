@@ -36,9 +36,9 @@ describe('runSkill', () => {
 
   it('contexto desligado → AiUnavailableError blocked', async () => {
     readSystemConfig.mockResolvedValue({ demo: false });
-    await expect(
-      runSkill('demo', {}, { userId: 'u', tenantId: 't' }),
-    ).rejects.toMatchObject({ reason: 'blocked' });
+    await expect(runSkill('demo', {}, { userId: 'u', tenantId: 't' })).rejects.toMatchObject({
+      reason: 'blocked',
+    });
   });
 
   it('skill não registrada → erro', async () => {
@@ -48,8 +48,10 @@ describe('runSkill', () => {
   it('rate limit estourado → AiRateLimitedError com retryAfterSec', async () => {
     readSystemConfig.mockResolvedValue({});
     registerSkill({ ...skill, key: 'rl', rateLimit: { max: 0, windowMs: 5000 } } as never);
-    await expect(
-      runSkill('rl', {}, { userId: 'u', tenantId: 't' }),
-    ).rejects.toMatchObject({ name: 'AiRateLimitedError', reason: 'transient', retryAfterSec: 5 });
+    await expect(runSkill('rl', {}, { userId: 'u', tenantId: 't' })).rejects.toMatchObject({
+      name: 'AiRateLimitedError',
+      reason: 'transient',
+      retryAfterSec: 5,
+    });
   });
 });

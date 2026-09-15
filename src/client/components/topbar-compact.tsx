@@ -109,7 +109,11 @@ export function TopbarCompact({
               onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
               className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
             >
-              {resolvedTheme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              {resolvedTheme === 'dark' ? (
+                <Sun className="h-4 w-4" />
+              ) : (
+                <Moon className="h-4 w-4" />
+              )}
             </button>
           )}
 
@@ -137,10 +141,16 @@ export function TopbarCompact({
               </Link>
             ) : (
               <div className="hidden items-center gap-3 md:flex">
-                <Link className="text-sm font-medium text-muted-foreground hover:text-foreground" href="/login">
+                <Link
+                  className="text-sm font-medium text-muted-foreground hover:text-foreground"
+                  href="/login"
+                >
                   {messages.nav.login}
                 </Link>
-                <Link className="text-sm font-medium text-muted-foreground hover:text-foreground" href="/registre-se">
+                <Link
+                  className="text-sm font-medium text-muted-foreground hover:text-foreground"
+                  href="/registre-se"
+                >
                   {messages.nav.signUp}
                 </Link>
               </div>

@@ -54,8 +54,7 @@ export const SERVICE_WIZARD_STEPS: Record<string, WizardStep<ServiceWizardState>
     canContinue: (ctx) => {
       const { groupId, categoryId, subcategoryIds } = ctx.state;
       if (!groupId || !categoryId) return false;
-      const subcategories =
-        (ctx.entities.subcategories as ServiceSubcategory[] | undefined) ?? [];
+      const subcategories = (ctx.entities.subcategories as ServiceSubcategory[] | undefined) ?? [];
       const hasSubcategories = subcategories.some(
         (s) => String(s.categoryId) === String(categoryId)
       );

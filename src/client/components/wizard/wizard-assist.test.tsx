@@ -16,9 +16,7 @@ import type { WizardAssistant, WizardStepProps } from './types';
 
 afterEach(cleanup);
 
-const StepView = (props: WizardStepProps) => (
-  <p>{(props.state.title as string) ?? '(vazio)'}</p>
-);
+const StepView = (props: WizardStepProps) => <p>{(props.state.title as string) ?? '(vazio)'}</p>;
 
 const cfg = defineWizard({
   resource: 'x',
@@ -35,7 +33,13 @@ describe('<Wizard> assist affordance', () => {
       suggest: vi.fn(async () => ({ message: 'ok', needsMore: false, patch: { title: 'IA' } })),
     };
     render(
-      <Wizard config={cfg} mode="create" entities={{}} initialResourceId={null} assistant={assistant} />
+      <Wizard
+        config={cfg}
+        mode="create"
+        entities={{}}
+        initialResourceId={null}
+        assistant={assistant}
+      />
     );
     expect(screen.getByText('(vazio)')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: /preencher com ia/i }));
@@ -48,7 +52,13 @@ describe('<Wizard> assist affordance', () => {
       suggest: vi.fn(),
     };
     render(
-      <Wizard config={cfg} mode="create" entities={{}} initialResourceId={null} assistant={assistant} />
+      <Wizard
+        config={cfg}
+        mode="create"
+        entities={{}}
+        initialResourceId={null}
+        assistant={assistant}
+      />
     );
     expect(screen.queryByRole('button', { name: /preencher com ia/i })).toBeNull();
     expect(screen.queryByRole('button', { name: /tentar de novo/i })).toBeNull();
@@ -75,7 +85,7 @@ describe('<Wizard> assist affordance', () => {
       />
     );
     fireEvent.click(screen.getByRole('button', { name: /preencher com ia/i }));
-    await waitFor(() => expect((assistant.suggest as ReturnType<typeof vi.fn>)).toHaveBeenCalled());
+    await waitFor(() => expect(assistant.suggest as ReturnType<typeof vi.fn>).toHaveBeenCalled());
     expect(screen.getByText('Meu')).toBeTruthy();
   });
 });

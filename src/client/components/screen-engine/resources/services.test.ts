@@ -3,14 +3,20 @@ import { resourceServices } from './services';
 
 describe('resourceServices', () => {
   it('expõe as três chaves', () => {
-    expect(Object.keys(resourceServices).sort()).toEqual(
-      ['service_categories_sub', 'service_moderations', 'services'],
-    );
+    expect(Object.keys(resourceServices).sort()).toEqual([
+      'service_categories_sub',
+      'service_moderations',
+      'services',
+    ]);
   });
 
   it('services.mapInput lê aliases camelCase', () => {
     const out = resourceServices.services.mapInput!({
-      categoryId: '10', categoryGroupId: '3', startingPrice: 50, priceUnit: 'hour', title: 'x',
+      categoryId: '10',
+      categoryGroupId: '3',
+      startingPrice: 50,
+      priceUnit: 'hour',
+      title: 'x',
     });
     expect(out.category_id).toBe(10);
     expect(out.category_group_id).toBe(3);
@@ -20,8 +26,13 @@ describe('resourceServices', () => {
 
   it('services.mapInput projeta todas as colunas snake_case a partir de um registro snake', () => {
     const out = resourceServices.services.mapInput!({
-      title: ' Barbeiro ', category_id: 7, category_group_id: 2, status: 'active',
-      service_location: 'remoto', starting_price: 120, price_unit: 'quote',
+      title: ' Barbeiro ',
+      category_id: 7,
+      category_group_id: 2,
+      status: 'active',
+      service_location: 'remoto',
+      starting_price: 120,
+      price_unit: 'quote',
     });
     expect(out.title).toBe('Barbeiro');
     expect(out.category_id).toBe(7);
@@ -31,7 +42,11 @@ describe('resourceServices', () => {
   });
 
   it('services.mapInput normaliza service_location vazio pra null', () => {
-    const out = resourceServices.services.mapInput!({ serviceLocation: '', title: 'x', categoryId: '1' });
+    const out = resourceServices.services.mapInput!({
+      serviceLocation: '',
+      title: 'x',
+      categoryId: '1',
+    });
     expect(out.service_location).toBeNull();
   });
 
@@ -40,7 +55,11 @@ describe('resourceServices', () => {
   });
 
   it('service_moderations.mapOutput lê reviewerId de created_by', () => {
-    const out = resourceServices.service_moderations.mapOutput!({ id: 1, created_by: 'u1', decision: 'approved' });
+    const out = resourceServices.service_moderations.mapOutput!({
+      id: 1,
+      created_by: 'u1',
+      decision: 'approved',
+    });
     expect(out.reviewerId).toBe('u1');
   });
 });

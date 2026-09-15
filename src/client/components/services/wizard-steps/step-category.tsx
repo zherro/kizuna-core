@@ -51,9 +51,7 @@ export function StepCategory(props: WizardStepProps<ServiceWizardState>) {
   // Stacked (scroll) layout: don't pop the modal on mount — the step is visible in a long list and
   // an unprompted dialog is jarring. The "Abrir/Trocar" button still opens it on demand.
   const { stacked } = useWizardLayout();
-  const [pickerOpen, setPickerOpen] = useState(
-    () => Boolean(groupId) && !categoryId && !stacked,
-  );
+  const [pickerOpen, setPickerOpen] = useState(() => Boolean(groupId) && !categoryId && !stacked);
 
   // Reabre o modal sempre que o GRUPO muda pra um valor definido e ainda não há categoria — vale
   // pro clique manual E pra Naví definindo o grupo pelo chat (o `useState` acima só cobre o

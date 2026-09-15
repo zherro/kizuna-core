@@ -55,8 +55,8 @@ export function StepModeration({ state, patch }: WizardStepProps<ServiceWizardSt
       <div>
         <h2 className="text-lg font-semibold text-foreground">Revisao</h2>
         <p className="text-sm text-muted-foreground">
-          Registre a decisao desta revisao. Ela vira um novo registro de moderacao e ajusta o
-          status do servico automaticamente.
+          Registre a decisao desta revisao. Ela vira um novo registro de moderacao e ajusta o status
+          do servico automaticamente.
         </p>
       </div>
 

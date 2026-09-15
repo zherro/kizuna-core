@@ -4,10 +4,10 @@ export interface ResourcePersister<S> {
   readonly baseline: Record<string, unknown> | null;
   setBaseline(item: Record<string, unknown>): void;
   persist(
-    overrides: Record<string, unknown>,
+    overrides: Record<string, unknown>
   ): Promise<{ ok: boolean; item: Record<string, unknown> | null }>;
   persistExtras(
-    partialExtras: Record<string, unknown>,
+    partialExtras: Record<string, unknown>
   ): Promise<{ ok: boolean; item: Record<string, unknown> | null }>;
 }
 
@@ -29,7 +29,7 @@ export function createResourcePersister<S extends Record<string, unknown>>(opts:
   let id = opts.resourceId;
 
   async function run(
-    overrides: Record<string, unknown>,
+    overrides: Record<string, unknown>
   ): Promise<{ ok: boolean; item: Record<string, unknown> | null }> {
     const merged = { ...(baseline ?? {}), ...overrides };
     const result = await submitResource<

@@ -14,7 +14,11 @@ import { StepHint } from './step-hint';
 const OPTIONS: { value: keyof typeof SERVICE_LOCATION_LABEL; icon: typeof Home; desc: string }[] = [
   { value: 'no_cliente', icon: Home, desc: 'Você vai até o endereço do cliente.' },
   { value: 'no_estabelecimento', icon: Building2, desc: 'O cliente vai até o seu endereço.' },
-  { value: 'remoto', icon: Wifi, desc: 'O serviço é feito à distância, sem atendimento presencial.' },
+  {
+    value: 'remoto',
+    icon: Wifi,
+    desc: 'O serviço é feito à distância, sem atendimento presencial.',
+  },
 ];
 
 const initialAddress: AddressValue = {

@@ -43,7 +43,7 @@ export type VerifyCaptchaResult =
  */
 export async function verifyCaptcha(
   token: string | undefined | null,
-  remoteIp?: string | null,
+  remoteIp?: string | null
 ): Promise<VerifyCaptchaResult> {
   if (!isCaptchaEnabled()) return { ok: true };
 

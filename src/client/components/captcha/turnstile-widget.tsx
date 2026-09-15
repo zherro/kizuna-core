@@ -20,7 +20,7 @@ interface TurnstileApi {
       callback: (token: string) => void;
       'expired-callback'?: () => void;
       'error-callback'?: () => void;
-    },
+    }
   ) => string;
   remove: (widgetId: string) => void;
 }

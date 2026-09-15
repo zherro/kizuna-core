@@ -1,10 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { Plus } from 'lucide-react';
+import { CalendarClock, Plus, SlidersHorizontal, Bell } from 'lucide-react';
 import { AdminPageReader } from '../ui-better-soft/headers/admin-page-reader';
 import { BsButton } from '../ui-better-soft/buttons/bs-button';
 import { ConfirmDialog } from '../ui-better-soft/overlay/confirm-dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { useAgendaSchedules } from './use-agenda-schedules';
 import { ScheduleCard } from './schedule-card';
 import { ScheduleSheet } from './schedule-sheet';
@@ -35,6 +36,7 @@ export function AgendaConfigPage() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<ScheduleWithHours | null>(null);
   const [pendingDelete, setPendingDelete] = useState<ScheduleWithHours | null>(null);
+  const [activeTab, setActiveTab] = useState('horarios');
 
   const openCreate = () => {
     setEditing(null);
@@ -48,18 +50,42 @@ export function AgendaConfigPage() {
   return (
     <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 lg:px-8">
       <AdminPageReader
-        title="Horários de atendimento"
-        description="Crie um ou mais horários de atendimento e defina as regras da sua agenda."
+        title="Configuração da agenda"
+        description="Horários de atendimento, regras de reserva e notificações — tudo em um só lugar."
         backHref="/painel/agenda"
         actions={
-          schedules.length > 0 ? (
+          activeTab === 'horarios' && schedules.length > 0 ? (
             <BsButton label="Novo horário" icon={Plus} onClick={openCreate} />
           ) : undefined
         }
       />
 
-      <div className="space-y-6">
-        <section>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid h-auto w-full grid-cols-3 gap-1 p-1">
+          <TabsTrigger
+            value="horarios"
+            className="flex flex-col items-center gap-1 whitespace-normal px-1.5 py-2 text-center text-[11px] leading-tight sm:flex-row sm:gap-1.5 sm:text-sm"
+          >
+            <CalendarClock className="h-4 w-4 shrink-0" />
+            Horários
+          </TabsTrigger>
+          <TabsTrigger
+            value="regras"
+            className="flex flex-col items-center gap-1 whitespace-normal px-1.5 py-2 text-center text-[11px] leading-tight sm:flex-row sm:gap-1.5 sm:text-sm"
+          >
+            <SlidersHorizontal className="h-4 w-4 shrink-0" />
+            Regras
+          </TabsTrigger>
+          <TabsTrigger
+            value="notificacoes"
+            className="flex flex-col items-center gap-1 whitespace-normal px-1.5 py-2 text-center text-[11px] leading-tight sm:flex-row sm:gap-1.5 sm:text-sm"
+          >
+            <Bell className="h-4 w-4 shrink-0" />
+            Avisos
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="horarios" className="space-y-3">
           {loading ? (
             <div className="space-y-3">
               {[0, 1].map((i) => (
@@ -86,11 +112,16 @@ export function AgendaConfigPage() {
               ))}
             </ul>
           )}
-        </section>
+        </TabsContent>
 
-        <AgendaRulesSection />
-        <AgendaNotificationsSection />
-      </div>
+        <TabsContent value="regras">
+          <AgendaRulesSection />
+        </TabsContent>
+
+        <TabsContent value="notificacoes">
+          <AgendaNotificationsSection />
+        </TabsContent>
+      </Tabs>
 
       <ScheduleSheet
         open={sheetOpen}

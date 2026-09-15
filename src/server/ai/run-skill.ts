@@ -12,7 +12,7 @@ import { getSkill, type AiSkillContext } from './skill';
 export async function runSkill<I, O>(
   skillKey: string,
   input: I,
-  ctx: AiSkillContext,
+  ctx: AiSkillContext
 ): Promise<{ output: O }> {
   const skill = getSkill(skillKey);
   if (!skill) {

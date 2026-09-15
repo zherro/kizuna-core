@@ -198,10 +198,7 @@ export function Wizard<S extends Record<string, unknown> = Record<string, unknow
     setNaviSuppressed(false);
   }, [currentIndex]);
 
-  const stepCtx = useMemo(
-    () => ({ ...ctx, setNaviSuppressed }),
-    [ctx]
-  );
+  const stepCtx = useMemo(() => ({ ...ctx, setNaviSuppressed }), [ctx]);
 
   const totalSteps = steps.length;
   const currentStep = currentIndex + 1;

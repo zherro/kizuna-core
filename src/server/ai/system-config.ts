@@ -12,7 +12,7 @@ export async function readSystemConfig<T = unknown>(key: string): Promise<T | nu
     const res = await pgrstTable(
       `/system_config?key=eq.${encodeURIComponent(key)}&select=value`,
       { headers: { 'Accept-Profile': 'auth' } },
-      { auth: null },
+      { auth: null }
     );
     if (!res.ok) return null;
     const rows = (await res.json()) as Array<{ value: T }>;

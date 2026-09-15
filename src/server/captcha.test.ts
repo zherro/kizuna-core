@@ -58,7 +58,7 @@ describe('verifyCaptcha', () => {
     enableEnv();
     vi.stubGlobal(
       'fetch',
-      vi.fn(async () => ({ json: async () => ({ success: true }) })),
+      vi.fn(async () => ({ json: async () => ({ success: true }) }))
     );
     expect(await verifyCaptcha('tok', '1.2.3.4')).toEqual({ ok: true });
   });
@@ -67,7 +67,7 @@ describe('verifyCaptcha', () => {
     enableEnv();
     vi.stubGlobal(
       'fetch',
-      vi.fn(async () => ({ json: async () => ({ success: false }) })),
+      vi.fn(async () => ({ json: async () => ({ success: false }) }))
     );
     expect(await verifyCaptcha('tok')).toEqual({ ok: false, reason: 'invalid' });
   });
@@ -79,7 +79,7 @@ describe('verifyCaptcha', () => {
       'fetch',
       vi.fn(async () => {
         throw new Error('network');
-      }),
+      })
     );
     expect(await verifyCaptcha('tok')).toEqual({ ok: true });
   });

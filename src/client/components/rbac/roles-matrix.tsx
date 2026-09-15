@@ -1,8 +1,12 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { KeyRound } from 'lucide-react';
 import { useToast } from '../../hooks/use-toast';
 import { useAuth } from '../../providers/auth-provider';
+import { Badge } from '../ui/badge';
+import { Checkbox } from '../ui/checkbox';
+import { cn } from '../../../lib/utils';
 import { callRbacRpc } from './rbac-rpc';
 import type { PermissionRow, RoleGrantRow, RoleRow } from './rbac-data';
 
@@ -15,6 +19,12 @@ type Props = {
 };
 
 const key = (roleId: number, permId: number) => `${roleId}:${permId}`;
+
+/** `service_moderations` -> "Service moderations" — just readable, not a translation. */
+function humanizeResource(resource: string) {
+  const spaced = resource.replace(/[_-]+/g, ' ').trim();
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+}
 
 export function RolesMatrix({ roles, groups, initialGrants }: Props) {
   const { user } = useAuth();
@@ -70,38 +80,58 @@ export function RolesMatrix({ roles, groups, initialGrants }: Props) {
   }
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-border">
-      <table className="w-full border-collapse text-sm">
-        <thead>
-          <tr className="bg-muted/50">
-            <th className="sticky left-0 z-10 bg-muted/50 px-3 py-2 text-left font-semibold">
-              Permissão
-            </th>
-            {roles.map((role) => (
-              <th key={role.id} className="px-3 py-2 text-center font-semibold whitespace-nowrap">
-                {role.name}
-                {role.tenant_id == null ? (
-                  <span className="ml-1 text-[10px] font-normal text-muted-foreground">global</span>
-                ) : null}
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-1 text-xs text-muted-foreground">
+      <span className="flex items-center gap-1.5">
+        <span className="h-2.5 w-2.5 rounded-sm bg-primary" /> concedida
+      </span>
+      <span className="flex items-center gap-1.5">
+        <span className="h-2.5 w-2.5 rounded-sm bg-muted" /> não concedida
+      </span>
+      <span className="flex items-center gap-1.5">
+        <span className="h-2.5 w-2.5 rounded-sm bg-muted opacity-40" /> sem permissão pra conceder
+      </span>
+
+      <div className="mt-2 w-full overflow-x-auto rounded-xl border border-border">
+        <table className="w-full min-w-[560px] border-collapse text-sm">
+          <thead>
+            <tr className="border-b border-border bg-muted/60">
+              <th className="sticky left-0 z-20 bg-muted/60 px-4 py-3 text-left font-semibold">
+                Permissão
               </th>
+              {roles.map((role) => (
+                <th
+                  key={role.id}
+                  className="min-w-[104px] px-3 py-3 text-center font-semibold whitespace-nowrap"
+                >
+                  <div className="flex flex-col items-center gap-1">
+                    <span>{role.name}</span>
+                    <Badge
+                      variant={role.tenant_id == null ? 'secondary' : 'outline'}
+                      className="text-[10px] font-normal"
+                    >
+                      {role.tenant_id == null ? 'global' : 'próprio'}
+                    </Badge>
+                  </div>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {groups.map((group) => (
+              <FragmentGroup
+                key={group.resource}
+                group={group}
+                roles={roles}
+                grants={grants}
+                pending={pending}
+                canEditRole={canEditRole}
+                callerCanGrant={callerCanGrant}
+                onToggle={toggle}
+              />
             ))}
-          </tr>
-        </thead>
-        <tbody>
-          {groups.map((group) => (
-            <FragmentGroup
-              key={group.resource}
-              group={group}
-              roles={roles}
-              grants={grants}
-              pending={pending}
-              canEditRole={canEditRole}
-              callerCanGrant={callerCanGrant}
-              onToggle={toggle}
-            />
-          ))}
-        </tbody>
-      </table>
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
@@ -125,33 +155,56 @@ function FragmentGroup({
 }) {
   return (
     <>
-      <tr className="border-t border-border bg-background">
+      <tr className="border-t border-border bg-muted/30">
         <td
           colSpan={roles.length + 1}
-          className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+          className="sticky left-0 z-10 bg-muted/30 px-4 py-2 text-xs font-semibold tracking-wide text-foreground/80"
         >
-          {group.resource}
+          <span className="inline-flex items-center gap-1.5">
+            <KeyRound className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />
+            {humanizeResource(group.resource)}
+            <Badge variant="outline" className="ml-1 text-[10px] font-normal text-muted-foreground">
+              {group.items.length}
+            </Badge>
+          </span>
         </td>
       </tr>
-      {group.items.map((perm) => (
-        <tr key={perm.id} className="border-t border-border/60">
-          <td className="sticky left-0 z-10 bg-background px-3 py-2">
-            <span className="font-medium">{perm.action}</span>
-            {perm.name ? (
-              <span className="ml-2 text-xs text-muted-foreground">{perm.name}</span>
-            ) : null}
+      {group.items.map((perm, idx) => (
+        <tr
+          key={perm.id}
+          className={cn(
+            'border-t border-border/60 hover:bg-muted/20',
+            idx % 2 === 1 && 'bg-muted/10'
+          )}
+        >
+          <td className="sticky left-0 z-10 bg-background px-4 py-2.5">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="outline" className="font-mono text-[10px] uppercase">
+                {perm.action}
+              </Badge>
+              {perm.name ? (
+                <span className="text-xs text-muted-foreground">{perm.name}</span>
+              ) : null}
+            </div>
           </td>
           {roles.map((role) => {
             const k = key(role.id, perm.id);
+            const granted = grants.has(k);
             const disabled = pending.has(k) || !canEditRole(role) || !callerCanGrant(perm);
             return (
-              <td key={role.id} className="px-3 py-2 text-center">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 accent-primary disabled:opacity-40"
-                  checked={grants.has(k)}
+              <td
+                key={role.id}
+                className={cn(
+                  'px-3 py-2.5 text-center transition-colors',
+                  granted && 'bg-primary/5'
+                )}
+              >
+                <Checkbox
+                  className={cn(pending.has(k) && 'animate-pulse')}
+                  checked={granted}
                   disabled={disabled}
-                  onChange={() => onToggle(role, perm)}
+                  onCheckedChange={() => onToggle(role, perm)}
+                  aria-label={`${role.name} — ${group.resource}.${perm.action}`}
                 />
               </td>
             );

@@ -22,7 +22,8 @@ export function StepDescription({ state, patch, entities }: WizardStepProps<Serv
   // it to cut the redundant block and the extra scroll distance.
   const { stacked } = useWizardLayout();
 
-  const groups = (entities.groups as Array<{ id: string | number; name: string }> | undefined) ?? [];
+  const groups =
+    (entities.groups as Array<{ id: string | number; name: string }> | undefined) ?? [];
   const categories = (entities.categories as ServiceCategory[] | undefined) ?? [];
   const subcategories =
     (entities.subcategories as Array<{ id: string | number; name: string }> | undefined) ?? [];

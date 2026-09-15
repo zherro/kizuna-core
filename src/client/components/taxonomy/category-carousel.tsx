@@ -96,24 +96,27 @@ export function CategoryCarousel({
           emptyBox
         ) : (
           <div className="mt-4 flex gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {loading
-            ? Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="h-[76px] w-20 shrink-0 animate-pulse rounded-2xl bg-muted" />
-              ))
-            : items.map((c) => (
-                <Link
-                  key={c.id}
-                  href={hrefFor(c)}
-                  className="flex w-20 shrink-0 flex-col items-center gap-2 rounded-2xl border border-border bg-card py-3 text-center transition-transform active:scale-95"
-                >
-                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary text-primary">
-                    {iconFor(c)}
-                  </span>
-                  <span className="line-clamp-2 text-[11px] font-semibold text-foreground">
-                    {c.name}
-                  </span>
-                </Link>
-              ))}
+            {loading
+              ? Array.from({ length: 6 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="h-[76px] w-20 shrink-0 animate-pulse rounded-2xl bg-muted"
+                  />
+                ))
+              : items.map((c) => (
+                  <Link
+                    key={c.id}
+                    href={hrefFor(c)}
+                    className="flex w-20 shrink-0 flex-col items-center gap-2 rounded-2xl border border-border bg-card py-3 text-center transition-transform active:scale-95"
+                  >
+                    <span className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary text-primary">
+                      {iconFor(c)}
+                    </span>
+                    <span className="line-clamp-2 text-[11px] font-semibold text-foreground">
+                      {c.name}
+                    </span>
+                  </Link>
+                ))}
           </div>
         )}
       </section>
@@ -127,27 +130,30 @@ export function CategoryCarousel({
         emptyBox
       ) : (
         <div className="mt-6 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {loading
-          ? Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="h-[132px] min-w-[200px] animate-pulse rounded-2xl bg-muted" />
-            ))
-          : items.map((c) => (
-              <Link
-                key={c.id}
-                href={hrefFor(c)}
-                className="group flex min-w-[200px] snap-start flex-col gap-4 rounded-2xl border border-border/70 bg-muted/50 p-5 transition-colors hover:border-primary/40 hover:bg-primary/5"
-              >
-                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
-                  {iconFor(c)}
-                </span>
-                <span>
-                  <span className="block font-medium leading-snug text-foreground">{c.name}</span>
-                  <span className="mt-1 block text-sm text-muted-foreground">
-                    {countLabel(c.count)}
+          {loading
+            ? Array.from({ length: 4 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="h-[132px] min-w-[200px] animate-pulse rounded-2xl bg-muted"
+                />
+              ))
+            : items.map((c) => (
+                <Link
+                  key={c.id}
+                  href={hrefFor(c)}
+                  className="group flex min-w-[200px] snap-start flex-col gap-4 rounded-2xl border border-border/70 bg-muted/50 p-5 transition-colors hover:border-primary/40 hover:bg-primary/5"
+                >
+                  <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+                    {iconFor(c)}
                   </span>
-                </span>
-              </Link>
-            ))}
+                  <span>
+                    <span className="block font-medium leading-snug text-foreground">{c.name}</span>
+                    <span className="mt-1 block text-sm text-muted-foreground">
+                      {countLabel(c.count)}
+                    </span>
+                  </span>
+                </Link>
+              ))}
         </div>
       )}
     </section>

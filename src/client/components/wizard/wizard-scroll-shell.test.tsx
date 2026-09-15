@@ -69,13 +69,7 @@ const cfg = defineWizard<S>({
 
 function renderScroll() {
   return render(
-    <Wizard<S>
-      config={cfg}
-      mode="create"
-      entities={{}}
-      initialResourceId={null}
-      variant="scroll"
-    />,
+    <Wizard<S> config={cfg} mode="create" entities={{}} initialResourceId={null} variant="scroll" />
   );
 }
 
@@ -109,9 +103,9 @@ describe('<Wizard variant="scroll">', () => {
       expect(screen.queryByText('conteudo C')).not.toBeNull();
     });
     await waitFor(() => {
-      expect((screen.getByRole('button', { name: /concluir/i }) as HTMLButtonElement).disabled).toBe(
-        false,
-      );
+      expect(
+        (screen.getByRole('button', { name: /concluir/i }) as HTMLButtonElement).disabled
+      ).toBe(false);
     });
   });
 
@@ -148,7 +142,7 @@ describe('<Wizard variant="scroll">', () => {
         initialResourceId={null}
         variant="scroll"
         assistant={assistant}
-      />,
+      />
     );
     expect(screen.getByRole('button', { name: /preencher com ia/i })).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: /responder A/i }));
@@ -166,7 +160,7 @@ describe('<Wizard variant="scroll">', () => {
         initialResourceId="1"
         initialRecord={{ id: '1' }}
         variant="scroll"
-      />,
+      />
     );
     expect(screen.queryByRole('radio', { name: /questionário/i })).toBeNull();
     // stepper chrome

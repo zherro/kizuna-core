@@ -22,9 +22,7 @@ export async function syncServiceSubcategories(
   const noop = () => {};
   const wanted = subIds.map(String);
   const toRemove = prevLinks.filter((link) => !wanted.includes(String(link.categorySubId)));
-  const toAdd = wanted.filter(
-    (id) => !prevLinks.some((link) => String(link.categorySubId) === id)
-  );
+  const toAdd = wanted.filter((id) => !prevLinks.some((link) => String(link.categorySubId) === id));
 
   let next = [...prevLinks];
 

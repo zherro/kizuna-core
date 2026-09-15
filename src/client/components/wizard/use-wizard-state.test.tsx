@@ -40,7 +40,7 @@ describe('useWizardState', () => {
         entities: {},
         initialState: { name: '' },
         initialResourceId: null,
-      }),
+      })
     );
     await act(async () => {
       await result.current.goContinue();
@@ -57,7 +57,7 @@ describe('useWizardState', () => {
         entities: {},
         initialState: { name: 'ok' },
         initialResourceId: '1',
-      }),
+      })
     );
     await act(async () => {
       await result.current.goContinue();
@@ -66,7 +66,7 @@ describe('useWizardState', () => {
       await result.current.goContinue();
     }); // b -> c, roda persist de b
     expect(result.current.currentIndex).toBe(2);
-    expect((cfg.registry!.b.persist as any)).toHaveBeenCalled();
+    expect(cfg.registry!.b.persist as any).toHaveBeenCalled();
   });
 
   it('initialRecord hidrata o baseline do persister (edit não reseta colunas)', async () => {
@@ -94,7 +94,7 @@ describe('useWizardState', () => {
         initialState: { name: 'ok' },
         initialResourceId: '7',
         initialRecord: { id: '7', status: 'active', description: 'D' },
-      }),
+      })
     );
     await act(async () => {
       await result.current.goContinue();
@@ -126,7 +126,7 @@ describe('useWizardState', () => {
         entities: {},
         initialState: { name: 'ok' },
         initialResourceId: null,
-      }),
+      })
     );
     await act(async () => {
       await result.current.goContinue();
@@ -142,7 +142,7 @@ describe('useWizardState', () => {
         entities: {},
         initialState: { name: 'ok' },
         initialResourceId: '1',
-      }),
+      })
     );
     await act(async () => {
       await result.current.jumpTo(2);

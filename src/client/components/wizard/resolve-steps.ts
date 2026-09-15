@@ -1,6 +1,9 @@
 import type { WizardConfig, WizardStep, WizardStepContext } from './types';
 
-export function resolveSteps<S>(config: WizardConfig<S>, ctx: WizardStepContext<S>): WizardStep<S>[] {
+export function resolveSteps<S>(
+  config: WizardConfig<S>,
+  ctx: WizardStepContext<S>
+): WizardStep<S>[] {
   const registry = config.registry ?? {};
   const disabled = new Set(config.disable ?? []);
 

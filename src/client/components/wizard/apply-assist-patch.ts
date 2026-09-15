@@ -1,10 +1,14 @@
 function isEmpty(v: unknown): boolean {
-  return v === '' || v === null || v === undefined || v === 0 ||
-    (Array.isArray(v) && v.length === 0);
+  return (
+    v === '' || v === null || v === undefined || v === 0 || (Array.isArray(v) && v.length === 0)
+  );
 }
 
 export function applyAssistPatch<S extends Record<string, unknown>>(
-  patch: Partial<S>, state: S, touched: Set<keyof S>, opts?: { always?: (keyof S)[] },
+  patch: Partial<S>,
+  state: S,
+  touched: Set<keyof S>,
+  opts?: { always?: (keyof S)[] }
 ): Partial<S> {
   const always = new Set(opts?.always ?? []);
   const out: Partial<S> = {};

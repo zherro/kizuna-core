@@ -448,8 +448,8 @@ export function TaxonomyEditPanel({
           <div className="space-y-2">
             <Label>Também aparece em</Label>
             <p className="text-xs text-muted-foreground">
-              Grupos extras onde esta categoria também fica visível na busca/vitrine, além do
-              grupo principal acima — o mesmo cadastro, sem duplicar.
+              Grupos extras onde esta categoria também fica visível na busca/vitrine, além do grupo
+              principal acima — o mesmo cadastro, sem duplicar.
             </p>
             <div className="flex flex-wrap gap-2">
               {groupOptions

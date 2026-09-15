@@ -43,7 +43,7 @@ function initials(name?: string | null): string {
   return (name ?? '').trim().slice(0, 2).toUpperCase();
 }
 
-/** Chip de nota média — só renderiza quando há avaliações publicadas. */
+/** Chip de nota média — sempre renderiza; sem avaliações mostra "Novo". */
 function RatingChip({
   rating,
   reviewCount = 0,
@@ -53,12 +53,23 @@ function RatingChip({
   reviewCount?: number;
   className?: string;
 }) {
-  if (rating == null || reviewCount <= 0) return null;
+  const hasRating = rating != null && reviewCount > 0;
   return (
     <span className={cn('inline-flex items-center gap-1 text-[11px] font-semibold', className)}>
-      <Star className="h-3 w-3 fill-current text-amber-500" />
-      {rating.toFixed(1).replace('.', ',')}
-      <span className="font-normal text-muted-foreground">({reviewCount})</span>
+      <Star
+        className={cn(
+          'h-3 w-3',
+          hasRating ? 'fill-current text-amber-500' : 'text-muted-foreground'
+        )}
+      />
+      {hasRating ? (
+        <>
+          {rating.toFixed(1).replace('.', ',')}
+          <span className="font-normal text-muted-foreground">({reviewCount})</span>
+        </>
+      ) : (
+        <span className="font-normal text-muted-foreground">Novo</span>
+      )}
     </span>
   );
 }
@@ -125,7 +136,6 @@ export function ListingResultCard({
   variant = 'grid',
   className,
 }: Readonly<ListingResultCardProps>) {
-  const hasRating = rating != null && reviewCount > 0;
   if (variant === 'strip') {
     return (
       <Link
@@ -185,14 +195,10 @@ export function ListingResultCard({
         ) : undefined
       }
       leading={
-        hasRating ? (
-          <div className="flex flex-col gap-2">
-            <RatingChip rating={rating} reviewCount={reviewCount} />
-            <ProviderRow providerName={providerName} providerAvatarUrl={providerAvatarUrl} />
-          </div>
-        ) : (
+        <div className="flex flex-col gap-2">
+          <RatingChip rating={rating} reviewCount={reviewCount} />
           <ProviderRow providerName={providerName} providerAvatarUrl={providerAvatarUrl} />
-        )
+        </div>
       }
       footer={
         <>

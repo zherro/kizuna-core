@@ -91,7 +91,7 @@ describe('stacked (scroll) layout adaptations', () => {
     render(
       <WizardLayoutContext.Provider value={{ layout: 'scroll', stacked: true }}>
         <StepCategory {...baseCtx()} />
-      </WizardLayoutContext.Provider>,
+      </WizardLayoutContext.Provider>
     );
     expect(screen.queryByRole('dialog')).toBeNull();
   });

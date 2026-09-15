@@ -34,8 +34,7 @@ export function ChatShell() {
     <div className="flex min-h-0 flex-1 gap-4">
       <div
         className={
-          'min-h-0 w-full lg:w-[340px] lg:shrink-0 ' +
-          (active ? 'hidden lg:block' : 'block')
+          'min-h-0 w-full lg:w-[340px] lg:shrink-0 ' + (active ? 'hidden lg:block' : 'block')
         }
       >
         <ConversationList

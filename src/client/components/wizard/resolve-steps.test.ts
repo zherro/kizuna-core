@@ -14,12 +14,21 @@ const ctx = {
 
 describe('resolveSteps', () => {
   it('resolve strings pelo registry', () => {
-    const cfg = defineWizard({ resource: 'x', steps: ['a', 'b'], registry: { a: stub('a'), b: stub('b') } });
+    const cfg = defineWizard({
+      resource: 'x',
+      steps: ['a', 'b'],
+      registry: { a: stub('a'), b: stub('b') },
+    });
     expect(resolveSteps(cfg, ctx).map((s) => s.key)).toEqual(['a', 'b']);
   });
 
   it('disable remove step registrado', () => {
-    const cfg = defineWizard({ resource: 'x', steps: ['a', 'b'], disable: ['b'], registry: { a: stub('a'), b: stub('b') } });
+    const cfg = defineWizard({
+      resource: 'x',
+      steps: ['a', 'b'],
+      disable: ['b'],
+      registry: { a: stub('a'), b: stub('b') },
+    });
     expect(resolveSteps(cfg, ctx).map((s) => s.key)).toEqual(['a']);
   });
 
@@ -34,13 +43,16 @@ describe('resolveSteps', () => {
 
   it('enabled=false esconde o step', () => {
     const cfg = defineWizard({
-      resource: 'x', steps: ['a', 'b'],
+      resource: 'x',
+      steps: ['a', 'b'],
       registry: { a: stub('a'), b: stub('b', { enabled: () => false }) },
     });
     expect(resolveSteps(cfg, ctx).map((s) => s.key)).toEqual(['a']);
   });
 
   it('defineWizard rejeita after apontando pra chave inexistente', () => {
-    expect(() => defineWizard({ resource: 'x', steps: [{ ...stub('c'), after: 'zzz' }] })).toThrow(/zzz/);
+    expect(() => defineWizard({ resource: 'x', steps: [{ ...stub('c'), after: 'zzz' }] })).toThrow(
+      /zzz/
+    );
   });
 });

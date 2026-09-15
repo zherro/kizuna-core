@@ -23,44 +23,44 @@ steps e pelo `registry`.
 
 `S` é o estado acumulado do wizard (form values, flat).
 
-| Campo         | Tipo                                             | Papel |
-| ------------- | ----------------------------------------------- | ----- |
-| `key`         | `string`                                        | Identificador estável (`'start'`, `'category'`, `'garantia'`…). Chave no `registry` e no rail. |
-| `label`       | `string`                                        | Rótulo no rail / top bar. |
-| `Component`   | `ComponentType<WizardStepProps<S>>`             | **Puro** — renderiza a partir de `state`/`entities`, escreve via `patch`. Nunca faz `fetch` (exceção herdada: um image-manager injetado). |
-| `required?`   | `boolean` (default `true`)                      | `false` ⇒ o step pode ser pulado sem travar o "Continuar". |
-| `enabled?`    | `boolean \| (ctx) => boolean` (default `true`)  | `false` ⇒ o step some do fluxo (ex.: `moderation` só em `mode === 'review'`; `dynamic-form` só se a categoria tem `formKey`). |
-| `canContinue?`| `(ctx) => boolean` (default `() => true`)       | Habilita o botão de avanço. |
-| `persist?`    | `(ctx) => Promise<void>`                        | Roda ao avançar. Deve `throw` em falha (a engine barra a navegação). Default: no-op. |
-| `assist?`     | `boolean`                                       | Step exibe o affordance de IA — só se `ctx.assist` existir. |
+| Campo          | Tipo                                           | Papel                                                                                                                                     |
+| -------------- | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `key`          | `string`                                       | Identificador estável (`'start'`, `'category'`, `'garantia'`…). Chave no `registry` e no rail.                                            |
+| `label`        | `string`                                       | Rótulo no rail / top bar.                                                                                                                 |
+| `Component`    | `ComponentType<WizardStepProps<S>>`            | **Puro** — renderiza a partir de `state`/`entities`, escreve via `patch`. Nunca faz `fetch` (exceção herdada: um image-manager injetado). |
+| `required?`    | `boolean` (default `true`)                     | `false` ⇒ o step pode ser pulado sem travar o "Continuar".                                                                                |
+| `enabled?`     | `boolean \| (ctx) => boolean` (default `true`) | `false` ⇒ o step some do fluxo (ex.: `moderation` só em `mode === 'review'`; `dynamic-form` só se a categoria tem `formKey`).             |
+| `canContinue?` | `(ctx) => boolean` (default `() => true`)      | Habilita o botão de avanço.                                                                                                               |
+| `persist?`     | `(ctx) => Promise<void>`                       | Roda ao avançar. Deve `throw` em falha (a engine barra a navegação). Default: no-op.                                                      |
+| `assist?`      | `boolean`                                      | Step exibe o affordance de IA — só se `ctx.assist` existir.                                                                               |
 
 ### `WizardStepContext<S>` (o que o `Component` recebe)
 
-| Campo        | Descrição |
-| ------------ | --------- |
-| `state`      | Estado acumulado (`S`). |
-| `patch(p)`   | Merge parcial em `state`. Marca as chaves como "touched". |
-| `persist(overrides)` | Read-merge-write contra o recurso. **Chaves = nomes de coluna do recurso**, não chaves de `state`. Retorna `{ ok }`. |
-| `persistExtras(partial)` | Read-merge-write só do jsonb `extras` da linha. |
-| `entities`   | Dados server-side pré-carregados pela página (`WizardEntities`). Steps nunca fazem fetch. |
-| `resourceId` | Id da linha (`string | number | null` — `null` antes do 1º `persist`). |
-| `mode`       | `'create' | 'edit' | 'review'`. |
-| `touched`    | `ReadonlySet<keyof S>` — chaves já editadas pelo usuário. |
-| `assist?`    | `WizardAssistant` — presente só se o consumidor passou um adapter. |
+| Campo                    | Descrição                                                                                                            |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------- | ------ | ---------------------------------- |
+| `state`                  | Estado acumulado (`S`).                                                                                              |
+| `patch(p)`               | Merge parcial em `state`. Marca as chaves como "touched".                                                            |
+| `persist(overrides)`     | Read-merge-write contra o recurso. **Chaves = nomes de coluna do recurso**, não chaves de `state`. Retorna `{ ok }`. |
+| `persistExtras(partial)` | Read-merge-write só do jsonb `extras` da linha.                                                                      |
+| `entities`               | Dados server-side pré-carregados pela página (`WizardEntities`). Steps nunca fazem fetch.                            |
+| `resourceId`             | Id da linha (`string                                                                                                 | number | null`—`null`antes do 1º`persist`). |
+| `mode`                   | `'create'                                                                                                            | 'edit' | 'review'`.                         |
+| `touched`                | `ReadonlySet<keyof S>` — chaves já editadas pelo usuário.                                                            |
+| `assist?`                | `WizardAssistant` — presente só se o consumidor passou um adapter.                                                   |
 
 ## `defineWizard(config)`
 
 Valida e devolve o `WizardConfig` (checa keys duplicadas e âncoras `after`/`before`
 inexistentes). Campos:
 
-| Campo               | Descrição |
-| ------------------- | --------- |
-| `resource`          | Chave do `postgrestResources` — o único recurso que o wizard escreve. |
-| `steps`             | Lista. Cada item é uma **string** (resolve no `registry`) ou um **`WizardStep`** custom. Um custom pode trazer `after: 'price'` / `before: 'description'` para se posicionar relativo a outro step; sem âncora, entra na posição em que aparece na lista. |
-| `registry`          | `Record<string, WizardStep<S>>` — os steps nomeáveis por string (ex.: `SERVICE_WIZARD_STEPS`). |
-| `disable`           | `string[]` — remove steps registrados sem editar `steps` (equivale a `enabled: false`). |
-| `assistant`         | `WizardAssistant \| (() => WizardAssistant)`. **Ausente ⇒ wizard 100% manual**, nenhum affordance de IA aparece. |
-| `finishHrefByMode`  | `Partial<Record<WizardMode, string>>` — para onde "Concluir"/"Cancelar" volta em cada modo. |
+| Campo              | Descrição                                                                                                                                                                                                                                                 |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `resource`         | Chave do `postgrestResources` — o único recurso que o wizard escreve.                                                                                                                                                                                     |
+| `steps`            | Lista. Cada item é uma **string** (resolve no `registry`) ou um **`WizardStep`** custom. Um custom pode trazer `after: 'price'` / `before: 'description'` para se posicionar relativo a outro step; sem âncora, entra na posição em que aparece na lista. |
+| `registry`         | `Record<string, WizardStep<S>>` — os steps nomeáveis por string (ex.: `SERVICE_WIZARD_STEPS`).                                                                                                                                                            |
+| `disable`          | `string[]` — remove steps registrados sem editar `steps` (equivale a `enabled: false`).                                                                                                                                                                   |
+| `assistant`        | `WizardAssistant \| (() => WizardAssistant)`. **Ausente ⇒ wizard 100% manual**, nenhum affordance de IA aparece.                                                                                                                                          |
+| `finishHrefByMode` | `Partial<Record<WizardMode, string>>` — para onde "Concluir"/"Cancelar" volta em cada modo.                                                                                                                                                               |
 
 A engine resolve a lista final em runtime (`resolveSteps`): aplica `disable`, resolve as
 posições `after`/`before`, avalia `enabled(ctx)`.
@@ -75,10 +75,21 @@ export const servicoWizard = defineWizard({
   resource: 'services',
   registry: SERVICE_WIZARD_STEPS,
   steps: [
-    'start', 'category', 'location', 'price', 'images', 'description',
-    'dynamic-form',   // condicional — enabled() checa o formKey da categoria
-    'moderation',     // enabled() só true em mode 'review'
-    { key: 'garantia', label: 'Garantia', Component: StepGarantia, required: false, after: 'price' },
+    'start',
+    'category',
+    'location',
+    'price',
+    'images',
+    'description',
+    'dynamic-form', // condicional — enabled() checa o formKey da categoria
+    'moderation', // enabled() só true em mode 'review'
+    {
+      key: 'garantia',
+      label: 'Garantia',
+      Component: StepGarantia,
+      required: false,
+      after: 'price',
+    },
   ],
   disable: ['location'],
   finishHrefByMode: {
@@ -137,10 +148,10 @@ A mesma config/steps/state renderiza em dois layouts. É **prop do `<Wizard>`**,
 <Wizard config={servicoWizard} mode="create" variant="scroll" ... />
 ```
 
-| `variant`   | O quê |
-| ----------- | ----- |
-| `'stepper'` (default) | O chrome layout-foco acima: um step por vez, Voltar/Continuar, rail. |
-| `'scroll'`  | Questionário vertical imersivo: os steps respondidos ficam empilhados e editáveis, o próximo aparece quando o atual valida (`canContinue`) e a página desliza até ele. Só **"Concluir"** no rodapé. |
+| `variant`             | O quê                                                                                                                                                                                               |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `'stepper'` (default) | O chrome layout-foco acima: um step por vez, Voltar/Continuar, rail.                                                                                                                                |
+| `'scroll'`            | Questionário vertical imersivo: os steps respondidos ficam empilhados e editáveis, o próximo aparece quando o atual valida (`canContinue`) e a página desliza até ele. Só **"Concluir"** no rodapé. |
 
 - **Toggle no header** (`WizardLayoutToggle`) troca ao vivo; a escolha é lembrada por recurso em
   `localStorage` na chave `wizard:layout:<resource>`.
@@ -161,8 +172,11 @@ Contrato **congelado** (também implementado pelo plugin `ai_assistant`):
 
 ```ts
 interface WizardAssistant {
-  suggest(input: { userText: string; state: Record<string, unknown>; stepKey: string }):
-    Promise<{ message: string; needsMore: boolean; patch: Record<string, unknown> }>;
+  suggest(input: {
+    userText: string;
+    state: Record<string, unknown>;
+    stepKey: string;
+  }): Promise<{ message: string; needsMore: boolean; patch: Record<string, unknown> }>;
   status: 'ready' | 'degraded' | 'unavailable';
   retry?: () => void;
 }
@@ -186,7 +200,7 @@ do próximo. Camada por cima — vale nos dois layouts, `create`-only por conven
 
 ```ts
 interface WizardConversationAdapter {
-  converse(input): Promise<{ message; choices; patch; advance: 'ask'|'hold'; needsMore }>;
+  converse(input): Promise<{ message; choices; patch; advance: 'ask' | 'hold'; needsMore }>;
   status: 'ready' | 'degraded' | 'unavailable';
   retry?: () => void;
   greeting: string;
@@ -216,9 +230,9 @@ interface WizardConversationAdapter {
   mobile tela cheia. Saudação só com `conv.fresh`.
 - `NaviIcon`: ícone com ripple (espelha o `AssistantIcon` da busca).
 - No layout `scroll`: passo respondido **colapsa em acordeão** (`.wz-scroll-summary` = `✓` + label
-  + chevron; clique reabre o passo inteiro editável); o passo atual fica sempre aberto. Com a
-  conversa ativa o auto-reveal fica suprimido (prop `autoReveal`) e o rodapé mostra **"Avançar"**
-  por passo (habilitado por `canContinue`) em vez de só "Concluir". Sem o rótulo "Passo N de M".
+  - chevron; clique reabre o passo inteiro editável); o passo atual fica sempre aberto. Com a
+    conversa ativa o auto-reveal fica suprimido (prop `autoReveal`) e o rodapé mostra **"Avançar"**
+    por passo (habilitado por `canContinue`) em vez de só "Concluir". Sem o rótulo "Passo N de M".
 - Visual: com a conversa ativa os shells recebem `ground="navi"` (wash suave da primária,
   `.wz-navi-ground`); o dock (`.wz-navi-card`) é o elemento vivo da tela. Sair de um cadastro
   **novo** pede confirmação (`window.confirm`); `edit`/`review` não. Os avisos de erro dos shells

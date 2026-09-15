@@ -82,97 +82,97 @@ export function Topbar({
     <>
       <header className="sticky top-0 z-40 border-b border-border/70 bg-background/90 backdrop-blur-sm">
         <div className="mx-auto w-full max-w-6xl">
-            <div className="mx-auto flex items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
-              <Link href="/" className="flex items-center gap-2.5">
-                <span
-                  className="inline-block h-2.5 w-2.5 rounded-full bg-primary"
-                  aria-hidden="true"
-                />
-                <span className="text-lg font-semibold tracking-tight">{messages.nav.title}</span>
-              </Link>
+          <div className="mx-auto flex items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
+            <Link href="/" className="flex items-center gap-2.5">
+              <span
+                className="inline-block h-2.5 w-2.5 rounded-full bg-primary"
+                aria-hidden="true"
+              />
+              <span className="text-lg font-semibold tracking-tight">{messages.nav.title}</span>
+            </Link>
 
-              <nav className="hidden items-center gap-1 md:flex">
-                {allNavLinks.map((link) => (
-                  <Link key={link.href} className={navLinkClass} href={link.href}>
-                    {link.icon && <span className={softNavIconClassSm}>{link.icon}</span>}
-                    {link.label}
-                  </Link>
-                ))}
-                {user && (
-                  <Link className={navLinkClass} href="/painel">
-                    <span className={softNavIconClassSm}>
-                      <LayoutDashboard />
-                    </span>
-                    {messages.default.dashboard}
-                  </Link>
-                )}
-              </nav>
+            <nav className="hidden items-center gap-1 md:flex">
+              {allNavLinks.map((link) => (
+                <Link key={link.href} className={navLinkClass} href={link.href}>
+                  {link.icon && <span className={softNavIconClassSm}>{link.icon}</span>}
+                  {link.label}
+                </Link>
+              ))}
+              {user && (
+                <Link className={navLinkClass} href="/painel">
+                  <span className={softNavIconClassSm}>
+                    <LayoutDashboard />
+                  </span>
+                  {messages.default.dashboard}
+                </Link>
+              )}
+            </nav>
 
-              <div className="hidden items-center gap-2 md:flex">
-                <LocationTrigger onClick={() => setLocationOpen(true)} />
+            <div className="hidden items-center gap-2 md:flex">
+              <LocationTrigger onClick={() => setLocationOpen(true)} />
 
-                {showThemeToggle && (
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    aria-label={messages.nav.theme}
-                    onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
-                  >
-                    {resolvedTheme === 'dark' ? (
-                      <Sun className="h-4 w-4" />
-                    ) : (
-                      <Moon className="h-4 w-4" />
-                    )}
-                  </Button>
-                )}
-
-                {!user &&
-                  (authCta === 'single' ? (
-                    <Link
-                      href={loginHref}
-                      style={{ borderColor: 'var(--primary)', color: 'var(--primary)' }}
-                      className={cn(
-                        buttonVariants({ variant: 'outline', size: 'sm' }),
-                        'h-9 gap-1.5 border-2 px-4 text-[15px] hover:bg-primary/10'
-                      )}
-                    >
-                      <LogIn className="h-4 w-4" />
-                      {messages.nav.signIn}
-                    </Link>
+              {showThemeToggle && (
+                <Button
+                  variant="outline"
+                  size="icon"
+                  aria-label={messages.nav.theme}
+                  onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
+                >
+                  {resolvedTheme === 'dark' ? (
+                    <Sun className="h-4 w-4" />
                   ) : (
-                    <>
-                      <Link className={navLinkClass} href="/login">
-                        {messages.nav.login}
-                      </Link>
-                      <Link className={navLinkClass} href="/registre-se">
-                        {messages.nav.signUp}
-                      </Link>
-                    </>
-                  ))}
+                    <Moon className="h-4 w-4" />
+                  )}
+                </Button>
+              )}
 
-                {user && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleLogout}
-                    disabled={logoutLoading}
-                    className="h-auto px-3 py-1.5 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+              {!user &&
+                (authCta === 'single' ? (
+                  <Link
+                    href={loginHref}
+                    style={{ borderColor: 'var(--primary)', color: 'var(--primary)' }}
+                    className={cn(
+                      buttonVariants({ variant: 'outline', size: 'sm' }),
+                      'h-9 gap-1.5 border-2 px-4 text-[15px] hover:bg-primary/10'
+                    )}
                   >
-                    {logoutLoading ? 'Saindo...' : 'Sair'}
-                  </Button>
-                )}
-              </div>
+                    <LogIn className="h-4 w-4" />
+                    {messages.nav.signIn}
+                  </Link>
+                ) : (
+                  <>
+                    <Link className={navLinkClass} href="/login">
+                      {messages.nav.login}
+                    </Link>
+                    <Link className={navLinkClass} href="/registre-se">
+                      {messages.nav.signUp}
+                    </Link>
+                  </>
+                ))}
 
-              <Button
-                variant="outline"
-                size="icon"
-                className="md:hidden"
-                aria-label={messages.nav.openMenu}
-                onClick={() => setMenuOpen(true)}
-              >
-                <Menu className="h-4 w-4" />
-              </Button>
+              {user && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleLogout}
+                  disabled={logoutLoading}
+                  className="h-auto px-3 py-1.5 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                >
+                  {logoutLoading ? 'Saindo...' : 'Sair'}
+                </Button>
+              )}
             </div>
+
+            <Button
+              variant="outline"
+              size="icon"
+              className="md:hidden"
+              aria-label={messages.nav.openMenu}
+              onClick={() => setMenuOpen(true)}
+            >
+              <Menu className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </header>
 

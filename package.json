@@ -32,7 +32,9 @@
     "typescript": "^5"
   },
   "peerDependenciesMeta": {
-    "nodemailer": { "optional": true }
+    "nodemailer": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@types/nodemailer": "^7",

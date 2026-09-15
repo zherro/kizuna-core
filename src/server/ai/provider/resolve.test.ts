@@ -15,7 +15,7 @@ beforeEach(() => {
 describe('resolveProvider', () => {
   it('gemini com chave → GeminiProvider', async () => {
     readSystemConfig.mockImplementation((k: string) =>
-      k === 'ai_assistant.provider' ? 'gemini' : 'm',
+      k === 'ai_assistant.provider' ? 'gemini' : 'm'
     );
     expect(await resolveProvider()).toBeInstanceOf(GeminiProvider);
   });

@@ -37,7 +37,14 @@ export function KizunaHeader({
     variant ?? (process.env.KIZUNA_HEADER_VARIANT === 'compact' ? 'compact' : 'classic');
 
   if (resolved === 'compact') {
-    return <TopbarCompact {...topbarProps} eyebrow={eyebrow} brandLabel={brandLabel} searchHref={searchHref} />;
+    return (
+      <TopbarCompact
+        {...topbarProps}
+        eyebrow={eyebrow}
+        brandLabel={brandLabel}
+        searchHref={searchHref}
+      />
+    );
   }
   return <Topbar {...topbarProps} />;
 }

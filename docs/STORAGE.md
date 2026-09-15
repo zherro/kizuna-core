@@ -95,15 +95,15 @@ Import: `import { ImageGalleryManager } from '@kizuna/core/client/components/sto
 
 Props (`ImageGalleryManagerProps`):
 
-| Prop             | Type                                                                        | Notes                                                        |
-| ---------------- | -------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| `referenceId`    | `string`                                                                   | Opaque id of the parent record; passed to `onPersist`.      |
-| `initialImageIds`| `string[]`                                                                 | File ids already linked. Re-hydrates when it or `referenceId` changes. |
-| `accept?`        | `string`                                                                   | `<input accept>` list. Defaults to the JPG/GIF/PNG/HEIC/WEBP set. |
-| `purpose?`       | `string`                                                                   | Default `'image'`. Sent as `purpose` in the upload FormData and as the `purpose` query param when listing. |
-| `maxFileSizeMb?` | `number`                                                                   | Default `5`. Sent as `maxFileSizeMb` in the upload FormData. |
-| `onSaved`        | `(imageIds: string[]) => void`                                             | Called after every successful persist with the normalized id list. |
-| `onPersist`      | `(referenceId: string, nextImageIds: string[]) => Promise<Array<string \| number>>` | **Required.** Attach/detach the ids on the parent record. Must return the saved id list — the component sets its selection state (and calls `onSaved`) from the returned list. |
+| Prop              | Type                                                                                | Notes                                                                                                                                                                          |
+| ----------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `referenceId`     | `string`                                                                            | Opaque id of the parent record; passed to `onPersist`.                                                                                                                         |
+| `initialImageIds` | `string[]`                                                                          | File ids already linked. Re-hydrates when it or `referenceId` changes.                                                                                                         |
+| `accept?`         | `string`                                                                            | `<input accept>` list. Defaults to the JPG/GIF/PNG/HEIC/WEBP set.                                                                                                              |
+| `purpose?`        | `string`                                                                            | Default `'image'`. Sent as `purpose` in the upload FormData and as the `purpose` query param when listing.                                                                     |
+| `maxFileSizeMb?`  | `number`                                                                            | Default `5`. Sent as `maxFileSizeMb` in the upload FormData.                                                                                                                   |
+| `onSaved`         | `(imageIds: string[]) => void`                                                      | Called after every successful persist with the normalized id list.                                                                                                             |
+| `onPersist`       | `(referenceId: string, nextImageIds: string[]) => Promise<Array<string \| number>>` | **Required.** Attach/detach the ids on the parent record. Must return the saved id list — the component sets its selection state (and calls `onSaved`) from the returned list. |
 
 - Upload: `POST /api/storage/files` (multipart: `files`, `purpose`, `maxFileSizeMb`, `optimizeImages`).
 - Listing: `GET /api/storage/files?ids=&purpose=&active=true&limit=` → `{ items: StorageFileRecord[] }`.

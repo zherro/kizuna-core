@@ -9,7 +9,9 @@ import type { ServiceCategory, ServiceWizardState } from '../service-type';
  * only sees `ctx`) can reach it. Lazily created on `entities`. */
 type DynamicFormHolder = { current: DynamicFormStepHandle | null };
 
-export function getDynamicFormHolder(ctx: WizardStepContext<ServiceWizardState>): DynamicFormHolder {
+export function getDynamicFormHolder(
+  ctx: WizardStepContext<ServiceWizardState>
+): DynamicFormHolder {
   const entities = ctx.entities as Record<string, unknown>;
   if (!entities.dynamicFormRef) entities.dynamicFormRef = { current: null };
   return entities.dynamicFormRef as DynamicFormHolder;

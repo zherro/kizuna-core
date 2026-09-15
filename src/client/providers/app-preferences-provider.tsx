@@ -11,7 +11,15 @@ import {
 
 type AppTheme = 'light' | 'dark' | 'system';
 type ResolvedTheme = 'light' | 'dark';
-export type AppThemeColor = 'blue' | 'green' | 'purple' | 'teal' | 'red' | 'orange' | 'coral' | 'terracotta';
+export type AppThemeColor =
+  | 'blue'
+  | 'green'
+  | 'purple'
+  | 'teal'
+  | 'red'
+  | 'orange'
+  | 'coral'
+  | 'terracotta';
 
 const LANGUAGE_STORAGE_KEY = 'foco-total-language';
 const THEME_STORAGE_KEY = 'foco-total-theme';

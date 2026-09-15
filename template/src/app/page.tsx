@@ -9,9 +9,7 @@ export default function Home() {
   return (
     <HomeContent
       showHero={process.env.KIZUNA_HOME_HERO !== 'false'}
-      categoriesVariant={
-        process.env.KIZUNA_HOME_CATEGORIES === 'compact' ? 'compact' : 'classic'
-      }
+      categoriesVariant={process.env.KIZUNA_HOME_CATEGORIES === 'compact' ? 'compact' : 'classic'}
       showDiscover={process.env.KIZUNA_HOME_DISCOVER === 'true'}
     />
   );

@@ -65,9 +65,7 @@ export function AiAssistantConfigPage({
 
   React.useEffect(() => {
     setContextState((prev) =>
-      Object.fromEntries(
-        contexts.map((c) => [c, value?.contexts?.[c] ?? prev[c] ?? true])
-      )
+      Object.fromEntries(contexts.map((c) => [c, value?.contexts?.[c] ?? prev[c] ?? true]))
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contexts.join('|'), value?.contexts]);
@@ -142,9 +140,7 @@ export function AiAssistantConfigPage({
               <input
                 type="checkbox"
                 checked={contextState[ctx] ?? true}
-                onChange={(e) =>
-                  setContextState((prev) => ({ ...prev, [ctx]: e.target.checked }))
-                }
+                onChange={(e) => setContextState((prev) => ({ ...prev, [ctx]: e.target.checked }))}
               />
               <span>{ctx}</span>
             </label>

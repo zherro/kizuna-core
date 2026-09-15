@@ -42,9 +42,10 @@ export interface UseWizardStateReturn<S> {
 }
 
 export function useWizardState<S extends Record<string, unknown>>(
-  opts: UseWizardStateOptions<S>,
+  opts: UseWizardStateOptions<S>
 ): UseWizardStateReturn<S> {
-  const { config, mode, entities, initialState, initialResourceId, initialRecord, assistant } = opts;
+  const { config, mode, entities, initialState, initialResourceId, initialRecord, assistant } =
+    opts;
 
   const [state, setState] = useState<S>(initialState);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -76,7 +77,7 @@ export function useWizardState<S extends Record<string, unknown>>(
 
   const doPersist = useCallback(
     async (
-      overrides: Record<string, unknown>,
+      overrides: Record<string, unknown>
     ): Promise<{ ok: boolean; item: Record<string, unknown> | null }> => {
       setSubmitting(true);
       try {
@@ -89,12 +90,12 @@ export function useWizardState<S extends Record<string, unknown>>(
         setSubmitting(false);
       }
     },
-    [persister],
+    [persister]
   );
 
   const doPersistExtras = useCallback(
     async (
-      partialExtras: Record<string, unknown>,
+      partialExtras: Record<string, unknown>
     ): Promise<{ ok: boolean; item: Record<string, unknown> | null }> => {
       setSubmitting(true);
       try {
@@ -107,7 +108,7 @@ export function useWizardState<S extends Record<string, unknown>>(
         setSubmitting(false);
       }
     },
-    [persister],
+    [persister]
   );
 
   const ctx = useMemo<WizardStepContext<S>>(
@@ -122,7 +123,7 @@ export function useWizardState<S extends Record<string, unknown>>(
       persistExtras: doPersistExtras,
       touched: touchedRef.current,
     }),
-    [state, patch, entities, resourceId, mode, assistant, doPersist, doPersistExtras],
+    [state, patch, entities, resourceId, mode, assistant, doPersist, doPersistExtras]
   );
 
   const steps = useMemo(() => resolveSteps(config, ctx), [config, ctx]);
@@ -158,7 +159,7 @@ export function useWizardState<S extends Record<string, unknown>>(
         setSubmitting(false);
       }
     },
-    [ctx],
+    [ctx]
   );
 
   const goBack = useCallback(() => {
@@ -184,7 +185,7 @@ export function useWizardState<S extends Record<string, unknown>>(
       }
       setCurrentIndex(target);
     },
-    [clampedIndex, furthestIndex, currentStep, runStepPersist],
+    [clampedIndex, furthestIndex, currentStep, runStepPersist]
   );
 
   const finish = useCallback(async (): Promise<{ href: string | null }> => {

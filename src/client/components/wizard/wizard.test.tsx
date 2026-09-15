@@ -58,9 +58,7 @@ describe('<Wizard>', () => {
         },
       },
     });
-    render(
-      <Wizard config={persistCfg} mode="create" entities={{}} initialResourceId={null} />
-    );
+    render(<Wizard config={persistCfg} mode="create" entities={{}} initialResourceId={null} />);
     fireEvent.click(screen.getByRole('button', { name: /salvar/i }));
     expect(submitResourceMock).toHaveBeenCalled();
   });

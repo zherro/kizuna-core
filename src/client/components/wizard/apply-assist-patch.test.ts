@@ -3,7 +3,11 @@ import { applyAssistPatch } from './apply-assist-patch';
 
 describe('applyAssistPatch', () => {
   it('preenche campo vazio e intocado', () => {
-    const out = applyAssistPatch({ title: 'IA', description: 'D' }, { title: '', description: 'já' }, new Set());
+    const out = applyAssistPatch(
+      { title: 'IA', description: 'D' },
+      { title: '', description: 'já' },
+      new Set()
+    );
     expect(out).toEqual({ title: 'IA' });
   });
   it('nunca sobrescreve campo tocado', () => {
@@ -11,7 +15,9 @@ describe('applyAssistPatch', () => {
     expect(out).toEqual({});
   });
   it('always força mesmo com valor presente', () => {
-    const out = applyAssistPatch({ title: 'IA' }, { title: 'velho' }, new Set(), { always: ['title'] });
+    const out = applyAssistPatch({ title: 'IA' }, { title: 'velho' }, new Set(), {
+      always: ['title'],
+    });
     expect(out).toEqual({ title: 'IA' });
   });
   it('trata [] e 0 como vazio', () => {
