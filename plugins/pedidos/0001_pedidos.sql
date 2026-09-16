@@ -97,6 +97,18 @@ BEGIN
     RAISE EXCEPTION 'forbidden' USING errcode = '42501';
   END IF;
 
+  -- I1: p_prestador_id precisa ser de fato o OUTRO participante da conversa — sem isso, qualquer
+  -- participante poderia nomear qualquer prestador (service_id é publicamente legível) e criar um
+  -- pedido que esse prestador nunca concordou em integrar.
+  IF NOT EXISTS (
+    SELECT 1 FROM public.conversation_participant
+     WHERE conversation_id = p_conversation_id
+       AND user_id = p_prestador_id
+       AND active
+  ) THEN
+    RAISE EXCEPTION 'p_prestador_id não participa desta conversa' USING errcode = '22023';
+  END IF;
+
   IF p_origem NOT IN ('anuncio','demanda') THEN
     RAISE EXCEPTION 'origem inválida: %', p_origem USING errcode = '22023';
   END IF;
@@ -139,14 +151,23 @@ SECURITY DEFINER
 SET search_path = public, auth
 AS $function$
 DECLARE
-  v_row  public.pedido_servico;
-  v_pres uuid;
+  v_row     public.pedido_servico;
+  v_pres    uuid;
+  v_pstatus text;
 BEGIN
   IF NOT auth.fun_pedido_is_participant(p_pedido_id) THEN
     RAISE EXCEPTION 'forbidden' USING errcode = '42501';
   END IF;
 
-  SELECT prestador_id INTO v_pres FROM public.pedido WHERE id = p_pedido_id;
+  SELECT prestador_id, status INTO v_pres, v_pstatus FROM public.pedido WHERE id = p_pedido_id;
+
+  -- I2: um pedido já concluído/cancelado é terminal — aceitar um novo serviço `pendente` nele
+  -- reabriria implicitamente o pedido pela regra de derivação de status em
+  -- fn_pedido_servico_atualizar_status (nenhum serviço pendente/agendado + ao menos 1 concluído).
+  IF v_pstatus <> 'aberto' THEN
+    RAISE EXCEPTION 'pedido não está aberto' USING errcode = '22023';
+  END IF;
+
   IF NOT EXISTS (SELECT 1 FROM public.services WHERE id = p_service_id AND created_by = v_pres) THEN
     RAISE EXCEPTION 'serviço não pertence ao prestador deste pedido' USING errcode = '22023';
   END IF;
@@ -172,6 +193,7 @@ AS $function$
 DECLARE
   v_row        public.pedido_servico;
   v_pedido_id  bigint;
+  v_pstatus    text;
   v_cliente    uuid;
   v_prestador  uuid;
   v_other      uuid;
@@ -187,11 +209,26 @@ BEGIN
     RAISE EXCEPTION 'status inválido: %', p_status USING errcode = '22023';
   END IF;
 
+  SELECT status, cliente_id, prestador_id INTO v_pstatus, v_cliente, v_prestador
+    FROM public.pedido WHERE id = v_pedido_id;
+
+  -- I2: pedido terminal (concluído/cancelado) não aceita mais transições de status dos seus
+  -- serviços — evita, por exemplo, um `pedido_servico` sendo marcado `concluido` depois que o
+  -- pedido já foi cancelado, o que reabriria o pedido via a derivação de status abaixo.
+  IF v_pstatus <> 'aberto' THEN
+    RAISE EXCEPTION 'pedido não está aberto' USING errcode = '22023';
+  END IF;
+
+  -- C2: só o prestador pode marcar um serviço como concluído — do contrário o próprio cliente
+  -- poderia forjar a precondição "pedido concluído" que hoje é usada para liberar avaliação.
+  IF p_status = 'concluido' AND auth.fun_auth_user_id() <> v_prestador THEN
+    RAISE EXCEPTION 'somente o prestador pode concluir um serviço' USING errcode = '42501';
+  END IF;
+
   UPDATE public.pedido_servico SET status = p_status, updated_at = now()
    WHERE id = p_pedido_servico_id
    RETURNING * INTO v_row;
 
-  SELECT cliente_id, prestador_id INTO v_cliente, v_prestador FROM public.pedido WHERE id = v_pedido_id;
   v_other := CASE WHEN auth.fun_auth_user_id() = v_cliente THEN v_prestador ELSE v_cliente END;
 
   IF p_status = 'concluido' THEN
