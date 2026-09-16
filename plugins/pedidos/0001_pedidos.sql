@@ -75,4 +75,182 @@ DROP POLICY IF EXISTS pedido_servico_select ON public.pedido_servico;
 CREATE POLICY pedido_servico_select ON public.pedido_servico FOR SELECT TO auth_user
   USING (auth.fun_pedido_is_participant(pedido_id));
 
+-- =========================================================================
+-- 4) RPCs
+-- =========================================================================
+
+CREATE OR REPLACE FUNCTION public.fn_pedido_create(
+  p_conversation_id bigint,
+  p_prestador_id    uuid,
+  p_origem          text,
+  p_service_ids     bigint[]
+) RETURNS public.pedido
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth
+AS $function$
+DECLARE
+  v_pedido  public.pedido;
+  v_bad_ct  integer;
+BEGIN
+  IF p_origem NOT IN ('anuncio','demanda') THEN
+    RAISE EXCEPTION 'origem inválida: %', p_origem USING errcode = '22023';
+  END IF;
+  IF p_service_ids IS NULL OR array_length(p_service_ids, 1) IS NULL THEN
+    RAISE EXCEPTION 'pedido precisa de pelo menos 1 serviço' USING errcode = '22023';
+  END IF;
+  IF NOT auth.fun_msg_is_participant(p_conversation_id) THEN
+    RAISE EXCEPTION 'forbidden' USING errcode = '42501';
+  END IF;
+
+  SELECT count(*) INTO v_bad_ct
+    FROM unnest(p_service_ids) sid
+    LEFT JOIN public.services s ON s.id = sid AND s.created_by = p_prestador_id
+   WHERE s.id IS NULL;
+  IF v_bad_ct > 0 THEN
+    RAISE EXCEPTION 'todo service_id precisa pertencer a p_prestador_id' USING errcode = '22023';
+  END IF;
+
+  INSERT INTO public.pedido (cliente_id, prestador_id, conversation_id, origem)
+  VALUES (auth.fun_auth_user_id(), p_prestador_id, p_conversation_id, p_origem)
+  RETURNING * INTO v_pedido;
+
+  INSERT INTO public.pedido_servico (pedido_id, service_id)
+  SELECT v_pedido.id, sid FROM unnest(p_service_ids) sid;
+
+  PERFORM auth.fun_notify(
+    p_prestador_id, 'pedido_criado', 'Novo pedido recebido',
+    NULL, 'pedido', v_pedido.uid::text
+  );
+
+  RETURN v_pedido;
+END;
+$function$;
+
+GRANT EXECUTE ON FUNCTION public.fn_pedido_create(bigint, uuid, text, bigint[]) TO auth_user;
+
+CREATE OR REPLACE FUNCTION public.fn_pedido_add_servico(
+  p_pedido_id bigint,
+  p_service_id bigint
+) RETURNS public.pedido_servico
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth
+AS $function$
+DECLARE
+  v_row  public.pedido_servico;
+  v_pres uuid;
+BEGIN
+  IF NOT auth.fun_pedido_is_participant(p_pedido_id) THEN
+    RAISE EXCEPTION 'forbidden' USING errcode = '42501';
+  END IF;
+
+  SELECT prestador_id INTO v_pres FROM public.pedido WHERE id = p_pedido_id;
+  IF NOT EXISTS (SELECT 1 FROM public.services WHERE id = p_service_id AND created_by = v_pres) THEN
+    RAISE EXCEPTION 'serviço não pertence ao prestador deste pedido' USING errcode = '22023';
+  END IF;
+
+  INSERT INTO public.pedido_servico (pedido_id, service_id)
+  VALUES (p_pedido_id, p_service_id)
+  RETURNING * INTO v_row;
+
+  RETURN v_row;
+END;
+$function$;
+
+GRANT EXECUTE ON FUNCTION public.fn_pedido_add_servico(bigint, bigint) TO auth_user;
+
+CREATE OR REPLACE FUNCTION public.fn_pedido_servico_atualizar_status(
+  p_pedido_servico_id bigint,
+  p_status             text
+) RETURNS public.pedido_servico
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth
+AS $function$
+DECLARE
+  v_row        public.pedido_servico;
+  v_pedido_id  bigint;
+  v_cliente    uuid;
+  v_prestador  uuid;
+  v_other      uuid;
+  v_open_ct    integer;
+  v_done_ct    integer;
+BEGIN
+  IF p_status NOT IN ('pendente','agendado','concluido','cancelado') THEN
+    RAISE EXCEPTION 'status inválido: %', p_status USING errcode = '22023';
+  END IF;
+
+  SELECT pedido_id INTO v_pedido_id FROM public.pedido_servico WHERE id = p_pedido_servico_id;
+  IF v_pedido_id IS NULL OR NOT auth.fun_pedido_is_participant(v_pedido_id) THEN
+    RAISE EXCEPTION 'forbidden' USING errcode = '42501';
+  END IF;
+
+  UPDATE public.pedido_servico SET status = p_status, updated_at = now()
+   WHERE id = p_pedido_servico_id
+   RETURNING * INTO v_row;
+
+  SELECT cliente_id, prestador_id INTO v_cliente, v_prestador FROM public.pedido WHERE id = v_pedido_id;
+  v_other := CASE WHEN auth.fun_auth_user_id() = v_cliente THEN v_prestador ELSE v_cliente END;
+
+  IF p_status = 'concluido' THEN
+    PERFORM auth.fun_notify(
+      v_other, 'pedido_servico_concluido', 'Um serviço do seu pedido foi concluído',
+      NULL, 'pedido', (SELECT uid FROM public.pedido WHERE id = v_pedido_id)::text
+    );
+  END IF;
+
+  -- Derivação de §3.1 do spec: fecha o pedido quando nenhum serviço está pendente/agendado E
+  -- pelo menos um está concluído. Se todos cancelados (sem nenhum concluído), não fecha sozinho.
+  SELECT count(*) FILTER (WHERE status IN ('pendente','agendado')),
+         count(*) FILTER (WHERE status = 'concluido')
+    INTO v_open_ct, v_done_ct
+    FROM public.pedido_servico WHERE pedido_id = v_pedido_id;
+
+  IF v_open_ct = 0 AND v_done_ct > 0 THEN
+    UPDATE public.pedido SET status = 'concluido', updated_at = now() WHERE id = v_pedido_id;
+  END IF;
+
+  RETURN v_row;
+END;
+$function$;
+
+GRANT EXECUTE ON FUNCTION public.fn_pedido_servico_atualizar_status(bigint, text) TO auth_user;
+
+CREATE OR REPLACE FUNCTION public.fn_pedido_cancelar(p_pedido_id bigint) RETURNS public.pedido
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth
+AS $function$
+DECLARE
+  v_pedido public.pedido;
+  v_other  uuid;
+BEGIN
+  IF NOT auth.fun_pedido_is_participant(p_pedido_id) THEN
+    RAISE EXCEPTION 'forbidden' USING errcode = '42501';
+  END IF;
+
+  UPDATE public.pedido SET status = 'cancelado', updated_at = now()
+   WHERE id = p_pedido_id
+   RETURNING * INTO v_pedido;
+
+  v_other := CASE WHEN auth.fun_auth_user_id() = v_pedido.cliente_id
+                   THEN v_pedido.prestador_id ELSE v_pedido.cliente_id END;
+  PERFORM auth.fun_notify(
+    v_other, 'pedido_cancelado', 'Um pedido foi cancelado', NULL, 'pedido', v_pedido.uid::text
+  );
+
+  RETURN v_pedido;
+END;
+$function$;
+
+GRANT EXECUTE ON FUNCTION public.fn_pedido_cancelar(bigint) TO auth_user;
+
+-- =========================================================================
+-- 5) Registro do plugin
+-- =========================================================================
+INSERT INTO auth.plugin_registry (name, version)
+VALUES ('pedidos', '1.0.0')
+ON CONFLICT (name) DO UPDATE SET version = EXCLUDED.version;
+
 NOTIFY pgrst, 'reload schema';
