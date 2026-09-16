@@ -18,7 +18,7 @@ export const resourcePedidos: Record<string, ResourceConfig> = {
     select:
       'id,uid,cliente_id,prestador_id,conversation_id,origem,status,created_at,updated_at,conversation:conversation_id(uid)',
     primaryKey: 'id',
-    defaultOrder: '-created_at',
+    defaultOrder: 'created_at',
     searchableColumns: [],
     mapInput: () => ({}),
     mapOutput: (record) => ({
