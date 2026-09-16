@@ -24,6 +24,10 @@ export const resourcePedidos: Record<string, ResourceConfig> = {
     mapOutput: (record) => ({
       id: String(record.id ?? ''),
       uid: record.uid ?? null,
+      // `list-block.tsx` renders `item.title || item.name || 'Sem título'` — sem isso toda linha
+      // da lista mostra o mesmo placeholder. Derivado só de colunas já presentes na row (sem
+      // embed novo para nome da contraparte — ver nota de follow-up no report da bateria de fixes).
+      title: `Pedido #${record.id ?? ''} — ${record.origem === 'anuncio' ? 'via anúncio' : 'via demanda'}`,
       clienteId: record.cliente_id ?? null,
       prestadorId: record.prestador_id ?? null,
       conversationUid: (record.conversation as { uid?: string } | null)?.uid ?? null,
