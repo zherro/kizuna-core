@@ -93,14 +93,15 @@ DECLARE
   v_pedido  public.pedido;
   v_bad_ct  integer;
 BEGIN
+  IF NOT auth.fun_msg_is_participant(p_conversation_id) THEN
+    RAISE EXCEPTION 'forbidden' USING errcode = '42501';
+  END IF;
+
   IF p_origem NOT IN ('anuncio','demanda') THEN
     RAISE EXCEPTION 'origem inválida: %', p_origem USING errcode = '22023';
   END IF;
   IF p_service_ids IS NULL OR array_length(p_service_ids, 1) IS NULL THEN
     RAISE EXCEPTION 'pedido precisa de pelo menos 1 serviço' USING errcode = '22023';
-  END IF;
-  IF NOT auth.fun_msg_is_participant(p_conversation_id) THEN
-    RAISE EXCEPTION 'forbidden' USING errcode = '42501';
   END IF;
 
   SELECT count(*) INTO v_bad_ct
@@ -177,13 +178,13 @@ DECLARE
   v_open_ct    integer;
   v_done_ct    integer;
 BEGIN
-  IF p_status NOT IN ('pendente','agendado','concluido','cancelado') THEN
-    RAISE EXCEPTION 'status inválido: %', p_status USING errcode = '22023';
-  END IF;
-
   SELECT pedido_id INTO v_pedido_id FROM public.pedido_servico WHERE id = p_pedido_servico_id;
   IF v_pedido_id IS NULL OR NOT auth.fun_pedido_is_participant(v_pedido_id) THEN
     RAISE EXCEPTION 'forbidden' USING errcode = '42501';
+  END IF;
+
+  IF p_status NOT IN ('pendente','agendado','concluido','cancelado') THEN
+    RAISE EXCEPTION 'status inválido: %', p_status USING errcode = '22023';
   END IF;
 
   UPDATE public.pedido_servico SET status = p_status, updated_at = now()
