@@ -105,6 +105,33 @@ follow-ups (`0002_*.sql`, …) for data seeds or later migrations; the installer
   `sender_id = auth.fun_auth_user_id() AND direction = 'outbound' AND source = 'platform'`.
   Depends on the `user_data` plugin (install `user_data,messaging` together). Permission
   `messaging.manage` is catalog-only (moderator override in the SELECT policies) — never granted.
+- `pedidos/` — the 1:1 (cliente, prestador) container that is born alongside a `conversation`
+  request and can accumulate several `services` from the same provider. Tables: `pedido` (one row
+  per `(cliente_id, prestador_id, conversation_id)` — `conversation_id` is `UNIQUE`, so a given
+  conversation carries at most one `pedido`; `status` `aberto`/`concluido`/`cancelado`) and
+  `pedido_servico` (one row per service attached to the `pedido`; `status`
+  `pendente`/`agendado`/`concluido`/`cancelado`). `pedido.status` is **derived**, never set
+  directly by a caller: it flips to `concluido` when every `pedido_servico` is out of
+  `pendente`/`agendado` and at least one is `concluido` (see
+  `fn_pedido_servico_atualizar_status`). Reads are RLS-gated to the two participants
+  (`cliente_id`/`prestador_id`, via `auth.fun_pedido_is_participant`); there is no admin/catalog
+  override. All writes go through `SECURITY DEFINER` RPCs — `fn_pedido_create`,
+  `fn_pedido_add_servico`, `fn_pedido_servico_atualizar_status` (only the `prestador_id` may
+  transition a `pedido_servico` to `concluido`), `fn_pedido_cancelar` — no table grants writes
+  directly to `auth_user`. No permission is registered: every write is already gated by
+  per-row participation inside the RPCs themselves, so there is nothing an admin needs to manage
+  separately (same reasoning as `account_preferences`/`notifications`). **Hard runtime
+  dependency on `notifications`**: every `fn_pedido_create`/`fn_pedido_servico_atualizar_status`/
+  `fn_pedido_cancelar` call ends with `auth.fun_notify(...)` — install `notifications` first, or
+  every one of these RPCs fails outright (same shape as `messaging`'s dependency on `user_data`
+  above). Also depends on `services` (FK from `pedido_servico.service_id` and the "service belongs
+  to this prestador" checks in `fn_pedido_create`/`fn_pedido_add_servico`) and on `messaging`/
+  `conversation` (FK from `pedido.conversation_id`, and `fn_pedido_create` checks the caller —
+  and, since I1, `p_prestador_id` too — are participants of that conversation via
+  `conversation_participant`). Because of the FKs into `services` and `conversation`, `pedidos`
+  is **not** listed in `kizuna.plugins.json`; it is applied manually, after `services` and
+  `messaging,user_data`, by the consuming project's install script (foco-total's
+  `db/install.sh`).
 
 ## Convention: registering with RBAC
 
