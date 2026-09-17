@@ -1,16 +1,21 @@
 'use client';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useAuth } from '../../providers/auth-provider';
 import { useConversations } from './use-conversations';
 import { ConversationList } from './conversation-list';
 import { ChatWindow } from './chat-window';
+import type { ChatConversationSummary } from '../../../types';
 
 function initialActiveUid(): string | null {
   if (typeof window === 'undefined') return null;
   return new URLSearchParams(window.location.search).get('c');
 }
 
-export function ChatShell() {
+export function ChatShell({
+  renderContextBanner,
+}: {
+  renderContextBanner?: (conversation: ChatConversationSummary) => ReactNode;
+} = {}) {
   const { user } = useAuth();
   const { items, loading, refresh, markReadLocally } = useConversations();
   const [activeUid, setActiveUid] = useState<string | null>(initialActiveUid);
@@ -47,7 +52,12 @@ export function ChatShell() {
       </div>
       <div className={'min-h-0 min-w-0 flex-1 ' + (active ? 'block' : 'hidden lg:block')}>
         {active ? (
-          <ChatWindow conversation={active} me={me} onBack={() => setActiveUid(null)} />
+          <ChatWindow
+            conversation={active}
+            me={me}
+            onBack={() => setActiveUid(null)}
+            renderContextBanner={renderContextBanner}
+          />
         ) : (
           <div className="hidden h-full items-center justify-center rounded-2xl border border-border bg-card text-sm text-muted-foreground lg:flex">
             Selecione uma conversa

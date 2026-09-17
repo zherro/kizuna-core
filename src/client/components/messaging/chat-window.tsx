@@ -1,4 +1,5 @@
 'use client';
+import type { ReactNode } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import type { ChatConversationSummary } from '../../../types';
 import { useConversationMessages } from './use-conversation-messages';
@@ -10,10 +11,12 @@ export function ChatWindow({
   conversation,
   me,
   onBack,
+  renderContextBanner,
 }: {
   conversation: ChatConversationSummary;
   me: string;
   onBack?: () => void;
+  renderContextBanner?: (conversation: ChatConversationSummary) => ReactNode;
 }) {
   const { messages, status, hasMore, sending, loadOlder, send, retry } = useConversationMessages(
     conversation.uid
@@ -38,6 +41,8 @@ export function ChatWindow({
           </p>
         </div>
       </div>
+
+      {renderContextBanner ? renderContextBanner(conversation) : null}
 
       {status === 'error' ? (
         <div className="flex flex-1 items-center justify-center p-6 text-center text-sm text-muted-foreground">

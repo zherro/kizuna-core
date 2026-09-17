@@ -16,7 +16,7 @@ export const resourcePedidos: Record<string, ResourceConfig> = {
     schema: 'public',
     table: 'pedido',
     select:
-      'id,uid,cliente_id,prestador_id,conversation_id,origem,status,created_at,updated_at,conversation:conversation_id(uid)',
+      'id,uid,cliente_id,prestador_id,conversation_id,origem,status,confirmado_em,created_at,updated_at,conversation:conversation_id(uid)',
     primaryKey: 'id',
     defaultOrder: 'created_at',
     searchableColumns: [],
@@ -33,6 +33,7 @@ export const resourcePedidos: Record<string, ResourceConfig> = {
       conversationUid: (record.conversation as { uid?: string } | null)?.uid ?? null,
       origem: record.origem ?? null,
       status: record.status ?? null,
+      confirmadoEm: record.confirmado_em ?? null,
       createdAt: record.created_at ?? record.createdAt,
       updatedAt: record.updated_at ?? record.updatedAt,
     }),
