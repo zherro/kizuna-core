@@ -113,6 +113,7 @@ CREATE POLICY demanda_select ON public.demanda FOR SELECT TO auth_user
       )
     )
     OR auth.fun_demanda_prestador_respondeu(demanda.id)
+    OR auth.fun_auth_has_perm('demandas','moderate')
   );
 
 DROP POLICY IF EXISTS demanda_insert ON public.demanda;
@@ -297,6 +298,26 @@ END;
 $function$;
 
 GRANT EXECUTE ON FUNCTION public.fn_demanda_propor(bigint, bigint[], text) TO auth_user;
+
+CREATE OR REPLACE FUNCTION public.fn_demanda_fechar(p_demanda_id bigint) RETURNS public.demanda
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth
+AS $function$
+DECLARE
+  v_demanda public.demanda;
+BEGIN
+  UPDATE public.demanda SET status = 'fechada', updated_at = now()
+   WHERE id = p_demanda_id AND cliente_id = auth.fun_auth_user_id()
+   RETURNING * INTO v_demanda;
+  IF v_demanda IS NULL THEN
+    RAISE EXCEPTION 'forbidden' USING errcode = '42501';
+  END IF;
+  RETURN v_demanda;
+END;
+$function$;
+
+GRANT EXECUTE ON FUNCTION public.fn_demanda_fechar(bigint) TO auth_user;
 
 INSERT INTO auth.permissions (resource, action, name) VALUES
   ('demandas', 'moderate', 'Moderar demandas de clientes')
