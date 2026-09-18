@@ -11,7 +11,7 @@ vi.mock('../../../lib/resource-submit', () => ({
 import { defineWizard } from './define-wizard';
 import { Wizard } from './wizard';
 afterEach(cleanup);
-const StepView = (props) => (_jsx("p", { children: props.state.title ?? '(vazio)' }));
+const StepView = (props) => _jsx("p", { children: props.state.title ?? '(vazio)' });
 const cfg = defineWizard({
     resource: 'x',
     steps: ['a'],

@@ -89,7 +89,7 @@ const DEFAULT_SIZE = {
     span: { base: 'sm', md: 'base' },
 };
 const DEFAULT_WEIGHT = {
-    h1: 'bold',
+    h1: 'semibold',
     h2: 'semibold',
     h3: 'semibold',
     h4: 'medium',

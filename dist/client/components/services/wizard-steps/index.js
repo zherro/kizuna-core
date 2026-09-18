@@ -23,6 +23,9 @@ export const SERVICE_WIZARD_STEPS = {
         label: 'Início',
         Component: StepStart,
         assist: true,
+        // Clicar num título sugerido pela Naví já é a resposta definitiva (não uma "tag" de
+        // múltipla escolha) — aplica e avança num clique só, sem esperar um "Pode seguir" à parte.
+        conversationQuickConfirm: true,
         canContinue: (ctx) => (ctx.state.title ?? '').trim().length >= 5,
         persist: async (ctx) => {
             // In create mode the row is born in the `category` step — nothing to save here.
@@ -35,7 +38,18 @@ export const SERVICE_WIZARD_STEPS = {
         key: 'category',
         label: 'Categoria',
         Component: StepCategory,
-        canContinue: (ctx) => Boolean(ctx.state.groupId) && Boolean(ctx.state.categoryId),
+        // Escolher a categoria não basta — se ela tem especialidades cadastradas, exige marcar ao
+        // menos uma antes de liberar o avanço; sem isto o auto-reveal do layout "Questionário"
+        // disparava assim que a categoria era escolhida, sem dar tempo de marcar as tags de
+        // especialidade que aparecem logo abaixo, no mesmo passo.
+        canContinue: (ctx) => {
+            const { groupId, categoryId, subcategoryIds } = ctx.state;
+            if (!groupId || !categoryId)
+                return false;
+            const subcategories = ctx.entities.subcategories ?? [];
+            const hasSubcategories = subcategories.some((s) => String(s.categoryId) === String(categoryId));
+            return hasSubcategories ? (subcategoryIds ?? []).length > 0 : true;
+        },
         persist: async (ctx) => {
             const { title, groupId, categoryId, subcategoryIds } = ctx.state;
             // This CREATES the `services` row (or updates it) with title + category.
@@ -56,7 +70,19 @@ export const SERVICE_WIZARD_STEPS = {
         key: 'location',
         label: 'Onde você atende',
         Component: StepLocation,
-        canContinue: (ctx) => Boolean(ctx.state.serviceLocation),
+        // Presencial ("no cliente"/"no estabelecimento") exige o endereço de referência preenchido —
+        // só em `create`: em `edit`/`review` o endereço nunca foi persistido (é local-only, ver
+        // `StepLocation`), então não há o que validar e barrar aqui só travaria quem está editando
+        // outra coisa no anúncio.
+        canContinue: (ctx) => {
+            const loc = ctx.state.serviceLocation;
+            if (!loc)
+                return false;
+            const isPresential = loc === 'no_cliente' || loc === 'no_estabelecimento';
+            if (!isPresential || ctx.mode !== 'create')
+                return true;
+            return Boolean(ctx.state.addressComplete);
+        },
         persist: async (ctx) => {
             await ctx.persist({ serviceLocation: ctx.state.serviceLocation });
         },

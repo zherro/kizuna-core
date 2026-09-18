@@ -8,4 +8,5 @@ export { apiError } from './api-error';
 export { isCaptchaEnabled, verifyCaptcha } from './captcha';
 export { checkKizunaEnv } from '../lib/env-guard';
 export { checkLockout, recordLoginFailure, clearLoginFailures, LOCKOUT_TIERS_ENV, } from './login-lockout';
+export { getSeoSitemapCacheSeconds, SEO_SITEMAP_CACHE_ENV, getSeoSitemapPageSize, SEO_SITEMAP_PAGE_SIZE_ENV, } from './seo-config';
 //# sourceMappingURL=index.js.map

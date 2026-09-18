@@ -2,7 +2,7 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { AlertCircle, AlertTriangle, Bell, Boxes, CalendarClock, ClipboardList, FileInput, FileText, Filter, GalleryHorizontalEnd, Gauge, Grid2x2, Hash, Heading, Inbox, LayoutDashboard, LayoutGrid, LayoutPanelTop, MapPin, MousePointerClick, PanelBottom, PanelTop, PictureInPicture2, Play, Radio, Rows3, Settings2, Sparkles, SpellCheck2, SquareStack, TableProperties, Tags, ToggleLeft, ToggleRight, WifiOff, Zap, } from 'lucide-react';
+import { AlertCircle, AlertTriangle, Bell, Boxes, CalendarClock, ClipboardList, Contrast, FileInput, FileText, Filter, GalleryHorizontalEnd, Gauge, Grid2x2, Hash, Heading, Inbox, LayoutDashboard, LayoutGrid, LayoutPanelTop, ListFilter, MapPin, MousePointerClick, Palette, PanelBottom, PanelTop, PictureInPicture2, Play, Plus, Radio, Rows3, Settings2, Sparkles, SpellCheck2, SquareStack, TableProperties, Tags, ToggleLeft, ToggleRight, Type, WifiOff, Zap, } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import { DEFAULT_SHOWCASE_SECTION, SHOWCASE_GROUPS, SHOWCASE_SECTIONS, normalizeShowcaseSection, } from './showcase-sections';
 const ICON_BY_SECTION = {
@@ -44,6 +44,11 @@ const ICON_BY_SECTION = {
     'form-builder': FileInput,
     'forms-manager': ClipboardList,
     'pages-admin': FileText,
+    'color-chip': Palette,
+    fab: Plus,
+    'page-heading': Type,
+    'select-popover': ListFilter,
+    'shadow-lab': Contrast,
 };
 function extractSection(pathname) {
     const value = pathname?.split('/')[2];

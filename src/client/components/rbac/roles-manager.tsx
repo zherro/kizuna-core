@@ -1,4 +1,4 @@
-import { AdminPageReader } from '../ui-better-soft/headers/admin-page-reader';
+import { PageHeader } from '../ui-better-soft/headers/page-header';
 import { getPermissionsCatalog, getRoleGrants, getRoles, groupPermissions } from './rbac-data';
 import { RolesMatrix } from './roles-matrix';
 
@@ -19,9 +19,10 @@ export async function RolesManagerScreen() {
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8 md:px-6">
-      <AdminPageReader
+      <PageHeader
         title="Papéis e permissões"
         description="Defina o que cada papel concede. As permissões vêm do catálogo declarado pelos plugins instalados; marcar aqui é o que efetivamente libera o recurso para quem tem o papel."
+        backHref="/painel"
       />
 
       {roles.length === 0 || permissions.length === 0 ? (

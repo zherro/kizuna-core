@@ -1,4 +1,4 @@
-import { AdminPageReader } from '../ui-better-soft/headers/admin-page-reader';
+import { PageHeader } from '../ui-better-soft/headers/page-header';
 import {
   getPermissionsCatalog,
   getRoleGrants,
@@ -31,9 +31,10 @@ export async function UserAccessManagerScreen() {
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8 md:px-6">
-      <AdminPageReader
+      <PageHeader
         title="Acessos dos usuários"
         description="Ajuste o papel de cada membro e faça exceções pontuais de permissão. Você só consegue conceder o que já possui; retirar acesso (negar) é sempre permitido."
+        backHref="/painel"
       />
 
       <UserAccessPanel

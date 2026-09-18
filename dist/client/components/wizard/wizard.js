@@ -1,6 +1,6 @@
 'use client';
 import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useWizardState } from './use-wizard-state';
 import { WizardShell } from './wizard-shell';
@@ -93,6 +93,15 @@ export function Wizard({ config, mode, entities, initialResourceId, initialState
         canContinue,
         isLastStep,
     });
+    // Um passo pode pedir pra esconder a Naví por um tempo (ex.: categoria força seleção manual
+    // das tags de especialidade antes de liberar o avanço). Reseta ao trocar de passo — sem isto,
+    // um passo que suprimiu e nunca limpou (ex. saiu por "Voltar") deixaria a Naví escondida pro
+    // resto do wizard.
+    const [naviSuppressed, setNaviSuppressed] = useState(false);
+    useEffect(() => {
+        setNaviSuppressed(false);
+    }, [currentIndex]);
+    const stepCtx = useMemo(() => ({ ...ctx, setNaviSuppressed }), [ctx]);
     const totalSteps = steps.length;
     const currentStep = currentIndex + 1;
     const stepLabel = steps[currentIndex]?.label ?? '';
@@ -127,10 +136,10 @@ export function Wizard({ config, mode, entities, initialResourceId, initialState
     // Single header: mode label + layout toggle + assist affordance + Cancelar, projected into the
     // app's one full-bleed header via portal (no second header bar).
     const chrome = (_jsxs(WizardHeaderPortal, { children: [_jsx("span", { className: "hidden truncate text-sm font-semibold text-foreground sm:inline", children: modeLabel }), layoutToggle, assistControl, _jsx(Button, { variant: "ghost", size: "sm", onClick: exit, children: "Cancelar" })] }));
-    const naviShown = conv.active || conv.endedMidway;
+    const naviShown = (conv.active || conv.endedMidway) && !naviSuppressed;
     const naviSlot = naviShown ? _jsx(NaviLayer, { conv: conv }) : undefined;
-    const shell = effectiveLayout === 'scroll' ? (_jsx(WizardScrollShell, { steps: steps, currentIndex: currentIndex, canContinue: canContinue, submitting: submitting, error: error, isLastStep: isLastStep, onAdvance: () => void goContinue(), onFinish: handleFinish, autoReveal: !conv.active || conv.minimized, ground: conv.active ? 'navi' : 'default', naviSlot: naviSlot, renderStep: (step) => _jsx(step.Component, { ...ctx }) })) : (_jsx(WizardShell, { currentStep: currentStep, currentIndex: currentIndex, totalSteps: totalSteps, stepLabel: stepLabel, progress: progress, railSteps: railSteps, furthest: Math.min(furthestIndex + 1, totalSteps), onJump: (step) => void jumpTo(step - 1), isLastStep: isLastStep, showContinue: true, continueLabel: continueLabel, canContinue: canContinue, submitting: submitting, error: error, onBack: goBack, onContinue: () => void goContinue(), onFinish: handleFinish, ground: conv.active ? 'navi' : 'default', naviSlot: naviSlot, children: Step ? _jsx(Step, { ...ctx }) : null }));
-    return (_jsxs(_Fragment, { children: [chrome, shell, conv.active ? _jsx(NaviPanel, { conv: conv }) : null] }));
+    const shell = effectiveLayout === 'scroll' ? (_jsx(WizardScrollShell, { steps: steps, currentIndex: currentIndex, state: ctx.state, canContinue: canContinue, submitting: submitting, error: error, isLastStep: isLastStep, onAdvance: () => void goContinue(), onFinish: handleFinish, autoReveal: !naviShown || conv.minimized, ground: conv.active ? 'navi' : 'default', naviSlot: naviSlot, renderStep: (step) => _jsx(step.Component, { ...stepCtx }) })) : (_jsx(WizardShell, { currentStep: currentStep, currentIndex: currentIndex, totalSteps: totalSteps, stepLabel: stepLabel, progress: progress, railSteps: railSteps, furthest: Math.min(furthestIndex + 1, totalSteps), onJump: (step) => void jumpTo(step - 1), isLastStep: isLastStep, showContinue: true, continueLabel: continueLabel, canContinue: canContinue, submitting: submitting, error: error, onBack: goBack, onContinue: () => void goContinue(), onFinish: handleFinish, ground: conv.active ? 'navi' : 'default', naviSlot: naviSlot, children: Step ? _jsx(Step, { ...stepCtx }) : null }));
+    return (_jsxs(_Fragment, { children: [chrome, shell, naviShown ? _jsx(NaviPanel, { conv: conv }) : null] }));
 }
 export default Wizard;
 //# sourceMappingURL=wizard.js.map

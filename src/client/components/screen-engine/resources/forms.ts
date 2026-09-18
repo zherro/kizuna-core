@@ -50,6 +50,11 @@ export const FORMS_RESOURCE: PostgrestResourceConfig = {
   schema: 'public',
   table: 'forms',
   returnRepresentation: true,
+  // RLS already grants `anon` SELECT on active forms (`forms_select_anon_policy`) — a public
+  // form-filling flow (e.g. a buyer describing a request before creating an account) needs to
+  // read the schema before there's a session. Writes stay gated: only `listResource` consults
+  // this flag, `create`/`update`/`delete` always call `ensureAuthenticated()`.
+  listRequiresAuth: false,
   select:
     'id,uid,form_key,title,description,schema,version,is_reusable,active,created_by,created_at,updated_at',
   primaryKey: 'id',

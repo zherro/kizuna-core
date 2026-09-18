@@ -28,7 +28,11 @@ export function CategoryPickerModal({ open, onOpenChange, group, categories, cat
     if (!open)
         return null;
     const filtered = categories
-        .filter((category) => String(category.categoryGroupId) === String(group?.id))
+        .filter((category) => {
+        const groupId = String(group?.id);
+        return (String(category.categoryGroupId) === groupId ||
+            (category.extraGroupIds ?? []).some((id) => String(id) === groupId));
+    })
         .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
     return (_jsx("div", { className: "fixed inset-0 z-[60] grid place-items-center bg-background p-4", onMouseDown: (event) => {
             if (event.target === event.currentTarget)

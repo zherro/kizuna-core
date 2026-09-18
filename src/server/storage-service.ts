@@ -50,6 +50,8 @@ type ProviderMode = 'postgres';
 
 const ALLOWED_PURPOSES = new Set([
   'ad_image',
+  'service_image',
+  'demanda_attachment',
   'avatar',
   'document',
   'banner',

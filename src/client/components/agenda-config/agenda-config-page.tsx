@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { CalendarClock, Plus, SlidersHorizontal, Bell } from 'lucide-react';
-import { AdminPageReader } from '../ui-better-soft/headers/admin-page-reader';
+import { PageHeader } from '../ui-better-soft/headers/page-header';
 import { BsButton } from '../ui-better-soft/buttons/bs-button';
 import { ConfirmDialog } from '../ui-better-soft/overlay/confirm-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
@@ -49,7 +49,7 @@ export function AgendaConfigPage() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 lg:px-8">
-      <AdminPageReader
+      <PageHeader
         title="Configuração da agenda"
         description="Horários de atendimento, regras de reserva e notificações — tudo em um só lugar."
         backHref="/painel/agenda"

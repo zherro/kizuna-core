@@ -1,6 +1,6 @@
 'use client';
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Pencil } from 'lucide-react';
 import { TaxonomyIcon } from '../../taxonomy/taxonomy-icon';
 import { IconChoiceGrid } from '../../ui-better-soft/lists/icon-choice-grid';
@@ -14,13 +14,17 @@ import { CategoryPickerModal } from './category-picker-modal';
  * Selecionar a área abre o CategoryPickerModal. As especialidades ficam nesta tela, depois da
  * categoria.
  *
- * Comportamento preservado do wizard antigo (.claude/domains/services.md §Navigation):
- *  - modal abre sozinho ao entrar no passo quando já há `groupId` e ainda não há `categoryId`;
+ * Fluxo (também vale quando é a Naví conversacional que decide grupo/categoria, não só clique):
+ *  - grupo definido e categoria ainda vazia → abre o modal de categoria sozinho;
+ *  - categoria definida → fecha o modal e rola até as tags de especialidade;
+ *  - categoria definida mas nenhuma especialidade marcada ainda → esconde a Naví (se a categoria
+ *    tem especialidades cadastradas) pra obrigar a escolha manual das tags, sem competir com o
+ *    chat. Volta a aparecer assim que a 1ª tag é marcada.
  *  - reclicar o mesmo card (ou revisitar em edição) NÃO apaga a categoria/especialidades já
  *    carregadas — o reset de campos dependentes só acontece quando o valor realmente muda.
  */
 export function StepCategory(props) {
-    const { state, patch, entities, touched } = props;
+    const { state, patch, entities, touched, setNaviSuppressed } = props;
     const groups = entities.groups ?? [];
     const categories = entities.categories ?? [];
     const subcategories = entities.subcategories ?? [];
@@ -35,6 +39,36 @@ export function StepCategory(props) {
     // an unprompted dialog is jarring. The "Abrir/Trocar" button still opens it on demand.
     const { stacked } = useWizardLayout();
     const [pickerOpen, setPickerOpen] = useState(() => Boolean(groupId) && !categoryId && !stacked);
+    // Reabre o modal sempre que o GRUPO muda pra um valor definido e ainda não há categoria — vale
+    // pro clique manual E pra Naví definindo o grupo pelo chat (o `useState` acima só cobre o
+    // mount; sem este efeito, um grupo decidido depois de montado não abria nada no layout stacked).
+    const prevGroupIdRef = useRef(groupId);
+    useEffect(() => {
+        const prevGroupId = prevGroupIdRef.current;
+        prevGroupIdRef.current = groupId;
+        if (groupId && groupId !== prevGroupId && !categoryId)
+            setPickerOpen(true);
+    }, [groupId, categoryId]);
+    // Categoria definida → fecha o modal e rola até as tags de especialidade.
+    const subcategorySectionRef = useRef(null);
+    const prevCategoryIdRef = useRef(categoryId);
+    useEffect(() => {
+        const prevCategoryId = prevCategoryIdRef.current;
+        prevCategoryIdRef.current = categoryId;
+        if (categoryId && categoryId !== prevCategoryId) {
+            setPickerOpen(false);
+            subcategorySectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }, [categoryId]);
+    // Categoria escolhida, especialidades cadastradas pra ela, mas nenhuma marcada ainda → esconde
+    // a Naví enquanto isso, pra obrigar a seleção manual das tags (ela volta assim que a 1ª for
+    // marcada, ou quando o passo muda — ver o reset em `wizard.tsx`).
+    useEffect(() => {
+        if (!setNaviSuppressed)
+            return;
+        const hasSubcategories = subcategories.some((s) => String(s.categoryId) === String(categoryId));
+        setNaviSuppressed(Boolean(categoryId) && hasSubcategories && subcategoryIds.length === 0);
+    }, [categoryId, subcategoryIds.length, subcategories, setNaviSuppressed]);
     function handleGroupSelect(nextGroupId) {
         const changed = nextGroupId !== groupId;
         if (changed) {
@@ -61,6 +95,6 @@ export function StepCategory(props) {
                     icon: _jsx(TaxonomyIcon, { icon: group.icon, className: "h-5 w-5" }),
                     title: group.name,
                     description: group.description || undefined,
-                })), value: String(groupId), onChange: handleGroupSelect, accent: "primary", emptyMessage: "Nenhuma \u00E1rea ativa encontrada." })), selectedGroup ? (_jsxs("button", { type: "button", onClick: () => setPickerOpen(true), className: "flex w-full items-center justify-between gap-3 rounded-xl bg-muted/50 px-4 py-3 text-left transition-colors hover:bg-muted", children: [_jsxs("span", { className: "min-w-0", children: [_jsx("span", { className: "block text-xs text-muted-foreground", children: selectedGroup.name }), _jsx("span", { className: "mt-0.5 block truncate text-sm font-semibold text-foreground", children: selectedCategory?.name ?? 'Escolher categoria' })] }), _jsxs("span", { className: "inline-flex shrink-0 items-center gap-1 text-xs font-medium text-primary", children: [_jsx(Pencil, { className: "h-3.5 w-3.5" }), categoryId ? 'Trocar' : 'Abrir'] })] })) : null, selectedGroup && categoryId ? (_jsx("div", { className: "border-t border-border pt-5", children: _jsx(StepSubcategory, { subcategories: subcategories, loading: subcategoriesLoading, category: selectedCategory, value: subcategoryIds, onChange: (ids) => patch({ subcategoryIds: ids }) }) })) : null, _jsx(CategoryPickerModal, { open: pickerOpen, onOpenChange: setPickerOpen, group: selectedGroup, categories: categories, categoriesLoading: categoriesLoading, categoryId: categoryId, onSelectCategory: handleCategorySelect })] }));
+                })), value: String(groupId), onChange: handleGroupSelect, accent: "primary", emptyMessage: "Nenhuma \u00E1rea ativa encontrada." })), selectedGroup ? (_jsxs("button", { type: "button", onClick: () => setPickerOpen(true), className: "flex w-full items-center justify-between gap-3 rounded-xl bg-muted/50 px-4 py-3 text-left transition-colors hover:bg-muted", children: [_jsxs("span", { className: "min-w-0", children: [_jsx("span", { className: "block text-xs text-muted-foreground", children: selectedGroup.name }), _jsx("span", { className: "mt-0.5 block truncate text-sm font-semibold text-foreground", children: selectedCategory?.name ?? 'Escolher categoria' })] }), _jsxs("span", { className: "inline-flex shrink-0 items-center gap-1 text-xs font-medium text-primary", children: [_jsx(Pencil, { className: "h-3.5 w-3.5" }), categoryId ? 'Trocar' : 'Abrir'] })] })) : null, selectedGroup && categoryId ? (_jsx("div", { ref: subcategorySectionRef, className: "scroll-mt-20 border-t border-border pt-5", children: _jsx(StepSubcategory, { subcategories: subcategories, loading: subcategoriesLoading, category: selectedCategory, value: subcategoryIds, onChange: (ids) => patch({ subcategoryIds: ids }) }) })) : null, _jsx(CategoryPickerModal, { open: pickerOpen, onOpenChange: setPickerOpen, group: selectedGroup, categories: categories, categoriesLoading: categoriesLoading, categoryId: categoryId, onSelectCategory: handleCategorySelect })] }));
 }
 //# sourceMappingURL=step-category.js.map

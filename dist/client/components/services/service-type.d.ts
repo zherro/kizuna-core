@@ -62,10 +62,14 @@ export type ServiceWizardState = {
     /** Transient: validity reported by the dynamic per-category form step. Not a `services` column
      * (the resource `mapInput` ignores unknown keys), only drives that step's `canContinue`. */
     dynamicFormValid: boolean;
+    /** Transient: the reference address form on `location` is filled (no_cliente/no_estabelecimento
+     * only) — drives that step's `canContinue`. The address itself stays local-only/not persisted
+     * (see `StepLocation`); this is just the completeness flag. */
+    addressComplete: boolean;
 };
 export declare const SERVICE_WIZARD_INITIAL_STATE: ServiceWizardState;
 /** Enum display labels moved to `./service-labels`; re-exported for back-compat. */
-export { SERVICE_STATUS_LABEL, SERVICE_LOCATION_LABEL, PRICE_UNIT_LABEL, } from './service-labels';
+export { SERVICE_STATUS_LABEL, SERVICE_LOCATION_LABEL, PRICE_UNIT_LABEL } from './service-labels';
 /** Curated subset of `price_unit` shown in the service wizard — the SAME list for every group and
  * category. O enum no banco continua com o conjunto completo; aqui ficam só as opções do nicho de
  * eventos, com rótulo/《ajuda》na linguagem do nicho. */

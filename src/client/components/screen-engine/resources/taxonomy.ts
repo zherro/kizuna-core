@@ -228,7 +228,7 @@ export const resourceTaxonomy: Record<string, ResourceConfig> = {
     table: 'categories',
     listRequiresAuth: false,
     select:
-      'id,name,slug,description,category_group_id,active,created_at,updated_at,categories_group_link(category_group_id)',
+      'id,name,slug,description,icon,request_form_key,category_group_id,active,created_at,updated_at,categories_group_link(category_group_id)',
     primaryKey: 'id',
     defaultOrder: 'name',
     searchableColumns: ['name', 'description', 'slug'],
@@ -237,6 +237,8 @@ export const resourceTaxonomy: Record<string, ResourceConfig> = {
       name: record.name,
       slug: record.slug,
       description: record.description ?? '',
+      icon: record.icon ?? null,
+      requestFormKey: record.request_form_key ?? record.requestFormKey ?? null,
       categoryGroupId: record.category_group_id ?? record.categoryGroupId ?? null,
       extraGroupIds: Array.isArray(record.categories_group_link)
         ? (record.categories_group_link as Array<{ category_group_id: string | number }>).map(
@@ -265,6 +267,22 @@ export const resourceTaxonomy: Record<string, ResourceConfig> = {
       active: parseActive(record.active),
       createdAt: record.created_at ?? record.createdAt,
       updatedAt: record.updated_at ?? record.updatedAt,
+    }),
+  },
+  categories_sub_tags_public: {
+    schema: 'public',
+    table: 'categories_sub_tags',
+    listRequiresAuth: false,
+    select: 'id,name,category_id,category_sub_id,active',
+    primaryKey: 'id',
+    defaultOrder: 'name',
+    searchableColumns: ['name'],
+    mapOutput: (record) => ({
+      id: record.id,
+      name: record.name,
+      categoryId: record.category_id ?? record.categoryId,
+      categorySubId: record.category_sub_id ?? record.categorySubId,
+      active: parseActive(record.active),
     }),
   },
   // Leitura pública da view `vw_category_subcategory_stats` (plugin taxonomy,

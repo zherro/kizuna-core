@@ -21,7 +21,6 @@ export const MINHA_CONTA_SCREEN: ScreenConfig = {
     {
       component: 'page-header',
       props: {
-        variant: 'admin-reader',
         eyebrow: 'Minha conta',
         title: 'Dados do usuário',
         description: 'Mantenha seu perfil atualizado com suas informações pessoais.',

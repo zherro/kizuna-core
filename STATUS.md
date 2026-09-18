@@ -126,7 +126,13 @@ a materializa num projeto e mantém projeto ↔ core alinhados. Ver **`docs/CLI.
   `getTokenFromCookies`, `getAuthHeaderFromCookies`, `getServiceAuthHeader`, `getSession`,
   `maskEmail`, `getDisplayNameFromEmail`, `isValidEmail`, `getDisplayName`, `isConfigError`,
   `createLoginHandler`, `createRegisterHandler`, `createLogoutHandler`, `pgrstTable`, `pgrstRpc`,
-  `getStorageService`, `apiError`, `PermissionMap`, `isOnboardingCompletedServer`
+  `getStorageService`, `apiError`, `PermissionMap`, `isOnboardingCompletedServer`,
+  `checkKizunaEnv`, `EnvCheck`, `MissingEnv`, `checkLockout`, `recordLoginFailure`,
+  `clearLoginFailures`, `LOCKOUT_TIERS_ENV`, `isCaptchaEnabled`, `verifyCaptcha`,
+  `VerifyCaptchaResult`, `getSeoSitemapCacheSeconds`, `SEO_SITEMAP_CACHE_ENV`,
+  `getSeoSitemapPageSize`, `SEO_SITEMAP_PAGE_SIZE_ENV` (SEO — `server/seo-config.ts`, env
+  `SEO_SITEMAP_CACHE`/`SEO_SITEMAP_PAGE_SIZE`, TTL e teto de itens do `sitemap.ts` do projeto
+  consumidor)
 - `@kizuna/core/server/email`: `sendEmail`, `EmailTemplate` — nodemailer transport. Its own
   subpath (NOT in the `./server` barrel) so a project that doesn't send email never pulls
   `nodemailer` (an optional peer dep). Templates are pure builders in the consuming app.

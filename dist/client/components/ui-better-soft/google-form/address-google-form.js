@@ -15,7 +15,7 @@ const DEFAULT_FEATURES = {
 // ============================================================
 // COMPONENT
 // ============================================================
-export function AddressForm({ value, onChange, features: featureOverrides, disabled = false, className, }) {
+export function AddressForm({ value, onChange, features: featureOverrides, disabled = false, className, layout = 'full', searchLabel = 'Pesquisar localização', }) {
     const features = useMemo(() => ({
         ...DEFAULT_FEATURES,
         ...featureOverrides,
@@ -175,15 +175,39 @@ export function AddressForm({ value, onChange, features: featureOverrides, disab
     // FIELDS
     // ============================================================
     const fieldDisabled = disabled || !addressUnlocked;
-    return (_jsxs(_Fragment, { children: [_jsxs("div", { className: cn('space-y-4', className), children: [_jsxs("div", { children: [_jsx("label", { className: "mb-1.5 block text-xs font-medium text-muted-foreground", children: "CEP" }), _jsxs("div", { className: "relative", children: [_jsx("input", { value: formatCep(address.postalCode), onChange: (event) => handleCepChange(event.target.value), disabled: disabled, placeholder: "00000-000", inputMode: "numeric", className: cn(inputClass, 'pr-10') }), cepLoading && (_jsx(Loader2, { className: "\n                  absolute right-3 top-1/2\n                  h-4 w-4\n                  -translate-y-1/2\n                  animate-spin\n                  text-muted-foreground\n                " }))] })] }), features.search && (_jsxs("button", { type: "button", disabled: disabled, onClick: openSearch, className: "\n              inline-flex h-9\n              items-center gap-2\n              rounded-lg\n              border border-border\n              px-3\n              text-xs font-medium\n              text-foreground\n              transition-colors\n              hover:bg-muted\n              disabled:pointer-events-none\n              disabled:opacity-50\n            ", children: [_jsx(Search, { className: "h-4 w-4" }), "Pesquisar localiza\u00E7\u00E3o"] })), _jsxs("div", { className: "grid gap-4 sm:grid-cols-[1fr_140px]", children: [_jsx(Field, { label: "Endere\u00E7o", value: address.street, disabled: fieldDisabled, onChange: (value) => updateAddress({
-                                    street: value,
-                                }) }), _jsx(Field, { label: "N\u00FAmero", value: address.number, disabled: fieldDisabled, onChange: (value) => updateAddress({
-                                    number: value,
-                                }) })] }), _jsx(Field, { label: "Complemento", value: address.complement, disabled: fieldDisabled, onChange: (value) => updateAddress({
-                            complement: value,
-                        }) }), _jsx(Field, { label: "Bairro", value: address.neighborhood, disabled: fieldDisabled, onChange: (value) => updateAddress({
-                            neighborhood: value,
-                        }) }), _jsxs("div", { className: "grid grid-cols-[1fr_90px] gap-4", children: [_jsx(Field, { label: "Cidade", value: address.city, disabled: true }), _jsx(Field, { label: "UF", value: address.state, disabled: true })] }), address.latitude !== null && address.longitude !== null && (_jsxs("div", { className: "\n              flex items-center gap-2\n              rounded-lg\n              bg-muted/50\n              px-3 py-2\n              text-xs\n              text-muted-foreground\n            ", children: [_jsx(MapPin, { className: "h-3.5 w-3.5 shrink-0" }), _jsx("span", { className: "truncate", children: address.formattedAddress ?? `${address.latitude}, ${address.longitude}` })] })), features.map && address.latitude !== null && address.longitude !== null && (_jsx(MiniMap, { latitude: address.latitude, longitude: address.longitude }))] }), searchOpen && (_jsx(SearchDrawer, { value: searchValue, loading: searchLoading, results: results, features: features, onChange: setSearchValue, onClose: closeSearch, onSelect: handleSelectResult }))] }));
+    const resolved = Boolean(address.street.trim() || address.city.trim());
+    const cepField = (_jsxs("div", { children: [_jsx("label", { className: "mb-1.5 block text-xs font-medium text-muted-foreground", children: "CEP" }), _jsxs("div", { className: "relative", children: [_jsx("input", { value: formatCep(address.postalCode), onChange: (event) => handleCepChange(event.target.value), disabled: disabled, placeholder: "00000-000", inputMode: "numeric", className: cn(inputClass, 'pr-10') }), cepLoading && (_jsx(Loader2, { className: "\n              absolute right-3 top-1/2\n              h-4 w-4\n              -translate-y-1/2\n              animate-spin\n              text-muted-foreground\n            " }))] })] }));
+    const searchTrigger = features.search && (_jsxs("button", { type: "button", disabled: disabled, onClick: openSearch, className: "\n        inline-flex h-9\n        items-center gap-2\n        rounded-lg\n        border border-border\n        px-3\n        text-xs font-medium\n        text-foreground\n        transition-colors\n        hover:bg-muted\n        disabled:pointer-events-none\n        disabled:opacity-50\n      ", children: [_jsx(Search, { className: "h-4 w-4" }), searchLabel] }));
+    const detailFields = (_jsxs(_Fragment, { children: [_jsxs("div", { className: "grid gap-4 sm:grid-cols-[1fr_140px]", children: [_jsx(Field, { label: "Endere\u00E7o", value: address.street, disabled: fieldDisabled, onChange: (value) => updateAddress({
+                            street: value,
+                        }) }), _jsx(Field, { label: "N\u00FAmero", value: address.number, disabled: fieldDisabled, onChange: (value) => updateAddress({
+                            number: value,
+                        }) })] }), _jsx(Field, { label: "Complemento", value: address.complement, disabled: fieldDisabled, onChange: (value) => updateAddress({
+                    complement: value,
+                }) }), _jsx(Field, { label: "Bairro", value: address.neighborhood, disabled: fieldDisabled, onChange: (value) => updateAddress({
+                    neighborhood: value,
+                }) }), _jsxs("div", { className: "grid grid-cols-[1fr_90px] gap-4", children: [_jsx(Field, { label: "Cidade", value: address.city, disabled: true }), _jsx(Field, { label: "UF", value: address.state, disabled: true })] }), address.latitude !== null && address.longitude !== null && (_jsxs("div", { className: "\n            flex items-center gap-2\n            rounded-lg\n            bg-muted/50\n            px-3 py-2\n            text-xs\n            text-muted-foreground\n          ", children: [_jsx(MapPin, { className: "h-3.5 w-3.5 shrink-0" }), _jsx("span", { className: "truncate", children: address.formattedAddress ?? `${address.latitude}, ${address.longitude}` })] })), features.map && address.latitude !== null && address.longitude !== null && (_jsx(MiniMap, { latitude: address.latitude, longitude: address.longitude }))] }));
+    const searchDrawer = searchOpen && (_jsx(SearchDrawer, { value: searchValue, loading: searchLoading, results: results, features: features, onChange: setSearchValue, onClose: closeSearch, onSelect: handleSelectResult }));
+    if (layout === 'compact') {
+        return (_jsx(CompactAddressForm, { className: className, cepField: cepField, searchTrigger: searchTrigger, detailFields: detailFields, searchDrawer: searchDrawer, resolved: resolved, summary: buildSearchValue(address) || 'Endereço incompleto' }));
+    }
+    return (_jsxs(_Fragment, { children: [_jsxs("div", { className: cn('space-y-4', className), children: [cepField, searchTrigger, detailFields] }), searchDrawer] }));
+}
+// ============================================================
+// COMPACT LAYOUT
+// ============================================================
+/**
+ * `layout="compact"`: só o CEP fica visível por padrão. Depois de resolvido (ou editado), um
+ * resumo de uma linha substitui o formulário inteiro — "Editar" abre um modal central com o
+ * restante dos campos (que por sua vez pode abrir o `SearchDrawer` por cima). Poupa espaço de
+ * tela no step e evita a sensação de formulário longo.
+ */
+function CompactAddressForm({ className, cepField, searchTrigger, detailFields, searchDrawer, resolved, summary, }) {
+    const [editOpen, setEditOpen] = useState(false);
+    return (_jsxs(_Fragment, { children: [_jsx("div", { className: cn('space-y-3', className), children: resolved ? (_jsxs("button", { type: "button", onClick: () => setEditOpen(true), className: "flex w-full items-start gap-3 rounded-xl border border-border bg-background px-3.5 py-3 text-left transition-colors hover:bg-muted", children: [_jsx(MapPin, { className: "mt-0.5 h-4 w-4 shrink-0 text-primary" }), _jsxs("span", { className: "min-w-0 flex-1", children: [_jsx("span", { className: "block text-xs text-muted-foreground", children: "Endere\u00E7o de refer\u00EAncia" }), _jsx("span", { className: "mt-0.5 block truncate text-sm font-medium text-foreground", children: summary })] }), _jsx("span", { className: "shrink-0 text-xs font-medium text-primary", children: "Editar" })] })) : (_jsxs("div", { className: "space-y-3", children: [cepField, searchTrigger] })) }), editOpen && (_jsx("div", { className: "fixed inset-0 z-[60] grid place-items-center bg-background/80 p-4 backdrop-blur-sm", onMouseDown: (event) => {
+                    if (event.target === event.currentTarget)
+                        setEditOpen(false);
+                }, children: _jsxs("div", { role: "dialog", "aria-modal": "true", "aria-label": "Editar endere\u00E7o", className: "flex max-h-[min(40rem,90dvh)] w-full max-w-md flex-col overflow-hidden rounded-2xl border border-border bg-background shadow-xl", children: [_jsxs("header", { className: "flex items-center justify-between gap-3 border-b border-border px-4 py-3", children: [_jsx("p", { className: "text-sm font-semibold text-foreground", children: "Editar endere\u00E7o" }), _jsx("button", { type: "button", onClick: () => setEditOpen(false), className: "rounded-lg px-3 py-1.5 text-sm font-medium text-primary hover:bg-muted", children: "Concluir" })] }), _jsxs("div", { className: "min-h-0 flex-1 space-y-4 overflow-y-auto p-4", children: [cepField, searchTrigger, detailFields] })] }) })), searchDrawer] }));
 }
 // ============================================================
 // FIELD

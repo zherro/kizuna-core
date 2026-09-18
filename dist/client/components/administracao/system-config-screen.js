@@ -1,5 +1,5 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import { AdminPageReader } from '@kizuna/core/client/components/ui-better-soft/headers/admin-page-reader';
+import { PageHeader } from '@kizuna/core/client/components/ui-better-soft/headers/page-header';
 import { SystemConfigForm } from './system-config-form';
 import { getUserDataFieldsConfig } from '@/lib/server/user-data-fields-config';
 import { getAppPreferencesFabVisible } from '@/lib/server/app-preferences-config';
@@ -19,6 +19,6 @@ export async function SystemConfigScreen() {
         getUserDataFieldsConfig(),
         getAppPreferencesFabVisible(),
     ]);
-    return (_jsxs("div", { className: "mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-8 md:px-6", children: [_jsx(AdminPageReader, { title: "Configura\u00E7\u00F5es do sistema", description: "Controle a exibi\u00E7\u00E3o e a obrigatoriedade dos campos de documento e data de nascimento do formul\u00E1rio de dados pessoais (user_data), e a visibilidade do bot\u00E3o de prefer\u00EAncias, sem precisar de deploy." }), _jsx(SystemConfigForm, { initialConfig: fieldsConfig, initialAppPreferencesFabVisible: appPreferencesFabVisible })] }));
+    return (_jsxs("div", { className: "mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-8 md:px-6", children: [_jsx(PageHeader, { title: "Configura\u00E7\u00F5es do sistema", description: "Controle a exibi\u00E7\u00E3o e a obrigatoriedade dos campos de documento e data de nascimento do formul\u00E1rio de dados pessoais (user_data), e a visibilidade do bot\u00E3o de prefer\u00EAncias, sem precisar de deploy.", backHref: "/painel" }), _jsx(SystemConfigForm, { initialConfig: fieldsConfig, initialAppPreferencesFabVisible: appPreferencesFabVisible })] }));
 }
 //# sourceMappingURL=system-config-screen.js.map

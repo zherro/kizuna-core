@@ -1,4 +1,4 @@
-import { AdminPageReader } from '@kizuna/core/client/components/ui-better-soft/headers/admin-page-reader';
+import { PageHeader } from '@kizuna/core/client/components/ui-better-soft/headers/page-header';
 import { SystemConfigForm } from './system-config-form';
 import { getUserDataFieldsConfig } from '@/lib/server/user-data-fields-config';
 import { getAppPreferencesFabVisible } from '@/lib/server/app-preferences-config';
@@ -22,9 +22,10 @@ export async function SystemConfigScreen() {
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-8 md:px-6">
-      <AdminPageReader
+      <PageHeader
         title="Configurações do sistema"
         description="Controle a exibição e a obrigatoriedade dos campos de documento e data de nascimento do formulário de dados pessoais (user_data), e a visibilidade do botão de preferências, sem precisar de deploy."
+        backHref="/painel"
       />
 
       <SystemConfigForm

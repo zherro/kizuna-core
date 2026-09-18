@@ -1,1 +1,1 @@
-{"version":3,"file":"chat-shell.d.ts","sourceRoot":"","sources":["../../../../src/client/components/messaging/chat-shell.tsx"],"names":[],"mappings":"AAYA,wBAAgB,SAAS,4CA+CxB"}
+{"version":3,"file":"chat-shell.d.ts","sourceRoot":"","sources":["../../../../src/client/components/messaging/chat-shell.tsx"],"names":[],"mappings":"AACA,OAAO,EAAY,KAAK,SAAS,EAAE,MAAM,OAAO,CAAC;AAKjD,OAAO,KAAK,EAAE,uBAAuB,EAAE,MAAM,gBAAgB,CAAC;AAO9D,wBAAgB,SAAS,CAAC,EACxB,mBAAmB,GACpB,GAAE;IACD,mBAAmB,CAAC,EAAE,CAAC,YAAY,EAAE,uBAAuB,KAAK,SAAS,CAAC;CACvE,2CAmDL"}

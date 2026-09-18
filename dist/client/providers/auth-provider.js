@@ -10,7 +10,13 @@ function buildAuthUser(raw) {
     // permission row (plugins never auto-grant, see plugins/README.md), it bypasses the check
     // entirely — so the client-side gate (nav items, page guards keyed off `permResource`) must
     // bypass the same way, or a root-only feature with no explicit grant just disappears for root.
-    const hasPerm = (resource, action = 'view') => raw.is_root === true || perms[resource]?.[action] === true || resource === 'default';
+    //
+    // No implicit "default" bypass here on purpose — every resource, baseline nav included, is a
+    // real row in the catalog and must be granted via `auth.role_grants` (see
+    // db/migrations/0002_rbac_app_permissions.sql in the consuming project for the baseline
+    // `default.view` grant to every template role). A resource simply absent from `perms` is
+    // "not granted", full stop.
+    const hasPerm = (resource, action = 'view') => raw.is_root === true || perms[resource]?.[action] === true;
     const makeInitials = (str) => str
         .split(' ')
         .filter(Boolean)

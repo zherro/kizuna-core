@@ -123,8 +123,10 @@ function SlugField({ formik, resource, excludeId, status, onStatusChange, }) {
                     onStatusChange('idle');
                 }, onBlur: () => void handleBlur(), placeholder: "ex.: troca-de-chuveiro" }), status === 'checking' ? (_jsx("p", { className: "text-xs text-muted-foreground", children: "Verificando disponibilidade..." })) : null, status === 'available' && !error ? (_jsx("p", { className: "text-xs text-emerald-600 dark:text-emerald-400", children: "Slug disponivel." })) : null, error ? _jsx("p", { className: "text-xs text-red-400", children: error }) : null] }));
 }
-export function TaxonomyEditPanel({ target, groups, categories, subcategories, onClose, onSaved, }) {
+export function TaxonomyEditPanel({ target, groups, categories, subcategories, groupLinks, onLinkCreate, onLinkDelete, onClose, onSaved, }) {
     const [slugStatus, setSlugStatus] = useState('idle');
+    const [extraGroupIds, setExtraGroupIds] = useState([]);
+    const [syncingLinks, setSyncingLinks] = useState(false);
     const level = target?.level ?? 'tag';
     const resource = TAXONOMY_RESOURCE_BY_LEVEL[level];
     const levelLabel = TAXONOMY_LEVEL_LABEL[level];
@@ -186,12 +188,33 @@ export function TaxonomyEditPanel({ target, groups, categories, subcategories, o
             successMessage: `${levelLabel.charAt(0).toUpperCase()}${levelLabel.slice(1)} salva com sucesso.`,
             connectionErrorMessage: 'Erro de conexao com a API.',
             onSuccess: async (data) => {
+                if (data.item && level === 'category') {
+                    const categoryId = data.item.id;
+                    await syncExtraGroups(categoryId);
+                }
                 if (data.item)
                     onSaved(level, data.item);
                 onClose();
             },
         },
     });
+    async function syncExtraGroups(categoryId) {
+        const primaryGroupId = formik.values.groupId;
+        const existing = groupLinks.filter((link) => String(link.categoryId) === String(categoryId));
+        const wanted = new Set(extraGroupIds.filter((id) => id !== primaryGroupId));
+        setSyncingLinks(true);
+        try {
+            const toRemove = existing.filter((link) => !wanted.has(String(link.categoryGroupId)));
+            const toAdd = [...wanted].filter((groupId) => !existing.some((link) => String(link.categoryGroupId) === groupId));
+            await Promise.all([
+                ...toRemove.map((link) => onLinkDelete(link.id)),
+                ...toAdd.map((groupId) => onLinkCreate(categoryId, groupId)),
+            ]);
+        }
+        finally {
+            setSyncingLinks(false);
+        }
+    }
     const { formik } = form;
     const targetKey = target
         ? `${target.level}:${target.item?.id ?? 'new'}:${target.item?.slug ?? ''}`
@@ -204,6 +227,11 @@ export function TaxonomyEditPanel({ target, groups, categories, subcategories, o
             formik.setTouched({});
             formik.setErrors({});
             setSlugStatus('idle');
+            setExtraGroupIds(target.level === 'category' && target.item
+                ? groupLinks
+                    .filter((link) => String(link.categoryId) === String(target.item?.id))
+                    .map((link) => String(link.categoryGroupId))
+                : []);
         }, 0);
         return () => window.clearTimeout(timer);
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -234,7 +262,16 @@ export function TaxonomyEditPanel({ target, groups, categories, subcategories, o
                 ? 'Categoria — contexto de necessidade do usuario, dentro de um grupo.'
                 : level === 'subcategory'
                     ? 'Especialidade dentro de uma categoria — tipo de profissional.'
-                    : 'Tag de busca dentro de uma especialidade.', footerFixed: true, headerFixed: true, footer: _jsxs(_Fragment, { children: [_jsx(Button, { type: "button", variant: "ghost", onClick: onClose, children: "Cancelar" }), _jsx(Button, { type: "button", onClick: () => void formik.submitForm(), disabled: form.submitting, children: form.submitting ? 'Salvando...' : 'Salvar' })] }), children: _jsxs("div", { className: "space-y-4", children: [level === 'category' ? (_jsxs("div", { className: "space-y-2", children: [_jsx(Label, { htmlFor: "taxonomy-group", children: "Grupo" }), _jsx(SearchableSelect, { id: "taxonomy-group", value: formik.values.groupId, onChange: (value) => void formik.setFieldValue('groupId', value), onBlur: () => formik.setFieldTouched('groupId', true), options: groupOptions, placeholder: "Selecione um grupo", disabled: groupOptions.length === 0 })] })) : null, level === 'subcategory' || level === 'tag' ? (_jsxs("div", { className: "space-y-2", children: [_jsx(Label, { htmlFor: "taxonomy-category", children: "Categoria" }), _jsx(SearchableSelect, { id: "taxonomy-category", value: formik.values.categoryId, onChange: (value) => void formik.setFieldValue('categoryId', value), onBlur: () => formik.setFieldTouched('categoryId', true), options: categoryOptions, placeholder: "Selecione uma categoria", disabled: categoryOptions.length === 0 }), formik.touched.categoryId && formik.errors.categoryId ? (_jsx("p", { className: "text-xs text-red-400", children: formik.errors.categoryId })) : null] })) : null, level === 'tag' ? (_jsxs("div", { className: "space-y-2", children: [_jsx(Label, { htmlFor: "taxonomy-subcategory", children: "Especialidade" }), _jsx(SearchableSelect, { id: "taxonomy-subcategory", value: formik.values.categorySubId, onChange: (value) => void formik.setFieldValue('categorySubId', value), onBlur: () => formik.setFieldTouched('categorySubId', true), options: subcategoryOptions, placeholder: formik.values.categoryId
+                    : 'Tag de busca dentro de uma especialidade.', footerFixed: true, headerFixed: true, footer: _jsxs(_Fragment, { children: [_jsx(Button, { type: "button", variant: "ghost", onClick: onClose, children: "Cancelar" }), _jsx(Button, { type: "button", onClick: () => void formik.submitForm(), disabled: form.submitting || syncingLinks, children: form.submitting || syncingLinks ? 'Salvando...' : 'Salvar' })] }), children: _jsxs("div", { className: "space-y-4", children: [level === 'category' ? (_jsxs("div", { className: "space-y-2", children: [_jsx(Label, { htmlFor: "taxonomy-group", children: "Grupo" }), _jsx(SearchableSelect, { id: "taxonomy-group", value: formik.values.groupId, onChange: (value) => void formik.setFieldValue('groupId', value), onBlur: () => formik.setFieldTouched('groupId', true), options: groupOptions, placeholder: "Selecione um grupo", disabled: groupOptions.length === 0 })] })) : null, level === 'category' ? (_jsxs("div", { className: "space-y-2", children: [_jsx(Label, { children: "Tamb\u00E9m aparece em" }), _jsx("p", { className: "text-xs text-muted-foreground", children: "Grupos extras onde esta categoria tamb\u00E9m fica vis\u00EDvel na busca/vitrine, al\u00E9m do grupo principal acima \u2014 o mesmo cadastro, sem duplicar." }), _jsxs("div", { className: "flex flex-wrap gap-2", children: [groupOptions
+                                    .filter((option) => option.value !== formik.values.groupId)
+                                    .map((option) => {
+                                    const checked = extraGroupIds.includes(option.value);
+                                    return (_jsx("button", { type: "button", onClick: () => setExtraGroupIds((prev) => checked
+                                            ? prev.filter((id) => id !== option.value)
+                                            : [...prev, option.value]), "aria-pressed": checked, className: `rounded-full border px-3 py-1 text-xs transition ${checked
+                                            ? 'border-primary bg-primary/10 text-primary'
+                                            : 'border-border bg-background text-muted-foreground hover:border-primary/50'}`, children: option.label }, option.value));
+                                }), groupOptions.length <= 1 ? (_jsx("p", { className: "text-xs text-muted-foreground", children: "Cadastre outro grupo para poder link\u00E1-lo aqui." })) : null] })] })) : null, level === 'subcategory' || level === 'tag' ? (_jsxs("div", { className: "space-y-2", children: [_jsx(Label, { htmlFor: "taxonomy-category", children: "Categoria" }), _jsx(SearchableSelect, { id: "taxonomy-category", value: formik.values.categoryId, onChange: (value) => void formik.setFieldValue('categoryId', value), onBlur: () => formik.setFieldTouched('categoryId', true), options: categoryOptions, placeholder: "Selecione uma categoria", disabled: categoryOptions.length === 0 }), formik.touched.categoryId && formik.errors.categoryId ? (_jsx("p", { className: "text-xs text-red-400", children: formik.errors.categoryId })) : null] })) : null, level === 'tag' ? (_jsxs("div", { className: "space-y-2", children: [_jsx(Label, { htmlFor: "taxonomy-subcategory", children: "Especialidade" }), _jsx(SearchableSelect, { id: "taxonomy-subcategory", value: formik.values.categorySubId, onChange: (value) => void formik.setFieldValue('categorySubId', value), onBlur: () => formik.setFieldTouched('categorySubId', true), options: subcategoryOptions, placeholder: formik.values.categoryId
                                 ? 'Selecione uma especialidade'
                                 : 'Escolha a categoria primeiro', disabled: !formik.values.categoryId }), formik.touched.categorySubId && formik.errors.categorySubId ? (_jsx("p", { className: "text-xs text-red-400", children: formik.errors.categorySubId })) : null] })) : null, _jsx(FormField, { formik: formik, field: "name", label: "Nome", placeholder: "Ex.: Eletricista" }), _jsx(SlugField, { formik: formik, resource: resource, excludeId: selectedId, status: slugStatus, onStatusChange: setSlugStatus }), _jsx(FormField, { formik: formik, field: "description", as: "textarea", label: "Descricao", placeholder: "Opcional", rows: 3 }), level === 'group' ? (_jsx(FormField, { formik: formik, field: "tags", label: "Tags de destaque", placeholder: "Ex.: casa, reforma, reparo" })) : null, level === 'group' || level === 'category' ? (_jsxs("div", { className: "space-y-2", children: [_jsx(Label, { htmlFor: "taxonomy-icon", children: "Icone" }), _jsxs("div", { className: "flex items-center gap-2", children: [_jsx("div", { className: "flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border bg-muted/30", children: IconPreview ? (_jsx(IconPreview, { className: "h-4 w-4 text-foreground" })) : (_jsx(HelpCircle, { className: "h-4 w-4 text-muted-foreground" })) }), _jsx(Input, { id: "taxonomy-icon", name: "icon", value: formik.values.icon, onChange: (event) => void formik.setFieldValue('icon', event.target.value.trim()), placeholder: "Nome do icone (lucide-react), ex.: Home" })] }), _jsxs("p", { className: "text-xs text-muted-foreground", children: ["Nome de um icone de", ' ', _jsx("a", { href: "https://lucide.dev/icons", target: "_blank", rel: "noreferrer", className: "underline", children: "lucide.dev/icons" }), ", ex.: Home, Car, Sparkles."] })] })) : null, level === 'category' ? (_jsxs("div", { className: "space-y-2", children: [_jsx(Label, { htmlFor: "taxonomy-form-key", children: "Formulario dinamico (form_key)" }), _jsx(Input, { id: "taxonomy-form-key", name: "formKey", value: formik.values.formKey, onChange: (event) => void formik.setFieldValue('formKey', event.target.value.trim()), placeholder: "ex.: eventos_som_iluminacao (opcional)" }), _jsxs("p", { className: "text-xs text-muted-foreground", children: ["Chave de um formulario ativo em", ' ', _jsx("a", { href: "/painel/administracao/formularios", className: "underline", children: "Formularios" }), ". Quando preenchida, o wizard de servicos mostra as perguntas desse formulario para esta categoria."] })] })) : null, level === 'category' ? (_jsxs("div", { className: "space-y-2", children: [_jsx(Label, { htmlFor: "taxonomy-request-form-key", children: "Formul\u00E1rio de solicita\u00E7\u00E3o (request_form_key)" }), _jsx(Input, { id: "taxonomy-request-form-key", name: "requestFormKey", value: formik.values.requestFormKey, onChange: (event) => void formik.setFieldValue('requestFormKey', event.target.value.trim()), placeholder: "ex.: solicitacao_orcamento_eventos (opcional)" }), _jsxs("p", { className: "text-xs text-muted-foreground", children: ["Chave de um formulario ativo em", ' ', _jsx("a", { href: "/painel/administracao/formularios", className: "underline", children: "Formularios" }), ". Quando preenchida, o comprador preenche esse formulario ao solicitar um orcamento ou fechar um pedido nesta categoria."] })] })) : null, _jsx(FormField, { formik: formik, field: "active", as: "switch", label: "Ativo" })] }) }));
 }

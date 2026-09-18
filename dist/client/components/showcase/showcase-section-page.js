@@ -13,7 +13,6 @@ import { ExperiencePill } from '../ui-better-soft/experience-pill';
 import { WizardLayoutToggle } from '../wizard/wizard-layout-toggle';
 import { FixedBottomProgress } from '../ui-better-soft/fixed-bottom-progress';
 import { MosaicGrid } from '../ui-better-soft/mosaic-grid';
-import { AdminPageReader } from '../ui-better-soft/headers/admin-page-reader';
 import { PageHeader } from '../ui-better-soft/headers/page-header';
 import { BsButton } from '../ui-better-soft/buttons/bs-button';
 import { ToggleRow } from '../ui-better-soft/toggle-row';
@@ -40,6 +39,11 @@ import { LocationTrigger, LocationModal } from '../location-modal';
 import { FormBuilderShowcaseDemo } from '../form-builder/showcase-demo';
 import { FormsShowcaseDemo } from '../forms/showcase-demo';
 import { PagesAdminShowcaseDemo } from '../pages/showcase-demo';
+import { ColorChip } from '../ui-better-soft/color-chip';
+import { Fab } from '../ui-better-soft/fab';
+import { PageHeading } from '../ui-better-soft/headers/page-heading';
+import { SelectPopover } from '../ui-better-soft/select-popover';
+import { ShadowLab } from '../shadow-lab';
 import { useForm } from '@kizuna/core';
 import * as Yup from 'yup';
 import { getShowcaseSection } from './showcase-sections';
@@ -130,11 +134,8 @@ function BottomProgressBarDemo() {
     ];
     return (_jsxs("div", { className: "space-y-4", children: [_jsx(FixedBottomProgress, { fixed: false, steps: steps, value: currentStep }), _jsx("div", { className: "flex flex-wrap gap-2", children: steps.map((step) => (_jsx(Button, { type: "button", size: "sm", variant: currentStep === step.id ? 'default' : 'outline', onClick: () => setCurrentStep(step.id), children: step.label }, step.id))) }), _jsxs("p", { className: "text-sm text-muted-foreground", children: ["Etapa atual: ", _jsx("span", { className: "font-medium text-foreground", children: currentStep })] })] }));
 }
-function AdminPageReaderDemo() {
-    return (_jsx(AdminPageReader, { title: "Preferencias", description: "Diga como voce quer receber pedidos e quando esta disponivel para atender.", backHref: "/showcase/admin-page-reader", backLabel: "Ir ao painel", actions: _jsxs(_Fragment, { children: [_jsx(BsButton, { variant: "outline", label: "Restaurar padrao" }), _jsx(BsButton, { variant: "default", label: "Salvar", icon: Save })] }), className: "mb-0 rounded-xl border border-border bg-background p-4" }));
-}
 function PageHeaderDemo() {
-    return (_jsx(PageHeader, { eyebrow: "Meus servi\u00E7os", title: "Gerenciar servi\u00E7os", description: "Crie servi\u00E7os em etapas e continue a edi\u00E7\u00E3o quando precisar.", actions: _jsxs(_Fragment, { children: [_jsx(Link, { href: "/painel", className: buttonVariants({ variant: 'outline' }), children: "Voltar ao painel" }), _jsxs(Link, { href: "/painel/meus-servicos/novo", className: buttonVariants(), children: [_jsx(Plus, { className: "h-4 w-4" }), "Novo servi\u00E7o"] })] }) }));
+    return (_jsxs("div", { className: "space-y-8", children: [_jsx(PageHeader, { eyebrow: "Meus servi\u00E7os", title: "Gerenciar servi\u00E7os", description: "Crie servi\u00E7os em etapas e continue a edi\u00E7\u00E3o quando precisar.", actions: _jsxs(Link, { href: "/painel/meus-servicos/novo", className: buttonVariants(), children: [_jsx(Plus, { className: "h-4 w-4" }), "Novo servi\u00E7o"] }) }), _jsx(PageHeader, { title: "Prefer\u00EAncias", description: "Diga como voc\u00EA quer receber pedidos e quando est\u00E1 dispon\u00EDvel para atender.", backHref: "/painel", actions: _jsxs(_Fragment, { children: [_jsx(BsButton, { variant: "outline", label: "Restaurar padrao" }), _jsx(BsButton, { variant: "default", label: "Salvar", icon: Save })] }), className: "rounded-xl border border-border bg-background p-4" })] }));
 }
 function BsButtonDemo() {
     return (_jsxs("div", { className: "flex flex-wrap items-center gap-3", children: [_jsx(BsButton, { variant: "outline", label: "Restaurar padrao" }), _jsx(BsButton, { variant: "default", label: "Salvar", icon: Save })] }));
@@ -156,7 +157,7 @@ function ScheduleRowDemo() {
     return (_jsxs("div", { className: "space-y-2", children: [_jsx(ScheduleRow, { label: "Segunda", enabled: monday.enabled, onEnabledChange: (enabled) => setMonday((current) => ({ ...current, enabled })), start: monday.start, end: monday.end, onStartChange: (start) => setMonday((current) => ({ ...current, start })), onEndChange: (end) => setMonday((current) => ({ ...current, end })) }), _jsx(ScheduleRow, { label: "Almoco", icon: Utensils, description: "Horario de pausa aplicado em todos os dias de atendimento.", enabled: lunch.enabled, onEnabledChange: (enabled) => setLunch((current) => ({ ...current, enabled })), start: lunch.start, end: lunch.end, onStartChange: (start) => setLunch((current) => ({ ...current, start })), onEndChange: (end) => setLunch((current) => ({ ...current, end })) })] }));
 }
 function SettingsSectionDemo() {
-    return (_jsx(Section, { icon: _jsx(Bell, { className: "h-4 w-4" }), title: "Notificacoes", description: "Escolha o que voce quer receber e por onde.", children: _jsx("p", { className: "text-sm text-muted-foreground", children: "Conteudo da secao vai aqui." }) }));
+    return (_jsxs("div", { className: "space-y-4", children: [_jsx(Section, { icon: _jsx(Bell, { className: "h-4 w-4" }), title: "Notificacoes", description: "Escolha o que voce quer receber e por onde.", children: _jsx("p", { className: "text-sm text-muted-foreground", children: "Conteudo da secao vai aqui." }) }), _jsxs(Section, { variant: "compact", accentColor: "var(--color-primary)", className: "flex items-center gap-3", children: [_jsx("p", { className: "text-base font-bold", children: "Corte de cabelo" }), _jsx("p", { className: "text-sm text-muted-foreground", children: "14:00 \u00B7 Ana Souza" })] })] }));
 }
 function ChoiceCardDemo() {
     const [clientPicks, setClientPicks] = useState(true);
@@ -164,7 +165,8 @@ function ChoiceCardDemo() {
 }
 function ModalPanelDemo() {
     const [open, setOpen] = useState(false);
-    return (_jsxs(_Fragment, { children: [_jsx(BsButton, { label: "Nova folga", onClick: () => setOpen(true) }), _jsx(ModalPanel, { open: open, onClose: () => setOpen(false), icon: _jsx(Palmtree, { className: "h-4 w-4 text-brand" }), title: "Nova folga", description: "Bloqueie a data para nao receber novos agendamentos.", footer: _jsxs(_Fragment, { children: [_jsx(Button, { variant: "ghost", onClick: () => setOpen(false), children: "Cancelar" }), _jsx(BsButton, { label: "Salvar", onClick: () => setOpen(false) })] }), children: _jsx("p", { className: "text-sm text-muted-foreground", children: "Conteudo do formulario aqui." }) })] }));
+    const [sheetOpen, setSheetOpen] = useState(false);
+    return (_jsxs("div", { className: "flex flex-wrap gap-2", children: [_jsx(BsButton, { label: "Nova folga", onClick: () => setOpen(true) }), _jsx(BsButton, { variant: "outline", label: "Novo compromisso (bottom sheet)", onClick: () => setSheetOpen(true) }), _jsx(ModalPanel, { open: open, onClose: () => setOpen(false), icon: _jsx(Palmtree, { className: "h-4 w-4 text-brand" }), title: "Nova folga", description: "Bloqueie a data para nao receber novos agendamentos.", footer: _jsxs(_Fragment, { children: [_jsx(Button, { variant: "ghost", onClick: () => setOpen(false), children: "Cancelar" }), _jsx(BsButton, { label: "Salvar", onClick: () => setOpen(false) })] }), children: _jsx("p", { className: "text-sm text-muted-foreground", children: "Conteudo do formulario aqui." }) }), _jsxs(ModalPanel, { open: sheetOpen, onClose: () => setSheetOpen(false), anchor: "bottom-sheet", children: [_jsx("h2", { className: "text-2xl font-bold", children: "Novo compromisso" }), _jsx("p", { className: "mt-1 text-sm text-muted-foreground", children: "Conteudo do formulario aqui." }), _jsx(BsButton, { label: "Fechar", onClick: () => setSheetOpen(false) })] })] }));
 }
 function ConfirmDialogDemo() {
     const [open, setOpen] = useState(false);
@@ -285,6 +287,26 @@ const SYSTEM_CONFIG_DEMO_FIELDS = [
 function SystemConfigSectionDemo() {
     return (_jsx(SystemConfigSection, { configKey: "showcase.demo_field", title: "Campo de documento", description: "Demo \u2014 este card n\u00E3o salva de verdade nesta p\u00E1gina.", fields: SYSTEM_CONFIG_DEMO_FIELDS, initialValue: { visible: true, required: false, mask: 'cpf_cnpj' } }));
 }
+function ColorChipDemo() {
+    return (_jsxs("div", { className: "flex gap-2", children: [_jsx(ColorChip, { color: "var(--color-info)", children: "14:00" }), _jsx(ColorChip, { color: "var(--color-success)", children: "15:30" }), _jsx(ColorChip, { color: "var(--color-warning)", children: "17:00" })] }));
+}
+function FabDemo() {
+    return _jsx(Fab, { icon: Plus, onClick: () => { }, ariaLabel: "Novo compromisso" });
+}
+function PageHeadingDemo() {
+    return (_jsx(PageHeading, { eyebrow: "segunda-feira, 15 de setembro", title: "Oi, Ana", description: "Voc\u00EA tem 3 atendimentos hoje." }));
+}
+function SelectPopoverDemo() {
+    const [mes, setMes] = useState(9);
+    return (_jsx(SelectPopover, { ariaLabel: "M\u00EAs", value: mes, options: [
+            { value: 8, label: 'agosto' },
+            { value: 9, label: 'setembro' },
+            { value: 10, label: 'outubro' },
+        ], onChange: setMes }));
+}
+function ShadowLabDemo() {
+    return _jsx(ShadowLab, {});
+}
 function SectionDemo({ sectionId }) {
     if (sectionId === 'cards')
         return _jsx(CardsDemo, {});
@@ -302,8 +324,6 @@ function SectionDemo({ sectionId }) {
         return _jsx(BottomProgressBarDemo, {});
     if (sectionId === 'mosaic-grid')
         return _jsx(MosaicGridDemo, {});
-    if (sectionId === 'admin-page-reader')
-        return _jsx(AdminPageReaderDemo, {});
     if (sectionId === 'page-header')
         return _jsx(PageHeaderDemo, {});
     if (sectionId === 'bs-button')
@@ -360,6 +380,16 @@ function SectionDemo({ sectionId }) {
         return _jsx(PagesAdminShowcaseDemo, {});
     if (sectionId === 'wizard-layout-toggle')
         return _jsx(WizardLayoutToggleDemo, {});
+    if (sectionId === 'color-chip')
+        return _jsx(ColorChipDemo, {});
+    if (sectionId === 'fab')
+        return _jsx(FabDemo, {});
+    if (sectionId === 'page-heading')
+        return _jsx(PageHeadingDemo, {});
+    if (sectionId === 'select-popover')
+        return _jsx(SelectPopoverDemo, {});
+    if (sectionId === 'shadow-lab')
+        return _jsx(ShadowLabDemo, {});
     return _jsx(UiBetterSoftDemo, {});
 }
 export function ShowcaseSectionPage({ sectionId }) {

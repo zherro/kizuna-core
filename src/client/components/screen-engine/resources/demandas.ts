@@ -16,13 +16,25 @@ export const resourceDemandas: Record<string, ResourceConfig> = {
     schema: 'public',
     table: 'demanda',
     select:
-      'id,uid,cliente_id,category_id,status,created_at,updated_at,category:category_id(id,name,icon)',
+      'id,uid,cliente_id,category_id,status,attachments,expires_at,subcategory_ids,created_at,updated_at,category:category_id(id,name,icon)',
     primaryKey: 'id',
     defaultOrder: 'created_at',
     searchableColumns: [],
     mapInput: () => ({}),
     mapOutput: (record) => {
       const category = record.category as { name?: string } | null;
+      const attachments = Array.isArray(record.attachments) ? record.attachments : [];
+      const subcategoryIds = Array.isArray(record.subcategory_ids) ? record.subcategory_ids : [];
+      const expiresAt = record.expires_at ?? record.expiresAt ?? null;
+      // 'expirada' is a display-only status, not a real DB value — visibility/RLS and every
+      // `filter.status=aberta` query (e.g. AbertasTab, where prestadores browse open demandas)
+      // stay keyed off the real column on purpose, so an expired demanda keeps showing up
+      // exactly where an open one would; only the label changes.
+      const rawStatus = record.status ?? null;
+      const status =
+        rawStatus === 'aberta' && expiresAt && new Date(expiresAt as string).getTime() < Date.now()
+          ? 'expirada'
+          : rawStatus;
       return {
         id: String(record.id ?? ''),
         uid: record.uid ?? null,
@@ -30,7 +42,10 @@ export const resourceDemandas: Record<string, ResourceConfig> = {
         clienteId: record.cliente_id ?? null,
         categoryId: record.category_id ?? null,
         category: category ?? null,
-        status: record.status ?? null,
+        status,
+        attachments: attachments.map((id) => String(id)),
+        subcategoryIds: subcategoryIds.map((id) => Number(id)),
+        expiresAt,
         createdAt: record.created_at ?? record.createdAt,
         updatedAt: record.updated_at ?? record.updatedAt,
       };

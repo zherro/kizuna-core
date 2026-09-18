@@ -28,14 +28,27 @@ export type ImageGalleryManagerProps = {
   accept?: string;
   purpose?: string;
   maxFileSizeMb?: number;
+  /** Files allowed on upload, by extension (lowercase, no dot) and mime type — defaults to the
+   *  image-only whitelist this component originally shipped with. Pass a wider set (e.g. `+pdf`)
+   *  to reuse this component for mixed image/document attachments. */
+  acceptedExtensions?: Iterable<string>;
+  acceptedMimeTypes?: Iterable<string>;
+  /** Cap on how many files can be linked at once — defaults to 3 (the service-image gallery). */
+  maxFiles?: number;
+  /** Overrides the default "Até N fotos..." card description — needed once `acceptedExtensions`
+   *  stops being image-only, since the default text is image-specific. */
+  description?: string;
+  /** Hides upload/remove controls and just lists the linked files — used to display attachments
+   *  on a read-only detail screen (no `onPersist` call happens in this mode). */
+  readOnly?: boolean;
   onSaved: (imageIds: string[]) => void;
   /** Attach the uploaded file ids to a parent record/table. Called with
    *  `(referenceId, nextImageIds)`; must return the list of saved ids — the
-   *  component sets its selection state from the returned list. */
-  onPersist: (referenceId: string, nextImageIds: string[]) => Promise<Array<string | number>>;
+   *  component sets its selection state from the returned list. Not called in `readOnly` mode. */
+  onPersist?: (referenceId: string, nextImageIds: string[]) => Promise<Array<string | number>>;
 };
 
-const MAX_IMAGES = 3;
+const DEFAULT_MAX_IMAGES = 3;
 const ACCEPTED_IMAGE_EXTENSIONS = new Set(['jpg', 'jpeg', 'gif', 'png', 'heic', 'heif', 'webp']);
 const ACCEPTED_IMAGE_MIME_TYPES = new Set([
   'image/jpeg',
@@ -46,7 +59,7 @@ const ACCEPTED_IMAGE_MIME_TYPES = new Set([
   'image/webp',
 ]);
 
-function isAcceptedImageFile(file: File) {
+function isAcceptedFile(file: File, extensions: Set<string>, mimeTypes: Set<string>) {
   const fileName = String(file.name ?? '')
     .trim()
     .toLowerCase();
@@ -55,7 +68,7 @@ function isAcceptedImageFile(file: File) {
     .trim()
     .toLowerCase();
 
-  return ACCEPTED_IMAGE_EXTENSIONS.has(extension) || ACCEPTED_IMAGE_MIME_TYPES.has(mimeType);
+  return extensions.has(extension) || mimeTypes.has(mimeType);
 }
 
 function normalizeIds(values: Array<string | number>) {
@@ -79,9 +92,22 @@ export function ImageGalleryManager({
   accept = '.jpg,.jpeg,.gif,.png,.heic,.heif,.webp,image/jpeg,image/png,image/gif,image/heic,image/heif,image/webp',
   purpose = 'image',
   maxFileSizeMb = 5,
+  acceptedExtensions,
+  acceptedMimeTypes,
+  maxFiles = DEFAULT_MAX_IMAGES,
+  description,
+  readOnly = false,
   onSaved,
   onPersist,
 }: ImageGalleryManagerProps) {
+  const extensionWhitelist = useMemo(
+    () => new Set(acceptedExtensions ?? ACCEPTED_IMAGE_EXTENSIONS),
+    [acceptedExtensions]
+  );
+  const mimeWhitelist = useMemo(
+    () => new Set(acceptedMimeTypes ?? ACCEPTED_IMAGE_MIME_TYPES),
+    [acceptedMimeTypes]
+  );
   const [items, setItems] = useState<StorageFileRecord[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>(normalizeIds(initialImageIds));
   const [loading, setLoading] = useState(false);
@@ -171,6 +197,7 @@ export function ImageGalleryManager({
   }, [purpose, selectedIds]);
 
   async function persistImageIds(nextIds: string[], successMessage: string) {
+    if (!onPersist) return nextIds;
     const savedIds = await onPersist(referenceId, nextIds);
     const normalized = normalizeIds(savedIds);
     setSelectedIds(normalized);
@@ -187,25 +214,27 @@ export function ImageGalleryManager({
     setSuccess('');
 
     try {
-      const remainingSlots = Math.max(0, MAX_IMAGES - selectedIds.length);
+      const remainingSlots = Math.max(0, maxFiles - selectedIds.length);
       if (remainingSlots <= 0) {
-        setError(`Limite de ${MAX_IMAGES} imagens atingido.`);
+        setError(`Limite de ${maxFiles} arquivos atingido.`);
         return;
       }
 
       const form = new FormData();
       const selectedFiles = Array.from(files);
-      const invalidFiles = selectedFiles.filter((file) => !isAcceptedImageFile(file));
+      const invalidFiles = selectedFiles.filter(
+        (file) => !isAcceptedFile(file, extensionWhitelist, mimeWhitelist)
+      );
 
       if (invalidFiles.length > 0) {
-        setError('Envie apenas arquivos JPG, GIF, PNG, HEIC ou WEBP.');
+        setError('Tipo de arquivo não permitido.');
         return;
       }
 
       const queue = selectedFiles.slice(0, remainingSlots);
 
       if (selectedFiles.length > remainingSlots) {
-        setError(`Voce pode manter no maximo ${MAX_IMAGES} imagens.`);
+        setError(`Você pode manter no máximo ${maxFiles} arquivos.`);
       }
 
       queue.forEach((file) => {
@@ -274,12 +303,14 @@ export function ImageGalleryManager({
 
   return (
     <Card>
-      <CardHeader>
-        <CardDescription>
-          Até {MAX_IMAGES} fotos nos formatos JPG, GIF, PNG, HEIC ou WEBP. (Tamanho máximo de{' '}
-          {maxFileSizeMb} MB por arquivo)
-        </CardDescription>
-      </CardHeader>
+      {readOnly ? null : (
+        <CardHeader>
+          <CardDescription>
+            {description ??
+              `Até ${maxFiles} fotos nos formatos JPG, GIF, PNG, HEIC ou WEBP. (Tamanho máximo de ${maxFileSizeMb} MB por arquivo)`}
+          </CardDescription>
+        </CardHeader>
+      )}
       <CardContent className="space-y-4">
         {error ? (
           <div className="flex items-start gap-2 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/70 dark:bg-red-950/40 dark:text-red-300">
@@ -295,28 +326,30 @@ export function ImageGalleryManager({
           </div>
         ) : null}
 
-        <div className="space-y-2">
-          <div className="flex items-center gap-3">
-            <label
-              htmlFor="image-gallery-upload"
-              className="inline-flex min-h-16 w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-background px-4 py-4 text-sm font-medium text-foreground transition hover:bg-accent"
-            >
-              <Upload className="h-4 w-4" />
-              {uploading ? 'Enviando...' : 'Selecionar arquivos'}
-            </label>
+        {readOnly ? null : (
+          <div className="space-y-2">
+            <div className="flex items-center gap-3">
+              <label
+                htmlFor="image-gallery-upload"
+                className="inline-flex min-h-16 w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-background px-4 py-4 text-sm font-medium text-foreground transition hover:bg-accent"
+              >
+                <Upload className="h-4 w-4" />
+                {uploading ? 'Enviando...' : 'Selecionar arquivos'}
+              </label>
+            </div>
+            <input
+              id="image-gallery-upload"
+              type="file"
+              accept={accept}
+              multiple
+              className="hidden h-4"
+              onChange={(event) => {
+                void handleUpload(event.target.files);
+                event.currentTarget.value = '';
+              }}
+            />
           </div>
-          <input
-            id="image-gallery-upload"
-            type="file"
-            accept={accept}
-            multiple
-            className="hidden h-4"
-            onChange={(event) => {
-              void handleUpload(event.target.files);
-              event.currentTarget.value = '';
-            }}
-          />
-        </div>
+        )}
 
         <div className="space-y-2">
           {loading ? (
@@ -338,7 +371,7 @@ export function ImageGalleryManager({
 
           {!loading && visibleItems.length === 0 ? (
             <p className="rounded-md border border-dashed border-border px-3 py-2 text-xs text-muted-foreground">
-              Nenhuma imagem vinculada ainda.
+              Nenhum arquivo vinculado ainda.
             </p>
           ) : null}
 
@@ -347,39 +380,47 @@ export function ImageGalleryManager({
               {visibleItems.map((item, index) => {
                 const deleting = busyDeleteIds.has(String(item.id));
                 const isImage = (item.mimeType ?? '').startsWith('image/');
-                const isCover = index === 0;
+                const isCover = index === 0 && isImage;
+
+                const thumb = isImage ? (
+                  <Image
+                    src={`/api/storage/files/${item.id}/content`}
+                    alt={item.originalName}
+                    width={112}
+                    height={112}
+                    className="h-14 w-14 object-cover"
+                    loading="lazy"
+                    unoptimized
+                  />
+                ) : (
+                  <div className="flex h-14 w-14 items-center justify-center text-[10px] text-muted-foreground">
+                    Abrir
+                  </div>
+                );
 
                 return (
                   <div
                     key={item.id}
                     className="flex items-center gap-3 rounded-xl border border-border/60 bg-card p-2 pr-3 transition-colors hover:border-border"
                   >
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (isImage) {
-                          setPreviewItem(item);
-                        }
-                      }}
-                      className="relative block h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-border bg-muted/20"
-                      disabled={!isImage}
-                    >
-                      {isImage ? (
-                        <Image
-                          src={`/api/storage/files/${item.id}/content`}
-                          alt={item.originalName}
-                          width={112}
-                          height={112}
-                          className="h-14 w-14 object-cover"
-                          loading="lazy"
-                          unoptimized
-                        />
-                      ) : (
-                        <div className="flex h-14 w-14 items-center justify-center text-[10px] text-muted-foreground">
-                          Sem miniatura
-                        </div>
-                      )}
-                    </button>
+                    {isImage ? (
+                      <button
+                        type="button"
+                        onClick={() => setPreviewItem(item)}
+                        className="relative block h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-border bg-muted/20"
+                      >
+                        {thumb}
+                      </button>
+                    ) : (
+                      <a
+                        href={`/api/storage/files/${item.id}/content`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="relative block h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-border bg-muted/20"
+                      >
+                        {thumb}
+                      </a>
+                    )}
 
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5">
@@ -397,23 +438,25 @@ export function ImageGalleryManager({
                       </p>
                     </div>
 
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="shrink-0 text-muted-foreground hover:text-destructive"
-                      onClick={() => {
-                        void handleRemove(String(item.id));
-                      }}
-                      disabled={deleting}
-                      aria-label={`Desvincular ${item.originalName}`}
-                    >
-                      {deleting ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Trash2 className="h-4 w-4" />
-                      )}
-                    </Button>
+                    {readOnly ? null : (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="shrink-0 text-muted-foreground hover:text-destructive"
+                        onClick={() => {
+                          void handleRemove(String(item.id));
+                        }}
+                        disabled={deleting}
+                        aria-label={`Desvincular ${item.originalName}`}
+                      >
+                        {deleting ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-4 w-4" />
+                        )}
+                      </Button>
+                    )}
                   </div>
                 );
               })}

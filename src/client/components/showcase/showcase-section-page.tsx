@@ -27,7 +27,6 @@ import { WizardLayoutToggle } from '../wizard/wizard-layout-toggle';
 import type { WizardLayout } from '../wizard/wizard-layout';
 import { FixedBottomProgress } from '../ui-better-soft/fixed-bottom-progress';
 import { MosaicGrid, type MosaicGridItem } from '../ui-better-soft/mosaic-grid';
-import { AdminPageReader } from '../ui-better-soft/headers/admin-page-reader';
 import { PageHeader } from '../ui-better-soft/headers/page-header';
 import { BsButton } from '../ui-better-soft/buttons/bs-button';
 import { ToggleRow } from '../ui-better-soft/toggle-row';
@@ -57,6 +56,11 @@ import { LocationTrigger, LocationModal } from '../location-modal';
 import { FormBuilderShowcaseDemo } from '../form-builder/showcase-demo';
 import { FormsShowcaseDemo } from '../forms/showcase-demo';
 import { PagesAdminShowcaseDemo } from '../pages/showcase-demo';
+import { ColorChip } from '../ui-better-soft/color-chip';
+import { Fab } from '../ui-better-soft/fab';
+import { PageHeading } from '../ui-better-soft/headers/page-heading';
+import { SelectPopover } from '../ui-better-soft/select-popover';
+import { ShadowLab } from '../shadow-lab';
 import { useForm } from '@kizuna/core';
 import * as Yup from 'yup';
 import { getShowcaseSection, type ShowcaseSectionId } from './showcase-sections';
@@ -336,42 +340,34 @@ function BottomProgressBarDemo() {
   );
 }
 
-function AdminPageReaderDemo() {
-  return (
-    <AdminPageReader
-      title="Preferencias"
-      description="Diga como voce quer receber pedidos e quando esta disponivel para atender."
-      backHref="/showcase/admin-page-reader"
-      backLabel="Ir ao painel"
-      actions={
-        <>
-          <BsButton variant="outline" label="Restaurar padrao" />
-          <BsButton variant="default" label="Salvar" icon={Save} />
-        </>
-      }
-      className="mb-0 rounded-xl border border-border bg-background p-4"
-    />
-  );
-}
-
 function PageHeaderDemo() {
   return (
-    <PageHeader
-      eyebrow="Meus serviços"
-      title="Gerenciar serviços"
-      description="Crie serviços em etapas e continue a edição quando precisar."
-      actions={
-        <>
-          <Link href="/painel" className={buttonVariants({ variant: 'outline' })}>
-            Voltar ao painel
-          </Link>
+    <div className="space-y-8">
+      <PageHeader
+        eyebrow="Meus serviços"
+        title="Gerenciar serviços"
+        description="Crie serviços em etapas e continue a edição quando precisar."
+        actions={
           <Link href="/painel/meus-servicos/novo" className={buttonVariants()}>
             <Plus className="h-4 w-4" />
             Novo serviço
           </Link>
-        </>
-      }
-    />
+        }
+      />
+
+      <PageHeader
+        title="Preferências"
+        description="Diga como você quer receber pedidos e quando está disponível para atender."
+        backHref="/painel"
+        actions={
+          <>
+            <BsButton variant="outline" label="Restaurar padrao" />
+            <BsButton variant="default" label="Salvar" icon={Save} />
+          </>
+        }
+        className="rounded-xl border border-border bg-background p-4"
+      />
+    </div>
   );
 }
 
@@ -452,13 +448,24 @@ function ScheduleRowDemo() {
 
 function SettingsSectionDemo() {
   return (
-    <Section
-      icon={<Bell className="h-4 w-4" />}
-      title="Notificacoes"
-      description="Escolha o que voce quer receber e por onde."
-    >
-      <p className="text-sm text-muted-foreground">Conteudo da secao vai aqui.</p>
-    </Section>
+    <div className="space-y-4">
+      <Section
+        icon={<Bell className="h-4 w-4" />}
+        title="Notificacoes"
+        description="Escolha o que voce quer receber e por onde."
+      >
+        <p className="text-sm text-muted-foreground">Conteudo da secao vai aqui.</p>
+      </Section>
+
+      <Section
+        variant="compact"
+        accentColor="var(--color-primary)"
+        className="flex items-center gap-3"
+      >
+        <p className="text-base font-bold">Corte de cabelo</p>
+        <p className="text-sm text-muted-foreground">14:00 · Ana Souza</p>
+      </Section>
+    </div>
   );
 }
 
@@ -487,10 +494,16 @@ function ChoiceCardDemo() {
 
 function ModalPanelDemo() {
   const [open, setOpen] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   return (
-    <>
+    <div className="flex flex-wrap gap-2">
       <BsButton label="Nova folga" onClick={() => setOpen(true)} />
+      <BsButton
+        variant="outline"
+        label="Novo compromisso (bottom sheet)"
+        onClick={() => setSheetOpen(true)}
+      />
 
       <ModalPanel
         open={open}
@@ -509,7 +522,13 @@ function ModalPanelDemo() {
       >
         <p className="text-sm text-muted-foreground">Conteudo do formulario aqui.</p>
       </ModalPanel>
-    </>
+
+      <ModalPanel open={sheetOpen} onClose={() => setSheetOpen(false)} anchor="bottom-sheet">
+        <h2 className="text-2xl font-bold">Novo compromisso</h2>
+        <p className="mt-1 text-sm text-muted-foreground">Conteudo do formulario aqui.</p>
+        <BsButton label="Fechar" onClick={() => setSheetOpen(false)} />
+      </ModalPanel>
+    </div>
   );
 }
 
@@ -885,6 +904,51 @@ function SystemConfigSectionDemo() {
   );
 }
 
+function ColorChipDemo() {
+  return (
+    <div className="flex gap-2">
+      <ColorChip color="var(--color-info)">14:00</ColorChip>
+      <ColorChip color="var(--color-success)">15:30</ColorChip>
+      <ColorChip color="var(--color-warning)">17:00</ColorChip>
+    </div>
+  );
+}
+
+function FabDemo() {
+  return <Fab icon={Plus} onClick={() => {}} ariaLabel="Novo compromisso" />;
+}
+
+function PageHeadingDemo() {
+  return (
+    <PageHeading
+      eyebrow="segunda-feira, 15 de setembro"
+      title="Oi, Ana"
+      description="Você tem 3 atendimentos hoje."
+    />
+  );
+}
+
+function SelectPopoverDemo() {
+  const [mes, setMes] = useState(9);
+
+  return (
+    <SelectPopover
+      ariaLabel="Mês"
+      value={mes}
+      options={[
+        { value: 8, label: 'agosto' },
+        { value: 9, label: 'setembro' },
+        { value: 10, label: 'outubro' },
+      ]}
+      onChange={setMes}
+    />
+  );
+}
+
+function ShadowLabDemo() {
+  return <ShadowLab />;
+}
+
 function SectionDemo({ sectionId }: { sectionId: ShowcaseSectionId }) {
   if (sectionId === 'cards') return <CardsDemo />;
   if (sectionId === 'buttons') return <ButtonsDemo />;
@@ -894,7 +958,6 @@ function SectionDemo({ sectionId }: { sectionId: ShowcaseSectionId }) {
   if (sectionId === 'progress') return <ProgressDemo />;
   if (sectionId === 'bottom-progress-bar') return <BottomProgressBarDemo />;
   if (sectionId === 'mosaic-grid') return <MosaicGridDemo />;
-  if (sectionId === 'admin-page-reader') return <AdminPageReaderDemo />;
   if (sectionId === 'page-header') return <PageHeaderDemo />;
   if (sectionId === 'bs-button') return <BsButtonDemo />;
   if (sectionId === 'toggle-row') return <ToggleRowDemo />;
@@ -923,6 +986,11 @@ function SectionDemo({ sectionId }: { sectionId: ShowcaseSectionId }) {
   if (sectionId === 'forms-manager') return <FormsShowcaseDemo />;
   if (sectionId === 'pages-admin') return <PagesAdminShowcaseDemo />;
   if (sectionId === 'wizard-layout-toggle') return <WizardLayoutToggleDemo />;
+  if (sectionId === 'color-chip') return <ColorChipDemo />;
+  if (sectionId === 'fab') return <FabDemo />;
+  if (sectionId === 'page-heading') return <PageHeadingDemo />;
+  if (sectionId === 'select-popover') return <SelectPopoverDemo />;
+  if (sectionId === 'shadow-lab') return <ShadowLabDemo />;
   return <UiBetterSoftDemo />;
 }
 

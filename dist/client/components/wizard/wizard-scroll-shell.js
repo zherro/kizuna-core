@@ -16,7 +16,7 @@ function prefersReducedMotion() {
  * long scroll; the current step is always open and the next is revealed once it validates. Chrome
  * (mode label + toggle + Cancelar) is projected into the app's single header by `<Wizard>`.
  */
-export function WizardScrollShell({ steps, currentIndex, canContinue, submitting, error, isLastStep, onAdvance, onFinish, finishBlocked, autoReveal = true, ground = 'default', naviSlot, renderStep, }) {
+export function WizardScrollShell({ steps, currentIndex, state, canContinue, submitting, error, isLastStep, onAdvance, onFinish, finishBlocked, autoReveal = true, ground = 'default', naviSlot, renderStep, }) {
     const total = steps.length;
     const revealCount = Math.max(1, Math.min(currentIndex + 1, total));
     const visible = steps.slice(0, revealCount);
@@ -49,7 +49,14 @@ export function WizardScrollShell({ steps, currentIndex, canContinue, submitting
         }
         prevCurrentRef.current = currentIndex;
     }, [currentIndex]);
-    // Reveal the next step when the current one is valid. One discrete bump per pass.
+    // Reveal the next step when the current one is valid. One discrete bump per pass. A short
+    // grace delay — sem isto, uma resposta que já nasce válida de uma vez só (ex.: clicar num
+    // exemplo pronto, que preenche o campo inteiro num clique) avançava/colapsava o passo
+    // instantaneamente, sem o usuário ter tempo de ver o que preencheu ou reconsiderar. `state` no
+    // array de deps REINICIA a contagem a cada mudança — sem isto, marcar a 1ª tag de um campo
+    // multi-seleção (ex. especialidades) já disparava o timer, e ele avançava no meio da seleção
+    // das próximas tags porque nada mais o resetava depois (só `canContinue` virando true de novo,
+    // o que não acontece pra seleções seguintes — ele já era true).
     useEffect(() => {
         if (!autoReveal)
             return;
@@ -57,9 +64,13 @@ export function WizardScrollShell({ steps, currentIndex, canContinue, submitting
             return;
         if (isLastStep || !canContinue)
             return;
-        advancingRef.current = true;
-        onAdvance();
-    }, [autoReveal, submitting, canContinue, isLastStep, currentIndex, onAdvance]);
+        const t = setTimeout(() => {
+            advancingRef.current = true;
+            onAdvance();
+        }, 600);
+        return () => clearTimeout(t);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [autoReveal, submitting, canContinue, isLastStep, currentIndex, onAdvance, state]);
     useEffect(() => {
         advancingRef.current = false;
     }, [currentIndex, submitting]);
@@ -82,7 +93,7 @@ export function WizardScrollShell({ steps, currentIndex, canContinue, submitting
                                     return (_jsxs("section", { ref: (el) => {
                                             sectionRefs.current[index] = el;
                                         }, "data-step-key": step.key, "data-answered": answered || undefined, "data-open": open || undefined, className: cn('wz-scroll-step scroll-mt-20', isNewest && open && 'wz-scroll-reveal'), children: [answered ? (_jsxs("button", { type: "button", onClick: () => toggleReopen(index), className: "wz-scroll-summary flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm", "aria-expanded": open, children: [_jsx("span", { className: "grid h-5 w-5 place-items-center rounded-full bg-primary text-primary-foreground", children: _jsx(Check, { className: "h-3 w-3" }) }), _jsx("span", { className: "flex-1 font-medium text-foreground", children: step.label }), _jsx(ChevronDown, { className: cn('h-4 w-4 text-muted-foreground transition-transform', open && 'rotate-180') })] })) : null, open ? (_jsx("div", { className: cn(answered && 'pt-3'), children: renderStep(step, index) })) : null] }, step.key));
-                                }) }), naviSlot] }) }), _jsx("div", { "data-wz-footer": true, className: "sticky bottom-0 z-20 shrink-0 border-t border-border bg-background/95 backdrop-blur", children: _jsxs("div", { className: "mx-auto flex max-w-2xl items-center justify-end gap-3 px-3 py-3 sm:px-6", children: [!isLastStep ? (_jsx("span", { className: "mr-auto text-xs text-muted-foreground", children: canContinue ? 'Pronto pra avançar' : 'Continue respondendo' })) : null, !isLastStep && !autoReveal ? (_jsx(Button, { onClick: onAdvance, disabled: submitting || !canContinue, children: submitting ? ('Salvando...') : (_jsxs(_Fragment, { children: ["Avan\u00E7ar ", _jsx(ChevronRight, { className: "ml-1 h-4 w-4" })] })) })) : (_jsx(Button, { onClick: onFinish, disabled: submitting || !isLastStep || !canContinue || Boolean(finishBlocked), children: submitting ? ('Salvando...') : (_jsxs(_Fragment, { children: [_jsx(Check, { className: "mr-1 h-4 w-4" }), " Concluir"] })) }))] }) })] }) }));
+                                }) }), naviSlot] }) }), _jsx("div", { "data-wz-footer": true, className: "fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background/95 backdrop-blur", children: _jsxs("div", { className: "mx-auto flex max-w-2xl items-center justify-end gap-3 px-3 py-3 sm:px-6", children: [!isLastStep ? (_jsx("span", { className: "mr-auto text-xs text-muted-foreground", children: canContinue ? 'Pronto pra avançar' : 'Continue respondendo' })) : null, !isLastStep && !autoReveal ? (_jsx(Button, { onClick: onAdvance, disabled: submitting || !canContinue, children: submitting ? ('Salvando...') : (_jsxs(_Fragment, { children: ["Avan\u00E7ar ", _jsx(ChevronRight, { className: "ml-1 h-4 w-4" })] })) })) : (_jsx(Button, { onClick: onFinish, disabled: submitting || !isLastStep || !canContinue || Boolean(finishBlocked), children: submitting ? ('Salvando...') : (_jsxs(_Fragment, { children: [_jsx(Check, { className: "mr-1 h-4 w-4" }), " Concluir"] })) }))] }) })] }) }));
 }
 export default WizardScrollShell;
 //# sourceMappingURL=wizard-scroll-shell.js.map

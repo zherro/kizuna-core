@@ -52,3 +52,10 @@ export {
   clearLoginFailures,
   LOCKOUT_TIERS_ENV,
 } from './login-lockout';
+
+export {
+  getSeoSitemapCacheSeconds,
+  SEO_SITEMAP_CACHE_ENV,
+  getSeoSitemapPageSize,
+  SEO_SITEMAP_PAGE_SIZE_ENV,
+} from './seo-config';

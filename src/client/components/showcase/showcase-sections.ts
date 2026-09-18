@@ -9,7 +9,6 @@ export type ShowcaseSectionId =
   | 'wizard-layout-toggle'
   | 'bottom-progress-bar'
   | 'mosaic-grid'
-  | 'admin-page-reader'
   | 'page-header'
   | 'bs-button'
   | 'toggle-row'
@@ -36,9 +35,14 @@ export type ShowcaseSectionId =
   | 'system-config-section'
   | 'form-builder'
   | 'forms-manager'
-  | 'pages-admin';
+  | 'pages-admin'
+  | 'color-chip'
+  | 'fab'
+  | 'page-heading'
+  | 'select-popover'
+  | 'shadow-lab';
 
-export type ShowcaseGroupId = 'shadcn-default' | 'ui-better-soft';
+export type ShowcaseGroupId = 'shadcn-default' | 'ui-better-soft' | 'tools';
 
 export type ShowcaseSection = {
   id: ShowcaseSectionId;
@@ -56,6 +60,7 @@ export type ShowcaseGroup = {
 export const SHOWCASE_GROUPS: ShowcaseGroup[] = [
   { id: 'shadcn-default', label: 'Shadcn Default' },
   { id: 'ui-better-soft', label: 'ui-better-soft' },
+  { id: 'tools', label: 'Tools' },
 ];
 
 export const SHOWCASE_SECTIONS: ShowcaseSection[] = [
@@ -265,36 +270,11 @@ export function MosaicGridExactPreview() {
 }`,
   },
   {
-    id: 'admin-page-reader',
-    groupId: 'ui-better-soft',
-    label: 'Admin Page Reader',
-    description: 'Cabecalho de pagina administrativa com link de volta, titulo, descricao e acoes.',
-    usageCode: `import { Save } from 'lucide-react';
-import { AdminPageReader } from '../ui-better-soft/headers/admin-page-reader';
-import { BsButton } from '../ui-better-soft/buttons/bs-button';
-
-export function PreferenciasHeader() {
-  return (
-    <AdminPageReader
-      title="Preferencias"
-      description="Diga como voce quer receber pedidos e quando esta disponivel para atender."
-      backHref="/painel"
-      actions={
-        <>
-          <BsButton variant="outline" label="Restaurar padrao" onClick={() => {}} />
-          <BsButton variant="default" label="Salvar" icon={Save} onClick={() => {}} />
-        </>
-      }
-    />
-  );
-}`,
-  },
-  {
     id: 'page-header',
     groupId: 'ui-better-soft',
     label: 'Page Header',
     description:
-      'Cabecalho de pagina de listagem/gestao: eyebrow + titulo + descricao a esquerda, acoes (voltar, nova acao...) a direita. Empilha no mobile.',
+      'Cabecalho de pagina de listagem/gestao: link de voltar opcional (seta + texto) + eyebrow + titulo + descricao a esquerda, acoes (nova acao...) a direita. Empilha no mobile. Tamanho/peso do titulo vem do tema ativo (NEXT_PUBLIC_UI_STYLE), igual PageHeading.',
     usageCode: `import Link from 'next/link';
 import { Plus } from 'lucide-react';
 import { buttonVariants } from '../ui/button';
@@ -306,16 +286,12 @@ export function ServicosHeader() {
       eyebrow="Meus serviços"
       title="Gerenciar serviços"
       description="Crie serviços em etapas e continue a edição quando precisar."
+      backHref="/painel"
       actions={
-        <>
-          <Link href="/painel" className={buttonVariants({ variant: 'outline' })}>
-            Voltar ao painel
-          </Link>
-          <Link href="/painel/meus-servicos/novo" className={buttonVariants()}>
-            <Plus className="h-4 w-4" />
-            Novo serviço
-          </Link>
-        </>
+        <Link href="/painel/meus-servicos/novo" className={buttonVariants()}>
+          <Plus className="h-4 w-4" />
+          Novo serviço
+        </Link>
       }
     />
   );
@@ -407,7 +383,7 @@ export function LunchBreakField() {
     groupId: 'ui-better-soft',
     label: 'Settings Section',
     description:
-      'Bloco com icone, titulo, descricao e conteudo. Agrupa controles de uma pagina de configuracoes.',
+      'Card do kit: com cabecalho (icone + titulo + descricao) no variant="default", ou sem cabecalho para item de lista (variant="compact") ou wrapper maior (variant="flat"). Raio/sombra vem do tema ativo (NEXT_PUBLIC_UI_STYLE).',
     usageCode: `import { Bell } from 'lucide-react';
 import { Section } from '../ui-better-soft/section';
 
@@ -419,6 +395,16 @@ export function NotificationsBlock() {
       description="Escolha o que voce quer receber e por onde."
     >
       {/* controles aqui */}
+    </Section>
+  );
+}
+
+// sem cabeçalho — item de lista compacto:
+export function AppointmentCard() {
+  return (
+    <Section variant="compact" accentColor="var(--color-primary)" className="flex items-center gap-3">
+      <p className="text-base font-bold">Corte de cabelo</p>
+      <p className="text-sm text-muted-foreground">14:00 · Ana Souza</p>
     </Section>
   );
 }`,
@@ -459,7 +445,7 @@ export function SchedulePreferencePicker() {
     groupId: 'ui-better-soft',
     label: 'Modal Panel',
     description:
-      'Painel lateral que desliza da direita (mesmo formato do Sheet usado em formularios de criar/editar), com icone, titulo, descricao, conteudo e rodape de acoes.',
+      'anchor="side" (padrao) desliza da direita, mesmo formato do Sheet. anchor="bottom-sheet" ancora embaixo, sem drag handle — para telas mobile. title e opcional: sem ele, o painel nao renderiza cabecalho e quem chama monta o proprio topo em children.',
     usageCode: `import { useState } from 'react';
 import { Palmtree } from 'lucide-react';
 import { Button } from '../ui/button';
@@ -489,6 +475,21 @@ export function NewItemModal() {
         }
       >
         <p className="text-sm text-muted-foreground">Conteudo do formulario aqui.</p>
+      </ModalPanel>
+    </>
+  );
+}
+
+// ancorado embaixo, sem cabeçalho embutido (monta o próprio topo em children):
+export function NewAppointmentSheet() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <>
+      <BsButton label="Novo compromisso" onClick={() => setOpen(true)} />
+      <ModalPanel open={open} onClose={() => setOpen(false)} anchor="bottom-sheet">
+        <h2 className="text-2xl font-bold">Novo compromisso</h2>
+        <p className="mt-1 text-sm text-muted-foreground">Conteudo do formulario aqui.</p>
       </ModalPanel>
     </>
   );
@@ -994,6 +995,86 @@ const ref = useRef<DynamicFormStepHandle>(null);
 
 export function PaginasAdminPage() {
   return <PagesAdmin reservedSlugs={['painel', 'busca', 'anuncios', 'login']} />;
+}`,
+  },
+  {
+    id: 'color-chip',
+    groupId: 'ui-better-soft',
+    label: 'Color Chip',
+    description: 'Chip circular colorido via color-mix, no lugar de um badge com borda.',
+    usageCode: `import { ColorChip } from '../ui-better-soft/color-chip';
+
+export function TimeChip() {
+  return <ColorChip color="var(--color-info)">14:00</ColorChip>;
+}`,
+  },
+  {
+    id: 'fab',
+    groupId: 'ui-better-soft',
+    label: 'Fab',
+    description:
+      'Botão circular único, fixo no rodapé — a ação primária de uma tela mobile. Sem pílula, sem ação secundária.',
+    usageCode: `import { Plus } from 'lucide-react';
+import { Fab } from '../ui-better-soft/fab';
+
+export function NovoCompromissoFab() {
+  return <Fab icon={Plus} onClick={() => {}} ariaLabel="Novo compromisso" />;
+}`,
+  },
+  {
+    id: 'page-heading',
+    groupId: 'ui-better-soft',
+    label: 'Page Heading',
+    description:
+      'Heading simples de topo de tela (saudação, sem ações): eyebrow, título grande, descrição opcional. Tamanho do título vem do tema ativo (NEXT_PUBLIC_UI_STYLE).',
+    usageCode: `import { PageHeading } from '../ui-better-soft/headers/page-heading';
+
+export function AgendaGreeting() {
+  return (
+    <PageHeading
+      eyebrow="segunda-feira, 15 de setembro"
+      title="Oi, Ana"
+      description="Você tem 3 atendimentos hoje."
+    />
+  );
+}`,
+  },
+  {
+    id: 'select-popover',
+    groupId: 'ui-better-soft',
+    label: 'Select Popover',
+    description:
+      'Substituto do <select> nativo no mobile — o sistema operacional delega a UI da roda/lista fullscreen, fora do alcance de qualquer CSS.',
+    usageCode: `import { useState } from 'react';
+import { SelectPopover } from '../ui-better-soft/select-popover';
+
+export function MonthPicker() {
+  const [mes, setMes] = useState(9);
+
+  return (
+    <SelectPopover
+      ariaLabel="Mês"
+      value={mes}
+      options={[
+        { value: 8, label: 'agosto' },
+        { value: 9, label: 'setembro' },
+        { value: 10, label: 'outubro' },
+      ]}
+      onChange={setMes}
+    />
+  );
+}`,
+  },
+  {
+    id: 'shadow-lab',
+    groupId: 'tools',
+    label: 'Shadow Lab',
+    description:
+      'Ferramenta de dev para moldar um box-shadow na hora (deslocamento, desfoque, espalhamento, opacidade), com preview em branco-sobre-branco e cor-do-tema-sobre-fundo — os dois casos onde uma sombra fraca "some".',
+    usageCode: `import { ShadowLab } from '../shadow-lab';
+
+export function ShadowPlayground() {
+  return <ShadowLab />;
 }`,
   },
 ];

@@ -1,5 +1,5 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import { AdminPageReader } from '../ui-better-soft/headers/admin-page-reader';
+import { PageHeader } from '../ui-better-soft/headers/page-header';
 import { getPermissionsCatalog, getRoleGrants, getRoles, getTenantUsers, getUserOverrides, groupPermissions, } from './rbac-data';
 import { UserAccessPanel } from './user-access-panel';
 /**
@@ -21,6 +21,6 @@ export async function UserAccessManagerScreen() {
         getUserOverrides(),
         getRoleGrants(),
     ]);
-    return (_jsxs("div", { className: "mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8 md:px-6", children: [_jsx(AdminPageReader, { title: "Acessos dos usu\u00E1rios", description: "Ajuste o papel de cada membro e fa\u00E7a exce\u00E7\u00F5es pontuais de permiss\u00E3o. Voc\u00EA s\u00F3 consegue conceder o que j\u00E1 possui; retirar acesso (negar) \u00E9 sempre permitido." }), _jsx(UserAccessPanel, { users: users, roles: roles, groups: groupPermissions(permissions), roleGrants: roleGrants, initialOverrides: overrides })] }));
+    return (_jsxs("div", { className: "mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8 md:px-6", children: [_jsx(PageHeader, { title: "Acessos dos usu\u00E1rios", description: "Ajuste o papel de cada membro e fa\u00E7a exce\u00E7\u00F5es pontuais de permiss\u00E3o. Voc\u00EA s\u00F3 consegue conceder o que j\u00E1 possui; retirar acesso (negar) \u00E9 sempre permitido.", backHref: "/painel" }), _jsx(UserAccessPanel, { users: users, roles: roles, groups: groupPermissions(permissions), roleGrants: roleGrants, initialOverrides: overrides })] }));
 }
 //# sourceMappingURL=user-access-manager.js.map

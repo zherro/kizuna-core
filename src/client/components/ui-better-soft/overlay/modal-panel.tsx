@@ -1,13 +1,16 @@
 'use client';
+// soft-theme: lê activeTheme (kizuna-core/src/client/lib/ui-theme.ts) — classic/soft via NEXT_PUBLIC_UI_STYLE
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { X } from 'lucide-react';
+import { activeTheme } from '../../../lib/ui-theme';
 import { cn } from '../../../../lib/utils';
 
 type ModalPanelProps = {
   open: boolean;
   onClose: () => void;
-  title: string;
+  /** Sem `title`, o painel não renderiza cabeçalho — quem chama monta o próprio topo em `children`. */
+  title?: string;
   description?: string;
   icon?: ReactNode;
   children: ReactNode;
@@ -19,6 +22,11 @@ type ModalPanelProps = {
    * true fullscreen below a 500px viewport. Default keeps the `sm:max-w-lg` cap.
    */
   wide?: boolean;
+  /**
+   * `side` (padrão) desliza da direita, mesmo formato do Sheet. `bottom-sheet` ancora embaixo,
+   * sem drag handle — para o vocabulário soft de telas mobile.
+   */
+  anchor?: 'side' | 'bottom-sheet';
   /**
    * When `false`, the panel never closes on its own: a backdrop click is
    * ignored and ESC does nothing. Only the explicit X button (and whatever the
@@ -47,10 +55,12 @@ export function ModalPanel({
   footerFixed = false,
   headerFixed = false,
   wide = false,
+  anchor = 'side',
   dismissible = true,
 }: Readonly<ModalPanelProps>) {
   const overlayRef = useRef<HTMLDivElement>(null);
   const [entered, setEntered] = useState(false);
+  const isBottomSheet = anchor === 'bottom-sheet';
 
   useEffect(() => {
     if (!open) {
@@ -83,7 +93,10 @@ export function ModalPanel({
         if (dismissible && event.target === overlayRef.current) onClose();
       }}
       className={cn(
-        'fixed inset-0 z-50 bg-black/40 backdrop-blur-sm transition-opacity duration-300',
+        'fixed inset-0 z-50 transition-opacity duration-300',
+        isBottomSheet
+          ? 'flex items-end justify-center bg-foreground/40 px-4 pb-4'
+          : 'bg-black/40 backdrop-blur-sm',
         entered ? 'opacity-100' : 'opacity-0'
       )}
     >
@@ -91,39 +104,57 @@ export function ModalPanel({
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className={cn(
-          'fixed inset-y-0 right-0 flex h-full w-full flex-col overflow-y-auto border-l border-border bg-background shadow-xl transition-transform duration-300 ease-out',
-          wide ? 'min-[500px]:w-[90vw]' : 'sm:max-w-lg',
-          entered ? 'translate-x-0' : 'translate-x-full'
-        )}
+        className={
+          isBottomSheet
+            ? cn(
+                activeTheme.bottomSheet,
+                'transition-transform duration-300 ease-out',
+                entered ? 'translate-y-0' : 'translate-y-full'
+              )
+            : cn(
+                'fixed inset-y-0 right-0 flex h-full w-full flex-col overflow-y-auto border-l border-border bg-background shadow-xl transition-transform duration-300 ease-out',
+                wide ? 'min-[500px]:w-[90vw]' : 'sm:max-w-lg',
+                entered ? 'translate-x-0' : 'translate-x-full'
+              )
+        }
       >
-        <div
-          className={`${headerFixed ? 'sticky top-0 z-40 bg-background/40 backdrop-blur' : ''} flex items-start justify-between gap-3 border-b border-border px-5 py-4`}
-        >
-          <div>
-            <h2 className="flex items-center gap-2 text-base font-bold">
-              {icon}
-              {title}
-            </h2>
-            {description ? (
-              <p className="mt-1 text-sm text-muted-foreground">{description}</p>
-            ) : null}
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Fechar"
-            className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+        {title ? (
+          <div
+            className={cn(
+              headerFixed && 'sticky top-0 z-40 bg-background/40 backdrop-blur',
+              'flex items-start justify-between gap-3',
+              isBottomSheet ? 'mb-4' : 'border-b border-border px-5 py-4'
+            )}
           >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
+            <div>
+              <h2 className="flex items-center gap-2 text-base font-bold">
+                {icon}
+                {title}
+              </h2>
+              {description ? (
+                <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+              ) : null}
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Fechar"
+              className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        ) : null}
 
-        <div className="flex-1 px-5 py-4">{children}</div>
+        <div className={isBottomSheet ? 'flex-1' : 'flex-1 px-5 py-4'}>{children}</div>
 
         {footer ? (
           <div
-            className={`${footerFixed ? 'sticky bottom-0 z-40 bg-background/40 backdrop-blur' : ''} flex flex-wrap justify-end gap-2 border-t border-border px-5 py-4`}
+            className={cn(
+              footerFixed && 'sticky bottom-0 z-40 bg-background/40 backdrop-blur',
+              'flex flex-wrap justify-end gap-2',
+              isBottomSheet ? 'mt-4' : 'border-t border-border px-5 py-4'
+            )}
           >
             {footer}
           </div>

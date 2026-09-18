@@ -123,7 +123,7 @@ const DEFAULT_SIZE: Record<HtmlTag, ResponsiveSize> = {
 };
 
 const DEFAULT_WEIGHT: Record<HtmlTag, Weight> = {
-  h1: 'bold',
+  h1: 'semibold',
   h2: 'semibold',
   h3: 'semibold',
   h4: 'medium',

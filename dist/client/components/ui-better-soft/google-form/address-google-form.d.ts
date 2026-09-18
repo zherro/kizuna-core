@@ -42,7 +42,16 @@ type AddressFormProps = {
     features?: Partial<AddressFeatureFlags>;
     disabled?: boolean;
     className?: string;
+    /**
+     * `'compact'` shows only the CEP field inline; once it resolves (or the user picks a result
+     * from search), the rest collapses into a one-line summary + "Editar" button that opens the
+     * full field set in an overlay. Cuts how much of the step the address takes up. Defaults to
+     * `'full'` (every field inline, current behaviour).
+     */
+    layout?: 'full' | 'compact';
+    /** Label for the search trigger. Defaults to "Pesquisar localização". */
+    searchLabel?: string;
 };
-export declare function AddressForm({ value, onChange, features: featureOverrides, disabled, className, }: AddressFormProps): import("react/jsx-runtime").JSX.Element;
+export declare function AddressForm({ value, onChange, features: featureOverrides, disabled, className, layout, searchLabel, }: AddressFormProps): import("react/jsx-runtime").JSX.Element;
 export {};
 //# sourceMappingURL=address-google-form.d.ts.map

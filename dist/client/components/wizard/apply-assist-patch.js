@@ -1,6 +1,5 @@
 function isEmpty(v) {
-    return v === '' || v === null || v === undefined || v === 0 ||
-        (Array.isArray(v) && v.length === 0);
+    return (v === '' || v === null || v === undefined || v === 0 || (Array.isArray(v) && v.length === 0));
 }
 export function applyAssistPatch(patch, state, touched, opts) {
     const always = new Set(opts?.always ?? []);

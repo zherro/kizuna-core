@@ -4,4 +4,8 @@ export { FieldEditor } from './FieldEditor';
 export { FormResultViewer } from './FormResultViewer';
 export { FormBuilderShowcaseDemo } from './showcase-demo';
 export { validate, collectOutput, isFieldVisible, evalVisibleWhen } from './validate';
+export { groupFieldsIntoSteps } from './step-grouping';
+export type { StepGroupingOptions } from './step-grouping';
+export { ChoiceChips } from './choice-chips';
+export type { ChoiceChipsProps } from './choice-chips';
 export * from './types';

@@ -53,6 +53,12 @@ export function TaxonomyManager() {
         pageSize: 1000,
         loadErrorMessage: 'Nao foi possivel carregar as tags.',
     });
+    const groupLinksRes = useTenantResource({
+        resource: 'category_group_links',
+        defaultItems: [],
+        pageSize: 1000,
+        loadErrorMessage: 'Nao foi possivel carregar os vinculos de grupo.',
+    });
     const [search, setSearch] = useState('');
     const [expandedCategories, setExpandedCategories] = useState(new Set());
     const [expandedSubcategories, setExpandedSubcategories] = useState(new Set());
@@ -208,6 +214,12 @@ export function TaxonomyManager() {
                                 defaultSortOrder: sortedGroups.length
                                     ? Math.max(...sortedGroups.map((group) => group.sortOrder)) + 1
                                     : 1,
-                            }), onEdit: (group) => setEditTarget({ level: 'group', item: group }), onMove: handleMoveGroup }) })] }), _jsx(TaxonomyEditPanel, { target: editTarget, groups: groupsRes.items, categories: categoriesRes.items, subcategories: subcategoriesRes.items, onClose: () => setEditTarget(null), onSaved: handleSaved })] }));
+                            }), onEdit: (group) => setEditTarget({ level: 'group', item: group }), onMove: handleMoveGroup }) })] }), _jsx(TaxonomyEditPanel, { target: editTarget, groups: groupsRes.items, categories: categoriesRes.items, subcategories: subcategoriesRes.items, groupLinks: groupLinksRes.items, onLinkCreate: async (categoryId, categoryGroupId) => {
+                    const ok = await groupLinksRes.saveOne({
+                        categoryId,
+                        categoryGroupId,
+                    });
+                    return ok;
+                }, onLinkDelete: (linkId) => groupLinksRes.remove(linkId), onClose: () => setEditTarget(null), onSaved: handleSaved })] }));
 }
 //# sourceMappingURL=taxonomy-manager.js.map

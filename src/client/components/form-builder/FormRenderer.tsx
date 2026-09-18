@@ -8,11 +8,11 @@ import { Textarea } from '../ui/textarea';
 import { Label } from '../ui/label';
 import { Checkbox } from '../ui/checkbox';
 import { Switch } from '../ui/switch';
-import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Separator } from '../ui/separator';
 import { Button } from '../ui/button';
 import { Tooltip } from '../ui/tooltip';
+import { ChoiceChips } from './choice-chips';
 import { cn, resolveLucideIcon } from '../../../lib/utils';
 import { useResourceOptions } from '../../hooks/use-resource-options';
 import {
@@ -248,47 +248,22 @@ function BaseField({
     case 'multiselect': {
       const arr = (value as string[]) ?? [];
       return withLabel(
-        <div className="flex flex-wrap gap-2">
-          {options.map((o) => {
-            const active = arr.includes(o.value);
-            return (
-              <button
-                type="button"
-                key={o.value}
-                disabled={disabled}
-                onClick={() =>
-                  onChange(active ? arr.filter((x) => x !== o.value) : [...arr, o.value])
-                }
-                className={cn(
-                  'rounded-full border px-3 py-1 text-xs transition-colors',
-                  active
-                    ? 'border-primary bg-primary text-primary-foreground'
-                    : 'bg-background hover:bg-muted'
-                )}
-              >
-                {o.label}
-              </button>
-            );
-          })}
-        </div>
+        <ChoiceChips
+          options={options}
+          selected={arr}
+          disabled={disabled}
+          onToggle={(v) => onChange(arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v])}
+        />
       );
     }
     case 'radio':
       return withLabel(
-        <RadioGroup
-          value={(value as string) ?? ''}
-          onValueChange={(v) => onChange(v)}
+        <ChoiceChips
+          options={options}
+          selected={value ? [value as string] : []}
           disabled={disabled}
-        >
-          {options.map((o) => (
-            <div key={o.value} className="flex items-center gap-2">
-              <RadioGroupItem value={o.value} id={`${commonId}-${o.value}`} />
-              <Label htmlFor={`${commonId}-${o.value}`} className="font-normal">
-                {o.label}
-              </Label>
-            </div>
-          ))}
-        </RadioGroup>
+          onToggle={(v) => onChange(v)}
+        />
       );
     case 'checkbox':
       return (

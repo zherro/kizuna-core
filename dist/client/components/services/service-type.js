@@ -14,9 +14,10 @@ export const SERVICE_WIZARD_INITIAL_STATE = {
     rejectionReason: '',
     decisionNote: '',
     dynamicFormValid: true,
+    addressComplete: false,
 };
 /** Enum display labels moved to `./service-labels`; re-exported for back-compat. */
-export { SERVICE_STATUS_LABEL, SERVICE_LOCATION_LABEL, PRICE_UNIT_LABEL, } from './service-labels';
+export { SERVICE_STATUS_LABEL, SERVICE_LOCATION_LABEL, PRICE_UNIT_LABEL } from './service-labels';
 /** Curated subset of `price_unit` shown in the service wizard — the SAME list for every group and
  * category. O enum no banco continua com o conjunto completo; aqui ficam só as opções do nicho de
  * eventos, com rótulo/《ajuda》na linguagem do nicho. */

@@ -3,6 +3,9 @@ type PageHeaderProps = {
     eyebrow?: string;
     title: string;
     description?: string;
+    /** Compact "voltar" link (arrow + label) above the eyebrow. Omit to render nothing — no implicit default href. */
+    backHref?: string;
+    backLabel?: string;
     actions?: ReactNode;
     className?: string;
 };
@@ -12,6 +15,6 @@ type PageHeaderProps = {
  * app's 12-col `Grid` so it stacks cleanly at every breakpoint instead of
  * only flipping once at `md`.
  */
-export declare function PageHeader({ eyebrow, title, description, actions, className, }: Readonly<PageHeaderProps>): import("react/jsx-runtime").JSX.Element;
+export declare function PageHeader({ eyebrow, title, description, backHref, backLabel, actions, className, }: Readonly<PageHeaderProps>): import("react/jsx-runtime").JSX.Element;
 export {};
 //# sourceMappingURL=page-header.d.ts.map

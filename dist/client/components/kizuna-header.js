@@ -14,7 +14,7 @@ import { TopbarCompact } from './topbar-compact';
 export function KizunaHeader({ variant, eyebrow, brandLabel, searchHref, ...topbarProps } = {}) {
     const resolved = variant ?? (process.env.KIZUNA_HEADER_VARIANT === 'compact' ? 'compact' : 'classic');
     if (resolved === 'compact') {
-        return _jsx(TopbarCompact, { ...topbarProps, eyebrow: eyebrow, brandLabel: brandLabel, searchHref: searchHref });
+        return (_jsx(TopbarCompact, { ...topbarProps, eyebrow: eyebrow, brandLabel: brandLabel, searchHref: searchHref }));
     }
     return _jsx(Topbar, { ...topbarProps });
 }

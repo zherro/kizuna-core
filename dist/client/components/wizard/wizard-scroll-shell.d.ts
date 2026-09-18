@@ -4,6 +4,9 @@ export interface WizardScrollShellProps<S extends Record<string, unknown>> {
     steps: WizardStep<S>[];
     /** index of the step currently driving `canContinue` — also the count of answered steps */
     currentIndex: number;
+    /** wizard state — only used to reset the auto-reveal grace delay whenever it changes (see
+     * effect below); not read otherwise. */
+    state: S;
     canContinue: boolean;
     submitting: boolean;
     error?: string;
@@ -29,6 +32,6 @@ export interface WizardScrollShellProps<S extends Record<string, unknown>> {
  * long scroll; the current step is always open and the next is revealed once it validates. Chrome
  * (mode label + toggle + Cancelar) is projected into the app's single header by `<Wizard>`.
  */
-export declare function WizardScrollShell<S extends Record<string, unknown>>({ steps, currentIndex, canContinue, submitting, error, isLastStep, onAdvance, onFinish, finishBlocked, autoReveal, ground, naviSlot, renderStep, }: WizardScrollShellProps<S>): import("react/jsx-runtime").JSX.Element;
+export declare function WizardScrollShell<S extends Record<string, unknown>>({ steps, currentIndex, state, canContinue, submitting, error, isLastStep, onAdvance, onFinish, finishBlocked, autoReveal, ground, naviSlot, renderStep, }: WizardScrollShellProps<S>): import("react/jsx-runtime").JSX.Element;
 export default WizardScrollShell;
 //# sourceMappingURL=wizard-scroll-shell.d.ts.map

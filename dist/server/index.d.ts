@@ -9,4 +9,5 @@ export { isCaptchaEnabled, verifyCaptcha, type VerifyCaptchaResult } from './cap
 export type { PermissionMap } from '../types/auth';
 export { checkKizunaEnv, type EnvCheck, type MissingEnv } from '../lib/env-guard';
 export { checkLockout, recordLoginFailure, clearLoginFailures, LOCKOUT_TIERS_ENV, } from './login-lockout';
+export { getSeoSitemapCacheSeconds, SEO_SITEMAP_CACHE_ENV, getSeoSitemapPageSize, SEO_SITEMAP_PAGE_SIZE_ENV, } from './seo-config';
 //# sourceMappingURL=index.d.ts.map
