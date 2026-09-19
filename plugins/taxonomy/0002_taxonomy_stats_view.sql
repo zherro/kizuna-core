@@ -21,6 +21,7 @@ SELECT
   cs.name                                 AS subcategory_name,
   c.id                                    AS category_id,
   c.name                                  AS category_name,
+  c.icon                                  AS category_name,
   c.category_group_id                     AS category_group_id,
   (count(*) OVER (PARTITION BY c.id))::int AS qtd
 FROM public.categories_sub cs

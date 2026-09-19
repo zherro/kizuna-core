@@ -2,6 +2,7 @@
   "scripts": {
     "kizuna": "node kizuna-core/cli",
     "predev": "node kizuna-core/cli check",
+    "build:core": "npm --prefix kizuna-core run build",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
