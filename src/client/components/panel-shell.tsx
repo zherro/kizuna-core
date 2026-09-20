@@ -162,6 +162,13 @@ export function PanelShellBase({
   const isDevEnvironment = process.env.NODE_ENV !== 'production';
   const fullBleed = isFullBleedRoute?.(pathname) ?? false;
 
+  // Tag ao lado do nome: ROOT tem precedência sobre ADMIN (tenant_type).
+  const roleTag = user?.is_root
+    ? 'Root'
+    : (user?.tenant_type ?? '').toUpperCase() === 'ADMIN'
+      ? 'Admin'
+      : null;
+
   const passesAccessGate = (item: PanelNavItem) => isPanelNavItemAccessible(item, user);
 
   const visibleNavigationGroups = navGroups
@@ -416,16 +423,23 @@ export function PanelShellBase({
                   {user?.initials}
                 </div>
                 <div className="hidden min-w-0 sm:block">
-                  {userProfileHref ? (
-                    <Link
-                      href={userProfileHref}
-                      className="block truncate text-sm font-semibold text-foreground underline decoration-muted-foreground/40 underline-offset-2 hover:decoration-foreground"
-                    >
-                      {user?.name}
-                    </Link>
-                  ) : (
-                    <p className="truncate text-sm font-semibold text-foreground">{user?.name}</p>
-                  )}
+                  <div className="flex min-w-0 items-center gap-2">
+                    {userProfileHref ? (
+                      <Link
+                        href={userProfileHref}
+                        className="block truncate text-sm font-semibold text-foreground underline decoration-muted-foreground/40 underline-offset-2 hover:decoration-foreground"
+                      >
+                        {user?.name}
+                      </Link>
+                    ) : (
+                      <p className="truncate text-sm font-semibold text-foreground">{user?.name}</p>
+                    )}
+                    {roleTag ? (
+                      <span className="shrink-0 rounded bg-muted px-1.5 py-px text-[9px] font-medium uppercase leading-none tracking-wide text-muted-foreground">
+                        {roleTag}
+                      </span>
+                    ) : null}
+                  </div>
                   <p className="truncate text-xs text-muted-foreground">{user?.subtitle}</p>
                 </div>
                 <button

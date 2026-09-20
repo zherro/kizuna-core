@@ -1,6 +1,7 @@
 'use client';
 
 import { Check } from 'lucide-react';
+import { useAppPreferences } from '../../../providers/app-preferences-provider';
 import { QuillEditor } from '../../ui/quill-editor';
 import { cn } from '../../../../lib/utils';
 import type { WizardStepProps } from '../../wizard/types';
@@ -15,6 +16,8 @@ export const DESCRIPTION_MIN_LENGTH = 20;
 
 export function StepDescription({ state, patch, entities }: WizardStepProps<ServiceWizardState>) {
   const value = state.description ?? '';
+  const { messages } = useAppPreferences();
+  const t = messages.wizard;
   const length = stripHtml(value).length;
   const met = length >= DESCRIPTION_MIN_LENGTH;
 
@@ -37,20 +40,20 @@ export function StepDescription({ state, patch, entities }: WizardStepProps<Serv
   return (
     <div className="space-y-6">
       <StepHeader
-        title="Conte um pouco sobre o seu trabalho"
-        subtitle="Escreva com suas palavras: sua experiência, o que faz de diferente e como você atende."
-        why="É aqui que o cliente decide entre te chamar ou passar para o próximo anúncio. Responder as dúvidas comuns (experiência, o que está incluso, prazo, garantia) evita idas e vindas no chat e traz contatos mais decididos."
+        title={t.description.title}
+        subtitle={t.description.subtitle}
+        why={t.description.why}
       />
 
       <QuillEditor
         value={value}
         onChange={(v) => patch({ description: v })}
-        placeholder="Ex.: Sou eletricista há 12 anos, trabalho com instalações residenciais e prediais. Faço orçamento sem compromisso e ofereço garantia de 90 dias no serviço."
+        placeholder={t.description.placeholder}
       />
 
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
         <span className="text-muted-foreground">
-          Dica: experiência, região atendida, o que está incluso, prazo e garantia.
+          {t.description.hint}
         </span>
         <span
           className={cn(
@@ -60,14 +63,15 @@ export function StepDescription({ state, patch, entities }: WizardStepProps<Serv
         >
           {met ? <Check className="h-3.5 w-3.5" /> : null}
           {met
-            ? 'Mínimo atingido'
-            : `Mínimo de ${DESCRIPTION_MIN_LENGTH} caracteres (${length}/${DESCRIPTION_MIN_LENGTH})`}
+            ? t.description.minMet
+            : t.description.minCount
+                .replaceAll('{min}', String(DESCRIPTION_MIN_LENGTH))
+                .replaceAll('{length}', String(length))}
         </span>
       </div>
 
       <StepHint tone="tip">
-        Evite “faço de tudo”. Ser específico sobre o que você faz bem passa mais confiança e atrai o
-        cliente certo.
+        {t.description.tip}
       </StepHint>
 
       {stacked ? null : (

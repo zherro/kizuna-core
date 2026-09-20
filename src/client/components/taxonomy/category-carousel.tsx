@@ -1,14 +1,16 @@
 'use client';
 
-import { useMemo, type ReactNode } from 'react';
+import { CSSProperties, useMemo, type ReactNode } from 'react';
 import Link from 'next/link';
 import { Tag } from 'lucide-react';
 import { useResourceOptions } from '../../hooks';
+import { resolveLucideIcon } from '../../../lib/lucide-icon';
 
 type StatRow = {
   id: string | number;
   categoryId: string | number;
   categoryName?: string;
+  categoryIcon?: string;
   name?: string;
   qtd?: number;
 };
@@ -50,6 +52,12 @@ export type CategoryCarouselProps = {
  * Uso:
  *   <CategoryCarousel variant="compact" title="Categorias" allHref="/busca" allLabel="Ver todas" />
  */
+
+const getIcon = (category: any) => {
+  const Icon = resolveLucideIcon(category.icon);
+return Icon ? <Icon className="size-5" /> : null;
+}
+
 export function CategoryCarousel({
   variant = 'classic',
   resource = 'category_stats',
@@ -57,7 +65,7 @@ export function CategoryCarousel({
   allLabel,
   allHref,
   hrefFor = (c) => `/busca?categoryId=${c.id}`,
-  iconFor = () => <Tag className="h-5 w-5" />,
+  iconFor = (c) => getIcon(c),
   countLabel = (n) => `${n} ${n === 1 ? 'subcategoria' : 'subcategorias'}`,
   emptyLabel = 'Nenhuma categoria disponível.',
   hideWhenEmpty = false,
@@ -71,7 +79,8 @@ export function CategoryCarousel({
       const cid = Number(row.categoryId);
       if (!Number.isFinite(cid) || cid <= 0) continue;
       const name = String(row.categoryName ?? row.name ?? `Categoria ${cid}`);
-      const entry = map.get(cid) ?? { id: cid, name, count: 0 };
+      const icon = row.categoryIcon;
+      const entry = map.get(cid) ?? { id: cid, name, icon, count: 0 };
       entry.count += 1;
       map.set(cid, entry);
     }
@@ -90,8 +99,8 @@ export function CategoryCarousel({
 
   if (variant === 'compact') {
     return (
-      <section className={className ?? `${maxW} py-8`}>
-        <Header title={title} allLabel={allLabel} allHref={allHref} compact />
+      <section className={className ?? `${maxW} pt-8`}>
+        <Header title={title} allLabel={allLabel} allHref={allHref} compact style={{fontWeight: 500}} />
         {empty ? (
           emptyBox
         ) : (
@@ -165,11 +174,13 @@ function Header({
   allLabel,
   allHref,
   compact,
+  style
 }: {
   title: string;
   allLabel?: string;
   allHref?: string;
   compact?: boolean;
+  style?: CSSProperties | undefined;
 }) {
   return (
     <div className="flex items-end justify-between gap-4">
@@ -179,6 +190,7 @@ function Header({
             ? 'text-lg font-bold tracking-tight text-foreground'
             : 'font-display text-[clamp(1.5rem,3vw,2rem)] font-bold tracking-[-0.02em] text-foreground'
         }
+        style={style}
       >
         {title}
       </h2>

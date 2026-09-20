@@ -248,3 +248,24 @@ interface WizardConversationAdapter {
 
 Exports: `useWizardConversation`, `WizardConversationView`, `NaviLayer`, `NaviDock`, `NaviPanel`,
 `NaviComposer`, `NaviIcon`, `WizardHeaderPortal` + os tipos `WizardConversation*`.
+
+## Config por projeto (`kizuna.config.json`)
+
+Cada projeto tem um `kizuna.config.json` na raiz (default em `starter/kizuna.config.json`), com
+uma entrada por wizard em `wizards.<nome>`: `resource`, `steps` (chaves do registry), `disable`,
+`layout` (`stepper`|`scroll`), `lockLayout` (default `true`: esconde o toggle), `assistant`
+(default `false`: não passe `assistant`/`conversation` ao `<Wizard>`) e `finishHrefByMode`.
+
+```tsx
+import cfg from '../../../kizuna.config.json';
+import { createWizardFromJson, Wizard } from '@kizuna/core/client/components/wizard';
+
+const { config, layoutProps, assistantEnabled } = createWizardFromJson(
+  cfg.wizards.servicos,
+  SERVICE_WIZARD_STEPS
+);
+<Wizard config={config} {...layoutProps} mode="create" /* ... */
+  assistant={assistantEnabled ? adapter : undefined} />
+```
+
+Chave de step inexistente ou layout inválido lançam erro. Steps novos continuam sendo código.

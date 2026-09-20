@@ -43,6 +43,82 @@
   }
 }
 
+/* Usam --terracotta/--amber (definidos por tema — hoje: terracotta, bora_cuiaba),
+   então se adaptam sozinhos à cor do tema ativo. Fora desses temas, essas vars não
+   existem e os utilitários abaixo não têm efeito visível. */
+@utility gradient-hero {
+  background: linear-gradient(
+    135deg,
+    var(--terracotta) 0%,
+    color-mix(in oklch, var(--terracotta) 60%, var(--amber) 40%) 50%,
+    var(--amber) 100%
+  );
+}
+
+@utility text-gradient {
+  background: linear-gradient(
+    135deg,
+    var(--terracotta) 0%,
+    color-mix(in oklch, var(--terracotta) 70%, black 15%) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@utility section-padding {
+  padding-top: 4rem;
+  padding-bottom: 4rem;
+}
+
+@keyframes xp-float {
+  0% {
+    opacity: 0;
+    transform: translateY(6px) scale(0.9);
+  }
+  20% {
+    opacity: 1;
+    transform: translateY(-4px) scale(1.05);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-42px) scale(1);
+  }
+}
+
+@keyframes pop-in {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.94);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes pulse-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in oklch, var(--ring) 45%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 12px color-mix(in oklch, var(--ring) 0%, transparent);
+  }
+}
+
+@utility animate-xp-float {
+  animation: xp-float 1s ease-out forwards;
+}
+
+@utility animate-pop-in {
+  animation: pop-in 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@utility animate-pulse-glow {
+  animation: pulse-glow 2s ease-out infinite;
+}
+
 :root {
   --background-white: hsl(0, 0%, 98%);
   --background: oklch(0.996 0.006 250);
@@ -226,6 +302,145 @@
   --ring: oklch(0.74 0.19 32);
 
   --background: oklch(0.996 0.007 32);
+}
+
+/* ================= BORA CUIABÁ (tema completo — terracota/vermelho vivo, city-guide) ================= */
+
+:root[data-theme-color='bora_cuiaba'] {
+  --background: oklch(0.978 0.01 80);
+  --background-white: oklch(0.978 0.01 80);
+  --foreground: oklch(0.2 0.035 53);
+
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.2 0.035 53);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.2 0.035 53);
+
+  --primary: oklch(0.66 0.22 33.4);
+  --primary-foreground: oklch(0.99 0.005 85);
+  --secondary: oklch(0.95 0.02 78);
+  --secondary-foreground: oklch(0.24 0.04 53);
+  --muted: oklch(0.94 0.015 78);
+  --muted-foreground: oklch(0.52 0.04 53);
+  --accent: oklch(0.78 0.13 70);
+  --accent-foreground: oklch(0.24 0.04 53);
+
+  --success: oklch(0.75 0.17 150);
+  --warning: oklch(0.88 0.19 90);
+  --info: oklch(0.76 0.16 235);
+  --destructive: oklch(0.55 0.22 25);
+  --destructive-foreground: oklch(0.99 0.005 85);
+  --danger: oklch(0.55 0.22 25);
+
+  --border: oklch(0.89 0.02 78);
+  --input: oklch(0.89 0.02 78);
+  --ring: oklch(0.61 0.225 31);
+
+  /* extras semânticos deste tema (usados por gradient-hero/text-gradient abaixo) */
+  --terracotta: oklch(0.66 0.22 33.4);
+  --terracotta-foreground: oklch(0.99 0.005 85);
+  --amber: oklch(0.78 0.13 70);
+  --amber-foreground: oklch(0.24 0.04 53);
+  --sand: oklch(0.94 0.015 78);
+
+  /* fontes: só têm efeito se o layout usar var(--font-display)/var(--font-body)
+     em vez das classes do next/font — carregadas em layout.tsx (Playfair Display/Inter). */
+  --font-display: var(--font-playfair-display), Georgia, serif;
+  --font-body: var(--font-inter), system-ui, sans-serif;
+}
+
+:root[data-theme-color='bora_cuiaba'].dark {
+  --background: oklch(0.18 0.03 53);
+  --background-white: oklch(0.18 0.03 53);
+  --foreground: oklch(0.96 0.01 80);
+
+  --card: oklch(0.24 0.035 53);
+  --card-foreground: oklch(0.96 0.01 80);
+  --popover: oklch(0.24 0.035 53);
+  --popover-foreground: oklch(0.96 0.01 80);
+
+  --primary: oklch(0.72 0.21 36);
+  --primary-foreground: oklch(0.18 0.03 53);
+  --secondary: oklch(0.3 0.04 53);
+  --secondary-foreground: oklch(0.96 0.01 80);
+  --muted: oklch(0.3 0.04 53);
+  --muted-foreground: oklch(0.72 0.05 68);
+  --accent: oklch(0.68 0.13 70);
+  --accent-foreground: oklch(0.18 0.03 53);
+
+  --success: oklch(0.78 0.16 155);
+  --warning: oklch(0.9 0.16 85);
+  --info: oklch(0.8 0.14 240);
+  --destructive: oklch(0.68 0.22 25);
+  --destructive-foreground: oklch(0.99 0.005 85);
+  --danger: oklch(0.68 0.22 25);
+
+  --border: oklch(1 0 0 / 12%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.72 0.21 36);
+
+  --terracotta: oklch(0.72 0.21 36);
+  --terracotta-foreground: oklch(0.18 0.03 53);
+  --amber: oklch(0.68 0.13 70);
+  --amber-foreground: oklch(0.18 0.03 53);
+  --sand: oklch(0.3 0.04 53);
+}
+
+/* ================= METRO ORANGE — laranja vivo porém suave (#FF6830 / #FF5E3D / #FF6F54) ================= */
+
+:root[data-theme-color='metro_orange'] {
+  --primary: oklch(0.7 0.196 39.2);
+  --secondary: oklch(0.94 0.06 42);
+  --accent: oklch(0.83 0.14 34);
+
+  --success: oklch(0.75 0.17 150);
+  --warning: oklch(0.88 0.19 90);
+  --danger: oklch(0.68 0.23 20);
+  --info: oklch(0.76 0.16 235);
+
+  --border: oklch(0.91 0.045 35);
+  --input: oklch(0.91 0.045 35);
+  --ring: oklch(0.689 0.202 33.4);
+
+  --background: oklch(0.996 0.007 36);
+}
+
+/* ================= LARANJA INTENSO — primary = tom "ring" do metro_orange (#FF5E3D) ================= */
+
+:root[data-theme-color='laranja_intenso'] {
+  --primary: oklch(0.689 0.202 33.4);
+  --secondary: oklch(0.94 0.06 36);
+  --accent: oklch(0.82 0.15 30);
+
+  --success: oklch(0.75 0.17 150);
+  --warning: oklch(0.88 0.19 90);
+  --danger: oklch(0.68 0.23 20);
+  --info: oklch(0.76 0.16 235);
+
+  --border: oklch(0.91 0.045 32);
+  --input: oklch(0.91 0.045 32);
+  --ring: oklch(0.64 0.21 32);
+
+  --background: oklch(0.996 0.007 33);
+}
+
+/* ================= LARANJA MÉDIO — entre o "ring" (#FF5E3D) e o "primary" (#FF6830) do metro_orange ================= */
+
+:root[data-theme-color='laranja_medio'] {
+  --primary: oklch(0.6945 0.199 36.3);
+  --secondary: oklch(0.94 0.06 39);
+  --accent: oklch(0.83 0.14 36);
+
+  --success: oklch(0.75 0.17 150);
+  --warning: oklch(0.88 0.19 90);
+  --danger: oklch(0.68 0.23 20);
+  --info: oklch(0.76 0.16 235);
+
+  --border: oklch(0.91 0.045 37);
+  --input: oklch(0.91 0.045 37);
+  --ring: oklch(0.66 0.205 35);
+
+  --background: oklch(0.996 0.007 37);
 }
 
 /* ================= PINK ================= */

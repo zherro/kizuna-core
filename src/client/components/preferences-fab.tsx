@@ -5,6 +5,10 @@ import { useAppPreferences, THEME_COLORS } from '../providers/app-preferences-pr
 
 const COLOR_FALLBACK_LABEL: Record<string, string> = {
   terracotta: 'Terracota',
+  bora_cuiaba: 'Bora Cuiabá',
+  metro_orange: 'Metro Orange',
+  laranja_intenso: 'Laranja Intenso',
+  laranja_medio: 'Laranja Médio',
 };
 import { Button } from './ui/button';
 import {

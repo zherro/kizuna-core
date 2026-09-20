@@ -2,6 +2,11 @@ export { Wizard } from './wizard';
 export { defineWizard } from './define-wizard';
 export { useWizardState } from './use-wizard-state';
 export { resolveSteps } from './resolve-steps';
+export {
+  createWizardFromJson,
+  type WizardJsonConfig,
+  type WizardFromJson,
+} from './from-config';
 export { applyAssistPatch } from './apply-assist-patch';
 export { createResourcePersister } from './persist-resource';
 export { WizardShell } from './wizard-shell';

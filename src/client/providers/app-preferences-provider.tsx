@@ -19,7 +19,11 @@ export type AppThemeColor =
   | 'red'
   | 'orange'
   | 'coral'
-  | 'terracotta';
+  | 'terracotta'
+  | 'bora_cuiaba'
+  | 'metro_orange'
+  | 'laranja_intenso'
+  | 'laranja_medio';
 
 const LANGUAGE_STORAGE_KEY = 'foco-total-language';
 const THEME_STORAGE_KEY = 'foco-total-theme';
@@ -65,6 +69,10 @@ export const THEME_COLORS: readonly AppThemeColor[] = [
   'orange',
   'coral',
   'terracotta',
+  'bora_cuiaba',
+  'metro_orange',
+  'laranja_intenso',
+  'laranja_medio',
 ];
 
 function parseThemeColor(value: string | null): AppThemeColor {

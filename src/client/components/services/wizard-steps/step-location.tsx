@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useAppPreferences } from '../../../providers/app-preferences-provider';
 import { Building2, Home, Wifi } from 'lucide-react';
 import {
   AddressForm,
@@ -11,14 +12,14 @@ import { SERVICE_LOCATION_LABEL, type ServiceWizardState } from '../service-type
 import { StepHeader } from './step-header';
 import { StepHint } from './step-hint';
 
-const OPTIONS: { value: keyof typeof SERVICE_LOCATION_LABEL; icon: typeof Home; desc: string }[] = [
-  { value: 'no_cliente', icon: Home, desc: 'Você vai até o endereço do cliente.' },
-  { value: 'no_estabelecimento', icon: Building2, desc: 'O cliente vai até o seu endereço.' },
-  {
-    value: 'remoto',
-    icon: Wifi,
-    desc: 'O serviço é feito à distância, sem atendimento presencial.',
-  },
+const OPTIONS: {
+  value: keyof typeof SERVICE_LOCATION_LABEL;
+  icon: typeof Home;
+  descKey: 'noCliente' | 'noEstabelecimento' | 'remoto';
+}[] = [
+  { value: 'no_cliente', icon: Home, descKey: 'noCliente' },
+  { value: 'no_estabelecimento', icon: Building2, descKey: 'noEstabelecimento' },
+  { value: 'remoto', icon: Wifi, descKey: 'remoto' },
 ];
 
 const initialAddress: AddressValue = {
@@ -42,6 +43,8 @@ const initialAddress: AddressValue = {
  */
 export function StepLocation({ state, patch }: WizardStepProps<ServiceWizardState>) {
   const value = state.serviceLocation ?? '';
+  const { messages } = useAppPreferences();
+  const t = messages.wizard;
   const [address, setAddress] = useState<AddressValue>(initialAddress);
   const isPresential = value === 'no_cliente' || value === 'no_estabelecimento';
 
@@ -58,9 +61,9 @@ export function StepLocation({ state, patch }: WizardStepProps<ServiceWizardStat
   return (
     <div className="space-y-6">
       <StepHeader
-        title="Onde você atende?"
-        subtitle="Escolha o formato que combina com o seu serviço."
-        why="Isso define se o cliente te encontra por proximidade. Quem atende no endereço do cliente aparece nas buscas da região dele; quem atende à distância aparece para todo o país."
+        title={t.location.title}
+        subtitle={t.location.subtitle}
+        why={t.location.why}
       />
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -85,7 +88,7 @@ export function StepLocation({ state, patch }: WizardStepProps<ServiceWizardStat
               <div className="text-sm font-semibold text-foreground">
                 {SERVICE_LOCATION_LABEL[option.value]}
               </div>
-              <div className="text-xs text-muted-foreground">{option.desc}</div>
+              <div className="text-xs text-muted-foreground">{t.location[option.descKey]}</div>
             </button>
           );
         })}
@@ -94,10 +97,9 @@ export function StepLocation({ state, patch }: WizardStepProps<ServiceWizardStat
       {isPresential ? (
         <div className="space-y-3 border-t border-border pt-6">
           <div>
-            <p className="text-sm font-semibold text-foreground">Endereço de referência</p>
+            <p className="text-sm font-semibold text-foreground">{t.location.addressTitle}</p>
             <p className="text-sm text-muted-foreground">
-              Usado só para posicionar você na busca por região. O endereço exato não aparece no
-              anúncio.
+              {t.location.addressHint}
             </p>
           </div>
           <AddressForm
@@ -105,14 +107,14 @@ export function StepLocation({ state, patch }: WizardStepProps<ServiceWizardStat
             onChange={handleAddressChange}
             features={{ search: true, modalSearch: true, locationSelection: false, map: false }}
             layout="compact"
-            searchLabel="Não sei meu CEP"
+            searchLabel={t.location.addressSearch}
           />
         </div>
       ) : null}
 
       {value === 'remoto' ? (
         <StepHint tone="info">
-          Serviços à distância aparecem para clientes de todo o país, sem filtro de região.
+          {t.location.remoteHint}
         </StepHint>
       ) : null}
     </div>

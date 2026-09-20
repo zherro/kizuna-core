@@ -1,0 +1,10 @@
+{
+  "owner": "services",
+  "_comment": "Rotas do painel do plugin services. Leem wizards.servicos do kizuna.config.json (raiz do projeto). Requer os plugins taxonomy e storage.",
+  "files": {
+    "src/app/painel/meus-servicos/page.tsx": "managed",
+    "src/app/painel/meus-servicos/[serviceId]/page.tsx": "managed",
+    "src/app/painel/administracao/aprovacoes/page.tsx": "managed",
+    "src/app/painel/administracao/aprovacoes/[id]/page.tsx": "managed"
+  }
+}

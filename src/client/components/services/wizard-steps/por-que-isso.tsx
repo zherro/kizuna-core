@@ -2,6 +2,7 @@
 
 import { useId, useState, type ReactNode } from 'react';
 import { HelpCircle } from 'lucide-react';
+import { useAppPreferences } from '../../../providers/app-preferences-provider';
 
 /**
  * "Por que pedimos isso?" — a text link that reveals an inline explanation balloon on click
@@ -9,12 +10,14 @@ import { HelpCircle } from 'lucide-react';
  */
 export function PorQueIsso({
   children,
-  label = 'Por que pedimos isso?',
+  label,
 }: {
   children: ReactNode;
   label?: string;
 }) {
   const [open, setOpen] = useState(false);
+  const { messages } = useAppPreferences();
+  const t = messages.wizard;
   const panelId = useId();
 
   return (
@@ -27,7 +30,7 @@ export function PorQueIsso({
         className="inline-flex items-center gap-1.5 text-xs font-medium text-primary underline-offset-2 hover:underline"
       >
         <HelpCircle className="h-3.5 w-3.5" />
-        {open ? 'Ocultar explicação' : label}
+        {open ? t.common.hideWhy : (label ?? t.common.whyLabel)}
       </button>
 
       {open ? (

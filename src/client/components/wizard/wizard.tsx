@@ -13,6 +13,7 @@ import { NaviPanel } from './navi-panel';
 import { type WizardLayout, readStoredLayout, writeStoredLayout } from './wizard-layout';
 import { applyAssistPatch } from './apply-assist-patch';
 import { Button } from '../ui/button';
+import { useAppPreferences } from '../../providers/app-preferences-provider';
 import type {
   WizardAssistant,
   WizardConfig,
@@ -109,6 +110,11 @@ export interface WizardProps<S extends Record<string, unknown> = Record<string, 
    * only — `edit`/`review` always use the `stepper`. Defaults to `'stepper'`.
    */
   variant?: WizardLayout;
+  /**
+   * Fixes the layout to `variant` (default `'stepper'`): hides the header toggle and ignores the
+   * layout remembered in localStorage. `scroll` still only applies to `create`.
+   */
+  lockLayout?: boolean;
 }
 
 export function Wizard<S extends Record<string, unknown> = Record<string, unknown>>({
@@ -123,13 +129,15 @@ export function Wizard<S extends Record<string, unknown> = Record<string, unknow
   conversation,
   onExit,
   variant,
+  lockLayout = false,
 }: WizardProps<S>) {
   const router = useRouter();
+  const { messages } = useAppPreferences();
 
   // Layout is only switchable in `create`; edit/review always use the stepper (the scroll layout
   // has no persist-without-advance story). Seed from `variant` for a stable first paint, then
   // correct from localStorage on mount to avoid a hydration mismatch.
-  const layoutSwitchable = mode === 'create';
+  const layoutSwitchable = mode === 'create' && !lockLayout;
   const [layout, setLayout] = useState<WizardLayout>(variant ?? 'stepper');
   useEffect(() => {
     if (!layoutSwitchable) return;
@@ -140,7 +148,8 @@ export function Wizard<S extends Record<string, unknown> = Record<string, unknow
     setLayout(next);
     writeStoredLayout(config.resource, next);
   };
-  const effectiveLayout: WizardLayout = layoutSwitchable ? layout : 'stepper';
+  const effectiveLayout: WizardLayout =
+    layoutSwitchable || (lockLayout && mode === 'create') ? layout : 'stepper';
   const layoutToggle = layoutSwitchable ? (
     <WizardLayoutToggle value={layout} onChange={changeLayout} />
   ) : undefined;
@@ -214,7 +223,7 @@ export function Wizard<S extends Record<string, unknown> = Record<string, unknow
     if (mode === 'create') {
       const ok =
         typeof window === 'undefined' ||
-        window.confirm('Sair agora descarta este anúncio. Tem certeza?');
+        window.confirm(messages.wizard.exitConfirm);
       if (!ok) return;
     }
     leave();

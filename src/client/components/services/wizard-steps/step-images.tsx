@@ -1,5 +1,6 @@
 'use client';
 
+import { useAppPreferences } from '../../../providers/app-preferences-provider';
 import type { WizardStepProps } from '../../wizard/types';
 import type { ServiceWizardState } from '../service-type';
 import { ImageGalleryManager } from '../../storage';
@@ -13,19 +14,21 @@ export function StepImages({
   resourceId,
 }: WizardStepProps<ServiceWizardState>) {
   const value = state.imageIds ?? [];
+  const { messages } = useAppPreferences();
+  const t = messages.wizard;
 
   async function onPersist(_refId: string, ids: string[]): Promise<string[]> {
     const r = await persistExtras({ images: ids, coverFileId: ids[0] ?? null });
-    if (!r.ok) throw new Error('Não foi possível salvar as imagens do serviço.');
+    if (!r.ok) throw new Error(t.images.saveError);
     return ids;
   }
 
   return (
     <div className="space-y-6">
       <StepHeader
-        title="Adicione fotos do seu trabalho"
-        subtitle="Adicione ao menos 1 foto para continuar. A primeira vira a capa do anúncio."
-        why="O cliente quer ver antes de chamar. Anúncios com foto recebem muito mais contato — mostre trabalhos prontos, o antes e depois, o seu material e a sua equipe."
+        title={t.images.title}
+        subtitle={t.images.subtitle}
+        why={t.images.why}
       />
 
       {resourceId != null ? (
@@ -38,13 +41,12 @@ export function StepImages({
         />
       ) : (
         <p className="rounded-md border border-dashed border-border px-3 py-2 text-xs text-muted-foreground">
-          Volte e salve a categoria antes de adicionar fotos.
+          {t.images.saveFirst}
         </p>
       )}
 
       <StepHint tone="tip">
-        Fotos suas valem mais que imagens da internet. Boa luz, enquadramento reto e o trabalho
-        finalizado passam confiança.
+        {t.images.tip}
       </StepHint>
     </div>
   );

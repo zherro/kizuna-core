@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { ArrowRight, Flame } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { cn } from '../../../lib/utils';
 
 export type DiscoverCtaProps = {
   href?: string;
@@ -29,23 +28,23 @@ export function DiscoverCta({
   className,
 }: DiscoverCtaProps) {
   const link = (
-    <Link
-      href={href}
-      className={cn(
-        // gradiente sutil, horizontal, dentro da cor primária (sem virar laranja no fim)
-        'flex items-center gap-4 overflow-hidden rounded-2xl bg-primary bg-[linear-gradient(90deg,var(--primary),color-mix(in_oklch,var(--primary),black_14%))] p-5 shadow-lg shadow-primary/25 transition-transform active:scale-[0.99]',
-        className
-      )}
-    >
-      <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-background/25 text-primary-foreground">
-        {icon}
-      </span>
-      <span className="min-w-0">
-        <span className="block text-lg font-bold text-primary-foreground">{title}</span>
-        <span className="block text-sm text-primary-foreground/90">{subtitle}</span>
-      </span>
-      <ArrowRight className="ml-auto h-5 w-5 shrink-0 text-primary-foreground" />
-    </Link>
+      <Link
+        href="/descobrir"
+        className="mt-5 flex items-center gap-4 overflow-hidden rounded-2xl gradient-hero p-5 shadow-lg shadow-primary/20 transition-transform active:scale-[0.99]"
+      >
+        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-background/25 text-background">
+          <Flame className="h-6 w-6" />
+        </span>
+        <span className="min-w-0">
+          <span className="block font-serif text-lg font-bold text-background">
+            Descobrir no swipe
+          </span>
+          <span className="block text-sm text-background/90">
+            Arraste: esse não, esse sim. Monte sua agenda em segundos.
+          </span>
+        </span>
+        <ArrowRight className="ml-auto h-5 w-5 shrink-0 text-background" />
+      </Link>
   );
 
   if (!contained) return link;

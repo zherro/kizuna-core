@@ -1,3 +1,4 @@
+import { useAppPreferences } from '../../../providers/app-preferences-provider';
 import { ChipToggleList } from '../../ui-better-soft/lists/chip-toggle-list';
 import { PorQueIsso } from './por-que-isso';
 import type { ServiceCategory, ServiceSubcategory } from '../service-type';
@@ -19,6 +20,8 @@ export function StepSubcategory({
   value: string[];
   onChange: (subcategoryIds: string[]) => void;
 }) {
+  const { messages } = useAppPreferences();
+  const t = messages.wizard;
   const filtered = subcategories
     .filter((subcategory) => String(subcategory.categoryId) === String(category?.id))
     .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
@@ -28,17 +31,15 @@ export function StepSubcategory({
     <div className="space-y-2.5">
       <div className="flex items-baseline justify-between gap-2">
         <p className="text-sm font-semibold text-foreground">
-          Especialidades{count > 0 ? ` · ${count}` : ''}
+          {t.subcategory.title}
+          {count > 0 ? ` · ${count}` : ''}
         </p>
-        <PorQueIsso label="Por quê?">
-          Cada especialidade marcada é mais uma busca em que o seu anúncio aparece. Marque só o que
-          você realmente faz.
-        </PorQueIsso>
+        <PorQueIsso label={t.common.whyShort}>{t.subcategory.why}</PorQueIsso>
       </div>
 
       {!loading && filtered.length === 0 ? (
         <p className="rounded-xl bg-muted/40 px-3 py-2.5 text-sm text-muted-foreground">
-          Esta categoria não tem especialidades cadastradas. Você detalha no título e na descrição.
+          {t.subcategory.empty}
         </p>
       ) : (
         <div className="rounded-xl bg-muted/30 p-3">

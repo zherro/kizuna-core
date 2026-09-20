@@ -1,5 +1,6 @@
 'use client';
 
+import { useAppPreferences } from '../../../providers/app-preferences-provider';
 import { Input } from '../../ui/input';
 import type { WizardStepProps } from '../../wizard/types';
 import { SERVICE_PRICE_UNIT_OPTIONS, type ServiceWizardState } from '../service-type';
@@ -12,17 +13,19 @@ export function StepPrice({ state, patch }: WizardStepProps<ServiceWizardState>)
   const startingPrice = state.startingPrice ?? 0;
   const priceUnit = state.priceUnit ?? 'quote';
   const isQuote = priceUnit === 'quote';
+  const { messages } = useAppPreferences();
+  const t = messages.wizard;
 
   return (
     <div className="space-y-6">
       <StepHeader
-        title="Quanto você cobra?"
-        subtitle="Um valor de referência ajuda o cliente a decidir antes de te chamar. Não precisa ser o preço final — é o 'a partir de'."
-        why="Anúncios com um valor de referência recebem contatos mais sérios: quem chama já sabe a ordem de grandeza. Se o seu preço depende muito de cada caso, escolha 'sob orçamento' e combine o resto no chat."
+        title={t.price.title}
+        subtitle={t.price.subtitle}
+        why={t.price.why}
       />
 
       <div className="space-y-2">
-        <p className="text-sm font-medium text-foreground">Como você cobra?</p>
+        <p className="text-sm font-medium text-foreground">{t.price.unitLabel}</p>
         <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
           {SERVICE_PRICE_UNIT_OPTIONS.map((option) => {
             const active = priceUnit === option.value;
@@ -44,7 +47,7 @@ export function StepPrice({ state, patch }: WizardStepProps<ServiceWizardState>)
 
       <div className="space-y-1.5">
         <label htmlFor="starting-price" className="block text-sm font-medium text-foreground">
-          Valor a partir de {isQuote ? '(opcional)' : '(R$)'}
+          {isQuote ? t.price.amountOptional : t.price.amount}
         </label>
         <Input
           id="starting-price"
@@ -59,8 +62,7 @@ export function StepPrice({ state, patch }: WizardStepProps<ServiceWizardState>)
         />
         {isQuote ? (
           <StepHint tone="info">
-            Com “sob orçamento” você pode deixar em branco. Se preencher, o cliente vê “a partir de
-            R$ X”.
+            {t.price.quoteHint}
           </StepHint>
         ) : null}
       </div>

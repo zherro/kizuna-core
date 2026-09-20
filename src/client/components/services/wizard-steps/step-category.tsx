@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Pencil } from 'lucide-react';
+import { useAppPreferences } from '../../../providers/app-preferences-provider';
 import { TaxonomyIcon } from '../../taxonomy/taxonomy-icon';
 import { IconChoiceGrid } from '../../ui-better-soft/lists/icon-choice-grid';
 import type { WizardStepProps } from '../../wizard/types';
@@ -33,6 +34,8 @@ import { CategoryPickerModal } from './category-picker-modal';
  */
 export function StepCategory(props: WizardStepProps<ServiceWizardState>) {
   const { state, patch, entities, touched, setNaviSuppressed } = props;
+  const { messages } = useAppPreferences();
+  const t = messages.wizard;
   const groups = (entities.groups as ServiceGroup[] | undefined) ?? [];
   const categories = (entities.categories as ServiceCategory[] | undefined) ?? [];
   const subcategories = (entities.subcategories as ServiceSubcategory[] | undefined) ?? [];
@@ -108,9 +111,9 @@ export function StepCategory(props: WizardStepProps<ServiceWizardState>) {
   return (
     <div className="space-y-6">
       <StepHeader
-        title="Em qual área você trabalha?"
-        subtitle="Escolha a área — a categoria vem na sequência e as especialidades logo abaixo."
-        why="Começamos pela área porque ela é mais ampla: a mesma categoria aparece em áreas diferentes, e a área certa põe o seu anúncio na frente de quem procura o que você faz."
+        title={t.category.title}
+        subtitle={t.category.subtitle}
+        why={t.category.why}
       />
 
       {groupsLoading && sortedGroups.length === 0 ? null : (
@@ -124,7 +127,7 @@ export function StepCategory(props: WizardStepProps<ServiceWizardState>) {
           value={String(groupId)}
           onChange={handleGroupSelect}
           accent="primary"
-          emptyMessage="Nenhuma área ativa encontrada."
+          emptyMessage={t.category.emptyGroups}
         />
       )}
 
@@ -137,12 +140,12 @@ export function StepCategory(props: WizardStepProps<ServiceWizardState>) {
           <span className="min-w-0">
             <span className="block text-xs text-muted-foreground">{selectedGroup.name}</span>
             <span className="mt-0.5 block truncate text-sm font-semibold text-foreground">
-              {selectedCategory?.name ?? 'Escolher categoria'}
+              {selectedCategory?.name ?? t.category.pickCategory}
             </span>
           </span>
           <span className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-primary">
             <Pencil className="h-3.5 w-3.5" />
-            {categoryId ? 'Trocar' : 'Abrir'}
+            {categoryId ? t.category.change : t.category.open}
           </span>
         </button>
       ) : null}

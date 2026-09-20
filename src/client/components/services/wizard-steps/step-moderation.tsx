@@ -1,47 +1,46 @@
 'use client';
 
 import { DynamicStepForm } from '../../dynamic-step-form';
+import { useAppPreferences } from '../../../providers/app-preferences-provider';
+import type { WizardMessages } from '@/i18n/messages';
 import type { ResourceScreenField } from '../../../../types';
 import type { WizardStepProps } from '../../wizard/types';
 import type { ServiceWizardState } from '../service-type';
 
-const DECISION_OPTIONS = [
-  { value: 'approved', label: 'Aprovar' },
-  { value: 'rejected', label: 'Rejeitar' },
-  { value: 'escalated', label: 'Escalar para outro revisor' },
-];
-
-// Matches the ad_reviews / service_moderations rejection CHECK constraint.
-const REJECTION_REASON_OPTIONS = [
-  { value: 'inappropriate_content', label: 'Conteudo inadequado' },
-  { value: 'wrong_category', label: 'Categoria incorreta' },
-  { value: 'duplicate', label: 'Duplicado' },
-  { value: 'spam', label: 'Spam' },
-  { value: 'price_invalid', label: 'Preco invalido' },
-  { value: 'missing_info', label: 'Informacoes faltando' },
-  { value: 'prohibited_item', label: 'Item proibido' },
-  { value: 'fake_listing', label: 'Anuncio falso' },
-  { value: 'other', label: 'Outro motivo' },
-];
-
-const FIELDS: ResourceScreenField[] = [
-  { name: 'decision', label: 'Decisao', type: 'select', options: DECISION_OPTIONS },
-  {
-    name: 'rejectionReason',
-    label: 'Motivo da rejeicao (se aplicavel)',
-    type: 'select',
-    options: REJECTION_REASON_OPTIONS,
-    required: false,
-  },
-  {
-    name: 'decisionNote',
-    label: 'Observacao da revisao',
-    type: 'textarea',
-    placeholder: 'Detalhes da decisao — visivel so para a equipe (opcional)',
-    required: false,
-    maxLength: 1000,
-  },
-];
+function buildFields(t: WizardMessages['moderation']): ResourceScreenField[] {
+  const reasons = t.reasons;
+  return [
+    {
+      name: 'decision',
+      label: t.decision,
+      type: 'select',
+      options: [
+        { value: 'approved', label: t.approve },
+        { value: 'rejected', label: t.reject },
+        { value: 'escalated', label: t.escalate },
+      ],
+    },
+    {
+      name: 'rejectionReason',
+      label: t.reasonLabel,
+      type: 'select',
+      // Matches the ad_reviews / service_moderations rejection CHECK constraint.
+      options: (Object.keys(reasons) as Array<keyof typeof reasons>).map((value) => ({
+        value,
+        label: reasons[value],
+      })),
+      required: false,
+    },
+    {
+      name: 'decisionNote',
+      label: t.noteLabel,
+      type: 'textarea',
+      placeholder: t.notePlaceholder,
+      required: false,
+      maxLength: 1000,
+    },
+  ];
+}
 
 /**
  * Passo só de `mode === 'review'` (o engine decide `mode`; o gate de permissão fica na página).
@@ -50,18 +49,17 @@ const FIELDS: ResourceScreenField[] = [
  * quando `decision === 'rejected'`.
  */
 export function StepModeration({ state, patch }: WizardStepProps<ServiceWizardState>) {
+  const { messages } = useAppPreferences();
+  const t = messages.wizard.moderation;
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-lg font-semibold text-foreground">Revisao</h2>
-        <p className="text-sm text-muted-foreground">
-          Registre a decisao desta revisao. Ela vira um novo registro de moderacao e ajusta o status
-          do servico automaticamente.
-        </p>
+        <h2 className="text-lg font-semibold text-foreground">{t.title}</h2>
+        <p className="text-sm text-muted-foreground">{t.subtitle}</p>
       </div>
 
       <DynamicStepForm
-        fields={FIELDS}
+        fields={buildFields(t)}
         values={{
           decision: state.decision,
           rejectionReason: state.rejectionReason,

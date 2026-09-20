@@ -7,7 +7,119 @@ export const languageNames: Record<AppLanguage, string> = {
   'es-ES': 'es-ES',
 };
 
+/**
+ * Textos do wizard de anúncio (pt-BR). Genéricos de propósito — servem para evento, trilha,
+ * pousada etc. Cada projeto ajusta aqui o tom/vocabulário do seu nicho. `en-US`/`es-ES` reusam
+ * este objeto até serem traduzidos (fallback em português).
+ */
+export const WIZARD_PT_BR = {
+  exitConfirm: 'Sair agora descarta este anúncio. Tem certeza?',
+  common: {
+    whyLabel: 'Por que pedimos isso?',
+    whyShort: 'Por quê?',
+    hideWhy: 'Ocultar explicação',
+  },
+  start: {
+    title: 'Digite o título do seu anúncio',
+    subtitle: 'Curto e direto: o que você oferece e, se ajudar, um diferencial.',
+    placeholder: 'Ex.: Trilha guiada até a cachoeira, saída todo sábado',
+    tooShort: 'Escreva um pouco mais (mínimo 5 caracteres).',
+  },
+  category: {
+    title: 'Em qual área é o seu anúncio?',
+    subtitle: 'Escolha a área — a categoria vem na sequência e as especialidades logo abaixo.',
+    why: 'Começamos pela área porque ela é mais ampla: a mesma categoria pode aparecer em áreas diferentes, e a área certa põe o seu anúncio na frente de quem procura.',
+    emptyGroups: 'Nenhuma área ativa encontrada.',
+    pickCategory: 'Escolher categoria',
+    change: 'Trocar',
+    open: 'Abrir',
+    pickerTitle: 'Qual a sua categoria?',
+    loadingCategories: 'Carregando categorias…',
+    back: 'Voltar',
+    noCategories: 'Nenhuma categoria ativa nesta área.',
+  },
+  subcategory: {
+    title: 'Especialidades',
+    why: 'Cada especialidade marcada é mais uma busca em que o seu anúncio aparece. Marque só o que realmente se aplica.',
+    empty:
+      'Esta categoria não tem especialidades cadastradas. Você detalha no título e na descrição.',
+  },
+  location: {
+    title: 'Onde acontece?',
+    subtitle: 'Escolha o formato que combina com o seu anúncio.',
+    why: 'Isso define como o público encontra você. Anúncios com endereço aparecem nas buscas da região; anúncios online aparecem para todo o país.',
+    noCliente: 'Você vai até o endereço do interessado.',
+    noEstabelecimento: 'O interessado vem até o seu endereço.',
+    remoto: 'Acontece online, sem atendimento presencial.',
+    addressTitle: 'Endereço de referência',
+    addressHint:
+      'Usado só para posicionar você na busca por região. O endereço exato não aparece no anúncio.',
+    addressSearch: 'Não sei meu CEP',
+    remoteHint: 'Anúncios online aparecem para todo o país, sem filtro de região.',
+  },
+  price: {
+    title: 'Quanto custa?',
+    subtitle:
+      "Um valor de referência ajuda o público a decidir antes de entrar em contato. Não precisa ser o preço final — é o 'a partir de'.",
+    why: "Anúncios com um valor de referência recebem contatos mais sérios: quem chama já sabe a ordem de grandeza. Se o valor depende de cada caso, escolha 'sob orçamento' e combine o resto no chat.",
+    unitLabel: 'Como é cobrado?',
+    amountOptional: 'Valor a partir de (opcional)',
+    amount: 'Valor a partir de (R$)',
+    quoteHint:
+      'Com “sob orçamento” você pode deixar em branco. Se preencher, o público vê “a partir de R$ X”.',
+  },
+  images: {
+    title: 'Adicione fotos do seu anúncio',
+    subtitle: 'Adicione ao menos 1 foto para continuar. A primeira vira a capa do anúncio.',
+    why: 'Quem procura quer ver antes de entrar em contato. Anúncios com foto recebem muito mais contato — mostre o local, o ambiente e o que está incluso.',
+    saveError: 'Não foi possível salvar as imagens do anúncio.',
+    saveFirst: 'Volte e salve a categoria antes de adicionar fotos.',
+    tip: 'Fotos suas valem mais que imagens da internet. Boa luz e enquadramento reto passam confiança.',
+  },
+  description: {
+    title: 'Conte um pouco sobre o seu anúncio',
+    subtitle: 'Escreva com suas palavras: o que é, o que tem de diferente e como funciona.',
+    why: 'É aqui que o visitante decide entre entrar em contato ou passar para o próximo anúncio. Responder as dúvidas comuns (o que está incluso, duração, regras, como chegar) evita idas e vindas no chat.',
+    placeholder:
+      'Ex.: Trilha de dificuldade moderada, 4 horas, com guia local e lanche incluso. Saídas aos sábados às 8h, grupos de até 10 pessoas.',
+    hint: 'Dica: o que está incluso, região, duração, regras e como chegar.',
+    minMet: 'Mínimo atingido',
+    minCount: 'Mínimo de {min} caracteres ({length}/{min})',
+    tip: 'Evite descrições vagas. Ser específico sobre o que você oferece passa mais confiança e atrai o público certo.',
+  },
+  moderation: {
+    title: 'Revisão',
+    subtitle:
+      'Registre a decisão desta revisão. Ela vira um novo registro de moderação e ajusta o status do anúncio automaticamente.',
+    decision: 'Decisão',
+    approve: 'Aprovar',
+    reject: 'Rejeitar',
+    escalate: 'Escalar para outro revisor',
+    reasonLabel: 'Motivo da rejeição (se aplicável)',
+    reasons: {
+      inappropriate_content: 'Conteúdo inadequado',
+      wrong_category: 'Categoria incorreta',
+      duplicate: 'Duplicado',
+      spam: 'Spam',
+      price_invalid: 'Preço inválido',
+      missing_info: 'Informações faltando',
+      prohibited_item: 'Item proibido',
+      fake_listing: 'Anúncio falso',
+      other: 'Outro motivo',
+    },
+    noteLabel: 'Observação da revisão',
+    notePlaceholder: 'Detalhes da decisão — visível só para a equipe (opcional)',
+  },
+  page: {
+    loading: 'Carregando dados do anúncio...',
+    loadError: 'Não foi possível carregar o anúncio para edição.',
+  },
+};
+
+export type WizardMessages = typeof WIZARD_PT_BR;
+
 export type AppMessages = {
+  wizard: WizardMessages;
   nav: {
     signIn: string;
     signUp: string;
@@ -84,6 +196,7 @@ export type AppMessages = {
 
 export const messages: Record<AppLanguage, AppMessages> = {
   'pt-BR': {
+    wizard: WIZARD_PT_BR,
     nav: {
       title: 'Foco Total',
       signIn: 'Entrar',
@@ -159,6 +272,7 @@ export const messages: Record<AppLanguage, AppMessages> = {
     },
   },
   'en-US': {
+    wizard: WIZARD_PT_BR,
     nav: {
       title: 'Foco Total',
       signIn: 'Sign In',
@@ -234,6 +348,7 @@ export const messages: Record<AppLanguage, AppMessages> = {
     },
   },
   'es-ES': {
+    wizard: WIZARD_PT_BR,
     nav: {
       title: 'Foco Total',
       signIn: 'Iniciar sesión',

@@ -15,6 +15,7 @@ import { resourceFormResults } from '@kizuna/core/client/components/screen-engin
 import { PAGES_RESOURCE } from '@kizuna/core/client/components/screen-engine/resources/pages';
 import { resourceTaxonomy } from '@kizuna/core/client/components/screen-engine/resources/taxonomy';
 import { resourceReviews } from '@kizuna/core/client/components/screen-engine/resources/reviews';
+import { resourceServices } from '@kizuna/core/client/components/screen-engine/resources/services';
 import type { ResourceConfig, RpcConfig } from '@kizuna/core/types';
 
 export { parseActive, makeSlug } from '@kizuna/core/types';
@@ -32,6 +33,7 @@ export const postgrestResources: Record<string, ResourceConfig> = {
   ...(PAGES_RESOURCE as Record<string, ResourceConfig>),
   ...(resourceTaxonomy as Record<string, ResourceConfig>),
   ...(resourceReviews as Record<string, ResourceConfig>),
+  ...(resourceServices as Record<string, ResourceConfig>),
   // ...spread aqui os recursos do seu app: ...resourceMeuDominio,
 };
 
@@ -48,6 +50,8 @@ export const postgrestRpcs: Record<string, RpcConfig> = {
   fn_review_create: { schema: 'public' },
   fn_review_moderation_request: { schema: 'public' },
   fn_review_moderate: { schema: 'public' },
+  // services plugin — moderação do anúncio (insere service_moderations e deriva services.status).
+  fn_service_moderate: { schema: 'public' },
   // messaging plugin — o chat usa rotas bespoke `/api/chat/*` que chamam
   // `fn_msg_*` direto (cursor + delta sync não cabem na rota genérica). Se quiser
   // expô-las aqui: fn_msg_start_conversation / fn_msg_send_message / fn_msg_mark_read

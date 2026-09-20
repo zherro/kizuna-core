@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { Check, ChevronLeft } from 'lucide-react';
+import { useAppPreferences } from '../../../providers/app-preferences-provider';
 import { TaxonomyIcon } from '../../taxonomy/taxonomy-icon';
 import { cn } from '../../../../lib/utils';
 import type { ServiceCategory, ServiceGroup } from '../service-type';
@@ -28,6 +29,8 @@ export function CategoryPickerModal({
   categoryId: string;
   onSelectCategory: (id: string) => void;
 }) {
+  const { messages } = useAppPreferences();
+  const t = messages.wizard;
   useEffect(() => {
     if (!open) return;
     const prev = document.body.style.overflow;
@@ -74,20 +77,24 @@ export function CategoryPickerModal({
             className="inline-flex shrink-0 items-center gap-1 rounded-lg px-2 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-muted"
           >
             <ChevronLeft className="h-4 w-4" />
-            Voltar
+            {t.category.back}
           </button>
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-foreground">Qual a sua categoria?</p>
+            <p className="truncate text-sm font-semibold text-foreground">
+              {t.category.pickerTitle}
+            </p>
             <p className="truncate text-xs text-muted-foreground">{group?.name}</p>
           </div>
         </header>
 
         <div className="min-h-0 flex-1 overflow-y-auto p-2">
           {categoriesLoading && filtered.length === 0 ? (
-            <p className="px-3 py-4 text-sm text-muted-foreground">Carregando categorias…</p>
+            <p className="px-3 py-4 text-sm text-muted-foreground">
+              {t.category.loadingCategories}
+            </p>
           ) : filtered.length === 0 ? (
             <p className="px-3 py-4 text-sm text-muted-foreground">
-              Nenhuma categoria ativa nesta área.
+              {t.category.noCategories}
             </p>
           ) : (
             <ul className="space-y-0.5">

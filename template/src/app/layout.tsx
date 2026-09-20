@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Roboto, Geist_Mono, Bricolage_Grotesque } from 'next/font/google';
+import { Roboto, Geist_Mono, Bricolage_Grotesque, Playfair_Display, Inter } from 'next/font/google';
 import { Megaphone, Search } from 'lucide-react';
 import { PwaRegister } from '@kizuna/core/client/components/pwa-register';
 import { PreferencesFab } from '@kizuna/core/client/components/preferences-fab';
@@ -38,6 +38,23 @@ const bricolage = Bricolage_Grotesque({
   display: 'swap',
 });
 
+// Usadas só pelo tema `bora_cuiaba` (globals.css troca --font-display/--font-body
+// dentro daquele escopo) — não afetam o restante do app, que continua no
+// Roboto/Bricolage acima.
+const playfairDisplay = Playfair_Display({
+  variable: '--font-playfair-display',
+  subsets: ['latin'],
+  weight: ['600', '700', '800'],
+  display: 'swap',
+});
+
+const inter = Inter({
+  variable: '--font-inter',
+  subsets: ['latin'],
+  weight: ['400', '500', '600'],
+  display: 'swap',
+});
+
 export const metadata: Metadata = {
   title: 'Kizuna',
   description: 'Projeto sobre kizuna-core',
@@ -56,7 +73,7 @@ export default function RootLayout({
     <html
       lang="pt-BR"
       suppressHydrationWarning
-      className={`${robotoSans.variable} ${geistMono.variable} ${bricolage.variable} h-full antialiased`}
+      className={`${robotoSans.variable} ${geistMono.variable} ${bricolage.variable} ${playfairDisplay.variable} ${inter.variable} h-full antialiased`}
     >
       <body
         suppressHydrationWarning
