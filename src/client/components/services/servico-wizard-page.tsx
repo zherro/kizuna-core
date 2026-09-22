@@ -7,10 +7,12 @@ import { useAppPreferences } from '../../providers/app-preferences-provider';
 import {
   Wizard,
   createWizardFromJson,
-  type WizardJsonConfig,
   type WizardConversationAdapter,
 } from '../wizard';
 import { SERVICE_WIZARD_STEPS } from './wizard-steps';
+import { buildServiceWizardRegistry } from './wizard-steps/build-registry';
+import type { PriceTableRow } from './wizard-steps/price-options';
+import type { ServiceWizardJsonConfig } from './wizard-steps/wizard-config';
 import type {
   ServiceWizardState,
   ServiceGroup,
@@ -24,7 +26,7 @@ type ServicoWizardPageProps = {
   mode: WizardMode;
   serviceId: string | null;
   /** Entrada `wizards.<nome>` do `kizuna.config.json` do projeto (dado puro — cruza Server → Client). */
-  wizardConfig: WizardJsonConfig;
+  wizardConfig: ServiceWizardJsonConfig;
   /**
    * Hook da Naví conversacional (só chamadores client-side; função não cruza Server → Client).
    * Só é usado em `create` e quando `wizardConfig.assistant` é `true`.
@@ -85,7 +87,10 @@ export function ServicoWizardPage({
   const { messages } = useAppPreferences();
   const t = messages.wizard.page;
   const { config, layoutProps, assistantEnabled } = useMemo(
-    () => createWizardFromJson<ServiceWizardState>(wizardConfig, SERVICE_WIZARD_STEPS),
+    () => createWizardFromJson<ServiceWizardState>(
+        wizardConfig,
+        buildServiceWizardRegistry(SERVICE_WIZARD_STEPS, wizardConfig)
+      ),
     [wizardConfig],
   );
   const { options: groups, loading: groupsLoading } = useResourceOptions<ServiceGroup>({
@@ -187,6 +192,9 @@ export function ServicoWizardPage({
       startingPrice: record.startingPrice ?? 0,
       priceUnit: record.priceUnit ?? 'quote',
       imageIds: Array.isArray(savedImages) ? savedImages.map(String) : [],
+      priceTable: Array.isArray(record.extras?.priceTable)
+        ? (record.extras.priceTable as PriceTableRow[])
+        : [],
       decision: '',
       rejectionReason: '',
       decisionNote: '',
@@ -227,6 +235,7 @@ export function ServicoWizardPage({
       mode={mode}
       entities={entities}
       initialResourceId={mode === 'create' ? null : serviceId}
+      editHref={(id) => `/painel/meus-servicos/${id}`}
       initialRecord={record ?? undefined}
       initialState={initialState}
       conversation={conversation}

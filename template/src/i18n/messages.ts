@@ -14,6 +14,18 @@ export const languageNames: Record<AppLanguage, string> = {
  */
 export const WIZARD_PT_BR = {
   exitConfirm: 'Sair agora descarta este anúncio. Tem certeza?',
+  // Rótulo de cada passo no stepper/trilho, por chave do passo (sobrescreve o `label` do registry).
+  stepLabels: {
+    start: 'Início',
+    category: 'Categoria',
+    location: 'Onde você atende',
+    price: 'Quanto você cobra',
+    images: 'Fotos',
+    description: 'Descrição',
+    'dynamic-form': 'Formulário',
+    moderation: 'Status',
+  } as Record<string, string>,
+
   common: {
     whyLabel: 'Por que pedimos isso?',
     whyShort: 'Por quê?',
@@ -31,15 +43,22 @@ export const WIZARD_PT_BR = {
     why: 'Começamos pela área porque ela é mais ampla: a mesma categoria pode aparecer em áreas diferentes, e a área certa põe o seu anúncio na frente de quem procura.',
     emptyGroups: 'Nenhuma área ativa encontrada.',
     pickCategory: 'Escolher categoria',
+    changeGroupCategory: "Mudar área",
     change: 'Trocar',
     open: 'Abrir',
     pickerTitle: 'Qual a sua categoria?',
+
+    categoryTitle: 'Para continuar, selecione uma categoria!',
     loadingCategories: 'Carregando categorias…',
     back: 'Voltar',
     noCategories: 'Nenhuma categoria ativa nesta área.',
   },
   subcategory: {
     title: 'Especialidades',
+    stepTitle: 'Quais especialidades você atende?',
+    changeCategory: 'Mudar categoria',
+
+    editTags: 'Editar',
     why: 'Cada especialidade marcada é mais uma busca em que o seu anúncio aparece. Marque só o que realmente se aplica.',
     empty:
       'Esta categoria não tem especialidades cadastradas. Você detalha no título e na descrição.',
@@ -67,6 +86,24 @@ export const WIZARD_PT_BR = {
     amount: 'Valor a partir de (R$)',
     quoteHint:
       'Com “sob orçamento” você pode deixar em branco. Se preencher, o público vê “a partir de R$ X”.',
+    agree: 'A combinar',
+    // Tabela de preços (perfil `stepProfiles.price` com `priceTable: true`).
+    table: {
+      title: 'Tabela de preços',
+      hint: 'Adicione os itens, pacotes ou formas de pagamento com o valor de cada um.',
+      itemTitle: 'Título',
+      description: 'Descrição',
+      amount: 'Valor (R$)',
+      agree: 'A combinar',
+      linkLabel: 'Texto do botão',
+      linkUrl: 'Link do botão (https://…)',
+      add: 'Adicionar item',
+      remove: 'Remover item',
+      empty: 'Nenhum item ainda.',
+    },
+    // Textos por forma de cobrança (chave = `textKey` ou o `value` de `price_unit`):
+    // `{ title, description }`. Sem entrada, valem os textos padrão do core.
+    options: {} as Record<string, { title?: string; description?: string }>,
   },
   images: {
     title: 'Adicione fotos do seu anúncio',

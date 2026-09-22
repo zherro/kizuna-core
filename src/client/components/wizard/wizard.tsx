@@ -13,6 +13,7 @@ import { NaviPanel } from './navi-panel';
 import { type WizardLayout, readStoredLayout, writeStoredLayout } from './wizard-layout';
 import { applyAssistPatch } from './apply-assist-patch';
 import { Button } from '../ui/button';
+import { useCollapsePanelSidebar } from '../panel-sidebar-context';
 import { useAppPreferences } from '../../providers/app-preferences-provider';
 import type {
   WizardAssistant,
@@ -115,11 +116,17 @@ export interface WizardProps<S extends Record<string, unknown> = Record<string, 
    * layout remembered in localStorage. `scroll` still only applies to `create`.
    */
   lockLayout?: boolean;
+  /**
+   * Rota de edição do recurso recém-criado. Em `create`, assim que a linha nasce (1º persist com
+   * id) a URL é trocada por `editHref(id)` (sem recarregar nem remontar) e o wizard passa a
+   * `edit` — recarregar a página ou voltar depois abre o mesmo registro em edição.
+   */
+  editHref?: (id: string) => string;
 }
 
 export function Wizard<S extends Record<string, unknown> = Record<string, unknown>>({
   config,
-  mode,
+  mode: modeProp,
   entities,
   initialResourceId,
   initialState,
@@ -130,14 +137,22 @@ export function Wizard<S extends Record<string, unknown> = Record<string, unknow
   onExit,
   variant,
   lockLayout = false,
+  editHref,
 }: WizardProps<S>) {
   const router = useRouter();
   const { messages } = useAppPreferences();
 
+  // Desktop: encolhe o menu lateral do painel enquanto o wizard está aberto; ao sair reabre (a
+  // menos que o usuário tenha mexido no menu nesse meio tempo — aí vale a escolha dele).
+  useCollapsePanelSidebar();
+
   // Layout is only switchable in `create`; edit/review always use the stepper (the scroll layout
   // has no persist-without-advance story). Seed from `variant` for a stable first paint, then
   // correct from localStorage on mount to avoid a hydration mismatch.
-  const layoutSwitchable = mode === 'create' && !lockLayout;
+  // O layout segue o modo de ENTRADA (não muda no meio do preenchimento); o resto do wizard usa
+  // `mode`, que vira `edit` quando a linha é criada (ver o efeito depois de `useWizardState`).
+  const [mode, setMode] = useState<WizardMode>(modeProp);
+  const layoutSwitchable = modeProp === 'create' && !lockLayout;
   const [layout, setLayout] = useState<WizardLayout>(variant ?? 'stepper');
   useEffect(() => {
     if (!layoutSwitchable) return;
@@ -149,7 +164,7 @@ export function Wizard<S extends Record<string, unknown> = Record<string, unknow
     writeStoredLayout(config.resource, next);
   };
   const effectiveLayout: WizardLayout =
-    layoutSwitchable || (lockLayout && mode === 'create') ? layout : 'stepper';
+    layoutSwitchable || (lockLayout && modeProp === 'create') ? layout : 'stepper';
   const layoutToggle = layoutSwitchable ? (
     <WizardLayoutToggle value={layout} onChange={changeLayout} />
   ) : undefined;
@@ -173,7 +188,7 @@ export function Wizard<S extends Record<string, unknown> = Record<string, unknow
   });
 
   const {
-    steps,
+    steps: rawSteps,
     currentIndex,
     furthestIndex,
     canContinue,
@@ -186,6 +201,23 @@ export function Wizard<S extends Record<string, unknown> = Record<string, unknow
     finish,
     ctx,
   } = wz;
+
+  // Rótulos do stepper vêm de `messages.wizard.stepLabels` (i18n); sem entrada, fica o do registry.
+  const stepLabels = (messages.wizard as { stepLabels?: Record<string, string> }).stepLabels;
+  const steps = useMemo(
+    () =>
+      stepLabels
+        ? rawSteps.map((s) => (stepLabels[s.key] ? { ...s, label: stepLabels[s.key] } : s))
+        : rawSteps,
+    [rawSteps, stepLabels]
+  );
+
+  // Linha criada (id definido) ainda em `create` → troca a URL pela de edição e vira `edit`.
+  useEffect(() => {
+    if (mode !== 'create' || !wz.resourceId || !editHref) return;
+    setMode('edit');
+    window.history.replaceState(window.history.state, '', editHref(wz.resourceId));
+  }, [mode, wz.resourceId, editHref]);
 
   const conv = useWizardConversation<S>({
     adapter: resolvedConversation,
@@ -207,7 +239,18 @@ export function Wizard<S extends Record<string, unknown> = Record<string, unknow
     setNaviSuppressed(false);
   }, [currentIndex]);
 
-  const stepCtx = useMemo(() => ({ ...ctx, setNaviSuppressed }), [ctx]);
+  const stepCtx = useMemo(
+    () => ({
+      ...ctx,
+      setNaviSuppressed,
+      advance: () => void goContinue(),
+      goToStep: (key: string) => {
+        const index = steps.findIndex((s) => s.key === key);
+        if (index >= 0) void jumpTo(index);
+      },
+    }),
+    [ctx, goContinue, jumpTo, steps]
+  );
 
   const totalSteps = steps.length;
   const currentStep = currentIndex + 1;

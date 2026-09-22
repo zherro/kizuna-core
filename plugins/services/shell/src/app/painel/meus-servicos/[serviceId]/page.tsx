@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { getSession, isOnboardingCompletedServer } from '@kizuna/core/server';
 import { ServicoWizardPage } from '@kizuna/core/client/components/services/servico-wizard-page';
 import type { WizardJsonConfig } from '@kizuna/core/client/components/wizard';
-import cfg from '../../../../../kizuna.config.json';
+import cfg from '@/../kizuna.config.json';
 
 type EditServicePageProps = {
   params: Promise<{ serviceId: string }>;

@@ -3,6 +3,9 @@ import type { NextConfig } from 'next';
 const nextConfig: NextConfig = {
   // EXEMPLO — ajuste conforme o projeto
 
+  // Build standalone para produção em Docker (ver Dockerfile na raiz).
+  output: 'standalone',
+
   // Headers de segurança padrão (ver kizuna-core/docs/HARDENING.md §Segurança).
   // CSP não entra aqui por default — exige rollout em Report-Only por projeto.
   async headers() {

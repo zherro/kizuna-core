@@ -2,11 +2,12 @@
 
 import Link from 'next/link';
 import { notFound, usePathname } from 'next/navigation';
-import { useState, type ComponentType, type ReactNode } from 'react';
+import { useMemo, useRef, useState, type ComponentType, type ReactNode } from 'react';
 import { LogOut, Menu, X } from 'lucide-react';
 import { buttonVariants } from './ui/button';
 import { useAuth } from '../providers/auth-provider';
 import { cn } from '../../lib/utils';
+import { PanelSidebarContext, type PanelSidebarControl } from './panel-sidebar-context';
 
 export type PanelNavIcon = ComponentType<{ className?: string }>;
 
@@ -158,6 +159,34 @@ export function PanelShellBase({
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+
+  // Telas como o wizard pedem o menu encolhido só enquanto estão abertas (desktop). `prev` guarda
+  // o estado de antes; se o usuário mexer no menu nesse meio tempo (`touched`), a escolha dele
+  // prevalece e nada é restaurado ao sair.
+  const collapsedRef = useRef(collapsed);
+  collapsedRef.current = collapsed;
+  const autoCollapse = useRef({ holders: 0, prev: false, touched: false });
+  const sidebarControl = useMemo<PanelSidebarControl>(
+    () => ({
+      collapseWhileMounted: () => {
+        const isDesktop =
+          typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches;
+        if (!isDesktop) return () => {};
+        const auto = autoCollapse.current;
+        if (auto.holders === 0) {
+          auto.prev = collapsedRef.current;
+          auto.touched = false;
+          setCollapsed(true);
+        }
+        auto.holders += 1;
+        return () => {
+          auto.holders -= 1;
+          if (auto.holders === 0 && !auto.touched) setCollapsed(auto.prev);
+        };
+      },
+    }),
+    []
+  );
 
   const isDevEnvironment = process.env.NODE_ENV !== 'production';
   const fullBleed = isFullBleedRoute?.(pathname) ?? false;
@@ -386,7 +415,13 @@ export function PanelShellBase({
   }
 
   return (
-    <div className="flex h-full min-h-0 overflow-hidden bg-muted/20">
+    <PanelSidebarContext.Provider value={sidebarControl}>
+    <div
+      className="flex h-full min-h-0 overflow-hidden bg-muted/20"
+      // Largura do menu fixo (w-24 / w-72) — barras `fixed` de telas filhas (rodapé do wizard)
+      // começam depois dele em vez de ficarem por baixo.
+      style={{ ['--panel-sidebar-w' as string]: collapsed ? '6rem' : '18rem' }}
+    >
       {renderDrawer(false)}
 
       <div
@@ -406,6 +441,7 @@ export function PanelShellBase({
                   const isDesktop =
                     typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches;
                   if (isDesktop) {
+                    autoCollapse.current.touched = true;
                     setCollapsed((current) => !current);
                   } else {
                     setMobileOpen(true);
@@ -458,5 +494,6 @@ export function PanelShellBase({
         <div className="min-h-0 flex-1 min-w-0 overflow-y-auto">{children}</div>
       </div>
     </div>
+    </PanelSidebarContext.Provider>
   );
 }

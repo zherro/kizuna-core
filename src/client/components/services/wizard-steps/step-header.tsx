@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { PorQueIsso } from './por-que-isso';
+import { Typography } from '../../ui/typography';
 
 /**
  * The header every wizard step opens with: an optional small kicker, a large plain-language
@@ -24,12 +25,12 @@ export function StepHeader({
     <header className="space-y-2.5">
       {kicker ? <p className="text-xs font-medium text-muted-foreground">{kicker}</p> : null}
 
-      <h1 className="font-display text-2xl font-medium tracking-tight text-foreground sm:text-[1.75rem] sm:leading-[1.15]">
+      <Typography.H3 weight='light'>
         {title}
-      </h1>
+      </Typography.H3>
 
       {subtitle ? (
-        <p className="max-w-prose text-[15px] leading-relaxed text-muted-foreground">{subtitle}</p>
+        <Typography.P className="max-w-prose text-[15px] leading-relaxed text-muted-foreground">{subtitle}</Typography.P>
       ) : null}
 
       {why ? <PorQueIsso>{why}</PorQueIsso> : null}

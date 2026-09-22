@@ -206,7 +206,7 @@ export function WizardScrollShell<S extends Record<string, unknown>>({
 
         <div
           data-wz-footer
-          className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background/95 backdrop-blur"
+          className="fixed inset-x-0 bottom-0 z-20 lg:left-[var(--panel-sidebar-w,0px)] border-t border-border bg-background/95 backdrop-blur"
         >
           <div className="mx-auto flex max-w-2xl items-center justify-end gap-3 px-3 py-3 sm:px-6">
             {!isLastStep ? (

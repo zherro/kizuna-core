@@ -8,7 +8,7 @@ type TextSize = 'xs' | 'sm' | 'base' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5x
 type Breakpoint = 'base' | 'sm' | 'md' | 'lg' | 'xl';
 type ResponsiveSize = Partial<Record<Breakpoint, TextSize>>;
 type Color = 'default' | 'muted' | 'primary' | 'secondary' | 'destructive';
-type Weight = 'normal' | 'medium' | 'semibold' | 'bold';
+type Weight = 'light' | 'normal' | 'medium' | 'semibold' | 'bold';
 type Align = 'left' | 'center' | 'right' | 'justify';
 
 type TypographyProps = {
@@ -114,7 +114,7 @@ function getResponsiveClasses(size: ResponsiveSize): string[] {
 const DEFAULT_SIZE: Record<HtmlTag, ResponsiveSize> = {
   h1: { base: '2xl', sm: '3xl', md: '4xl', lg: '5xl' },
   h2: { base: 'xl', sm: '2xl', md: '3xl', lg: '4xl' },
-  h3: { base: 'lg', sm: 'xl', md: '2xl', lg: '3xl' },
+  h3: { base: '2xl', sm: '2xl', md: '2xl', lg: '3xl' },
   h4: { base: 'base', sm: 'lg', md: 'xl', lg: '2xl' },
   h5: { base: 'base', md: 'lg', lg: 'xl' },
   h6: { base: 'sm', md: 'base', lg: 'lg' },
@@ -144,6 +144,7 @@ const COLOR_MAP: Record<Color, string> = {
 };
 
 const WEIGHT_MAP: Record<Weight, string> = {
+  light: 'font-light',
   normal: 'font-normal',
   medium: 'font-medium',
   semibold: 'font-semibold',

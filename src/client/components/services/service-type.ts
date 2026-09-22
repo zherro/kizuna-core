@@ -1,3 +1,5 @@
+import type { PriceTableRow } from './wizard-steps/price-options';
+
 export type {
   TaxonomyGroup as ServiceGroup,
   TaxonomyCategory as ServiceCategory,
@@ -64,12 +66,18 @@ export type ServiceWizardState = {
   startingPrice: number;
   priceUnit: string;
   imageIds: string[];
+  /** Tabela de preços (só quando o perfil do passo `price` a habilita). Vive em
+   * `services.extras.priceTable` (jsonb), não numa coluna — gravada via `persistExtras`. */
+  priceTable?: PriceTableRow[];
   decision: string;
   rejectionReason: string;
   decisionNote: string;
   /** Transient: validity reported by the dynamic per-category form step. Not a `services` column
    * (the resource `mapInput` ignores unknown keys), only drives that step's `canContinue`. */
   dynamicFormValid: boolean;
+  /** Transient: outro passo (ex.: título) pede pro passo de categoria abrir já na lista de
+   * categorias (`'picker'`) em vez de nas especialidades. Consumido e limpo por `StepCategory`. */
+  categoryStage?: '' | 'picker';
   /** Transient: the reference address form on `location` is filled (no_cliente/no_estabelecimento
    * only) — drives that step's `canContinue`. The address itself stays local-only/not persisted
    * (see `StepLocation`); this is just the completeness flag. */

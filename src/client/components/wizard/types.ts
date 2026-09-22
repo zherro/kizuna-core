@@ -40,6 +40,12 @@ export interface WizardStepContext<S = Record<string, unknown>> {
   /** O passo pede pra esconder a Naví agora (ex.: quer forçar seleção manual de um sub-campo
    *  antes de liberar o avanço). A engine some com o dock/fab enquanto isto for `true`. */
   setNaviSuppressed?: (v: boolean) => void;
+  /** O passo pede pra avançar pro próximo (mesmo efeito do botão Continuar — valida
+   *  `canContinue` e persiste). Chame num efeito, depois do `patch` ter sido aplicado; não no
+   *  mesmo tick do `patch`, senão avança com o estado antigo. */
+  advance?: () => void;
+  /** Volta pro passo de `key` (só passos já alcançados). No-op se o passo não existe na ordem. */
+  goToStep?: (key: string) => void;
 }
 
 export interface WizardStepProps<S = Record<string, unknown>> extends WizardStepContext<S> {}

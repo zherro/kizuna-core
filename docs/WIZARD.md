@@ -269,3 +269,66 @@ const { config, layoutProps, assistantEnabled } = createWizardFromJson(
 ```
 
 Chave de step inexistente ou layout inválido lançam erro. Steps novos continuam sendo código.
+
+### Wizard de serviços: perfis por passo (`stepProfiles`) e `skipStepsByGroup`
+
+`wizards.servicos` aceita (tipo `ServiceWizardJsonConfig`, aplicados por
+`buildServiceWizardRegistry` — o `ServicoWizardPage` já chama). **Os dados gravados não mudam**
+(mesmas colunas/enums); a config só escolhe o que a tela oferece e como se chama.
+
+**Formato único de perfis** — igual para todo passo que suporta (hoje `location` e `price`):
+
+```json
+"stepProfiles": {
+  "<passo>": {
+    "default":    { ... },
+    "byGroup":    { "<slug-do-grupo>":     { ... } },
+    "byCategory": { "<slug-da-categoria>": { ... } }
+  }
+}
+```
+
+Precedência (o perfil escolhido substitui o anterior inteiro, sem merge):
+**categoria → grupo → `default` (custom global) → padrão do core**. O que muda de um passo pro
+outro é só o conteúdo do perfil:
+
+| Passo      | Perfil                                                                                     | Padrão do core                             |
+| ---------- | ------------------------------------------------------------------------------------------ | ------------------------------------------ |
+| `location` | `{ options: [{ value, model: "address"\|"identifier", icon?, textKey? }] }`                | as 3 opções do enum, como sempre           |
+| `price`    | `{ options: [{ value, textKey? }], startingPrice?: bool, priceTable?: bool }`               | todas as formas de cobrança + "a partir de", sem tabela |
+
+- **Seleção inicial** — `defaultValue` (um `value` de `options`) já abre com aquela opção
+  selecionada, em `location` e `price`. **Sem `defaultValue` nada vem selecionado** (no `price` o passo
+  então exige escolher uma forma de cobrança). O padrão do core no `price` usa
+  `defaultByCategory: true` (o default por categoria de sempre); um perfil custom sem
+  `defaultValue` e sem `defaultByCategory` começa vazio. `defaultValue` fora de `options` lança erro.
+- `value` é sempre o valor do enum do banco (`service_location` / `price_unit`) — o back não muda.
+- `location`: `model: "address"` mostra o formulário de endereço e o exige; `"identifier"` é só o
+  identificador (ex.: online).
+- `textKey` aponta pra `messages.wizard.<passo>.options[textKey ?? value]` (`title`,
+  `description`; `hint` no location). Assim a mesma opção tem textos diferentes por
+  grupo/categoria. Sem entrada, valem os textos padrão.
+- **Tabela de preços** — `price.priceTable`: `true` (todos os campos) ou
+  `{ "fields": ["description", "amount", "link"], "maxRows": 10 }`. O usuário vai adicionando itens
+  (`PriceTableEditor`); cada item tem **título** (sempre), e opcionalmente **descrição**, **valor** e
+  **botão de link** (texto + URL http/https) — `fields` escolhe quais aparecem. Gravada em
+  `services.extras.priceTable` (jsonb, via `persistExtras`, sem tocar no resto de `extras`) como
+  `[{ id, title, description, amount, linkLabel, linkUrl }]`; itens sem título são descartados e
+  botão sem texto ou com URL inválida vira sem botão. `price.startingPrice: false` esconde o "a partir
+  de". Rótulos dos campos em `messages.wizard.price.table`.
+- Se o grupo/categoria muda e o valor já escolhido não existe nas novas opções, é trocado
+  (`location` limpa; `price` cai na primeira opção).
+
+```json
+"stepProfiles": {
+  "price": {
+    "default": { "options": [{ "value": "day" }, { "value": "service" }], "priceTable": true },
+    "byCategory": {
+      "buffet": { "options": [{ "value": "package", "textKey": "buffet_pacote" }], "startingPrice": true, "priceTable": true }
+    }
+  }
+}
+```
+
+**`skipStepsByGroup`** — `{ "location": ["slug-do-grupo"] }`: qualquer passo pode ser escondido
+para certos grupos (sem grupo escolhido ainda, aparece). Chave de passo inexistente lança.

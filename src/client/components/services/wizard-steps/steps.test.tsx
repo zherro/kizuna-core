@@ -1,12 +1,26 @@
 // @vitest-environment jsdom
 import { describe, expect, it, afterEach } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
+import { AppPreferencesProvider } from '../../../providers/app-preferences-provider';
 import { SERVICE_WIZARD_STEPS } from './index';
-import { WizardLayoutContext } from '../../wizard/wizard-layout';
 import type { WizardStepProps } from '../../wizard/types';
 import type { ServiceWizardState } from '../service-type';
 
 afterEach(cleanup);
+
+// AppPreferencesProvider lê `prefers-color-scheme` — jsdom não implementa matchMedia.
+if (typeof window !== 'undefined' && !window.matchMedia) {
+  window.matchMedia = ((query: string) => ({
+    matches: false,
+    media: query,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    addListener: () => {},
+    removeListener: () => {},
+    dispatchEvent: () => false,
+    onchange: null,
+  })) as unknown as typeof window.matchMedia;
+}
 
 describe('SERVICE_WIZARD_STEPS', () => {
   it('tem as 8 chaves', () => {
@@ -86,19 +100,15 @@ describe('stacked (scroll) layout adaptations', () => {
       ...over,
     }) as unknown as WizardStepProps<ServiceWizardState>;
 
-  it('StepCategory does not auto-open the picker when stacked', () => {
+  it('StepCategory mostra as categorias do grupo inline (sem modal nem busca)', () => {
     const StepCategory = SERVICE_WIZARD_STEPS.category.Component;
     render(
-      <WizardLayoutContext.Provider value={{ layout: 'scroll', stacked: true }}>
+      <AppPreferencesProvider>
         <StepCategory {...baseCtx()} />
-      </WizardLayoutContext.Provider>
+      </AppPreferencesProvider>
     );
     expect(screen.queryByRole('dialog')).toBeNull();
-  });
-
-  it('StepCategory auto-opens the picker in the stepper layout', () => {
-    const StepCategory = SERVICE_WIZARD_STEPS.category.Component;
-    render(<StepCategory {...baseCtx()} />);
-    expect(screen.queryByRole('dialog')).not.toBeNull();
+    expect(screen.queryByPlaceholderText(/Buscar/)).toBeNull();
+    expect(screen.getByRole('button', { name: /Elétrica/ })).toBeTruthy();
   });
 });

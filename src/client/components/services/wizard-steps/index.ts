@@ -1,4 +1,4 @@
-import type { WizardStep } from '../../wizard/types';
+import type { WizardStep, WizardStepContext } from '../../wizard/types';
 import {
   stripHtml,
   type ServiceCategory,
@@ -8,8 +8,8 @@ import {
 } from '../service-type';
 import { StepStart } from './step-start';
 import { StepCategory } from './step-category';
-import { StepLocation } from './step-location';
-import { StepPrice } from './step-price';
+import { createLocationStep } from './step-location';
+import { createPriceStep } from './step-price';
 import { StepImages } from './step-images';
 import { StepDescription } from './step-description';
 import { StepDynamicForm, dynamicFormCategory, getDynamicFormHolder } from './step-dynamic-form';
@@ -26,6 +26,37 @@ const DESCRIPTION_MIN_LENGTH = 20;
  * `step-images` renders the core `ImageGalleryManager` directly; its `onPersist` (via
  * `ctx.persistExtras`) writes `extras.images` / `extras.coverFileId`.
  */
+/**
+ * Salva título + categoria (+ especialidades). A ordem dos passos é dinâmica, então quem chama
+ * (`start` e `category`) sempre passa por aqui e a regra fica num lugar só: SEM título não salva
+ * nada. Em `create` a linha `services` só nasce com título E categoria (as duas colunas são
+ * NOT NULL) — o passo que completar o par é quem cria; o outro só espera.
+ */
+async function saveTitleAndCategory(ctx: WizardStepContext<ServiceWizardState>): Promise<void> {
+  const { title, groupId, categoryId, subcategoryIds } = ctx.state;
+  if (!(title ?? '').trim()) return;
+  if (ctx.mode === 'create' && !categoryId) return;
+
+  const r = await ctx.persist({
+    title,
+    ...(categoryId ? { categoryGroupId: groupId, categoryId } : {}),
+  });
+  if (!r.ok || !r.item) throw new Error('Nao foi possivel salvar o servico.');
+  if (!categoryId) return;
+
+  const serviceId = String(r.item.id);
+  const prevLinks =
+    (ctx.entities.serviceSubcategoryLinks as ServiceSubcategoryLink[] | undefined) ?? [];
+  const next = await syncServiceSubcategories(
+    serviceId,
+    groupId,
+    categoryId,
+    subcategoryIds,
+    prevLinks
+  );
+  (ctx.entities as Record<string, unknown>).serviceSubcategoryLinks = next;
+}
+
 export const SERVICE_WIZARD_STEPS: Record<string, WizardStep<ServiceWizardState>> = {
   start: {
     key: 'start',
@@ -36,11 +67,9 @@ export const SERVICE_WIZARD_STEPS: Record<string, WizardStep<ServiceWizardState>
     // múltipla escolha) — aplica e avança num clique só, sem esperar um "Pode seguir" à parte.
     conversationQuickConfirm: true,
     canContinue: (ctx) => (ctx.state.title ?? '').trim().length >= 5,
-    persist: async (ctx) => {
-      // In create mode the row is born in the `category` step — nothing to save here.
-      if (ctx.mode === 'create') return;
-      await ctx.persist({ title: ctx.state.title });
-    },
+    // O título é sempre obrigatório ao chegar neste passo, em qualquer posição da ordem.
+    required: true,
+    persist: saveTitleAndCategory,
   },
 
   category: {
@@ -60,61 +89,15 @@ export const SERVICE_WIZARD_STEPS: Record<string, WizardStep<ServiceWizardState>
       );
       return hasSubcategories ? (subcategoryIds ?? []).length > 0 : true;
     },
-    persist: async (ctx) => {
-      const { title, groupId, categoryId, subcategoryIds } = ctx.state;
-      // This CREATES the `services` row (or updates it) with title + category.
-      const r = await ctx.persist({
-        title,
-        categoryGroupId: groupId,
-        categoryId,
-      });
-      if (!r.ok || !r.item) throw new Error('Nao foi possivel salvar o servico.');
-      const serviceId = String(r.item.id);
-      const prevLinks =
-        (ctx.entities.serviceSubcategoryLinks as ServiceSubcategoryLink[] | undefined) ?? [];
-      const next = await syncServiceSubcategories(
-        serviceId,
-        groupId,
-        categoryId,
-        subcategoryIds,
-        prevLinks
-      );
-      (ctx.entities as Record<string, unknown>).serviceSubcategoryLinks = next;
-    },
+    // Sem título ainda (ordem dinâmica) → não salva; o passo do título cria a linha depois.
+    persist: saveTitleAndCategory,
   },
 
-  location: {
-    key: 'location',
-    label: 'Onde você atende',
-    Component: StepLocation,
-    // Presencial ("no cliente"/"no estabelecimento") exige o endereço de referência preenchido —
-    // só em `create`: em `edit`/`review` o endereço nunca foi persistido (é local-only, ver
-    // `StepLocation`), então não há o que validar e barrar aqui só travaria quem está editando
-    // outra coisa no anúncio.
-    canContinue: (ctx) => {
-      const loc = ctx.state.serviceLocation;
-      if (!loc) return false;
-      const isPresential = loc === 'no_cliente' || loc === 'no_estabelecimento';
-      if (!isPresential || ctx.mode !== 'create') return true;
-      return Boolean(ctx.state.addressComplete);
-    },
-    persist: async (ctx) => {
-      await ctx.persist({ serviceLocation: ctx.state.serviceLocation });
-    },
-  },
+  // Padrão do core; o projeto troca as opções via `locationOptions` (ver build-registry.ts).
+  location: createLocationStep(),
 
-  price: {
-    key: 'price',
-    label: 'Quanto você cobra',
-    Component: StepPrice,
-    canContinue: () => true,
-    persist: async (ctx) => {
-      await ctx.persist({
-        startingPrice: ctx.state.startingPrice,
-        priceUnit: ctx.state.priceUnit,
-      });
-    },
-  },
+  // Padrão do core; o projeto troca o perfil via `stepProfiles.price` (ver build-registry.ts).
+  price: createPriceStep(),
 
   images: {
     key: 'images',
