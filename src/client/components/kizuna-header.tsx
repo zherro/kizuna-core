@@ -7,6 +7,8 @@ export type KizunaHeaderProps = {
   navLinks?: TopbarNavLink[];
   authCta?: 'split' | 'single';
   loginHref?: string;
+  /** URL da logo (ex.: "/brand/logo.png"); vale para as duas variantes. */
+  brandLogo?: string;
   showThemeToggle?: boolean;
   /** Sobrescreve a env `KIZUNA_HEADER_VARIANT` (default 'classic'). */
   variant?: KizunaHeaderVariant;

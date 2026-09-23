@@ -31,6 +31,8 @@ export interface TopbarProps {
   authCta?: 'split' | 'single';
   /** href for the single-CTA sign-in button. Default: '/login'. */
   loginHref?: string;
+  /** Logo URL (e.g. "/brand/logo.png"). When set, replaces the brand dot + title. */
+  brandLogo?: string;
 }
 
 const navLinkClass =
@@ -51,6 +53,7 @@ export function Topbar({
   showThemeToggle = true,
   authCta = 'split',
   loginHref = '/login',
+  brandLogo,
 }: TopbarProps = {}) {
   const pathname = usePathname();
   const [locationOpen, setLocationOpen] = useState(false);
@@ -84,11 +87,18 @@ export function Topbar({
         <div className="mx-auto w-full max-w-6xl">
           <div className="mx-auto flex items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
             <Link href="/" className="flex items-center gap-2.5">
-              <span
-                className="inline-block h-2.5 w-2.5 rounded-full bg-primary"
-                aria-hidden="true"
-              />
-              <span className="text-lg font-semibold tracking-tight">{messages.nav.title}</span>
+              {brandLogo ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={brandLogo} alt={messages.nav.title} className="h-10 w-auto" />
+              ) : (
+                <>
+                  <span
+                    className="inline-block h-2.5 w-2.5 rounded-full bg-primary"
+                    aria-hidden="true"
+                  />
+                  <span className="text-lg font-semibold tracking-tight">{messages.nav.title}</span>
+                </>
+              )}
             </Link>
 
             <nav className="hidden items-center gap-1 md:flex">

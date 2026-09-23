@@ -20,6 +20,8 @@ export type TopbarCompactProps = {
   eyebrow?: string;
   /** Label da marca/localização (ex.: "Centro, sua cidade"). */
   brandLabel?: string;
+  /** URL da logo (ex.: "/brand/logo.png"). Se presente, substitui eyebrow + label. */
+  brandLogo?: string;
   /** href do botão de busca. Se ausente, o botão não aparece. */
   searchHref?: string;
 };
@@ -36,6 +38,7 @@ export function TopbarCompact({
   showThemeToggle = true,
   eyebrow = 'Você está em',
   brandLabel = 'Início',
+  brandLogo,
   searchHref = '/busca',
 }: TopbarCompactProps = {}) {
   const pathname = usePathname();
@@ -60,14 +63,21 @@ export function TopbarCompact({
     <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur-md">
       {/* mesmo container do Topbar classic (max-w-6xl) */}
       <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
-        <Link href="/" className="flex min-w-0 flex-col leading-tight">
-          <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-            {eyebrow}
-          </span>
-          <span className="flex items-center gap-1 truncate text-sm font-bold text-foreground">
-            <MapPin className="h-3.5 w-3.5 text-primary" /> {brandLabel}
-          </span>
-        </Link>
+        {brandLogo ? (
+          <Link href="/" className="flex shrink-0 items-center">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={brandLogo} alt={brandLabel} className="h-10 w-auto" />
+          </Link>
+        ) : (
+          <Link href="/" className="flex min-w-0 flex-col leading-tight">
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              {eyebrow}
+            </span>
+            <span className="flex items-center gap-1 truncate text-sm font-bold text-foreground">
+              <MapPin className="h-3.5 w-3.5 text-primary" /> {brandLabel}
+            </span>
+          </Link>
+        )}
 
         <nav className="hidden items-center gap-5 md:flex">
           {navLinks.map((item) => (
