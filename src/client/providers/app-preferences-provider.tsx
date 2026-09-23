@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import {
   languages,
   languageNames,
@@ -37,6 +37,8 @@ type AppPreferencesContextValue = {
   setTheme: (theme: AppTheme) => void;
   themeColor: AppThemeColor;
   setThemeColor: (themeColor: AppThemeColor) => void;
+  /** `false` = cor fixa em `defaultThemeColor`; o seletor de cor some do PreferencesFab. */
+  themeColorSelectable: boolean;
   languages: readonly AppLanguage[];
   languageNames: Record<AppLanguage, string>;
   messages: AppMessages;
@@ -75,37 +77,59 @@ export const THEME_COLORS: readonly AppThemeColor[] = [
   'laranja_medio',
 ];
 
-function parseThemeColor(value: string | null): AppThemeColor {
-  if (value && (THEME_COLORS as readonly string[]).includes(value)) {
-    return value as AppThemeColor;
-  }
-  return 'blue';
+export function isThemeColor(value: unknown): value is AppThemeColor {
+  return typeof value === 'string' && (THEME_COLORS as readonly string[]).includes(value);
 }
 
-export function AppPreferencesProvider({ children }: { children: React.ReactNode }) {
+function parseThemeColor(value: string | null, fallback: AppThemeColor): AppThemeColor {
+  return isThemeColor(value) ? value : fallback;
+}
+
+type AppPreferencesProviderProps = {
+  children: React.ReactNode;
+  /** Cor usada enquanto o usuário não escolheu outra (ou sempre, se `themeColorSelectable` for false). */
+  defaultThemeColor?: AppThemeColor;
+  /** Permite ao usuário trocar a cor. Default: true. */
+  themeColorSelectable?: boolean;
+};
+
+export function AppPreferencesProvider({
+  children,
+  defaultThemeColor = 'blue',
+  themeColorSelectable = true,
+}: AppPreferencesProviderProps) {
   const [language, setLanguage] = useState<AppLanguage>('pt-BR');
   const [theme, setTheme] = useState<AppTheme>('system');
   const [resolvedTheme, setResolvedTheme] = useState<ResolvedTheme>('light');
-  const [themeColor, setThemeColor] = useState<AppThemeColor>('blue');
+  const [themeColor, setThemeColorState] = useState<AppThemeColor>(defaultThemeColor);
+  const setThemeColor = useCallback(
+    (next: AppThemeColor) => {
+      if (themeColorSelectable) setThemeColorState(next);
+    },
+    [themeColorSelectable],
+  );
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
     const savedLanguage = parseLanguage(window.localStorage.getItem(LANGUAGE_STORAGE_KEY));
     const savedTheme = parseTheme(window.localStorage.getItem(THEME_STORAGE_KEY));
-    const savedThemeColor = parseThemeColor(window.localStorage.getItem(THEME_COLOR_STORAGE_KEY));
+    const savedThemeColor = themeColorSelectable
+      ? parseThemeColor(window.localStorage.getItem(THEME_COLOR_STORAGE_KEY), defaultThemeColor)
+      : defaultThemeColor;
     const nextResolvedTheme = savedTheme === 'system' ? getSystemTheme() : savedTheme;
 
     queueMicrotask(() => {
       setLanguage(savedLanguage);
       setTheme(savedTheme);
       setResolvedTheme(nextResolvedTheme);
-      setThemeColor(savedThemeColor);
+      setThemeColorState(savedThemeColor);
       setHydrated(true);
     });
 
     document.documentElement.classList.toggle('dark', nextResolvedTheme === 'dark');
     document.documentElement.lang = savedLanguage;
     document.documentElement.setAttribute('data-theme-color', savedThemeColor);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- lido uma vez, na montagem
   }, []);
 
   useEffect(() => {
@@ -116,9 +140,9 @@ export function AppPreferencesProvider({ children }: { children: React.ReactNode
 
   useEffect(() => {
     if (!hydrated) return;
-    window.localStorage.setItem(THEME_COLOR_STORAGE_KEY, themeColor);
+    if (themeColorSelectable) window.localStorage.setItem(THEME_COLOR_STORAGE_KEY, themeColor);
     document.documentElement.setAttribute('data-theme-color', themeColor);
-  }, [hydrated, themeColor]);
+  }, [hydrated, themeColor, themeColorSelectable]);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -155,11 +179,12 @@ export function AppPreferencesProvider({ children }: { children: React.ReactNode
       setTheme,
       themeColor,
       setThemeColor,
+      themeColorSelectable,
       languages,
       languageNames,
       messages: messages[language],
     }),
-    [language, theme, resolvedTheme, themeColor]
+    [language, theme, resolvedTheme, themeColor, setThemeColor, themeColorSelectable]
   );
 
   return <AppPreferencesContext.Provider value={value}>{children}</AppPreferencesContext.Provider>;

@@ -1,16 +1,19 @@
-'use client';
+"use client";
 
-import { Languages, MonitorCog, Moon, Sun } from 'lucide-react';
-import { useAppPreferences, THEME_COLORS } from '../providers/app-preferences-provider';
+import { Languages, MonitorCog, Moon, Sun } from "lucide-react";
+import {
+  useAppPreferences,
+  THEME_COLORS,
+} from "../providers/app-preferences-provider";
 
 const COLOR_FALLBACK_LABEL: Record<string, string> = {
-  terracotta: 'Terracota',
-  bora_cuiaba: 'Bora Cuiabá',
-  metro_orange: 'Metro Orange',
-  laranja_intenso: 'Laranja Intenso',
-  laranja_medio: 'Laranja Médio',
+  terracotta: "Terracota",
+  bora_cuiaba: "Bora Cuiabá",
+  metro_orange: "Metro Orange",
+  laranja_intenso: "Laranja Intenso",
+  laranja_medio: "Laranja Médio",
 };
-import { Button } from './ui/button';
+import { Button } from "./ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,7 +22,7 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from './ui/dropdown-menu';
+} from "./ui/dropdown-menu";
 
 /**
  * Floating theme / accent-color / language switcher over the `account_preferences`
@@ -36,6 +39,7 @@ export function PreferencesFab() {
     setTheme,
     themeColor,
     setThemeColor,
+    themeColorSelectable,
     messages,
   } = useAppPreferences();
 
@@ -68,21 +72,27 @@ export function PreferencesFab() {
             </DropdownMenuRadioItem>
           </DropdownMenuRadioGroup>
 
-          <DropdownMenuSeparator />
+          {themeColorSelectable && (
+            <>
+              <DropdownMenuSeparator />
 
-          <DropdownMenuLabel>{messages.nav.color}</DropdownMenuLabel>
-          <DropdownMenuRadioGroup
-            value={themeColor}
-            onValueChange={(next) => setThemeColor(next as typeof themeColor)}
-          >
-            {THEME_COLORS.map((c) => (
-              <DropdownMenuRadioItem key={c} value={c}>
-                {(messages.nav as Record<string, string>)[c] ??
-                  COLOR_FALLBACK_LABEL[c] ??
-                  c.charAt(0).toUpperCase() + c.slice(1)}
-              </DropdownMenuRadioItem>
-            ))}
-          </DropdownMenuRadioGroup>
+              <DropdownMenuLabel>{messages.nav.color}</DropdownMenuLabel>
+              <DropdownMenuRadioGroup
+                value={themeColor}
+                onValueChange={(next) =>
+                  setThemeColor(next as typeof themeColor)
+                }
+              >
+                {THEME_COLORS.map((c) => (
+                  <DropdownMenuRadioItem key={c} value={c}>
+                    {(messages.nav as Record<string, string>)[c] ??
+                      COLOR_FALLBACK_LABEL[c] ??
+                      c.charAt(0).toUpperCase() + c.slice(1)}
+                  </DropdownMenuRadioItem>
+                ))}
+              </DropdownMenuRadioGroup>
+            </>
+          )}
 
           <DropdownMenuSeparator />
 

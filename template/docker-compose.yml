@@ -3,9 +3,23 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      # NEXT_PUBLIC_* precisam existir no momento do build (o Dokploy carrega
+      # o .env que ele mesmo escreve para resolver estes ${...}).
+      args:
+        NEXT_PUBLIC_UI_STYLE: ${NEXT_PUBLIC_UI_STYLE:-}
+        NEXT_PUBLIC_SHOWCASE_ENABLED: ${NEXT_PUBLIC_SHOWCASE_ENABLED:-}
     restart: unless-stopped
     ports:
       - "3000"
-    # As variáveis de ambiente (DB, JWT, URLs de serviços internos como
-    # PostgREST, etc.) devem ser configuradas na aba "Environment" do
-    # Dokploy — não coloque valores sensíveis aqui.
+    # O Dokploy escreve as variáveis configuradas na aba "Environment" em um
+    # arquivo .env ao lado deste compose — env_file injeta elas no processo
+    # do container em runtime. Não coloque valores sensíveis aqui.
+    env_file:
+      - .env
+    # Se o Postgres/PostgREST rodar em outro stack Dokploy (compose
+    # separado), coloque este serviço na mesma rede externa dele para
+    # chamar POSTGREST_URL por nome de serviço:
+    # networks:
+    #   default:
+    #     name: kizuna_net
+    #     external: true
