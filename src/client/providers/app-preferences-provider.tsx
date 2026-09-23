@@ -8,22 +8,12 @@ import {
   type AppLanguage,
   type AppMessages,
 } from '@/i18n/messages';
+import { isThemeColor, THEME_COLORS, type AppThemeColor } from '../../shared/theme-colors';
+
+export { isThemeColor, THEME_COLORS, type AppThemeColor };
 
 type AppTheme = 'light' | 'dark' | 'system';
 type ResolvedTheme = 'light' | 'dark';
-export type AppThemeColor =
-  | 'blue'
-  | 'green'
-  | 'purple'
-  | 'teal'
-  | 'red'
-  | 'orange'
-  | 'coral'
-  | 'terracotta'
-  | 'bora_cuiaba'
-  | 'metro_orange'
-  | 'laranja_intenso'
-  | 'laranja_medio';
 
 const LANGUAGE_STORAGE_KEY = 'foco-total-language';
 const THEME_STORAGE_KEY = 'foco-total-theme';
@@ -60,25 +50,6 @@ function parseTheme(value: string | null): AppTheme {
 function getSystemTheme(): ResolvedTheme {
   if (typeof window === 'undefined') return 'light';
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-}
-
-export const THEME_COLORS: readonly AppThemeColor[] = [
-  'blue',
-  'green',
-  'purple',
-  'teal',
-  'red',
-  'orange',
-  'coral',
-  'terracotta',
-  'bora_cuiaba',
-  'metro_orange',
-  'laranja_intenso',
-  'laranja_medio',
-];
-
-export function isThemeColor(value: unknown): value is AppThemeColor {
-  return typeof value === 'string' && (THEME_COLORS as readonly string[]).includes(value);
 }
 
 function parseThemeColor(value: string | null, fallback: AppThemeColor): AppThemeColor {
