@@ -66,7 +66,7 @@ export function PageHeader({
           {title}
         </Typography.H2>
         {description ? (
-          <Typography.P className="text-muted-foreground">{description}</Typography.P>
+          <Typography.P color="muted">{description}</Typography.P>
         ) : null}
       </Grid>
 

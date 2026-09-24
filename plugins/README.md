@@ -55,6 +55,12 @@ follow-ups (`0002_*.sql`, …) for data seeds or later migrations; the installer
   session, no write grant to `auth_user` at all (pure reference data, seeded once outside the
   API — no `auth.permissions` gate either). No data is seeded — a consuming project inserts its
   own countries/regions/states/cities (e.g. foco-total's `db/extras/location_seed_brazil.sql`).
+- `weather/` — header weather widget, no tables (the `.sql` only self-registers). Current
+  temperature cycling through the cities in the project's `kizuna.config.json` (`weather.cities`)
+  plus a modal with yesterday, today (highlighted) and the next days. Live data from Open-Meteo
+  (free, no key) via the shell route `/api/weather`; provider URL, timezone, cache, rotation and
+  day range are all `weather.*` config. Component: `src/client/components/weather/`. No
+  `auth.permissions` (read-only).
 - `forms/` — generic reusable forms (`forms`: a `FormSchema` jsonb keyed by `form_key`, version
   bumped by a `BEFORE UPDATE` trigger when the schema changes) plus captured answers
   (`form_results`: **singleton** — one current row per `(tenant_id, domain, reference_id)`, jsonb

@@ -1,0 +1,6 @@
+{
+  "owner": "weather",
+  "files": {
+    "src/app/api/weather/route.ts": "managed"
+  }
+}

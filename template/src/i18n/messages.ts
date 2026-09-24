@@ -43,7 +43,7 @@ export const WIZARD_PT_BR = {
     why: 'Começamos pela área porque ela é mais ampla: a mesma categoria pode aparecer em áreas diferentes, e a área certa põe o seu anúncio na frente de quem procura.',
     emptyGroups: 'Nenhuma área ativa encontrada.',
     pickCategory: 'Escolher categoria',
-    changeGroupCategory: "Mudar área",
+    changeGroupCategory: 'Mudar área',
     change: 'Trocar',
     open: 'Abrir',
     pickerTitle: 'Qual a sua categoria?',
@@ -226,6 +226,15 @@ export type AppMessages = {
     ctaCreateAccount: string;
     haveAccount: string;
   };
+  footer: {
+    tagline: string;
+    navigation: string;
+    categories: string;
+    social: string;
+    rights: string;
+    weatherCredit: string;
+    madeWith: string;
+  };
   default: {
     dashboard: string;
   };
@@ -304,6 +313,15 @@ export const messages: Record<AppLanguage, AppMessages> = {
       ctaCreateAccount: 'Criar conta grátis',
       haveAccount: 'Já tem conta? Use o formulário para entrar.',
     },
+    footer: {
+      tagline: 'Gerencie seus anúncios com facilidade.',
+      navigation: 'Navegação',
+      categories: 'Categorias',
+      social: 'Redes sociais',
+      rights: 'Todos os direitos reservados.',
+      weatherCredit: 'Previsão do tempo',
+      madeWith: 'Feito com ♥',
+    },
     default: {
       dashboard: 'Meu Painel',
     },
@@ -380,6 +398,15 @@ export const messages: Record<AppLanguage, AppMessages> = {
       ctaCreateAccount: 'Create free account',
       haveAccount: 'Already have an account? Use the form to sign in.',
     },
+    footer: {
+      tagline: 'Manage your listings with ease.',
+      navigation: 'Navigation',
+      categories: 'Categories',
+      social: 'Social media',
+      rights: 'All rights reserved.',
+      weatherCredit: 'Weather forecast',
+      madeWith: 'Made with ♥',
+    },
     default: {
       dashboard: 'Dashboard',
     },
@@ -455,6 +482,15 @@ export const messages: Record<AppLanguage, AppMessages> = {
       benefit4: 'Habla directo con el cliente, sin comisión sobre lo acordado',
       ctaCreateAccount: 'Crear cuenta gratis',
       haveAccount: '¿Ya tienes cuenta? Usa el formulario para iniciar sesión.',
+    },
+    footer: {
+      tagline: 'Gestiona tus anuncios con facilidad.',
+      navigation: 'Navegación',
+      categories: 'Categorías',
+      social: 'Redes sociales',
+      rights: 'Todos los derechos reservados.',
+      weatherCredit: 'Pronóstico del tiempo',
+      madeWith: 'Hecho con ♥',
     },
     default: {
       dashboard: 'Dashboard',

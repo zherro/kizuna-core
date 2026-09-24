@@ -30,7 +30,7 @@ export function StepHeader({
       </Typography.H3>
 
       {subtitle ? (
-        <Typography.P className="max-w-prose text-[15px] leading-relaxed text-muted-foreground">{subtitle}</Typography.P>
+        <Typography.P color="muted" measure>{subtitle}</Typography.P>
       ) : null}
 
       {why ? <PorQueIsso>{why}</PorQueIsso> : null}

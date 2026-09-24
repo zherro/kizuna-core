@@ -10,7 +10,6 @@ tsconfig.tsbuildinfo
 
 .env
 .env*.local
-env.example
 .env.example
 
 npm-debug.log*

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { LayoutDashboard, LogIn, LogOut, MapPin, Menu, Moon, Search, Sun } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useAppPreferences } from '../providers/app-preferences-provider';
@@ -22,6 +22,8 @@ export type TopbarCompactProps = {
   brandLabel?: string;
   /** URL da logo (ex.: "/brand/logo.png"). Se presente, substitui eyebrow + label. */
   brandLogo?: string;
+  /** Conteúdo extra à direita, antes do login (ex.: widget de clima). Aparece também no mobile. */
+  actions?: ReactNode;
   /** href do botão de busca. Se ausente, o botão não aparece. */
   searchHref?: string;
 };
@@ -39,6 +41,7 @@ export function TopbarCompact({
   eyebrow = 'Você está em',
   brandLabel = 'Início',
   brandLogo,
+  actions,
   searchHref = '/busca',
 }: TopbarCompactProps = {}) {
   const pathname = usePathname();
@@ -136,6 +139,8 @@ export function TopbarCompact({
               <Search className="h-4 w-4" />
             </Link>
           )}
+
+          {actions}
 
           {!user &&
             (authCta === 'single' ? (

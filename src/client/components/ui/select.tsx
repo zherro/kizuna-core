@@ -1,5 +1,8 @@
 'use client';
 
+// DEPRECATED — use `SelectPopover` (ui-better-soft/select-popover). Mantido só por compatibilidade
+// (ainda usado em form-builder/FormRenderer.tsx).
+
 import * as React from 'react';
 import { ChevronDown } from 'lucide-react';
 
@@ -24,6 +27,7 @@ interface SelectProps {
   children: React.ReactNode;
 }
 
+/** @deprecated Use `SelectPopover` (`ui-better-soft/select-popover`). */
 const Select = ({ value, onValueChange, children }: SelectProps) => {
   const [open, setOpen] = React.useState(false);
 
@@ -34,6 +38,7 @@ const Select = ({ value, onValueChange, children }: SelectProps) => {
   );
 };
 
+/** @deprecated Use `SelectPopover` (`ui-better-soft/select-popover`). */
 const SelectTrigger = React.forwardRef<
   HTMLButtonElement,
   React.ButtonHTMLAttributes<HTMLButtonElement>
@@ -55,6 +60,7 @@ const SelectTrigger = React.forwardRef<
 
 SelectTrigger.displayName = 'SelectTrigger';
 
+/** @deprecated Use `SelectPopover` (`ui-better-soft/select-popover`). */
 const SelectValue = ({ children }: { children?: React.ReactNode }) => {
   const { value } = useSelectContext();
   return children || value;
@@ -62,6 +68,7 @@ const SelectValue = ({ children }: { children?: React.ReactNode }) => {
 
 SelectValue.displayName = 'SelectValue';
 
+/** @deprecated Use `SelectPopover` (`ui-better-soft/select-popover`). */
 const SelectContent = ({ children }: { children: React.ReactNode }) => {
   const { open, onOpenChange } = useSelectContext();
 
@@ -79,6 +86,7 @@ const SelectContent = ({ children }: { children: React.ReactNode }) => {
 
 SelectContent.displayName = 'SelectContent';
 
+/** @deprecated Use `SelectPopover` (`ui-better-soft/select-popover`). */
 const SelectItem = ({ value, children }: { value: string; children: React.ReactNode }) => {
   const { onValueChange, onOpenChange } = useSelectContext();
 

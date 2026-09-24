@@ -96,7 +96,7 @@ export function ServiceConfigSummary({
 
         <div>
           {context ? <p className="text-xs text-muted-foreground">{context}</p> : null}
-          <p className="font-display text-lg font-semibold leading-tight text-foreground">
+          <p className="font-display text-lg font-semibold leading-tight text-foreground-display">
             {title || 'Sem título'}
           </p>
         </div>

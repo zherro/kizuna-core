@@ -17,7 +17,7 @@ export type DiscoverCtaProps = {
 /**
  * Banner-CTA de destaque (gradiente da cor primária) — ex.: "Descobrir no swipe".
  * Tudo tokenizado (`from-primary` / `text-primary-foreground`), sem classe
- * custom. Texto e destino são props. Ligado por env (KIZUNA_HOME_DISCOVER).
+ * custom. Texto e destino são props. Ligado por kizuna.config.json (home.showDiscover).
  */
 export function DiscoverCta({
   href = '/descobrir',

@@ -1,10 +1,11 @@
-'use client';
+"use client";
 
-import { CSSProperties, useMemo, type ReactNode } from 'react';
-import Link from 'next/link';
-import { Tag } from 'lucide-react';
-import { useResourceOptions } from '../../hooks';
-import { resolveLucideIcon } from '../../../lib/lucide-icon';
+import { CSSProperties, useMemo, type ReactNode } from "react";
+import Link from "next/link";
+import { useResourceOptions } from "../../hooks";
+import { resolveLucideIcon } from "../../../lib/lucide-icon";
+import { Typography } from "../ui/typography";
+import { Grid } from "../ui";
 
 type StatRow = {
   id: string | number;
@@ -23,7 +24,7 @@ export type CategoryCarouselItem = {
 };
 
 export type CategoryCarouselProps = {
-  variant?: 'classic' | 'compact';
+  variant?: "classic" | "compact";
   /** Recurso a buscar (default 'category_stats' — só categorias com subcategoria ativa). */
   resource?: string;
   title?: string;
@@ -55,19 +56,19 @@ export type CategoryCarouselProps = {
 
 const getIcon = (category: any) => {
   const Icon = resolveLucideIcon(category.icon);
-return Icon ? <Icon className="size-5" /> : null;
-}
+  return Icon ? <Icon className="size-5" /> : null;
+};
 
 export function CategoryCarousel({
-  variant = 'classic',
-  resource = 'category_stats',
-  title = 'Categorias',
+  variant = "classic",
+  resource = "category_stats",
+  title = "Categorias",
   allLabel,
   allHref,
   hrefFor = (c) => `/busca?categoryId=${c.id}`,
   iconFor = (c) => getIcon(c),
-  countLabel = (n) => `${n} ${n === 1 ? 'subcategoria' : 'subcategorias'}`,
-  emptyLabel = 'Nenhuma categoria disponível.',
+  countLabel = (n) => `${n} ${n === 1 ? "subcategoria" : "subcategorias"}`,
+  emptyLabel = "Nenhuma categoria disponível.",
   hideWhenEmpty = false,
   className,
 }: CategoryCarouselProps) {
@@ -84,23 +85,31 @@ export function CategoryCarousel({
       entry.count += 1;
       map.set(cid, entry);
     }
-    return [...map.values()].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+    return [...map.values()].sort((a, b) =>
+      a.name.localeCompare(b.name, "pt-BR"),
+    );
   }, [options]);
 
   const empty = !loading && items.length === 0;
   if (empty && hideWhenEmpty) return null;
 
-  const maxW = 'mx-auto w-full max-w-6xl px-4 sm:px-6';
+  const maxW = "mx-auto w-full max-w-6xl px-4 sm:px-6";
   const emptyBox = (
     <div className="mt-4 rounded-2xl border border-dashed border-border bg-muted/30 px-4 py-8 text-center text-sm text-muted-foreground">
       {emptyLabel}
     </div>
   );
 
-  if (variant === 'compact') {
+  if (variant === "compact") {
     return (
       <section className={className ?? `${maxW} pt-8`}>
-        <Header title={title} allLabel={allLabel} allHref={allHref} compact style={{fontWeight: 500}} />
+        <Header
+          title={title}
+          allLabel={allLabel}
+          allHref={allHref}
+          compact
+          style={{ fontWeight: 500 }}
+        />
         {empty ? (
           emptyBox
         ) : (
@@ -156,7 +165,9 @@ export function CategoryCarousel({
                     {iconFor(c)}
                   </span>
                   <span>
-                    <span className="block font-medium leading-snug text-foreground">{c.name}</span>
+                    <span className="block font-medium leading-snug text-foreground">
+                      {c.name}
+                    </span>
                     <span className="mt-1 block text-sm text-muted-foreground">
                       {countLabel(c.count)}
                     </span>
@@ -174,7 +185,7 @@ function Header({
   allLabel,
   allHref,
   compact,
-  style
+  style,
 }: {
   title: string;
   allLabel?: string;
@@ -183,25 +194,20 @@ function Header({
   style?: CSSProperties | undefined;
 }) {
   return (
-    <div className="flex items-end justify-between gap-4">
-      <h2
-        className={
-          compact
-            ? 'text-lg font-bold tracking-tight text-foreground'
-            : 'font-display text-[clamp(1.5rem,3vw,2rem)] font-bold tracking-[-0.02em] text-foreground'
-        }
-        style={style}
-      >
-        {title}
-      </h2>
+    <Grid container containerSize="fluid">
+      <Grid sm={10} >
+        <Typography.H4 font="display">{title}</Typography.H4>
+      </Grid>
       {allLabel && allHref ? (
-        <Link
-          href={allHref}
-          className="text-sm font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-        >
-          {allLabel}
-        </Link>
+        <Grid sm={2}>
+          <Link
+            href={allHref}
+            className="float-right text-sm font-medium text-muted-foreground underline-offset-4 hover:text-foreground underline"
+          >
+            {allLabel}
+          </Link>
+        </Grid>
       ) : null}
-    </div>
+    </Grid>
   );
 }

@@ -33,6 +33,8 @@ export interface TopbarProps {
   loginHref?: string;
   /** Logo URL (e.g. "/brand/logo.png"). When set, replaces the brand dot + title. */
   brandLogo?: string;
+  /** Extra content on the right, before auth actions (e.g. a weather widget). Also shown on mobile. */
+  actions?: ReactNode;
 }
 
 const navLinkClass =
@@ -54,6 +56,7 @@ export function Topbar({
   authCta = 'split',
   loginHref = '/login',
   brandLogo,
+  actions,
 }: TopbarProps = {}) {
   const pathname = usePathname();
   const [locationOpen, setLocationOpen] = useState(false);
@@ -118,70 +121,77 @@ export function Topbar({
               )}
             </nav>
 
-            <div className="hidden items-center gap-2 md:flex">
-              <LocationTrigger onClick={() => setLocationOpen(true)} />
+            <div className="flex items-center gap-2">
+              {actions}
 
-              {showThemeToggle && (
-                <Button
-                  variant="outline"
-                  size="icon"
-                  aria-label={messages.nav.theme}
-                  onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
-                >
-                  {resolvedTheme === 'dark' ? (
-                    <Sun className="h-4 w-4" />
-                  ) : (
-                    <Moon className="h-4 w-4" />
-                  )}
-                </Button>
-              )}
+              <div className="hidden items-center gap-2 md:flex">
+                <LocationTrigger onClick={() => setLocationOpen(true)} />
 
-              {!user &&
-                (authCta === 'single' ? (
-                  <Link
-                    href={loginHref}
-                    style={{ borderColor: 'var(--primary)', color: 'var(--primary)' }}
-                    className={cn(
-                      buttonVariants({ variant: 'outline', size: 'sm' }),
-                      'h-9 gap-1.5 border-2 px-4 text-[15px] hover:bg-primary/10'
-                    )}
+                {showThemeToggle && (
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    aria-label={messages.nav.theme}
+                    onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
                   >
-                    <LogIn className="h-4 w-4" />
-                    {messages.nav.signIn}
-                  </Link>
-                ) : (
-                  <>
-                    <Link className={navLinkClass} href="/login">
-                      {messages.nav.login}
-                    </Link>
-                    <Link className={navLinkClass} href="/registre-se">
-                      {messages.nav.signUp}
-                    </Link>
-                  </>
-                ))}
+                    {resolvedTheme === 'dark' ? (
+                      <Sun className="h-4 w-4" />
+                    ) : (
+                      <Moon className="h-4 w-4" />
+                    )}
+                  </Button>
+                )}
 
-              {user && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleLogout}
-                  disabled={logoutLoading}
-                  className="h-auto px-3 py-1.5 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                >
-                  {logoutLoading ? 'Saindo...' : 'Sair'}
-                </Button>
-              )}
+                {!user &&
+                  (authCta === 'single' ? (
+                    <Link
+                      href={loginHref}
+                      style={{
+                        borderColor: 'var(--primary)',
+                        color: 'var(--primary)',
+                      }}
+                      className={cn(
+                        buttonVariants({ variant: 'outline', size: 'sm' }),
+                        'h-9 gap-1.5 border-2 px-4 text-[15px] hover:bg-primary/10'
+                      )}
+                    >
+                      <LogIn className="h-4 w-4" />
+                      {messages.nav.signIn}
+                    </Link>
+                  ) : (
+                    <>
+                      <Link className={navLinkClass} href="/login">
+                        {messages.nav.login}
+                      </Link>
+                      <Link className={navLinkClass} href="/registre-se">
+                        {messages.nav.signUp}
+                      </Link>
+                    </>
+                  ))}
+
+                {user && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleLogout}
+                    disabled={logoutLoading}
+                    className="h-auto px-3 py-1.5 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                  >
+                    {logoutLoading ? 'Saindo...' : 'Sair'}
+                  </Button>
+                )}
+              </div>
+
+              <Button
+                variant="outline"
+                size="icon"
+                className="md:hidden"
+                aria-label={messages.nav.openMenu}
+                onClick={() => setMenuOpen(true)}
+              >
+                <Menu className="h-4 w-4" />
+              </Button>
             </div>
-
-            <Button
-              variant="outline"
-              size="icon"
-              className="md:hidden"
-              aria-label={messages.nav.openMenu}
-              onClick={() => setMenuOpen(true)}
-            >
-              <Menu className="h-4 w-4" />
-            </Button>
           </div>
         </div>
       </header>
@@ -255,7 +265,10 @@ export function Topbar({
                 <Link
                   href={loginHref}
                   onClick={() => setMenuOpen(false)}
-                  style={{ borderColor: 'var(--primary)', color: 'var(--primary)' }}
+                  style={{
+                    borderColor: 'var(--primary)',
+                    color: 'var(--primary)',
+                  }}
                   className={cn(
                     buttonVariants({ variant: 'outline' }),
                     'mt-2 justify-center gap-1.5 border-2 text-[15px] hover:bg-primary/10'

@@ -1,3 +1,5 @@
+import type { TextSize as TypographySize } from '../components/ui/typography';
+
 /**
  * Tema visual único, resolvido uma vez por deployment via env var — não há alternância em
  * runtime nem por usuário. `ui-better-soft/*` continua sendo um único conjunto de componentes;
@@ -9,7 +11,6 @@ export type UiStyle = 'classic' | 'soft';
 
 export const UI_STYLES: readonly UiStyle[] = ['classic', 'soft'];
 
-type TypographySize = 'xs' | 'sm' | 'base' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl' | '6xl';
 type TypographyWeight = 'normal' | 'medium' | 'semibold' | 'bold';
 
 type UiThemeTokens = {
@@ -30,10 +31,11 @@ type UiThemeTokens = {
   /** Folha de um modal ancorado embaixo (bottom sheet). */
   bottomSheet: string;
   /** Tamanho/peso do título de um heading de página simples (saudação, sem ações). */
-  headingTitleSize: { base: TypographySize };
+  /** Token da escala fluida do `Typography` (cresce suave do mobile ao desktop). */
+  headingTitleSize: TypographySize;
   headingTitleWeight: TypographyWeight;
   /** Tamanho/peso do título de `PageHeader` (cabeçalho de listagem/gestão, com ações). */
-  pageHeaderTitleSize: { base: TypographySize };
+  pageHeaderTitleSize: TypographySize;
   pageHeaderTitleWeight: TypographyWeight;
 };
 
@@ -47,9 +49,9 @@ export const UI_THEME: Record<UiStyle, UiThemeTokens> = {
     selectTrigger: 'rounded-md border border-border bg-background px-3 py-2',
     selectPanel: 'rounded-md border border-border bg-popover shadow-md',
     bottomSheet: 'w-full max-w-md rounded-2xl border border-border bg-background p-5 shadow-lg',
-    headingTitleSize: { base: '2xl' },
+    headingTitleSize: '2xl',
     headingTitleWeight: 'bold',
-    pageHeaderTitleSize: { base: 'xl' },
+    pageHeaderTitleSize: 'xl',
     pageHeaderTitleWeight: 'semibold',
   },
   soft: {
@@ -65,9 +67,9 @@ export const UI_THEME: Record<UiStyle, UiThemeTokens> = {
     selectTrigger: 'rounded-xl bg-background px-3 py-2 shadow-sm',
     selectPanel: 'rounded-xl bg-card shadow-lg',
     bottomSheet: 'w-full max-w-md rounded-2xl bg-card p-5 shadow-lg',
-    headingTitleSize: { base: '4xl' },
+    headingTitleSize: '4xl',
     headingTitleWeight: 'normal',
-    pageHeaderTitleSize: { base: '2xl' },
+    pageHeaderTitleSize: '2xl',
     pageHeaderTitleWeight: 'normal',
   },
 };

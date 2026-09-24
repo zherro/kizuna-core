@@ -61,6 +61,7 @@ const CONTAINER_SIZE_MAP = {
 const PADDING_MAP = {
   none: '',
   sm: 'px-2 py-2',
+  fluid: '',
   default: 'px-4 sm:px-6 lg:px-8 py-4',
   lg: 'px-6 sm:px-8 lg:px-12 py-6',
   xl: 'px-8 sm:px-10 lg:px-16 py-10',
@@ -101,7 +102,7 @@ export function Grid({
         className={clsx(
           CONTAINER_SIZE_MAP[containerSize],
           'grid grid-cols-12',
-          typeof padding === 'number' ? ` p-${padding} ` : PADDING_MAP[padding ?? 'default'],
+          typeof padding === 'number' ? ` p-${padding} ` : PADDING_MAP[padding ?? (containerSize === 'fluid' ? 'fluid' : 'default')],
           spacing(px, 'px'),
           spacing(py, 'py'),
           `gap-${gap}`,

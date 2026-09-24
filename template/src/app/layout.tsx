@@ -12,6 +12,9 @@ import { Toaster } from 'sonner';
 import cfg from '@/../kizuna.config.json';
 import './globals.css';
 
+const headerCfg = (cfg as { header?: { variant?: string } }).header;
+const headerVariant = headerCfg?.variant === 'compact' ? 'compact' : 'classic';
+
 // Tema padrão e se o usuário pode trocá-lo — chave "theme" do kizuna.config.json
 // (lista de temas disponíveis no _comment de lá).
 const defaultThemeColor = isThemeColor(cfg.theme?.default) ? cfg.theme.default : 'blue';
@@ -109,8 +112,9 @@ export default function RootLayout({
         >
           <AuthProvider initialUser={null}>
             <PwaRegister swUrl="/sw.js?v=1" migrationKey="kizuna-sw-v1" />
-            {/* Variante fixada por env KIZUNA_HEADER_VARIANT (classic|compact). */}
+            {/* Variante vem de kizuna.config.json (header.variant: classic|compact). */}
             <KizunaHeader
+              variant={headerVariant}
               showThemeToggle={false}
               authCta="single"
               brandLabel={siteName}

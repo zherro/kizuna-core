@@ -15,10 +15,17 @@
     "selectable": true,
     "metaColor": "#2563eb"
   },
+  "header": {
+    "_comment": "\"variant\": classic (padrão) | compact — layout do cabeçalho do site.",
+    "variant": "classic"
+  },
   "home": {
+    "_comment": "\"showHero\": seção hero. \"categoriesVariant\": classic|compact. \"showDiscover\": banner Descobrir no swipe. \"inkPicker\": mostra o seletor de intensidade do fundo escuro dos cards (false esconde). \"inkLevel\": intensidade padrão (1-7); com o seletor ativo, a escolha salva do usuário prevalece.",
     "showHero": true,
     "categoriesVariant": "classic",
-    "showDiscover": false
+    "showDiscover": false,
+    "inkPicker": true,
+    "inkLevel": 6
   },
   "wizards": {
     "servicos": {

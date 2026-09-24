@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Topbar, type TopbarNavLink } from './topbar';
 import { TopbarCompact } from './topbar-compact';
 
@@ -9,6 +10,8 @@ export type KizunaHeaderProps = {
   loginHref?: string;
   /** URL da logo (ex.: "/brand/logo.png"); vale para as duas variantes. */
   brandLogo?: string;
+  /** Conteúdo extra à direita, antes do login (ex.: widget de clima); vale para as duas variantes. */
+  actions?: ReactNode;
   showThemeToggle?: boolean;
   /** Sobrescreve a env `KIZUNA_HEADER_VARIANT` (default 'classic'). */
   variant?: KizunaHeaderVariant;

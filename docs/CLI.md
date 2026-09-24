@@ -110,7 +110,7 @@ Cada path da casca é classificado em `template/kizuna.manifest.json` (e nos
 - **`seed`** — copiado **uma vez**, no `install`, só se o arquivo ainda não existe. Depois é do
   usuário: `update` **nunca** reaplica um seed (mesmo se o do core mudou — ver "Limitações"). São
   os arquivos que todo projeto vai querer editar: `app/layout.tsx`, `app/page.tsx`, `tsconfig.json`,
-  `next.config.ts`, `env.example`, `.gitignore`, etc.
+  `next.config.ts`, `.gitignore`, etc.
 - **`merge`** — só `package.json`, contra `template/package.kizuna.json`, campo a campo em
   `dependencies`/`devDependencies`/`scripts` pela lógica de `ownedKeys` acima.
 
