@@ -141,7 +141,8 @@ export function createLoginHandler(pgrstRpc: PgrstRpc) {
       const rpcRes = await pgrstRpc(
         'fun_auth__login_with_perms',
         { p_login: email, p_password: password },
-        { auth: null }
+        // funções vivem no schema auth; sem o header o PostgREST procura no 1º de PGRST_DB_SCHEMAS
+        { auth: null, schema: 'auth' }
       );
 
       const rpcJson = (await rpcRes.json().catch(() => null)) as Record<string, unknown> | null;
@@ -341,7 +342,8 @@ export function createRegisterHandler(pgrstRpc: PgrstRpc) {
       const signupRes = await pgrstRpc(
         'fun_auth__signup_bootstrap',
         { p_login: email, p_password: password },
-        { auth: null }
+        // funções vivem no schema auth; sem o header o PostgREST procura no 1º de PGRST_DB_SCHEMAS
+        { auth: null, schema: 'auth' }
       );
 
       const signupJson =
@@ -398,7 +400,8 @@ export function createRegisterHandler(pgrstRpc: PgrstRpc) {
       const loginRes = await pgrstRpc(
         'fun_auth__login_with_perms',
         { p_login: email, p_password: password },
-        { auth: null }
+        // funções vivem no schema auth; sem o header o PostgREST procura no 1º de PGRST_DB_SCHEMAS
+        { auth: null, schema: 'auth' }
       );
 
       const loginJson =
