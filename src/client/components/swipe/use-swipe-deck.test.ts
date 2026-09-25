@@ -127,4 +127,28 @@ describe('useSwipeDeck', () => {
     expect(result.current.error).toBe(false);
     warn.mockRestore();
   });
+
+  it('decide com { loggedIn: true } grava mesmo com o hook ainda anônimo (login pelo modal)', async () => {
+    api.fetchDeck.mockResolvedValueOnce(range(0, 20));
+    const { result } = renderHook(() => useSwipeDeck({ baseBody, filterKey: 'a', loggedIn: false }));
+    await waitFor(() => expect(result.current.cards).toHaveLength(20));
+    act(() => result.current.decide('like', { loggedIn: true }));
+    expect(api.recordSwipe).toHaveBeenCalledWith(['u0'], 'like');
+    expect(localStorage.getItem('kizuna.swipe.anonSkips')).toBeNull();
+    expect(result.current.cards[0].uid).toBe('u1');
+  });
+
+  it('drop tira o uid da fila sem gravar e devolve o card', async () => {
+    api.fetchDeck.mockResolvedValueOnce(range(0, 20));
+    const { result } = renderHook(() => useSwipeDeck({ baseBody, filterKey: 'a', loggedIn: true }));
+    await waitFor(() => expect(result.current.cards).toHaveLength(20));
+    let dropped: unknown;
+    act(() => { dropped = result.current.drop('u3'); });
+    expect(dropped).toMatchObject({ uid: 'u3' });
+    expect(result.current.cards.map((c) => c.uid)).not.toContain('u3');
+    expect(result.current.cards).toHaveLength(19);
+    act(() => { dropped = result.current.drop('nao-existe'); });
+    expect(dropped).toBeNull();
+    expect(api.recordSwipe).not.toHaveBeenCalled();
+  });
 });

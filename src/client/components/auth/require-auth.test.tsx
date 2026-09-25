@@ -43,6 +43,17 @@ describe('RequireAuth', () => {
     expect(screen.queryByText('fake-login')).toBeNull();
   });
 
+  it('login limpa a ação pendente no mesmo tick (antes do popstate que executa a ação)', async () => {
+    const fn = vi.fn();
+    render(<RequireAuthProvider><Btn fn={fn} /></RequireAuthProvider>);
+    fireEvent.click(screen.getByText('curtir'));
+    fireEvent.click(screen.getByText('fake-login'));
+    // quem observa a transição de login (ex.: efeito da página) não pode reaplicar a pendência
+    expect(sessionStorage.getItem('kizuna.auth.pending')).toBeNull();
+    expect(fn).not.toHaveBeenCalled();
+    await waitFor(() => expect(fn).toHaveBeenCalledOnce());
+  });
+
   it('X fecha sem executar', () => {
     const fn = vi.fn();
     render(<RequireAuthProvider><Btn fn={fn} /></RequireAuthProvider>);

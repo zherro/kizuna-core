@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Heart, Info, RotateCcw, SlidersHorizontal, X } from 'lucide-react';
 import { useAuth } from '../../providers/auth-provider';
 import { getStoredLocation } from '../../hooks/use-user-location';
@@ -44,6 +45,7 @@ function SwipePageInner({ basePath = '/descobrir', likedHref = '/curtidos' }: Pr
   const { filters, setFilters, resetFilters, toSearchAdsBody } = useSearchFilters(location, basePath);
   const { user } = useAuth();
   const requireAuth = useRequireAuth();
+  const router = useRouter();
 
   const baseBody = useMemo(() => {
     const { p_seed, p_page, p_page_size, ...rest } = toSearchAdsBody(0);
@@ -55,7 +57,7 @@ function SwipePageInner({ basePath = '/descobrir', likedHref = '/curtidos' }: Pr
   }, [toSearchAdsBody, filters.priceMin, filters.priceMax]);
   const filterKey = JSON.stringify(baseBody);
 
-  const { cards, loading, exhausted, error, decide, reset } = useSwipeDeck({
+  const { cards, loading, exhausted, error, decide, drop, reset } = useSwipeDeck({
     baseBody,
     filterKey,
     loggedIn: Boolean(user),
@@ -78,7 +80,8 @@ function SwipePageInner({ basePath = '/descobrir', likedHref = '/curtidos' }: Pr
     if (!card) return;
     requireAuth(() => {
       setLiked((prev) => [...prev, card]);
-      decide('like');
+      // roda no sucesso do login pelo modal, antes do re-render com o usuário: força a gravação
+      decide('like', { loggedIn: true });
     }, `like:${card.uid}`);
     resetDrag();
   };
@@ -87,10 +90,16 @@ function SwipePageInner({ basePath = '/descobrir', likedHref = '/curtidos' }: Pr
     resetDrag();
   };
 
-  // ao logar: migra passados do anônimo e reaplica curtida pendente (caso de reload)
-  const wasLoggedIn = useRef(Boolean(user));
+  // Uma vez por transição anônimo → logado (inclui a hidratação do /api/auth/me depois de um
+  // reload): migra os passados do anônimo e aplica a curtida pendente que sobreviveu ao reload
+  // (sessionStorage), gravando pelo uid — independente de qual card está no topo agora.
+  const wasLoggedIn = useRef(false);
   useEffect(() => {
-    if (!user || wasLoggedIn.current) return;
+    if (!user) {
+      wasLoggedIn.current = false;
+      return;
+    }
+    if (wasLoggedIn.current) return;
     wasLoggedIn.current = true;
     const skips = readAnonSkips();
     if (skips.length) {
@@ -98,15 +107,14 @@ function SwipePageInner({ basePath = '/descobrir', likedHref = '/curtidos' }: Pr
         .then(clearAnonSkips)
         .catch((err) => console.warn('[swipe] falha ao migrar passados', err));
     }
-  }, [user]);
-  useEffect(() => {
-    if (!user || !current) return;
     const pending = consumePendingAuthAction();
-    if (pending === `like:${current.uid}`) {
-      setLiked((prev) => [...prev, current]);
-      decide('like');
+    if (pending?.startsWith('like:')) {
+      const uid = pending.slice('like:'.length);
+      recordSwipe([uid], 'like').catch((err) => console.warn('[swipe] falha ao gravar curtida pendente', err));
+      const card = drop(uid);
+      if (card) setLiked((prev) => [...prev, card]);
     }
-  }, [user, current, decide]);
+  }, [user, drop]);
 
   const activeFilters =
     (filters.groupSlug ? 1 : 0) +
@@ -149,7 +157,7 @@ function SwipePageInner({ basePath = '/descobrir', likedHref = '/curtidos' }: Pr
   ) : (
     <button
       type="button"
-      onClick={() => requireAuth(() => window.location.assign(likedHref))}
+      onClick={() => requireAuth(() => router.push(likedHref))}
       className="rounded-full bg-secondary px-3 py-1 text-xs font-semibold text-secondary-foreground"
     >
       Curtidos

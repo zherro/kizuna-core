@@ -34,6 +34,7 @@ let mockUser: unknown = null;
 vi.mock('../../providers/auth-provider', () => ({ useAuth: () => ({ user: mockUser, setUser: vi.fn() }) }));
 vi.mock('../auth/login-form', () => ({ LoginForm: () => <div>fake-login</div> }));
 vi.mock('../auth/register-form', () => ({ RegisterForm: () => null }));
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn() }) }));
 vi.mock('next/link', () => ({ default: (p: { href: string; children: React.ReactNode }) => <a href={p.href}>{p.children}</a> }));
 
 import { SwipePage } from './swipe-page';
@@ -64,7 +65,7 @@ describe('SwipePage', () => {
     mockUser = { uid: 'u' };
     render(<SwipePage />);
     fireEvent.click(await screen.findByLabelText('Curtir'));
-    expect(decide).toHaveBeenCalledWith('like');
+    expect(decide).toHaveBeenCalledWith('like', { loggedIn: true });
   });
   it('erro sem cards mostra "Tentar de novo" que chama reset', async () => {
     deck = { cards: [], loading: false, exhausted: false, error: true };

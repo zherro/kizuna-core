@@ -61,10 +61,12 @@ export function RequireAuthProvider({ children }: { children: React.ReactNode })
           clearPending();
           setOpen(false);
         }}
+        // A pendência persistida (reload) sai já no login: o efeito de "acabou de logar" da página
+        // roda antes do onSuccess (que espera o popstate do modal) e não pode reaplicá-la.
+        onAuthenticated={clearPending}
         onSuccess={() => {
           const action = pendingRef.current;
           pendingRef.current = null;
-          clearPending();
           setOpen(false);
           action?.();
         }}

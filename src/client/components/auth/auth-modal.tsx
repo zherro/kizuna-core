@@ -10,14 +10,20 @@ type Props = {
   open: boolean;
   initialMode?: 'login' | 'register';
   onClose: () => void;
+  /** Chamado depois que a entrada do modal sai do histórico (ver `succeed`). */
   onSuccess: (user: PublicSession) => void;
+  /**
+   * Chamado no mesmo tick do login/registro, antes do re-render com o usuário e antes de
+   * `onSuccess` — para limpar estado que efeitos de "acabou de logar" não devem ver.
+   */
+  onAuthenticated?: (user: PublicSession) => void;
 };
 
 function ownEntryOnTop(): boolean {
   return Boolean(window.history.state?.kizunaAuthModal);
 }
 
-export function AuthModal({ open, initialMode = 'login', onClose, onSuccess }: Props) {
+export function AuthModal({ open, initialMode = 'login', onClose, onSuccess, onAuthenticated }: Props) {
   const [mode, setMode] = useState(initialMode);
   const overlayRef = useRef<HTMLDivElement>(null);
   const onCloseRef = useRef(onClose);
@@ -43,6 +49,7 @@ export function AuthModal({ open, initialMode = 'login', onClose, onSuccess }: P
   // pendente (ex.: router.push('/curtidos')) roda depois do restore que o Next faz no popstate,
   // em vez de ser desfeita por ele.
   const succeed = (user: PublicSession) => {
+    onAuthenticated?.(user);
     if (!ownEntryOnTop()) {
       onSuccessRef.current(user);
       return;
