@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
+import { StrictMode } from 'react';
 import { render, screen, fireEvent, act, cleanup } from '@testing-library/react';
 
 vi.mock('./login-form', () => ({
@@ -88,5 +89,11 @@ describe('AuthModal (histórico)', () => {
     fireEvent.click(screen.getByText('fake-login'));
     expect(back).not.toHaveBeenCalled();
     expect(onSuccess).toHaveBeenCalledOnce();
+  });
+
+  it('StrictMode (effect montado duas vezes) empilha uma entrada só', () => {
+    const before = window.history.length;
+    render(<StrictMode><AuthModal open onClose={vi.fn()} onSuccess={vi.fn()} /></StrictMode>);
+    expect(window.history.length).toBe(before + 1);
   });
 });

@@ -61,7 +61,8 @@ export function AuthModal({ open, initialMode = 'login', onClose, onSuccess, onA
   // voltar do celular fecha o modal em vez de sair da página
   useEffect(() => {
     if (!open) return;
-    window.history.pushState({ kizunaAuthModal: true }, '');
+    // sem back() no cleanup, a remontagem do StrictMode acharia a entrada já no topo: não duplica
+    if (!ownEntryOnTop()) window.history.pushState({ kizunaAuthModal: true }, '');
     const onPop = () => {
       // a entrada já saiu do histórico: aqui nunca chama back()
       const user = successUserRef.current;
