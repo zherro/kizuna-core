@@ -78,4 +78,27 @@ describe('useSwipeDeck', () => {
     rerender({ k: 'b' });
     await waitFor(() => expect(result.current.cards[0].uid).toBe('u100'));
   });
+
+  it('lote não-vazio mas 100% duplicado marca exhausted e não refaz fetch', async () => {
+    api.fetchDeck.mockResolvedValueOnce(range(0, 20)).mockResolvedValueOnce(range(15, 20));
+    const { result } = renderHook(() => useSwipeDeck({ baseBody, filterKey: 'a', loggedIn: true }));
+    await waitFor(() => expect(result.current.cards).toHaveLength(20));
+    for (let i = 0; i < 15; i++) act(() => result.current.decide('skip'));
+    await waitFor(() => expect(api.fetchDeck).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(result.current.exhausted).toBe(true));
+    expect(api.fetchDeck).toHaveBeenCalledTimes(2);
+  });
+
+  it('duas decide() no mesmo tick agem sobre cards diferentes', async () => {
+    api.fetchDeck.mockResolvedValueOnce(range(0, 20));
+    const { result } = renderHook(() => useSwipeDeck({ baseBody, filterKey: 'a', loggedIn: true }));
+    await waitFor(() => expect(result.current.cards).toHaveLength(20));
+    act(() => {
+      result.current.decide('skip');
+      result.current.decide('skip');
+    });
+    expect(api.recordSwipe).toHaveBeenCalledWith(['u0'], 'skip');
+    expect(api.recordSwipe).toHaveBeenCalledWith(['u1'], 'skip');
+    expect(result.current.cards[0].uid).toBe('u2');
+  });
 });

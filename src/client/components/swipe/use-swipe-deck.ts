@@ -43,13 +43,18 @@ export function useSwipeDeck({ baseBody, filterKey, loggedIn }: Opts) {
         p_exclude: exclude.length ? exclude : null,
       });
       if (gen !== genRef.current) return; // filtro mudou no meio
-      if (batch.length === 0) setExhausted(true);
-      setCards((prev) => {
-        const seen = new Set(prev.map((c) => c.uid));
-        const next = [...prev, ...batch.filter((c) => !seen.has(c.uid))];
+      const prevQueue = cardsRef.current;
+      const seen = new Set(prevQueue.map((c) => c.uid));
+      const newItems = batch.filter((c) => !seen.has(c.uid));
+      if (newItems.length === 0) {
+        // lote vazio, ou não-vazio mas 100% duplicado da fila: sem itens novos,
+        // não há progresso possível — encerra para não reentrar em loop de prefetch.
+        setExhausted(true);
+      } else {
+        const next = [...prevQueue, ...newItems];
         cardsRef.current = next;
-        return next;
-      });
+        setCards(next);
+      }
     } catch (err) {
       console.warn('[swipe] falha ao carregar deck', err);
     } finally {
@@ -79,10 +84,13 @@ export function useSwipeDeck({ baseBody, filterKey, loggedIn }: Opts) {
   }, [cards, loading, exhausted, load]);
 
   const decide = useCallback((action: SwipeAction) => {
-    // Lê o card atual fora do updater de setCards: em StrictMode dev o updater roda 2x,
-    // o que gravaria o swipe (ou o anon-skip) em duplicidade.
-    const current = cardsRef.current[0];
+    // Avança cardsRef de forma síncrona (fora do updater de setCards) antes de qualquer
+    // outra coisa: isso garante que duas chamadas de decide() no mesmo tick (mesmo eventos
+    // síncronos, sem render entre elas) operem sobre cards diferentes — a segunda já vê a
+    // fila com o primeiro item removido, em vez de ler o mesmo cardsRef.current[0] duas vezes.
+    const [current, ...rest] = cardsRef.current;
     if (!current) return;
+    cardsRef.current = rest;
     if (loggedInRef.current) {
       recordSwipe([current.uid], action).catch((err) =>
         console.warn('[swipe] falha ao gravar swipe', err)
@@ -90,11 +98,7 @@ export function useSwipeDeck({ baseBody, filterKey, loggedIn }: Opts) {
     } else if (action === 'skip') {
       addAnonSkip(current.uid);
     }
-    setCards((prev) => {
-      const next = prev.slice(1);
-      cardsRef.current = next;
-      return next;
-    });
+    setCards(rest);
   }, []);
 
   const reset = useCallback(() => setGeneration((g) => g + 1), []);
