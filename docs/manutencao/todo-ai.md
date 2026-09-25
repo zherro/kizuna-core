@@ -2,7 +2,7 @@
 
 Backlog do mecanismo de IA (plugin `ai_assistant`). Itens explicitamente fora do escopo da v1.
 
-- [x] ~~**Naví no wizard — afordância inútil no step 1.**~~ Resolvido: o botão one-shot deu lugar à **Naví conversacional** (`WizardConversation` — ver `docs/WIZARD.md`). Entrevista + tags + preenche + avança; dock/painel no core; `create`-only. Spec `foco-total/docs/superpowers/specs/2026-09-10-navi-conversational-wizard-design.md`.
+- [x] ~~**Naví no wizard — afordância inútil no step 1.**~~ Resolvido: o botão one-shot deu lugar à **Naví conversacional** (`WizardConversation` — ver [`../interface/wizard.md`](../interface/wizard.md)). Entrevista + tags + preenche + avança; dock/painel no core; `create`-only. Spec `foco-total/docs/superpowers/specs/2026-09-10-navi-conversational-wizard-design.md`.
 - [ ] `OpenAiProvider` — structured output via `response_format: json_schema`.
 - [ ] `ClaudeProvider` — structured output via tool-use forçado.
 - [ ] Tabela `ai_assistant_usage` (quem, skill, provider, tokens, latência, ok/erro) + grant só backend.

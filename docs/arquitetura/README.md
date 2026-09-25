@@ -5,12 +5,12 @@
 ```
 kizuna-core/
 ├── sql/                        core auth schema + RBAC + plugin registry (0001-0108, apply in order)
-├── plugins/<name>/0001_*.sql   optional, independent tables — see docs/PLUGINS.md
+├── plugins/<name>/0001_*.sql   optional, independent tables — see ../plugins/README.md
 ├── scripts/install.sh          fresh-install: sql/ then requested plugins
 └── src/
     ├── types/                  ResourceConfig, ScreenConfig, AuthContext, PermissionMap, ...
     ├── client/
-    │   ├── hooks/               useTable, useForm, useResourceOptions, ... — see docs/COMPONENTS.md
+    │   ├── hooks/               useTable, useForm, useResourceOptions, ... — see ../interface/componentes.md
     │   └── components/
     │       ├── ui/               shadcn kit
     │       ├── ui-better-soft/   richer domain-flavored kit

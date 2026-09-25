@@ -2,7 +2,7 @@
 
 Este levantamento (risco da stack Next + PostgREST + JWT/RLS multi-tenant + checklist "Fase B")
 foi **consolidado no tracker único do projeto consumidor**. No foco-total:
-[`docs/PENDENCIAS.md`](../../docs/PENDENCIAS.md) — seções **Segurança** e **Performance**, numeração
+`docs/PENDENCIAS.md` (no repositório do projeto consumidor) — seções **Segurança** e **Performance**, numeração
 contínua, com esforço/risco por item.
 
 Itens já fechados (v0.8.0 layout público / ISR; headers de segurança base no `next.config.ts`;

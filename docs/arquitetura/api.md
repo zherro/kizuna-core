@@ -147,7 +147,7 @@ floors `total` at `items.length`).
 Every handler except a `listRequiresAuth: false` list calls `ensureAuthenticated()` — valid
 session **and** `session.role === 'auth_user'`. `tenant_id` / `created_by` / `uid` are never read
 from the body; the DB column defaults (`auth.fun_auth_current_tenant_id()` etc.) resolve them from
-the JWT. See `AUTH.md`.
+the JWT. See [`auth.md`](auth.md).
 
 ### `updateResource` is not a partial patch
 
@@ -200,13 +200,13 @@ type RpcConfig = { schema?: string; requiresAuth?: boolean };
 ```
 
 `parseActive` / `makeSlug` are exported from `@kizuna/core/types` for use inside `mapInput`.
-Worked `mapInput`/`mapOutput` examples: `SCHEMAS.md`.
+Worked `mapInput`/`mapOutput` examples: [`schemas.md`](schemas.md).
 
 ---
 
 ## 4. Client hooks — `@kizuna/core/client`
 
-All call `/api/resources/:resource`. See `COMPONENTS.md` for the full list; the load-bearing ones:
+All call `/api/resources/:resource`. See [`../interface/componentes.md`](../interface/componentes.md) for the full list; the load-bearing ones:
 
 | Hook                 | Use                                                                                                  |
 | -------------------- | ---------------------------------------------------------------------------------------------------- |
@@ -220,7 +220,7 @@ All call `/api/resources/:resource`. See `COMPONENTS.md` for the full list; the 
 
 `useTable`, `useForm`, `useDelete`, `useResourceOptions`, `useResourceMap`, `useToggleActive` are
 in the `@kizuna/core/client` barrel; the rest (`useTenantResource`, `useToast`, `useUserLocation`,
-`useOnboardingSteps`/`useOnboardingProgress`) import by path — see `STATUS.md` / `COMPONENTS.md`.
+`useOnboardingSteps`/`useOnboardingProgress`) import by path — see `STATUS.md` / [`../interface/componentes.md`](../interface/componentes.md).
 
 ```ts
 const table = useTable<Thing>({ resource: 'things', pageSize: 20, filters: { active: true } });

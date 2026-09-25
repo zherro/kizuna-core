@@ -7,7 +7,7 @@ steps e pelo `registry`.
 - Código: `src/client/components/wizard/`
 - Export: `@kizuna/core/client/components/wizard`
 - Steps de domínio do marketplace de serviços: `@kizuna/core/client/components/services`
-  (`SERVICE_WIZARD_STEPS`) — ver `docs/PLUGINS.md` (plugin `services`).
+  (`SERVICE_WIZARD_STEPS`) — ver [`../plugins/README.md`](../plugins/README.md) (plugin `services`).
 
 ## O que o core exporta
 
@@ -251,7 +251,8 @@ Exports: `useWizardConversation`, `WizardConversationView`, `NaviLayer`, `NaviDo
 
 ## Config por projeto (`kizuna.config.json`)
 
-Cada projeto tem um `kizuna.config.json` na raiz (default em `starter/kizuna.config.json`), com
+Cada projeto tem um `kizuna.config.json` na raiz (default em `starter/kizuna.config.json`; todas
+as chaves em [Configuração](../comecando/configuracao.md)), com
 uma entrada por wizard em `wizards.<nome>`: `resource`, `steps` (chaves do registry), `disable`,
 `layout` (`stepper`|`scroll`), `lockLayout` (default `true`: esconde o toggle), `assistant`
 (default `false`: não passe `assistant`/`conversation` ao `<Wizard>`) e `finishHrefByMode`.

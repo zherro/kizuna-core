@@ -42,6 +42,16 @@ Client side: `AuthProvider` (wraps the app, takes `initialUser` from `getSession
 no state wiring; a project either extends them or writes its own page calling
 `POST /api/auth/login` + `useAuth().setUser(data.user)`.
 
+## Recuperar senha
+
+`@kizuna/core/server/password-reset` → `createForgotPasswordHandler(pgrstRpc, opts?)` e
+`createResetPasswordHandler(pgrstRpc)`, ligados em `/api/auth/forgot-password` e
+`/api/auth/reset-password`. Um token aleatório vai por e-mail, e o banco guarda só o SHA-256
+(`auth.password_reset_tokens`, `sql/0112_password_reset.sql`). As RPCs
+`fun_auth__password_reset_request` / `fun_auth__password_reset_confirm` exigem o claim
+`purpose: "password_reset"` num JWT que só o servidor assina. Guia completo, envs e
+personalização: [Recuperar senha](../comecando/recuperar-senha.md).
+
 ## `is_root`
 
 `auth.users.is_root` marks a super-admin. `fun_auth_has_perm` (see below) short-circuits to `true`
