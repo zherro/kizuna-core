@@ -1,0 +1,8 @@
+{
+  "owner": "swipe",
+  "_comment": "Páginas /descobrir (swipe público sobre os itens da busca, com o filtro do /busca) e /curtidos (protegida). Requer os plugins search, services, taxonomy, user_data, reviews, location e system_config. Registre `rpcSwipe` em postgrestRpcs (src/lib/server/resources.ts).",
+  "files": {
+    "src/app/descobrir/page.tsx": "managed",
+    "src/app/curtidos/page.tsx": "managed"
+  }
+}
