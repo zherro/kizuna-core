@@ -11,7 +11,7 @@ Procedimento executável para criar (ou estender) uma tela de `/painel` sobre o 
 kizuna-core. Assume `padrao-de-projeto` já carregada. Referências, em ordem de profundidade:
 
 1. **Esta skill** — o passo a passo.
-2. `kizuna-core/docs/SCREEN-ENGINE.md` — regras, tabelas, "por quê", exemplos de ponta a ponta.
+2. `kizuna-core/docs/interface/screen-engine.md` — regras, tabelas, "por quê", exemplos de ponta a ponta.
 
 **Nunca pule direto para escrever componente novo sem passar pelo Passo 1.** A maior parte das
 telas não precisa de componente novo nenhum — só config.
@@ -29,7 +29,7 @@ projetos; no próprio projeto caso contrário — decida como em `criar-componen
 3. **Nenhum dos dois** (árvore, dashboard, wizard, lógica própria de estado) → [Passo 2B](#passo-2b--bloco-bespoke).
 
 Não force o 2A quando não cabe — o motor aceita componentes bespoke registrados lado a lado com
-blocos genéricos. Fluxograma completo: `SCREEN-ENGINE.md` §2.1.
+blocos genéricos. Fluxograma completo: `docs/interface/screen-engine.md` §2.1.
 
 ## Passo 2A — CRUD simples
 
@@ -49,7 +49,7 @@ blocos genéricos. Fluxograma completo: `SCREEN-ENGINE.md` §2.1.
      fields: [
        { name: 'name', label: 'Nome', type: 'text' },
        { name: 'active', label: 'Status', type: 'switch', defaultValue: true },
-       // 'textarea' | 'relation' | 'select' — ver "Vocabulário de campo" no SCREEN-ENGINE.md
+       // 'textarea' | 'relation' | 'select' — ver "Vocabulário de campo" no docs/interface/screen-engine.md
      ],
      list: { primaryField: 'name', statusField: 'active' },
    };
@@ -126,7 +126,7 @@ Errar essa decisão trava a tela pra quem deveria ver (ou abre pra quem não dev
 ## Passo 5 — Documentação
 
 Se este trabalho **descobriu ou criou uma possibilidade nova** do motor (tipo de campo, composição
-nova, padrão de gate, erro novo) → `kizuna-core/docs/SCREEN-ENGINE.md` na seção certa (Parte 1
+nova, padrão de gate, erro novo) → `kizuna-core/docs/interface/screen-engine.md` na seção certa (Parte 1
 arquitetura, Parte 2 uso, Parte 3 limite, Parte 4 erro), e a versão curta na "Referência rápida"
 do mesmo doc / na skill do projeto **só se muda o comportamento que uma IA deveria seguir por
 padrão**.

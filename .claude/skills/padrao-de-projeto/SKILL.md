@@ -19,10 +19,10 @@ base; `nova-tela-screen-engine`, `novo-wizard`, `criar-recurso` e `criar-plugin`
    leitura/escrita passa por `pgrstTable`/`pgrstRpc` (`@kizuna/core/server`) ou pelos hooks
    genéricos (`@kizuna/core/client`) → rota `/api/resources/[resource]`.
 2. **`tenant_id` / `created_by` / `uid` vêm só do JWT** (defaults de coluna no banco:
-   `auth.fun_auth_current_tenant_id()` etc.), nunca do corpo da requisição. Ver `kizuna-core/docs/AUTH.md`.
+   `auth.fun_auth_current_tenant_id()` etc.), nunca do corpo da requisição. Ver `kizuna-core/docs/arquitetura/auth.md`.
 3. **Recurso novo primeiro tenta a rota genérica.** Antes de escrever uma rota `/api/xxx/*` à
    mão, veja se um `ResourceConfig` em `postgrestResources` já resolve — ver skill `criar-recurso`
-   e `kizuna-core/docs/API.md`. Só crie rota custom quando o `mapInput` genérico realmente não dá
+   e `kizuna-core/docs/arquitetura/api.md`. Só crie rota custom quando o `mapInput` genérico realmente não dá
    conta (upload de arquivo, sync N:N sem endpoint em lote, upsert de chave composta sem id).
 4. **PATCH pelo recurso genérico reconstrói o registro inteiro.** `updateResource()` roda
    `mapInput` sobre o corpo todo e regrava todas as colunas, usando default pra qualquer campo
@@ -36,14 +36,14 @@ base; `nova-tela-screen-engine`, `novo-wizard`, `criar-recurso` e `criar-plugin`
 
 | Preciso entender...                                                | Vá para                                                               |
 | ------------------------------------------------------------------ | --------------------------------------------------------------------- |
-| Sessão, JWT, tenant, RBAC, delegação, proxy                        | `kizuna-core/docs/AUTH.md`                                            |
-| PostgREST, CRUD genérico, `ResourceConfig`, hooks de client, erros | `kizuna-core/docs/API.md`                                             |
+| Sessão, JWT, tenant, RBAC, delegação, proxy                        | `kizuna-core/docs/arquitetura/auth.md`                                            |
+| PostgREST, CRUD genérico, `ResourceConfig`, hooks de client, erros | `kizuna-core/docs/arquitetura/api.md`                                             |
 | Registrar um `ResourceConfig` novo                                 | skill `criar-recurso`                                                 |
-| Motor de telas (`RenderScreen`, `ResourceScreen`, blocos)          | `kizuna-core/docs/SCREEN-ENGINE.md` + skill `nova-tela-screen-engine` |
+| Motor de telas (`RenderScreen`, `ResourceScreen`, blocos)          | `kizuna-core/docs/interface/screen-engine.md` + skill `nova-tela-screen-engine` |
 | Wizard multi-step com persistência parcial                         | skill `novo-wizard`                                                   |
-| Componentes (`ui/`, `ui-better-soft/`, showcase)                   | `kizuna-core/docs/COMPONENTS.md` + skill `criar-componente-core`      |
-| Plugins (o que existe, como ativar, criar um novo)                 | `kizuna-core/docs/PLUGINS.md` + skill `criar-plugin`                  |
-| Upload de arquivo / imagens                                        | `kizuna-core/docs/STORAGE.md`                                         |
+| Componentes (`ui/`, `ui-better-soft/`, showcase)                   | `kizuna-core/docs/interface/componentes.md` + skill `criar-componente-core`      |
+| Plugins (o que existe, como ativar, criar um novo)                 | `kizuna-core/docs/plugins/README.md` + skill `criar-plugin`                  |
+| Upload de arquivo / imagens                                        | `kizuna-core/docs/servicos/storage.md`                                         |
 | Superfície pública exata do `@kizuna/core` (lista de exports)      | `kizuna-core/STATUS.md`                                               |
 | Setup de um projeto novo do zero                                   | skill `setup-projeto-novo`                                            |
 
@@ -61,8 +61,8 @@ base; `nova-tela-screen-engine`, `novo-wizard`, `criar-recurso` e `criar-plugin`
 Descobrir ou criar uma possibilidade nova numa camada orientada a config (motor de telas,
 `postgrestResources`, um plugin) **não** está concluído só porque o código funciona. Documente:
 
-1. **Doc de referência longa** — a doc do core na seção certa (`SCREEN-ENGINE.md`, `PLUGINS.md`,
-   `API.md`) OU, se for específico do app, a doc de domínio do projeto consumidor. Texto completo,
+1. **Doc de referência longa** — a doc do core na seção certa (`docs/interface/screen-engine.md`, `docs/plugins/README.md`,
+   `docs/arquitetura/api.md`) OU, se for específico do app, a doc de domínio do projeto consumidor. Texto completo,
    exemplo, o "por quê".
 2. **Referência rápida** — só se uma IA precisar **reconhecer essa possibilidade rapidamente numa
    tarefa futura** (uma regra nova, um limite novo, um erro que pode se repetir): uma linha na

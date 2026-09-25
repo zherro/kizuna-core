@@ -539,7 +539,7 @@ export function createLogoutHandler() {
  * `GET /api/auth/me` — devolve a sessão atual (`{ user }`) ou `{ user: null }`,
  * lendo o cookie de sessão. Serve para o `AuthProvider` hidratar do lado
  * cliente quando o layout raiz NÃO lê cookie (páginas públicas estáticas —
- * ver docs/HARDENING.md). O payload é o mesmo shape que `createLoginHandler`
+ * ver docs/manutencao/hardening.md). O payload é o mesmo shape que `createLoginHandler`
  * retorna em `user`.
  */
 export function createMeHandler() {

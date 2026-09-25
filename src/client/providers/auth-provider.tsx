@@ -118,7 +118,7 @@ export function AuthProvider({
   }, []);
 
   // Hidratação client-side: quando o layout raiz NÃO passa `initialUser` (para
-  // as páginas públicas poderem ser estáticas — ver docs/HARDENING.md), busca a
+  // as páginas públicas poderem ser estáticas — ver docs/manutencao/hardening.md), busca a
   // sessão uma vez via `GET /api/auth/me`. Se `initialUser` veio do servidor
   // (ex.: layout de /painel), pula. Um `setUser` manual (pós login/registro)
   // também trava a hidratação.

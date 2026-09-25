@@ -3,7 +3,17 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, type ReactNode } from 'react';
-import { LayoutDashboard, LogIn, LogOut, MapPin, Menu, Moon, Search, Sun } from 'lucide-react';
+import {
+  LayoutDashboard,
+  LogIn,
+  LogOut,
+  MapPin,
+  Menu,
+  Moon,
+  Search,
+  Sun,
+  UserRound,
+} from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useAppPreferences } from '../providers/app-preferences-provider';
 import { useAuth } from '../providers/auth-provider';
@@ -26,6 +36,9 @@ export type TopbarCompactProps = {
   actions?: ReactNode;
   /** href do botão de busca. Se ausente, o botão não aparece. */
   searchHref?: string;
+  /** Mobile, logado: link de conta entre `actions` e o menu. Default "Minha conta" → /painel. */
+  accountLabel?: string;
+  accountHref?: string;
 };
 
 /**
@@ -43,6 +56,8 @@ export function TopbarCompact({
   brandLogo,
   actions,
   searchHref = '/busca',
+  accountLabel = 'Minha conta',
+  accountHref = '/painel',
 }: TopbarCompactProps = {}) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -183,6 +198,29 @@ export function TopbarCompact({
             </Button>
           )}
 
+          {/* Mobile: atalho de conta ao lado do menu — Entrar (deslogado) ou
+              Minha conta (logado), este com fundo suave de "botão reverso". */}
+          {user ? (
+            <Link
+              href={accountHref}
+              className="inline-flex h-9 items-center gap-1.5 rounded-full bg-primary/10 px-3 text-sm font-medium text-primary transition-colors hover:bg-primary/15 active:bg-primary/20 md:hidden"
+            >
+              <UserRound className="h-4 w-4" />
+              {accountLabel}
+            </Link>
+          ) : (
+            <Link
+              href={loginHref}
+              className={cn(
+                buttonVariants({ size: 'sm' }),
+                'h-9 gap-1.5 rounded-full px-3 text-sm md:hidden'
+              )}
+            >
+              <LogIn className="h-4 w-4" />
+              {messages.nav.signIn}
+            </Link>
+          )}
+
           <Button
             variant="outline"
             size="icon"
@@ -222,7 +260,7 @@ export function TopbarCompact({
                 {messages.default.dashboard}
               </Link>
             ) : null}
-            {searchHref && (
+            {searchHref && !navLinks.some((item) => item.href === searchHref) && (
               <Link
                 href={searchHref}
                 onClick={() => setMenuOpen(false)}

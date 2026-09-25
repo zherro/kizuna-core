@@ -4,7 +4,7 @@
 -- Aplicar DEPOIS do core-schema.sql, em base LIMPA:
 --   psql "$DB_URL" -v ON_ERROR_STOP=1 -f bundle/plugins-schema.sql
 -- `taxonomy` NÃO está aqui (ALTERa tabelas que só o schema do app cria).
--- Plugins: user_data, system_config, account_preferences, notifications, onboarding, storage, location, pages, holidays, agenda
+-- Plugins: user_data, system_config, account_preferences, notifications, onboarding, storage, location, pages, holidays, agenda, services
 
 
 -- ===================================================================
@@ -313,7 +313,7 @@ NOTIFY pgrst, 'reload schema';
 
 
 -- ===================================================================
--- PLUGIN: notifications  (1 arquivo)
+-- PLUGIN: notifications  (2 arquivos)
 -- ===================================================================
 
 
@@ -356,6 +356,67 @@ WITH CHECK (user_id = auth.fun_auth_user_id());
 INSERT INTO auth.plugin_registry (name, version)
 VALUES ('notifications', '1.0.0')
 ON CONFLICT (name) DO UPDATE SET version = EXCLUDED.version;
+
+NOTIFY pgrst, 'reload schema';
+
+
+-- ===================================================================
+-- 0002_notifications_context.sql
+-- ===================================================================
+
+-- plugins/notifications/0002_notifications_context.sql
+-- Follow-up to 0001_notifications.sql. Adds context columns (link a notification back to the
+-- entity it's about) + two helper functions: auth.fun_notify (push a notification as the
+-- recipient's own tenant, callable from any other plugin's SECURITY DEFINER RPC) and
+-- fn_notifications_mark_all_read (bulk mark-as-read for the bell icon). `notifications` also
+-- moves from optional to a required dependency of the project going forward — see
+-- kizuna.plugins.json (Task 5).
+
+ALTER TABLE public.notifications ADD COLUMN IF NOT EXISTS context_type text;
+ALTER TABLE public.notifications ADD COLUMN IF NOT EXISTS context_id text;
+
+-- Pushes a notification to p_user_id, resolving THEIR tenant (not the caller's) — a caller acting
+-- on behalf of another user (e.g. the other participant of a pedido) must never notify itself
+-- into the recipient's tenant_id column by accident.
+CREATE OR REPLACE FUNCTION auth.fun_notify(
+  p_user_id      uuid,
+  p_type         text,
+  p_title        text,
+  p_body         text DEFAULT NULL,
+  p_context_type text DEFAULT NULL,
+  p_context_id   text DEFAULT NULL
+) RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth
+AS $function$
+DECLARE
+  v_tenant_id uuid;
+BEGIN
+  SELECT uid INTO v_tenant_id FROM auth.tenants WHERE owner_uid = p_user_id LIMIT 1;
+
+  INSERT INTO public.notifications (user_id, tenant_id, type, title, body, context_type, context_id)
+  VALUES (p_user_id, v_tenant_id, p_type, p_title, p_body, p_context_type, p_context_id);
+END;
+$function$;
+
+-- SECURITY INVOKER is enough — the existing UPDATE policy already restricts to the caller's own
+-- rows (user_id = auth.fun_auth_user_id()).
+CREATE OR REPLACE FUNCTION public.fn_notifications_mark_all_read()
+RETURNS void
+LANGUAGE sql
+SECURITY INVOKER
+SET search_path = public, auth
+AS $function$
+  UPDATE public.notifications
+     SET read_at = now()
+   WHERE user_id = auth.fun_auth_user_id()
+     AND read_at IS NULL;
+$function$;
+
+GRANT EXECUTE ON FUNCTION public.fn_notifications_mark_all_read() TO auth_user;
+-- auth.fun_notify is called ONLY from other SECURITY DEFINER functions (never directly by
+-- auth_user) — no EXECUTE grant to auth_user, same reasoning as auth.fun_msg_is_participant.
 
 NOTIFY pgrst, 'reload schema';
 
@@ -509,7 +570,7 @@ NOTIFY pgrst, 'reload schema';
 
 
 -- ===================================================================
--- PLUGIN: storage  (1 arquivo)
+-- PLUGIN: storage  (3 arquivos)
 -- ===================================================================
 
 
@@ -606,6 +667,61 @@ WITH CHECK (uid = auth.fun_auth_user_id());
 -- `files.manage`-gated policy branch itself.
 INSERT INTO auth.plugin_registry (name, version)
 VALUES ('storage', '1.0.0')
+ON CONFLICT (name) DO UPDATE SET version = EXCLUDED.version;
+
+NOTIFY pgrst, 'reload schema';
+
+
+-- ===================================================================
+-- 0002_storage_service_image_purpose.sql
+-- ===================================================================
+
+-- plugins/storage/0002_storage_service_image_purpose.sql
+-- Adds 'service_image' to `files.purpose`'s CHECK constraint. The `services` wizard's image step
+-- (`client/components/services/wizard-steps/step-images.tsx`) has uploaded with
+-- `purpose="service_image"` since the service wizard shipped, but `0001_storage.sql`'s CHECK never
+-- included it (only `ad_image` from the older `ads`-based flow) — every upload from that step has
+-- been failing at the DB layer with `violates check constraint "files_purpose_check"` on any
+-- database still running the 0001 constraint. Found while seeding service images directly against
+-- `public.files` (a plain INSERT with `purpose = 'service_image'` reproduces the 42... check
+-- violation immediately).
+--
+-- Idempotent: DROP + re-CREATE the same-named constraint is safe to re-run (Postgres has no
+-- `ADD CONSTRAINT IF NOT EXISTS`, so DROP IF EXISTS + CREATE is the standard idempotent pattern
+-- for constraints in this codebase).
+
+ALTER TABLE public.files DROP CONSTRAINT IF EXISTS files_purpose_check;
+
+ALTER TABLE public.files ADD CONSTRAINT files_purpose_check CHECK (purpose IN (
+  'ad_image', 'service_image', 'avatar', 'document', 'banner', 'pdf', 'doc', 'other'
+));
+
+INSERT INTO auth.plugin_registry (name, version)
+VALUES ('storage', '1.1.0')
+ON CONFLICT (name) DO UPDATE SET version = EXCLUDED.version;
+
+NOTIFY pgrst, 'reload schema';
+
+
+-- ===================================================================
+-- 0003_storage_demanda_attachment_purpose.sql
+-- ===================================================================
+
+-- plugins/storage/0003_storage_demanda_attachment_purpose.sql
+-- Adds 'demanda_attachment' to `files.purpose`'s CHECK constraint — the demanda create flow's
+-- attachment step (`ImageGalleryManager` reused in `readOnly`/mixed mode, see
+-- foco-total/src/components/demandas/criar-demanda-button.tsx) uploads with
+-- `purpose="demanda_attachment"`. Same idempotent DROP + re-CREATE pattern as
+-- 0002_storage_service_image_purpose.sql.
+
+ALTER TABLE public.files DROP CONSTRAINT IF EXISTS files_purpose_check;
+
+ALTER TABLE public.files ADD CONSTRAINT files_purpose_check CHECK (purpose IN (
+  'ad_image', 'service_image', 'demanda_attachment', 'avatar', 'document', 'banner', 'pdf', 'doc', 'other'
+));
+
+INSERT INTO auth.plugin_registry (name, version)
+VALUES ('storage', '1.2.0')
 ON CONFLICT (name) DO UPDATE SET version = EXCLUDED.version;
 
 NOTIFY pgrst, 'reload schema';
@@ -1214,7 +1330,7 @@ NOTIFY pgrst, 'reload schema';
 
 
 -- ===================================================================
--- PLUGIN: agenda  (2 arquivos)
+-- PLUGIN: agenda  (4 arquivos)
 -- ===================================================================
 
 
@@ -1500,6 +1616,547 @@ WITH CHECK (tenant_id = auth.fun_auth_current_tenant_id());
 -- ---------------------------------------------------------------------------------------------
 INSERT INTO auth.plugin_registry (name, version)
 VALUES ('agenda', '1.1.0')
+ON CONFLICT (name) DO UPDATE SET version = EXCLUDED.version;
+
+NOTIFY pgrst, 'reload schema';
+
+
+-- ===================================================================
+-- 0003_agenda_rbac_policies.sql
+-- ===================================================================
+
+-- plugins/agenda/0003_agenda_rbac_policies.sql
+-- Follow-up to 0001 (agenda_events, agenda_settings) — adds the admin-override clause now that
+-- `agenda.manage` is registered in the catalog (see foco-total's
+-- db/migrations/0002_rbac_app_permissions.sql). Previously these two tables were strictly
+-- self-service (user_id = auth.fun_auth_user_id() only, no admin bypass at all). This migration
+-- widens SELECT/INSERT/UPDATE on both to also allow a caller holding `agenda.manage` — e.g. a
+-- tenant admin auditing/managing another user's calendar.
+--
+-- Does NOT touch agenda_schedule / agenda_schedule_hours / agenda_booking_preferences /
+-- agenda_notification_preferences (0002_agenda_config.sql) — those are tenant_id-scoped, not
+-- user_id-scoped (every tenant member with baseline access already sees the whole tenant's
+-- schedule config), so there is no per-user boundary for `agenda.manage` to override.
+--
+-- Idempotent: DROP POLICY IF EXISTS before every CREATE POLICY, same convention as 0001/0002.
+-- Only widens existing predicates with an `OR auth.fun_auth_has_perm(...)` clause — never
+-- loosens/removes the base `user_id = auth.fun_auth_user_id()` check.
+
+-- ---------------------------------------------------------------------------------------------
+-- 1) agenda_events
+-- ---------------------------------------------------------------------------------------------
+DROP POLICY IF EXISTS agenda_events_select_policy ON public.agenda_events;
+CREATE POLICY agenda_events_select_policy ON public.agenda_events FOR SELECT TO auth_user
+USING (
+    user_id = auth.fun_auth_user_id()
+    OR auth.fun_auth_has_perm('agenda', 'manage')
+);
+
+DROP POLICY IF EXISTS agenda_events_insert_policy ON public.agenda_events;
+CREATE POLICY agenda_events_insert_policy ON public.agenda_events FOR INSERT TO auth_user
+WITH CHECK (
+    user_id = auth.fun_auth_user_id()
+    OR auth.fun_auth_has_perm('agenda', 'manage')
+);
+
+DROP POLICY IF EXISTS agenda_events_update_policy ON public.agenda_events;
+CREATE POLICY agenda_events_update_policy ON public.agenda_events FOR UPDATE TO auth_user
+USING (
+    user_id = auth.fun_auth_user_id()
+    OR auth.fun_auth_has_perm('agenda', 'manage')
+)
+WITH CHECK (
+    user_id = auth.fun_auth_user_id()
+    OR auth.fun_auth_has_perm('agenda', 'manage')
+);
+
+-- ---------------------------------------------------------------------------------------------
+-- 2) agenda_settings — single FOR ALL policy in 0001; split predicate stays the same shape
+--    (USING covers SELECT/UPDATE/DELETE, WITH CHECK covers INSERT/UPDATE). No DELETE is granted
+--    to auth_user on this table (see 0001 GRANT list), so this only ever gates
+--    SELECT/INSERT/UPDATE in practice.
+-- ---------------------------------------------------------------------------------------------
+DROP POLICY IF EXISTS agenda_settings_policy ON public.agenda_settings;
+CREATE POLICY agenda_settings_policy ON public.agenda_settings FOR ALL TO auth_user
+USING (
+    user_id = auth.fun_auth_user_id()
+    OR auth.fun_auth_has_perm('agenda', 'manage')
+)
+WITH CHECK (
+    user_id = auth.fun_auth_user_id()
+    OR auth.fun_auth_has_perm('agenda', 'manage')
+);
+
+-- ---------------------------------------------------------------------------------------------
+-- Plugin registration — bump agenda 1.1.0 -> 1.1.1 (RLS-only change, no schema change).
+-- ---------------------------------------------------------------------------------------------
+INSERT INTO auth.plugin_registry (name, version)
+VALUES ('agenda', '1.1.1')
+ON CONFLICT (name) DO UPDATE SET version = EXCLUDED.version;
+
+NOTIFY pgrst, 'reload schema';
+
+
+-- ===================================================================
+-- 0004_agenda_availability.sql
+-- ===================================================================
+
+-- plugins/agenda/0004_agenda_availability.sql
+-- Follow-up migration for the `agenda` plugin (0001 = agenda_events/agenda_settings, 0002 =
+-- agenda_schedule/*_hours/*_preferences, 0003 = RBAC admin-override policies — a separate,
+-- concurrent workstream; not touched here). Adds:
+--
+--   1. `agenda_schedule.metadata` (jsonb) — free-form room for a schedule to carry tags/links
+--      later (e.g. `{tags: [...], links: {...}}`) without another migration. No consumer reads
+--      it yet; this just opens the column up front, same idea as `services.extras`.
+--   2. `fn_agenda_availability(p_schedule_id, p_date, p_slot_minutes)` — computes free booking
+--      slots for one schedule on one calendar day: the day's open/close window from
+--      `agenda_schedule_hours` (day_of_week 0-6), minus the lunch window (day_of_week = 9
+--      sentinel, same convention as 0002), minus any day the tenant has marked off
+--      (`holidays_tenant.is_off` / `holidays_tenant_custom_days_off`), minus already-booked
+--      `agenda_events` (padded by `agenda_booking_preferences.buffer_minutes`), and dropping any
+--      slot that starts before `now() + min_advance_hours`.
+--
+-- Tenant scoping: the function takes NO tenant id argument. Like every other SECURITY DEFINER
+-- RPC in this plugin (fn_msg_* in the messaging plugin is the model), it derives the caller's
+-- tenant from the JWT via auth.fun_auth_current_tenant_id() — a client can never pass its own
+-- tenant_id and read/compute another tenant's availability. `p_schedule_id` is still checked
+-- against that tenant below (a schedule id from another tenant returns an empty set, not an
+-- error, so the function can't be used to probe which ids exist).
+--
+-- Known gap (documented, not solved here — out of scope for this migration): `agenda_events` has
+-- no `schedule_id` column (0001 predates 0002's schedules and only knows free-form
+-- `resource_id` text). There is therefore no way yet to know which events belong to which named
+-- schedule. Until a consuming project adds that FK (see the note already in 0002 about
+-- `services.schedule_id` living in the project, not the plugin), this function treats every
+-- active `agenda_events` row for the tenant as occupying time on every schedule — i.e. it blocks
+-- slots tenant-wide, not per-schedule. Safe (never over-promises a slot that's actually booked
+-- elsewhere), just coarser than per-schedule until that FK exists.
+--
+-- Idempotent: ADD COLUMN IF NOT EXISTS; CREATE OR REPLACE FUNCTION; DROP FUNCTION IF EXISTS with
+-- the old signature first (harmless no-op on a fresh install).
+
+-- ---------------------------------------------------------------------------------------------
+-- 1) agenda_schedule.metadata — reserved jsonb for future tags/links, mirrors how `services`
+--    keeps `extras` for exactly this purpose. Empty object default so callers never see NULL.
+-- ---------------------------------------------------------------------------------------------
+ALTER TABLE public.agenda_schedule
+    ADD COLUMN IF NOT EXISTS metadata jsonb NOT NULL DEFAULT '{}'::jsonb;
+
+-- ---------------------------------------------------------------------------------------------
+-- 2) fn_agenda_availability — free slots for (my tenant's) schedule on a given day.
+-- ---------------------------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.fn_agenda_availability(uuid, date, integer);
+
+CREATE OR REPLACE FUNCTION public.fn_agenda_availability(
+    p_schedule_id  uuid,
+    p_date         date,
+    p_slot_minutes integer DEFAULT 30
+)
+RETURNS TABLE(slot_start timestamptz, slot_end timestamptz)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $function$
+DECLARE
+    v_tenant_id       uuid := auth.fun_auth_current_tenant_id();
+    v_timezone        text;
+    v_day_of_week     smallint;
+    v_open_time       time;
+    v_close_time      time;
+    v_lunch_open      time;
+    v_lunch_close     time;
+    v_window_start    timestamptz;
+    v_window_end      timestamptz;
+    v_lunch_start     timestamptz;
+    v_lunch_end       timestamptz;
+    v_min_advance_h   integer := 4;
+    v_buffer_minutes  integer := 30;
+    v_not_before      timestamptz;
+    v_is_holiday      boolean;
+BEGIN
+    IF p_schedule_id IS NULL OR p_date IS NULL THEN
+        RETURN;
+    END IF;
+
+    IF p_slot_minutes IS NULL OR p_slot_minutes <= 0 THEN
+        p_slot_minutes := 30;
+    END IF;
+
+    -- Schedule must belong to the caller's tenant, be enabled and not soft-deleted. Any mismatch
+    -- (wrong tenant, disabled, deleted, unknown id) yields zero rows rather than an error.
+    SELECT s.timezone
+      INTO v_timezone
+      FROM public.agenda_schedule s
+     WHERE s.id = p_schedule_id
+       AND s.tenant_id = v_tenant_id
+       AND s.active = true
+       AND s.deleted = false;
+
+    IF v_timezone IS NULL THEN
+        RETURN;
+    END IF;
+
+    -- Tenant marked this date off (recurring national/state/city holiday accepted for the
+    -- tenant, or an ad-hoc custom day off / range) => no slots at all.
+    v_day_of_week := EXTRACT(DOW FROM p_date)::smallint; -- 0 = Sunday .. 6 = Saturday
+
+    SELECT EXISTS (
+        SELECT 1
+          FROM public.holidays_tenant ht
+          JOIN public.holidays h ON h.id = ht.holiday_id AND h.active = true
+         WHERE ht.tenant_id = v_tenant_id
+           AND ht.is_off = true
+           AND (
+                (h.recurring AND to_char(h.date, 'MM-DD') = to_char(p_date, 'MM-DD'))
+             OR (NOT h.recurring AND h.date = p_date)
+           )
+    )
+    OR EXISTS (
+        SELECT 1
+          FROM public.holidays_tenant_custom_days_off cdo
+         WHERE cdo.tenant_id = v_tenant_id
+           AND cdo.active = true
+           AND cdo.deleted = false
+           AND (
+                (cdo.date_interval AND p_date BETWEEN cdo.date AND COALESCE(cdo.date_interval_end, cdo.date))
+             OR (NOT cdo.date_interval AND cdo.recurring AND to_char(cdo.date, 'MM-DD') = to_char(p_date, 'MM-DD'))
+             OR (NOT cdo.date_interval AND NOT cdo.recurring AND cdo.date = p_date)
+           )
+    )
+    INTO v_is_holiday;
+
+    IF v_is_holiday THEN
+        RETURN;
+    END IF;
+
+    -- The day's open/close window (day_of_week 0-6). No active row for this weekday => closed.
+    SELECT sh.open_time, sh.close_time
+      INTO v_open_time, v_close_time
+      FROM public.agenda_schedule_hours sh
+     WHERE sh.schedule_id = p_schedule_id
+       AND sh.day_of_week = v_day_of_week
+       AND sh.active = true;
+
+    IF v_open_time IS NULL OR v_close_time IS NULL THEN
+        RETURN;
+    END IF;
+
+    -- Lunch break sentinel (day_of_week = 9), same window applied to every active day.
+    SELECT sh.open_time, sh.close_time
+      INTO v_lunch_open, v_lunch_close
+      FROM public.agenda_schedule_hours sh
+     WHERE sh.schedule_id = p_schedule_id
+       AND sh.day_of_week = 9
+       AND sh.active = true;
+
+    -- open_time > close_time is legal (crosses midnight) — push the close boundary to the next
+    -- calendar day in that case, same convention documented in 0002.
+    v_window_start := (p_date + v_open_time) AT TIME ZONE v_timezone;
+    v_window_end := (
+        CASE WHEN v_close_time > v_open_time THEN p_date ELSE p_date + 1 END + v_close_time
+    ) AT TIME ZONE v_timezone;
+
+    IF v_lunch_open IS NOT NULL AND v_lunch_close IS NOT NULL THEN
+        v_lunch_start := (p_date + v_lunch_open) AT TIME ZONE v_timezone;
+        v_lunch_end := (
+            CASE WHEN v_lunch_close > v_lunch_open THEN p_date ELSE p_date + 1 END + v_lunch_close
+        ) AT TIME ZONE v_timezone;
+    END IF;
+
+    -- Booking preferences (singleton per tenant) — defaults above cover a tenant with no row yet.
+    SELECT bp.min_advance_hours, bp.buffer_minutes
+      INTO v_min_advance_h, v_buffer_minutes
+      FROM public.agenda_booking_preferences bp
+     WHERE bp.tenant_id = v_tenant_id;
+
+    v_min_advance_h := COALESCE(v_min_advance_h, 4);
+    v_buffer_minutes := COALESCE(v_buffer_minutes, 30);
+    v_not_before := now() + make_interval(hours => v_min_advance_h);
+
+    -- Candidate slots at p_slot_minutes granularity across the open window, dropped when they:
+    --  - overlap the lunch break,
+    --  - overlap an already-booked event for the tenant (padded by buffer_minutes on each side —
+    --    see the 0004 header note on why this is tenant-wide, not schedule-scoped, for now),
+    --  - or start before the minimum-advance cutoff.
+    RETURN QUERY
+    WITH candidates AS (
+        SELECT
+            g AS c_start,
+            g + make_interval(mins => p_slot_minutes) AS c_end
+          FROM generate_series(
+                 v_window_start,
+                 v_window_end - make_interval(mins => p_slot_minutes),
+                 make_interval(mins => p_slot_minutes)
+               ) AS g
+    )
+    SELECT c.c_start, c.c_end
+      FROM candidates c
+     WHERE c.c_start >= v_not_before
+       AND (
+            v_lunch_start IS NULL
+         OR c.c_end <= v_lunch_start
+         OR c.c_start >= v_lunch_end
+       )
+       AND NOT EXISTS (
+            SELECT 1
+              FROM public.agenda_events ev
+             WHERE ev.tenant_id = v_tenant_id
+               AND ev.active = true
+               AND c.c_start < ev."end" + make_interval(mins => v_buffer_minutes)
+               AND c.c_end > ev.start - make_interval(mins => v_buffer_minutes)
+       )
+     ORDER BY c.c_start;
+END;
+$function$;
+
+-- SECURITY DEFINER owns the schema-qualified lookups above; only auth_user may call it (same as
+-- every other fn_* in this plugin family — no anon grant, availability is a logged-in tenant
+-- concern, not a public marketplace read).
+GRANT EXECUTE ON FUNCTION public.fn_agenda_availability(uuid, date, integer) TO auth_user;
+
+NOTIFY pgrst, 'reload schema';
+
+
+-- ===================================================================
+-- PLUGIN: services  (2 arquivos)
+-- ===================================================================
+
+
+
+-- ===================================================================
+-- 0001_services.sql
+-- ===================================================================
+
+-- plugins/services/0001_services.sql
+-- Plugin: services — domínio "marketplace de serviços" (o anúncio de um prestador) + a fila de
+-- moderação desse anúncio. Idempotente, from-zero-safe (mesma convenção de plugins/*/0001_*.sql,
+-- ver plugins/README.md). NÃO faz ALTER em tabela do projeto consumidor. Depende do plugin
+-- `taxonomy` (referencia categories_group/categories por id) e do plugin `storage` (imagens em
+-- extras.images apontam pra files, sem FK). Design: foco-total/docs/superpowers/specs/2026-09-09-wizard-engine-plugin-services-design.md
+
+-- =========================================================================
+-- 1) Enums
+-- =========================================================================
+DO $$ BEGIN
+  CREATE TYPE public.price_unit AS ENUM
+    ('quote','service','hour','fixed','unit','visit','m2_metro_quadrado','project','package','monthly','day','km');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE TYPE public.service_status AS ENUM ('pending','active','paused','archived');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE TYPE public.service_location AS ENUM ('no_cliente','no_estabelecimento','remoto');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- =========================================================================
+-- 2) Tabelas
+-- =========================================================================
+CREATE TABLE IF NOT EXISTS public.services (
+  id                 bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  uid                uuid NOT NULL DEFAULT gen_random_uuid(),
+  title              text NOT NULL,
+  category_group_id  bigint REFERENCES public.categories_group(id),
+  category_id        bigint NOT NULL REFERENCES public.categories(id),
+  description        text,
+  starting_price     numeric NOT NULL DEFAULT 0,
+  price_unit         public.price_unit NOT NULL DEFAULT 'quote',
+  urgent_available   boolean NOT NULL DEFAULT false,
+  extras             jsonb NOT NULL DEFAULT '{}'::jsonb,
+  status             public.service_status NOT NULL DEFAULT 'pending',
+  sponsored          boolean NOT NULL DEFAULT false,
+  service_location   public.service_location,
+  tenant_id          uuid NOT NULL DEFAULT auth.fun_auth_current_tenant_id() REFERENCES auth.tenants(uid) ON DELETE RESTRICT,
+  created_by         uuid NOT NULL DEFAULT auth.fun_auth_user_id() REFERENCES auth.users(uid) ON DELETE RESTRICT,
+  active             boolean NOT NULL DEFAULT true,
+  created_at         timestamptz NOT NULL DEFAULT now(),
+  updated_at         timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT services_uid_unique UNIQUE (uid)
+);
+CREATE INDEX IF NOT EXISTS services_tenant   ON public.services (tenant_id, status) WHERE active;
+CREATE INDEX IF NOT EXISTS services_owner    ON public.services (created_by);
+CREATE INDEX IF NOT EXISTS services_category ON public.services (category_id) WHERE active;
+
+CREATE TABLE IF NOT EXISTS public.service_categories_sub (
+  id                 bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  service_id         bigint NOT NULL REFERENCES public.services(id) ON DELETE CASCADE,
+  category_group_id  bigint NOT NULL REFERENCES public.categories_group(id),
+  category_id        bigint NOT NULL REFERENCES public.categories(id),
+  category_sub_id    bigint NOT NULL REFERENCES public.categories_sub(id),
+  tenant_id          uuid NOT NULL DEFAULT auth.fun_auth_current_tenant_id(),
+  created_by         uuid NOT NULL DEFAULT auth.fun_auth_user_id(),
+  active             boolean NOT NULL DEFAULT true,
+  created_at         timestamptz NOT NULL DEFAULT now(),
+  updated_at         timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT service_categories_sub_unique UNIQUE (service_id, category_sub_id)
+);
+CREATE INDEX IF NOT EXISTS service_categories_sub_service ON public.service_categories_sub (service_id) WHERE active;
+
+CREATE TABLE IF NOT EXISTS public.service_moderations (
+  id                bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  uid               uuid NOT NULL DEFAULT gen_random_uuid(),
+  service_id        bigint NOT NULL REFERENCES public.services(id) ON DELETE CASCADE,
+  decision          text NOT NULL CHECK (decision IN ('approved','rejected','escalated')),
+  decision_note     text,
+  rejection_reason  text CHECK (rejection_reason IS NULL OR rejection_reason IN
+                      ('inappropriate_content','misleading','duplicate','wrong_category','incomplete','policy_violation','other')),
+  priority          smallint NOT NULL DEFAULT 2,
+  decided_at        timestamptz NOT NULL DEFAULT now(),
+  auto_approved     boolean NOT NULL DEFAULT false,
+  tenant_id         uuid NOT NULL DEFAULT auth.fun_auth_current_tenant_id(),
+  created_by        uuid NOT NULL DEFAULT auth.fun_auth_user_id(),
+  active            boolean NOT NULL DEFAULT true,
+  created_at        timestamptz NOT NULL DEFAULT now(),
+  updated_at        timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT service_moderations_uid_unique UNIQUE (uid)
+);
+CREATE INDEX IF NOT EXISTS service_moderations_service ON public.service_moderations (service_id, decided_at DESC);
+
+-- =========================================================================
+-- 3) RLS
+-- =========================================================================
+ALTER TABLE public.services ENABLE ROW LEVEL SECURITY;
+GRANT SELECT, INSERT, UPDATE ON TABLE public.services TO auth_user;
+GRANT SELECT ON TABLE public.services TO anon;
+REVOKE DELETE ON TABLE public.services FROM auth_user, anon;
+
+DROP POLICY IF EXISTS services_public_read ON public.services;
+CREATE POLICY services_public_read ON public.services FOR SELECT TO anon
+  USING (active AND status = 'active');
+
+DROP POLICY IF EXISTS services_owner_read ON public.services;
+CREATE POLICY services_owner_read ON public.services FOR SELECT TO auth_user
+  USING (active AND (created_by = auth.fun_auth_user_id() OR auth.fun_auth_has_perm('services','moderate')
+         OR (status = 'active')));
+
+DROP POLICY IF EXISTS services_owner_write ON public.services;
+CREATE POLICY services_owner_write ON public.services FOR INSERT TO auth_user
+  WITH CHECK (created_by = auth.fun_auth_user_id());
+
+DROP POLICY IF EXISTS services_owner_update ON public.services;
+CREATE POLICY services_owner_update ON public.services FOR UPDATE TO auth_user
+  USING (created_by = auth.fun_auth_user_id() OR auth.fun_auth_has_perm('services','moderate'))
+  WITH CHECK (created_by = auth.fun_auth_user_id() OR auth.fun_auth_has_perm('services','moderate'));
+
+ALTER TABLE public.service_categories_sub ENABLE ROW LEVEL SECURITY;
+GRANT SELECT, INSERT, UPDATE ON TABLE public.service_categories_sub TO auth_user;
+GRANT DELETE ON TABLE public.service_categories_sub TO auth_user;
+GRANT SELECT ON TABLE public.service_categories_sub TO anon;
+REVOKE DELETE ON TABLE public.service_categories_sub FROM anon;
+
+DROP POLICY IF EXISTS scs_read ON public.service_categories_sub;
+CREATE POLICY scs_read ON public.service_categories_sub FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS scs_owner_write ON public.service_categories_sub;
+CREATE POLICY scs_owner_write ON public.service_categories_sub FOR ALL TO auth_user
+  USING (EXISTS (SELECT 1 FROM public.services s WHERE s.id = service_id AND s.created_by = auth.fun_auth_user_id()))
+  WITH CHECK (EXISTS (SELECT 1 FROM public.services s WHERE s.id = service_id AND s.created_by = auth.fun_auth_user_id()));
+
+ALTER TABLE public.service_moderations ENABLE ROW LEVEL SECURITY;
+GRANT SELECT ON TABLE public.service_moderations TO auth_user;
+REVOKE INSERT, UPDATE, DELETE ON TABLE public.service_moderations FROM auth_user, anon;
+
+DROP POLICY IF EXISTS sm_read ON public.service_moderations;
+CREATE POLICY sm_read ON public.service_moderations FOR SELECT TO auth_user
+  USING (auth.fun_auth_has_perm('services','moderate')
+         OR EXISTS (SELECT 1 FROM public.services s WHERE s.id = service_id AND s.created_by = auth.fun_auth_user_id()));
+
+-- =========================================================================
+-- 4) RPC — fn_service_moderate: insere a moderação E deriva services.status, atômico.
+-- =========================================================================
+CREATE OR REPLACE FUNCTION public.fn_service_moderate(
+  p_service_id       bigint,
+  p_decision         text,
+  p_note             text DEFAULT NULL,
+  p_rejection_reason text DEFAULT NULL
+) RETURNS public.service_moderations
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth
+AS $function$
+DECLARE
+  v_row    public.service_moderations;
+  v_status public.service_status;
+BEGIN
+  IF NOT auth.fun_auth_has_perm('services','moderate') THEN
+    RAISE EXCEPTION 'forbidden' USING errcode = '42501';
+  END IF;
+  IF p_decision NOT IN ('approved','rejected','escalated') THEN
+    RAISE EXCEPTION 'decisão inválida: %', p_decision USING errcode = '22023';
+  END IF;
+
+  v_status := CASE p_decision
+    WHEN 'approved' THEN 'active'::public.service_status
+    WHEN 'rejected' THEN 'archived'::public.service_status
+    ELSE 'pending'::public.service_status
+  END;
+
+  INSERT INTO public.service_moderations (service_id, decision, decision_note, rejection_reason)
+  VALUES (
+    p_service_id, p_decision, NULLIF(btrim(coalesce(p_note,'')),''),
+    CASE WHEN p_decision = 'rejected' THEN p_rejection_reason ELSE NULL END
+  )
+  RETURNING * INTO v_row;
+
+  UPDATE public.services SET status = v_status, updated_at = now() WHERE id = p_service_id;
+
+  RETURN v_row;
+END;
+$function$;
+
+GRANT EXECUTE ON FUNCTION public.fn_service_moderate(bigint, text, text, text) TO auth_user;
+
+-- =========================================================================
+-- 5) RBAC + registro do plugin
+-- =========================================================================
+INSERT INTO auth.permissions (resource, action, name) VALUES
+  ('services', 'moderate', 'Moderar anúncios de serviço')
+ON CONFLICT (resource, action) DO NOTHING;
+
+INSERT INTO auth.plugin_registry (name, version)
+VALUES ('services', '1.0.0')
+ON CONFLICT (name) DO UPDATE SET version = EXCLUDED.version;
+
+NOTIFY pgrst, 'reload schema';
+
+
+-- ===================================================================
+-- 0002_services_category_stats_view.sql
+-- ===================================================================
+
+-- plugins/services/0002_services_category_stats_view.sql
+-- Read model: quantos anúncios PUBLICADOS cada categoria tem. Uma linha por categoria ativa com
+-- ao menos um anúncio publicado (`active AND status = 'active'`) — categoria sem anúncio não
+-- aparece. Usada pelo <CategoryCarousel onlyWithListings> (home: `home.categoriesOnlyWithListings`
+-- no kizuna.config.json) para esconder categorias vazias.
+--
+-- Mora aqui, e não no plugin taxonomy, porque a taxonomy é pura e não conhece `services`
+-- (ver o cabeçalho de plugins/taxonomy/0002_taxonomy_stats_view.sql).
+--
+-- Idempotente: CREATE OR REPLACE VIEW. `security_invoker = true` — valem as RLS de `services` e
+-- `categories` de quem consulta; o filtro explícito de status garante que um usuário logado não
+-- conte os próprios anúncios pendentes (que a policy services_owner_read deixaria ver).
+
+CREATE OR REPLACE VIEW public.vw_category_service_stats
+WITH (security_invoker = true) AS
+SELECT
+  c.id                  AS category_id,
+  c.name                AS category_name,
+  count(s.id)::int      AS services_count
+FROM public.categories c
+JOIN public.services s
+  ON s.category_id = c.id
+ AND s.active = true
+ AND s.status = 'active'
+WHERE c.active = true
+GROUP BY c.id, c.name;
+
+GRANT SELECT ON public.vw_category_service_stats TO anon, auth_user;
+
+INSERT INTO auth.plugin_registry (name, version)
+VALUES ('services', '1.1.0')
 ON CONFLICT (name) DO UPDATE SET version = EXCLUDED.version;
 
 NOTIFY pgrst, 'reload schema';

@@ -10,7 +10,7 @@ description: Use ao expor uma tabela nova pela rota genérica /api/resources/[re
 A rota genérica `/api/resources/[resource]` (CRUD + list paginada + busca) é dirigida por um
 registro de `ResourceConfig` por nome. Esta skill é o passo a passo de autorar um e plugá-lo.
 Tipo canônico e comportamento (o PATCH que reconstrói o registro inteiro, os params de list, as
-shapes de resposta): `kizuna-core/docs/API.md` §3. Assume `padrao-de-projeto` carregada.
+shapes de resposta): `kizuna-core/docs/arquitetura/api.md` §3. Assume `padrao-de-projeto` carregada.
 
 **Duas casas possíveis para o config — decida primeiro:**
 
@@ -120,5 +120,5 @@ importa e faz spread.
 
 ## Passo 5 — Documentação
 
-Recurso de plugin → linha em `docs/PLUGINS.md` + `STATUS.md`. Recurso do app → a doc de domínio do
+Recurso de plugin → linha em `docs/plugins/README.md` + `STATUS.md`. Recurso do app → a doc de domínio do
 projeto (qual `mapInput` usa, se é read-merge-write ou `if undefined`, quais embeds no `select`).

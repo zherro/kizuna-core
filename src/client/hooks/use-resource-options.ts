@@ -21,6 +21,8 @@ type UseResourceOptionsOptions = {
   search?: string;
   /** Coluna de ordenação (default: ordem padrão do recurso no server). */
   orderBy?: string;
+  /** `false` não busca nada (options vazio, loading false). Default true. */
+  enabled?: boolean;
 };
 
 export function useResourceOptions<T extends ResourceOption>({
@@ -30,9 +32,10 @@ export function useResourceOptions<T extends ResourceOption>({
   pageSize,
   search,
   orderBy,
+  enabled = true,
 }: UseResourceOptionsOptions) {
   const [options, setOptions] = useState<T[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(enabled);
   const [error, setError] = useState('');
 
   // Debounce só do termo de busca — resource/filter/pageSize aplicam na hora.
@@ -49,6 +52,11 @@ export function useResourceOptions<T extends ResourceOption>({
 
   useEffect(() => {
     const requestId = ++latestRequest.current;
+    if (!enabled) {
+      setOptions([]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
 
     async function load() {
@@ -72,7 +80,7 @@ export function useResourceOptions<T extends ResourceOption>({
 
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [resource, labelField, filterKey, pageSize, debouncedSearch, orderBy]);
+  }, [resource, labelField, filterKey, pageSize, debouncedSearch, orderBy, enabled]);
 
   return {
     options,

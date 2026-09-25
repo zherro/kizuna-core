@@ -19,6 +19,9 @@ export type KizunaHeaderProps = {
   eyebrow?: string;
   brandLabel?: string;
   searchHref?: string;
+  /** Só na variante 'compact': link de conta no mobile (logado). */
+  accountLabel?: string;
+  accountHref?: string;
 };
 
 /**
@@ -36,6 +39,8 @@ export function KizunaHeader({
   eyebrow,
   brandLabel,
   searchHref,
+  accountLabel,
+  accountHref,
   ...topbarProps
 }: KizunaHeaderProps = {}) {
   const resolved: KizunaHeaderVariant =
@@ -48,6 +53,8 @@ export function KizunaHeader({
         eyebrow={eyebrow}
         brandLabel={brandLabel}
         searchHref={searchHref}
+        accountLabel={accountLabel}
+        accountHref={accountHref}
       />
     );
   }

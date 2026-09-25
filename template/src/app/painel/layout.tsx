@@ -5,7 +5,7 @@ import { PanelShell } from '@/components/panel-shell';
 
 // EXEMPLO — a área /painel É logada: aqui SIM lemos a sessão no servidor
 // (`getSession`) e passamos para o `AuthProvider` deste subtree. O layout raiz
-// não faz isso de propósito (páginas públicas estáticas — ver HARDENING.md), então
+// não faz isso de propósito (páginas públicas estáticas — ver docs/manutencao/hardening.md), então
 // sem este AuthProvider aninhado o `PanelShell` renderiza com `user=null` no F5 e
 // o gate de permissão manda pra notFound().
 export default async function PainelLayout({

@@ -8,7 +8,7 @@ project-specific env var names, no app-specific imports. `sql/` + `plugins/` is 
 ## CLI + template/ (starter)
 
 O core não é só biblioteca: ele carrega a **casca base** de um app Next.js e um **CLI Node** que
-a materializa num projeto e mantém projeto ↔ core alinhados. Ver **`docs/CLI.md`**.
+a materializa num projeto e mantém projeto ↔ core alinhados. Ver **`docs/comecando/cli.md`**.
 
 - `VERSION` — string semver única (hoje `0.5.0`); sinal do version-gate. Bumpa só em mudança
   relevante pro consumidor (`template/`, shell de plugin, migration nova, API pública). `git log`
@@ -23,21 +23,21 @@ a materializa num projeto e mantém projeto ↔ core alinhados. Ver **`docs/CLI.
 
 ## Docs
 
-- `docs/CLI.md` — o CLI (`install`/`update`/`sync`/`plugin`/`lock`/`check`/`adopt`/`db`), o `kizuna.lock`, managed/seed/merge, regra de bump do `VERSION`.
-- `docs/ARCHITECTURE.md` — folder layout, `ResourceConfig`/`ScreenConfig` split, context refs.
-- `docs/AUTH.md` — JWT/session, login/register/logout, `is_root`, RBAC, route protection (proxy).
-- `docs/PLUGINS.md` — what a plugin is, the plugins that exist today, how to activate them.
-- `docs/COMPONENTS.md` — map of `ui/`, `ui-better-soft/`, `screen-engine/`, `showcase/`, hooks, providers.
-- `docs/SCHEMAS.md` — worked examples of `ResourceConfig` and `ScreenConfig`.
-- `docs/API.md` — PostgREST layer, the generic `/api/resources/[resource]` route, `ResourceConfig`/`RpcConfig` type, client hooks, error handling.
-- `docs/SCREEN-ENGINE.md` — full screen-engine manual (pt): `createScreenPage`, context refs, `ResourceScreen`, `DynamicField`, limits, worked examples.
-- `docs/STORAGE.md` — `getStorageService()`, bytea, `optimizeImageBuffer`, routes, env.
-- `docs/UTILS.md` — `lib/utils`, `api-error-message`, `temporal-global`, BR helpers (UFs, currency mask, CPF/CNPJ).
-- `docs/EMAIL.md` — nodemailer transport in the core (`@kizuna/core/server/email` → `sendEmail` / `EmailTemplate`); templates stay in the app.
-- `docs/AI.md` — "no SDK, template fallback" pattern + env.
-- `docs/WIZARD.md` — engine de wizard multi-step (contrato de step, `defineWizard`, persistência read-merge-write, chrome layout-foco, slot de IA).
+- `docs/comecando/cli.md` — o CLI (`install`/`update`/`sync`/`plugin`/`lock`/`check`/`adopt`/`db`), o `kizuna.lock`, managed/seed/merge, regra de bump do `VERSION`.
+- `docs/arquitetura/README.md` — folder layout, `ResourceConfig`/`ScreenConfig` split, context refs.
+- `docs/arquitetura/auth.md` — JWT/session, login/register/logout, `is_root`, RBAC, route protection (proxy).
+- `docs/plugins/README.md` — what a plugin is, the plugins that exist today, how to activate them.
+- `docs/interface/componentes.md` — map of `ui/`, `ui-better-soft/`, `screen-engine/`, `showcase/`, hooks, providers.
+- `docs/arquitetura/schemas.md` — worked examples of `ResourceConfig` and `ScreenConfig`.
+- `docs/arquitetura/api.md` — PostgREST layer, the generic `/api/resources/[resource]` route, `ResourceConfig`/`RpcConfig` type, client hooks, error handling.
+- `docs/interface/screen-engine.md` — full screen-engine manual (pt): `createScreenPage`, context refs, `ResourceScreen`, `DynamicField`, limits, worked examples.
+- `docs/servicos/storage.md` — `getStorageService()`, bytea, `optimizeImageBuffer`, routes, env.
+- `docs/arquitetura/utils.md` — `lib/utils`, `api-error-message`, `temporal-global`, BR helpers (UFs, currency mask, CPF/CNPJ).
+- `docs/servicos/email.md` — nodemailer transport in the core (`@kizuna/core/server/email` → `sendEmail` / `EmailTemplate`); templates stay in the app.
+- `docs/servicos/ai.md` — "no SDK, template fallback" pattern + env.
+- `docs/interface/wizard.md` — engine de wizard multi-step (contrato de step, `defineWizard`, persistência read-merge-write, chrome layout-foco, slot de IA).
 
-`STATUS.md` is still the only doc index — it needs the "índice curto" restructure (pending, `docs/PENDENCIAS.md`).
+Índice oficial da documentação: `docs/README.md` (sumário GitBook em `docs/SUMMARY.md`).
 
 ## Public API
 
@@ -86,7 +86,7 @@ a materializa num projeto e mantém projeto ↔ core alinhados. Ver **`docs/CLI.
     … (re-exported from the folder barrel; NOT yet in the `@kizuna/core/types` barrel). Backed by the
     `reviews` plugin (`public.reviews` + 5 sibling tables + `fn_review_*` RPCs, incl.
     `fn_review_moderate`). The `services` wizard writes moderation decisions through the
-    `fn_service_moderate` RPC (see `docs/PLUGINS.md`).
+    `fn_service_moderate` RPC (see `docs/plugins/README.md`).
 - `@kizuna/core/client/components/wizard/*`: `Wizard`, `defineWizard`, `useWizardState`,
   `resolveSteps`, `applyAssistPatch`, `createResourcePersister`, `WizardShell`,
   `WizardScrollShell`, `WizardLayoutToggle`, `useWizardLayout`, `WizardLayoutContext`,
@@ -102,7 +102,7 @@ a materializa num projeto e mantém projeto ↔ core alinhados. Ver **`docs/CLI.
   (read-merge-write persistence, optional AI slot). Two step layouts via the `Wizard` prop
   `variant?: 'stepper' | 'scroll'` — the classic layout-foco stepper and an immersive vertical
   questionnaire; the header toggle switches them live (create only) and the choice is remembered
-  per resource in `localStorage`. Domain-agnostic — see `docs/WIZARD.md`.
+  per resource in `localStorage`. Domain-agnostic — see `docs/interface/wizard.md`.
 - `@kizuna/core/client/components/panel-shell`: `PanelShellBase` gained `fullBleedHeaderExtra`
   (right-of-header slot) + the `#wz-header-slot` portal target; the full-bleed header now carries
   the nav ("Menu" button → drawer) so a wizard route needs no second header.
@@ -118,10 +118,10 @@ a materializa num projeto e mantém projeto ↔ core alinhados. Ver **`docs/CLI.
 - `@kizuna/core/client/components/storage/*`: `ImageGalleryManager` (+ `ImageGalleryManagerProps`)
   — client image gallery: upload (`POST /api/storage/files`, `purpose` field), preview
   (`/api/storage/files/{id}/content`), remove. `onPersist` required
-  (`(referenceId, nextIds) => Promise<ids>`, returns the saved-id list). See `docs/STORAGE.md`.
+  (`(referenceId, nextIds) => Promise<ids>`, returns the saved-id list). See `docs/servicos/storage.md`.
 - `@kizuna/core/client/components/showcase/*`: `ShowcaseShell`, `ShowcaseSectionPage`,
   `showcase-sections` (`SHOWCASE_SECTIONS`, `DEFAULT_SHOWCASE_SECTION`, `normalizeShowcaseSection`)
-- `@kizuna/core/client/components/ui/*` and `ui-better-soft/*` — see `docs/COMPONENTS.md`
+- `@kizuna/core/client/components/ui/*` and `ui-better-soft/*` — see `docs/interface/componentes.md`
 - `@kizuna/core/server`: `SESSION_COOKIE_NAME`, `signSession`, `verifySession`,
   `getTokenFromCookies`, `getAuthHeaderFromCookies`, `getServiceAuthHeader`, `getSession`,
   `maskEmail`, `getDisplayNameFromEmail`, `isValidEmail`, `getDisplayName`, `isConfigError`,
@@ -136,6 +136,12 @@ a materializa num projeto e mantém projeto ↔ core alinhados. Ver **`docs/CLI.
 - `@kizuna/core/server/email`: `sendEmail`, `EmailTemplate` — nodemailer transport. Its own
   subpath (NOT in the `./server` barrel) so a project that doesn't send email never pulls
   `nodemailer` (an optional peer dep). Templates are pure builders in the consuming app.
+- `@kizuna/core/server/password-reset`: `createForgotPasswordHandler`,
+  `createResetPasswordHandler`, `buildPasswordResetEmail`, `ForgotPasswordOptions`,
+  `PasswordResetEmailInput` — "esqueci minha senha" (`sql/0112_password_reset.sql`, envs
+  `APP_URL`/`APP_NAME`/`PASSWORD_RESET_TTL_MINUTES`). See `docs/comecando/recuperar-senha.md`.
+- `@kizuna/core/client`: `ForgotPasswordPageContent`, `ResetPasswordPageContent`
+  (`/esqueci-senha`, `/redefinir-senha`); `LoginPageContent` ganhou `forgotPasswordHref`.
 - `@kizuna/core/server/ai/*`: `runSkill`, `registerSkill`, `getSkill`, `listSkillContexts`,
   `AiSkill`, `AiSkillContext`, `AiProvider` (+ `AiStructuredRequest`), `resolveProvider`,
   `AiUnavailableError`, `classifyAiError`, `isRecoverableAiError`, `checkRateLimit`,

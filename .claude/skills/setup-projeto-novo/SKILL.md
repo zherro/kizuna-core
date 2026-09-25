@@ -18,7 +18,7 @@ projeto existente. Depois do `install` + `npm install` + `db install` você tem 
 chrome do painel + telas admin genéricas + catch-all `[...kizuna]` para telas de plugin**
 funcionando; `app/page.tsx` e `app/layout.tsx` vêm como seeds editáveis.
 
-Referência de comandos: **`kizuna-core/docs/CLI.md`**.
+Referência de comandos: **`kizuna-core/docs/comecando/cli.md`**.
 
 ## Checklist
 
@@ -94,7 +94,7 @@ o plugin **depois** (`node kizuna-core/cli plugin add taxonomy`). Se não usa: d
 - `node kizuna-core/cli lock` marca o core atual como "visto" sem aplicar nada.
 - Melhorou algo local que devia estar no core: `node kizuna-core/cli sync` (submódulo num branch).
 
-Detalhes de cada comando, do `kizuna.lock` e da regra de bump do `VERSION`: **`kizuna-core/docs/CLI.md`**.
+Detalhes de cada comando, do `kizuna.lock` e da regra de bump do `VERSION`: **`kizuna-core/docs/comecando/cli.md`**.
 
 ## Env que o core lê
 
@@ -102,7 +102,7 @@ Detalhes de cada comando, do `kizuna.lock` e da regra de bump do `VERSION`: **`k
 | ------------------------------------ | ----------- | --------------------------------------------------------- |
 | `PGRST_JWT_SECRET` / `JWT_SECRET`    | sim         | assinar/verificar o JWT de sessão (bater com o PostgREST) |
 | `POSTGREST_URL`                      | sim         | base das chamadas `pgrstTable`/`pgrstRpc`                 |
-| `SMTP_*`                             | não         | email (`kizuna-core/docs/EMAIL.md`)                       |
+| `SMTP_*`                             | não         | email (`kizuna-core/docs/servicos/email.md`)                       |
 | `TINYPNG_API_KEY` / `TINIFY_API_KEY` | não         | otimização de imagem no upload                            |
 | `GEMINI_API_KEY`                     | não         | features de AI                                            |
 | `SHOWCASE_ENABLED`                   | não         | liga `/showcase`                                          |

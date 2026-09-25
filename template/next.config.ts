@@ -6,7 +6,7 @@ const nextConfig: NextConfig = {
   // Build standalone para produção em Docker (ver Dockerfile na raiz).
   output: 'standalone',
 
-  // Headers de segurança padrão (ver kizuna-core/docs/HARDENING.md §Segurança).
+  // Headers de segurança padrão (ver kizuna-core/docs/manutencao/hardening.md §Segurança).
   // CSP não entra aqui por default — exige rollout em Report-Only por projeto.
   async headers() {
     return [

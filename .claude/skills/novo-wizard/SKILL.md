@@ -11,7 +11,7 @@ Wizard = formulário em passos sobre UM recurso genérico (`postgrestResources`)
 salva via PATCH "parcial simulado" (read-merge-write), não via rota custom. Assume
 `padrao-de-projeto` já carregada — é a extensão específica da regra 4 de lá. O passo dinâmico de
 formulário (`DynamicStepForm` / `DynamicFormStep`) e o vocabulário de campo vêm do motor de telas
-(`kizuna-core/docs/SCREEN-ENGINE.md` §1.8).
+(`kizuna-core/docs/interface/screen-engine.md` §1.8).
 
 ## Quando usar
 

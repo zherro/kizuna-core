@@ -199,7 +199,7 @@ export function Topbar({
       <LocationModal open={locationOpen} onClose={() => setLocationOpen(false)} />
 
       <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
-        <SheetContent side="top" className="flex flex-col p-0">
+        <SheetContent side="top" showClose={false} className="flex flex-col p-0">
           <SheetHeader className="p-3">
             <SheetTitle>{messages.nav.title}</SheetTitle>
             <Button

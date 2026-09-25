@@ -163,4 +163,21 @@ export const resourceServices: Record<string, ResourceConfig> = {
       updatedAt: record.updated_at ?? record.updatedAt,
     }),
   },
+  // Leitura pública da view `vw_category_service_stats` (plugin services, 0002) — 1 linha por
+  // categoria com ao menos um anúncio publicado. Usada pelo <CategoryCarousel onlyWithListings>.
+  category_service_stats: {
+    schema: 'public',
+    table: 'vw_category_service_stats',
+    listRequiresAuth: false,
+    select: 'category_id,category_name,services_count',
+    primaryKey: 'category_id',
+    defaultOrder: 'category_name',
+    searchableColumns: ['category_name'],
+    mapOutput: (record) => ({
+      id: record.category_id,
+      categoryId: record.category_id,
+      name: record.category_name,
+      servicesCount: Number(record.services_count ?? 0),
+    }),
+  },
 };

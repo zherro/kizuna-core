@@ -1,7 +1,9 @@
 'use client';
 
 import * as React from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
+import { cn } from '../../../lib/utils';
 import { Button } from './button';
 
 interface SheetContextType {
@@ -59,10 +61,12 @@ SheetTrigger.displayName = 'SheetTrigger';
 
 interface SheetContentProps extends React.HTMLAttributes<HTMLDivElement> {
   side?: 'top' | 'right' | 'bottom' | 'left';
+  /** Botão "X" no canto do painel (default true). Desligue se o conteúdo já traz o seu. */
+  showClose?: boolean;
 }
 
 const SheetContent = React.forwardRef<HTMLDivElement, SheetContentProps>(
-  ({ side = 'right', className = '', children, ...props }, ref) => {
+  ({ side = 'right', className = '', showClose = true, children, ...props }, ref) => {
     const { open, onOpenChange } = useSheet();
 
     const sideClasses = {
@@ -72,19 +76,51 @@ const SheetContent = React.forwardRef<HTMLDivElement, SheetContentProps>(
       left: 'left-0 top-0 bottom-0 w-full max-w-md rounded-r-2xl',
     };
 
-    if (!open) return null;
+    React.useEffect(() => {
+      if (!open) return;
+      const onKey = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') onOpenChange(false);
+      };
+      document.addEventListener('keydown', onKey);
+      return () => document.removeEventListener('keydown', onKey);
+    }, [open, onOpenChange]);
 
-    return (
+    if (!open || typeof document === 'undefined') return null;
+
+    // Portal no <body>: um ancestral com backdrop-filter/transform (ex.: o header
+    // sticky com backdrop-blur) vira o containing block de `position: fixed` e
+    // prenderia o painel dentro dele. z acima do header (z-50).
+    return createPortal(
       <>
-        <div className="fixed inset-0 z-40 bg-black/30" onClick={() => onOpenChange(false)} />
+        <div className="fixed inset-0 z-[60] bg-black/30" onClick={() => onOpenChange(false)} />
         <div
           ref={ref}
-          className={`fixed z-50 border border-border bg-background shadow-lg overflow-y-auto ${sideClasses[side]} ${className}`}
+          role="dialog"
+          aria-modal="true"
+          // cn (tailwind-merge): um `w-72` do chamador substitui o `w-full` do lado
+          className={cn(
+            'fixed z-[70] border border-border bg-background shadow-lg overflow-y-auto',
+            sideClasses[side],
+            className
+          )}
           {...props}
         >
+          {showClose && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              aria-label="Fechar"
+              onClick={() => onOpenChange(false)}
+              className="absolute right-3 top-3 h-8 w-8"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
           {children}
         </div>
-      </>
+      </>,
+      document.body
     );
   }
 );

@@ -8,7 +8,7 @@ description: Use ao criar um plugin novo dentro de kizuna-core/plugins — antes
 ## Overview
 
 Um plugin é uma tabela (ou par de tabelas relacionadas) opcional e independente das outras,
-empacotada em um único `.sql` idempotente. Ver `docs/PLUGINS.md` para o que já existe hoje e
+empacotada em um único `.sql` idempotente. Ver `docs/plugins/README.md` para o que já existe hoje e
 `plugins/README.md` para a convenção completa — esta skill é o passo a passo de execução.
 
 **Regra dura**: nada específico de um projeto consumidor entra aqui. Se o campo/tabela só faz
@@ -70,7 +70,7 @@ Use `plugins/onboarding/0001_onboarding.sql` como referência completa. Checklis
 
 Adicione uma linha em `plugins/README.md` (tabela informal já existente): nome, tabela(s), pra
 que serve, uma frase sobre a razão de registrar (ou não) permissão. Depois espelhe a mesma linha
-na tabela de `docs/PLUGINS.md`.
+na tabela de `docs/plugins/README.md`.
 
 ## Passo 4 — Testar contra um banco descartável
 

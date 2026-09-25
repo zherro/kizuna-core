@@ -27,7 +27,7 @@ const themeColorSelectable = cfg.theme?.selectable !== false;
 // da sessão no servidor é o layout de /painel. Aqui o `AuthProvider` recebe
 // `initialUser={null}` e hidrata sozinho via `GET /api/auth/me` no cliente.
 // A trava de ambiente (falta de PostgREST/JWT) roda no proxy, não aqui.
-// Ver docs/HARDENING.md.
+// Ver docs/manutencao/hardening.md.
 
 const robotoSans = Roboto({
   variable: '--font-roboto',
