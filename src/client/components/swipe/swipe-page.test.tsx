@@ -83,4 +83,9 @@ describe('SwipePage', () => {
     expect(deckOpts!.baseBody).not.toHaveProperty('p_page');
     expect(deckOpts!.filterKey).toContain('"p_price_max":200');
   });
+  it('card arrastável tem touch-action none (senão o celular cancela o arraste)', async () => {
+    render(<SwipePage />);
+    const card = (await screen.findByText('Pintor')).closest('article')!;
+    expect(card.className).toContain('touch-none');
+  });
 });

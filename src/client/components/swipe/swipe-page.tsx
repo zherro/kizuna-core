@@ -235,7 +235,7 @@ function SwipePageInner({ basePath = '/descobrir', likedHref = '/curtidos' }: Pr
             dragX={drag.x}
             style={style}
             handlers={handlers}
-            className="cursor-grab shadow-xl active:cursor-grabbing"
+            className="cursor-grab touch-none shadow-xl active:cursor-grabbing"
           />
         ) : null}
       </div>
