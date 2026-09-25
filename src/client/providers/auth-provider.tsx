@@ -96,6 +96,12 @@ function buildAuthUser(raw: PublicSession): AuthUser {
 
 interface AuthContextValue {
   user: AuthUser | null;
+  /**
+   * `true` enquanto a sessão ainda está sendo hidratada via `GET /api/auth/me` (layout sem
+   * `initialUser`). Com `user === null && !loading` o visitante é anônimo de fato — gates
+   * client-side devem esperar isso antes de redirecionar ou pedir login.
+   */
+  loading: boolean;
   setUser: (raw: PublicSession | null) => void;
   logout: () => Promise<void>;
 }
@@ -112,9 +118,11 @@ export function AuthProvider({
   const [user, setUserRaw] = useState<AuthUser | null>(
     initialUser ? buildAuthUser(initialUser) : null
   );
+  const [loading, setLoading] = useState(initialUser == null);
 
   const setUser = useCallback((raw: PublicSession | null) => {
     setUserRaw(raw ? buildAuthUser(raw) : null);
+    setLoading(false);
   }, []);
 
   // Hidratação client-side: quando o layout raiz NÃO passa `initialUser` (para
@@ -132,8 +140,16 @@ export function AuthProvider({
       .then((d: { user?: PublicSession | null }) => {
         if (d?.user) setUserRaw(buildAuthUser(d.user));
       })
-      .catch(() => {});
-    return () => ac.abort();
+      .catch(() => {})
+      .finally(() => {
+        if (!ac.signal.aborted) setLoading(false);
+      });
+    return () => {
+      ac.abort();
+      // abortado antes de responder (ex.: StrictMode monta o effect duas vezes): libera a
+      // próxima montagem para buscar de novo, senão a sessão nunca hidrata e `loading` não cai.
+      hydrated.current = false;
+    };
   }, []);
 
   const logout = useCallback(async () => {
@@ -146,7 +162,7 @@ export function AuthProvider({
     window.location.href = '/login';
   }, []);
 
-  const value = useMemo(() => ({ user, setUser, logout }), [user, setUser, logout]);
+  const value = useMemo(() => ({ user, loading, setUser, logout }), [user, loading, setUser, logout]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

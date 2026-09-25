@@ -3,13 +3,33 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { HeartOff } from 'lucide-react';
+import { useAuth } from '../../providers/auth-provider';
+import { RequireAuthProvider, useRequireAuth } from '../auth/require-auth';
 import { fetchLiked, recordSwipe } from './swipe-api';
 import { coverUrl, priceLabel } from './swipe-card';
 import type { LikedItem } from './swipe-types';
 
 const PAGE_SIZE = 24;
 
-export function SwipeLikedPage({ discoverHref = '/descobrir' }: { discoverHref?: string }) {
+type Props = { discoverHref?: string };
+
+/**
+ * Lista de curtidos. Cuida da própria autenticação (sem ProtectedRoute): sob o layout público a
+ * sessão hidrata depois do primeiro render, e redirecionar antes disso mandava quem está logado
+ * para /login. Espera `loading` do AuthProvider; anônimo vê um convite que abre o AuthModal.
+ */
+export function SwipeLikedPage(props: Props) {
+  return (
+    <RequireAuthProvider>
+      <SwipeLikedInner {...props} />
+    </RequireAuthProvider>
+  );
+}
+
+function SwipeLikedInner({ discoverHref = '/descobrir' }: Props) {
+  const { user, loading: authLoading } = useAuth();
+  const userId = user?.user_id ?? null;
+  const requireAuth = useRequireAuth();
   const [items, setItems] = useState<LikedItem[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -33,8 +53,9 @@ export function SwipeLikedPage({ discoverHref = '/descobrir' }: { discoverHref?:
   }, []);
 
   useEffect(() => {
+    if (!userId) return; // só busca com sessão (anônimo levaria 401)
     void load(cursor);
-  }, [cursor, attempt, load]);
+  }, [userId, cursor, attempt, load]);
 
   const unlike = (uid: string) => {
     setItems((prev) => prev.filter((i) => i.uid !== uid));
@@ -47,6 +68,29 @@ export function SwipeLikedPage({ discoverHref = '/descobrir' }: { discoverHref?:
       setCursor(lastItem.liked_at);
     }
   };
+
+  if (authLoading) {
+    return <div className="p-10 text-center text-sm text-muted-foreground">Carregando…</div>;
+  }
+
+  if (!userId) {
+    return (
+      <div className="mx-auto w-full max-w-5xl px-4 pb-10 pt-4">
+        <h1 className="font-serif text-2xl font-bold text-foreground">Curtidos</h1>
+        <div className="mt-10 text-center">
+          <p className="text-sm text-muted-foreground">Entre para ver seus curtidos.</p>
+          <button
+            type="button"
+            // a lista carrega quando o usuário aparece no contexto; a ação só garante a 1ª página
+            onClick={() => requireAuth(() => setCursor(null))}
+            className="mt-4 inline-block rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground"
+          >
+            Entrar
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto w-full max-w-5xl px-4 pb-10 pt-4">
