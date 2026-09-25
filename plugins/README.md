@@ -61,6 +61,18 @@ follow-ups (`0002_*.sql`, …) for data seeds or later migrations; the installer
   (free, no key) via the shell route `/api/weather`; provider URL, timezone, cache, rotation and
   day range are all `weather.*` config. Component: `src/client/components/weather/`. No
   `auth.permissions` (read-only).
+- `search/` — public services search (`/busca`): the `fn_search_services` RPC (text + group /
+  category / subcategory / provider state+city filters, ranking by text relevance → rating →
+  seeded random) and a conversational layer. No tables. Depends on `services`, `taxonomy`,
+  `user_data`, `reviews`, and — for the AI chat — `ai_assistant` (the RPC itself works without
+  it; the chat degrades to text search on 503). Ships the page component
+  (`src/client/components/search/`: `SearchPage`, `SearchChat`, `SearchFiltersPanel`,
+  `SearchResultsView`, `LocationGate`, `useSearchFilters`), the `search` AI skill + chat handler
+  (`src/server/search/`, `handleSearchChat` from `@kizuna/core/server`) and the shell routes
+  `/busca` + `/api/ai/search-chat`. The project spreads `rpcSearch` (`screen-engine/resources/search`)
+  into its `postgrestRpcs`. The second page mode (e.g. "Pedir um serviço") is injected through
+  `SearchPage`'s `requestMode` prop — the plugin knows nothing about demandas. No
+  `auth.permissions` (public, read-only).
 - `forms/` — generic reusable forms (`forms`: a `FormSchema` jsonb keyed by `form_key`, version
   bumped by a `BEFORE UPDATE` trigger when the schema changes) plus captured answers
   (`form_results`: **singleton** — one current row per `(tenant_id, domain, reference_id)`, jsonb

@@ -1,0 +1,8 @@
+{
+  "owner": "search",
+  "_comment": "Página pública /busca (busca + chat com IA) e a rota do chat. A página usa o SearchPage do core; o modo 'Pedir um serviço' (demandas) é opcional — edite a página do projeto para injetar `requestMode`. Requer os plugins services, taxonomy, user_data, reviews e location (LocationGate); o chat com IA requer ai_assistant.",
+  "files": {
+    "src/app/busca/page.tsx": "managed",
+    "src/app/api/ai/search-chat/route.ts": "managed"
+  }
+}

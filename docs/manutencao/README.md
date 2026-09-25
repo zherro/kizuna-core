@@ -7,6 +7,7 @@ description: Segurança, performance, backlog e como manter esta documentação.
 | Página                                          | Cobre                                                                  |
 | ----------------------------------------------- | ---------------------------------------------------------------------- |
 | [Hardening](hardening.md)                       | Onde fica o levantamento de performance e segurança.                   |
+| [Observabilidade (Grafana + Loki)](observabilidade.md) | Logs de todos os containers no Grafana, domínio no Dokploy e alertas. |
 | [Backlog — IA](todo-ai.md)                      | Pendências do mecanismo de IA.                                         |
 | [Escrevendo a documentação](documentacao.md)    | Estrutura GitBook, convenções e checklist para páginas novas.          |
 

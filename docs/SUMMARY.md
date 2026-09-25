@@ -40,5 +40,6 @@
 
 * [Visão geral](manutencao/README.md)
   * [Hardening](manutencao/hardening.md)
+  * [Observabilidade (Grafana + Loki)](manutencao/observabilidade.md)
   * [Backlog — IA](manutencao/todo-ai.md)
   * [Escrevendo a documentação](manutencao/documentacao.md)

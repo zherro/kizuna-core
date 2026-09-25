@@ -38,6 +38,7 @@ export {
 export { pgrstTable, pgrstRpc } from './postrest/conn';
 export { isOnboardingCompletedServer } from './onboarding';
 export { getStorageService } from './storage-service';
+export { handleSearchChat } from './search';
 export { apiError } from './api-error';
 export { isCaptchaEnabled, verifyCaptcha, type VerifyCaptchaResult } from './captcha';
 // `sendEmail` / `EmailTemplate` are NOT re-exported here on purpose — import them from
