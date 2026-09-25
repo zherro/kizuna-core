@@ -9,6 +9,8 @@ export {
 // Components
 export { LoginPageContent } from './components/login-page';
 export { RegisterPageContent } from './components/register-page';
+export { ForgotPasswordPageContent } from './components/forgot-password-page';
+export { ResetPasswordPageContent } from './components/reset-password-page';
 export { ProtectedRoute } from './components/protected-route';
 export { TurnstileWidget } from './components/captcha';
 

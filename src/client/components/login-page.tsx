@@ -28,6 +28,8 @@ interface LoginPageProps {
   loginEndpoint?: string;
   /** Link to the registration screen. Pass `null` to hide the "sign up" line. */
   registerHref?: string | null;
+  /** Link para "Esqueci minha senha". Pass `null` to hide. */
+  forgotPasswordHref?: string | null;
 }
 
 export function LoginPageContent({
@@ -35,6 +37,7 @@ export function LoginPageContent({
   redirectTo = '/painel',
   loginEndpoint = '/api/auth/login',
   registerHref = '/registre-se',
+  forgotPasswordHref = '/esqueci-senha',
 }: LoginPageProps) {
   const router = useRouter();
   const { user, setUser } = useAuth();
@@ -108,7 +111,17 @@ export function LoginPageContent({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password">Senha</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="password">Senha</Label>
+              {forgotPasswordHref ? (
+                <Link
+                  href={forgotPasswordHref}
+                  className="text-xs font-medium text-primary hover:underline"
+                >
+                  Esqueci minha senha
+                </Link>
+              ) : null}
+            </div>
             <Input
               id="password"
               name="password"
