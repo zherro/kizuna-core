@@ -196,11 +196,23 @@ type ResourceConfig = {
   mapOutput?: (record: Record<string, unknown>) => Record<string, unknown>; // snake_case row → camelCase
 };
 
-type RpcConfig = { schema?: string; requiresAuth?: boolean };
+type RpcConfig = {
+  schema?: string;
+  requiresAuth?: boolean; // default true
+  optionalAuth?: boolean; // only with requiresAuth: false — see below
+};
 ```
 
 `parseActive` / `makeSlug` are exported from `@kizuna/core/types` for use inside `mapInput`.
 Worked `mapInput`/`mapOutput` examples: [`schemas.md`](schemas.md).
+
+`requiresAuth: false` alone makes the RPC callable by `anon` with no session forwarded at all.
+Add `optionalAuth: true` for a public RPC whose result should still improve for a logged-in
+caller: the route forwards the session's `Authorization` header when one exists (so the SQL
+function sees `auth.fun_auth_user_id()`), but never rejects an anonymous call. The function itself
+must read the user from the session (never from a parameter) and treat a `NULL` id as anonymous —
+see `fn_swipe_deck` in the `swipe` plugin (`plugins/swipe/0001_swipe.sql`) for a worked example:
+same deck for everyone, minus what a logged-in caller already swiped.
 
 ---
 

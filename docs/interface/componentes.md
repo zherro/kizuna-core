@@ -106,6 +106,34 @@ from context **only** — never a `session`/`user` prop.
 setTheme, messages }`. Language (`pt-BR`/`en-US`/`es-ES`), theme color (OKLCH options), dark mode.
 Persisted in `localStorage`. Backed by the `account_preferences` plugin when a project wires it.
 
+## Gate de login — `AuthModal` / `useRequireAuth`
+
+`client/components/auth/` — modal de login/registro reaproveitável para telas públicas que só
+pedem conta na hora de uma ação específica (curtir, favoritar, comprar), em vez de uma rota
+`/login` dedicada.
+
+- **`AuthModal`** (`auth-modal.tsx`) — `{ open, initialMode, onClose, onSuccess }`. Alterna
+  `LoginForm`/`RegisterForm` por um link interno. Fecha por X, `Esc`, clique no overlay ou pelo
+  botão físico de voltar do celular: ao abrir, empilha uma entrada de `history` e ouve
+  `popstate`/`keydown`, então o gesto de voltar do Android fecha o modal em vez de sair da página.
+- **`RequireAuthProvider`** / **`useRequireAuth()`** (`require-auth.tsx`) — contexto que expõe
+  `requireAuth(action, pendingKey?)`: já logado, chama `action()` na hora; anônimo, guarda a ação,
+  abre o `AuthModal` e — se `pendingKey` foi passado — grava a chave em `sessionStorage`
+  (`kizuna.auth.pending`) para sobreviver a um reload no meio do fluxo (ex.: o `AuthModal` navega
+  para uma rota de OAuth e volta). No `onSuccess` do modal a ação pendente roda uma vez e some;
+  `consumePendingAuthAction()` lê e limpa essa chave para quem precisa reaplicar a ação após um
+  reload (ver `SwipePage` em `client/components/swipe/swipe-page.tsx`, que usa `pendingKey`
+  `` `like:${uid}` `` para re-curtir o card certo depois do login).
+
+```tsx
+<RequireAuthProvider>
+  <button onClick={() => requireAuth(() => like(item), `like:${item.uid}`)}>Curtir</button>
+</RequireAuthProvider>
+```
+
+`requireAuth` vem de `useRequireAuth()`, chamado dentro do provider. Sem `<RequireAuthProvider>`
+no topo da árvore, `useRequireAuth()` lança.
+
 ## Typography & Grid
 
 `Typography` — use instead of raw `<h1>`/`<p>`; applies a responsive scale + color tokens.
