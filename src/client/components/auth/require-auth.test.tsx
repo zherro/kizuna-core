@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen, fireEvent, act, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, act, cleanup, waitFor } from '@testing-library/react';
 
 let mockUser: unknown = null;
 vi.mock('../../providers/auth-provider', () => ({ useAuth: () => ({ user: mockUser, setUser: vi.fn() }) }));
@@ -30,15 +30,17 @@ describe('RequireAuth', () => {
     expect(screen.queryByText('fake-login')).toBeNull();
   });
 
-  it('anônimo abre modal e executa após login', () => {
+  it('anônimo abre modal e executa após login', async () => {
     const fn = vi.fn();
     render(<RequireAuthProvider><Btn fn={fn} /></RequireAuthProvider>);
     fireEvent.click(screen.getByText('curtir'));
     expect(fn).not.toHaveBeenCalled();
     expect(sessionStorage.getItem('kizuna.auth.pending')).toBe('like:u9');
     fireEvent.click(screen.getByText('fake-login'));
-    expect(fn).toHaveBeenCalledOnce();
+    // a ação roda depois do popstate da entrada do modal (history.back assíncrono)
+    await waitFor(() => expect(fn).toHaveBeenCalledOnce());
     expect(sessionStorage.getItem('kizuna.auth.pending')).toBeNull();
+    expect(screen.queryByText('fake-login')).toBeNull();
   });
 
   it('X fecha sem executar', () => {
