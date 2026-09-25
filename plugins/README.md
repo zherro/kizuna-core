@@ -74,9 +74,10 @@ follow-ups (`0002_*.sql`, …) for data seeds or later migrations; the installer
   `SearchPage`'s `requestMode` prop — the plugin knows nothing about demandas. No
   `auth.permissions` (public, read-only).
 - `swipe/` — página pública `/descobrir` (deslizar itens da busca: curtir/passar) e `/curtidos`.
-  `service_swipes` (1 linha por usuário+item, upsert, sem DELETE — descurtir grava `skip`).
-  `fn_swipe_deck` embrulha `fn_search_services` e exclui curtidos, passados há menos de
-  `swipe.skip_ttl_days` (system_config, padrão 7) e `p_exclude`. Registre `rpcSwipe`
+  `service_swipes` (1 linha por usuário+item, upsert, sem DELETE — descurtir é
+  `fn_swipe_record(..., 'unlike')`, que grava `skip`; um `skip` comum nunca rebaixa um `like`).
+  `fn_swipe_deck` embrulha `fn_search_services`, aplica `p_price_min`/`p_price_max` e exclui
+  curtidos, passados há menos de `swipe.skip_ttl_days` (system_config, padrão 7) e `p_exclude`. Registre `rpcSwipe`
   (`optionalAuth` no deck) em `postgrestRpcs`. Aplique depois de `search`.
 - `forms/` — generic reusable forms (`forms`: a `FormSchema` jsonb keyed by `form_key`, version
   bumped by a `BEFORE UPDATE` trigger when the schema changes) plus captured answers

@@ -96,9 +96,12 @@ are visibly listed is the symptom this fixes.
 
 ## Providers — `client/providers/`
 
-**`AuthProvider`** / `useAuth()` → `{ user, setUser, logout }`. `user: AuthUser | null` (name,
+**`AuthProvider`** / `useAuth()` → `{ user, loading, setUser, logout }`. `user: AuthUser | null` (name,
 subtitle, initials, `hasPerm(resource, action = 'view')`). Hydrated from the server via
-`initialUser` in the root layout — no loading flash. Call `setUser(data.user)` after
+`initialUser` in the root layout — no loading flash. When a layout passes `initialUser={null}`
+(public, static pages) the session is fetched from `GET /api/auth/me` after mount and `loading`
+stays `true` until it answers (or until a manual `setUser`): a client-side gate must wait for
+`!loading` before treating `user === null` as anonymous (see `SwipeLikedPage`). Call `setUser(data.user)` after
 login/register; `logout()` clears the cookie + navigates to `/login`. Client components read auth
 from context **only** — never a `session`/`user` prop.
 
@@ -112,15 +115,21 @@ Persisted in `localStorage`. Backed by the `account_preferences` plugin when a p
 pedem conta na hora de uma ação específica (curtir, favoritar, comprar), em vez de uma rota
 `/login` dedicada.
 
-- **`AuthModal`** (`auth-modal.tsx`) — `{ open, initialMode, onClose, onSuccess }`. Alterna
-  `LoginForm`/`RegisterForm` por um link interno. Fecha por X, `Esc`, clique no overlay ou pelo
-  botão físico de voltar do celular: ao abrir, empilha uma entrada de `history` e ouve
+- **`AuthModal`** (`auth-modal.tsx`) — `{ open, initialMode, onClose, onSuccess, onAuthenticated? }`.
+  Alterna `LoginForm`/`RegisterForm` por um link interno. Fecha por X, `Esc`, clique no overlay ou
+  pelo botão físico de voltar do celular: ao abrir, empilha uma entrada de `history` e ouve
   `popstate`/`keydown`, então o gesto de voltar do Android fecha o modal em vez de sair da página.
+  Só X/`Esc`/overlay/sucesso tiram essa entrada (`history.back()`, e só se ela está no topo);
+  voltar do celular fecha sem `back()`, e desmontar por navegação (links "Esqueci minha senha",
+  "termos de uso") não mexe no histórico. No sucesso, `onSuccess` roda **depois** do `popstate`
+  da entrada do modal — uma ação que navega (`router.push`) não é desfeita pelo restore que o
+  Next faz nesse `popstate`. `onAuthenticated` roda no mesmo tick do login, antes disso.
 - **`RequireAuthProvider`** / **`useRequireAuth()`** (`require-auth.tsx`) — contexto que expõe
   `requireAuth(action, pendingKey?)`: já logado, chama `action()` na hora; anônimo, guarda a ação,
   abre o `AuthModal` e — se `pendingKey` foi passado — grava a chave em `sessionStorage`
   (`kizuna.auth.pending`) para sobreviver a um reload no meio do fluxo (ex.: o `AuthModal` navega
-  para uma rota de OAuth e volta). No `onSuccess` do modal a ação pendente roda uma vez e some;
+  para uma rota de OAuth e volta). A chave sai no login (`onAuthenticated`); a ação pendente roda
+  uma vez no `onSuccess` do modal;
   `consumePendingAuthAction()` lê e limpa essa chave para quem precisa reaplicar a ação após um
   reload (ver `SwipePage` em `client/components/swipe/swipe-page.tsx`, que usa `pendingKey`
   `` `like:${uid}` `` para re-curtir o card certo depois do login).

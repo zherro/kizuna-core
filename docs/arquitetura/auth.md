@@ -37,7 +37,7 @@ Requires two RPCs in the project's Postgres schema:
 - `fun_auth__signup_bootstrap(p_login, p_password)` — creates the user + tenant row.
 
 Client side: `AuthProvider` (wraps the app, takes `initialUser` from `getSession()`), `useAuth()`
-→ `{ user, logout, setUser }`, `ProtectedRoute` (client-side route gate by permission).
+→ `{ user, loading, logout, setUser }` (`loading` = sessão ainda hidratando via `/api/auth/me`), `ProtectedRoute` (client-side route gate by permission).
 `LoginPageContent`/`RegisterPageContent` are **unstyled layout templates only** — no `onSubmit`,
 no state wiring; a project either extends them or writes its own page calling
 `POST /api/auth/login` + `useAuth().setUser(data.user)`.
