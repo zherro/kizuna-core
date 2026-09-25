@@ -54,7 +54,7 @@ function SwipePageInner({ basePath = '/descobrir', likedHref = '/curtidos' }: Pr
   }, [toSearchAdsBody]);
   const filterKey = JSON.stringify(baseBody);
 
-  const { cards, loading, exhausted, decide, reset } = useSwipeDeck({
+  const { cards, loading, exhausted, error, decide, reset } = useSwipeDeck({
     baseBody,
     filterKey,
     loggedIn: Boolean(user),
@@ -182,7 +182,20 @@ function SwipePageInner({ basePath = '/descobrir', likedHref = '/curtidos' }: Pr
       <div className="relative mt-5 h-[460px] select-none">
         {loading && !current ? <div className="h-full animate-pulse rounded-3xl bg-muted" /> : null}
 
-        {!loading && !current && exhausted ? (
+        {!loading && !current && error ? (
+          <div className="flex h-full flex-col items-center justify-center rounded-3xl border border-border bg-card p-6 text-center">
+            <p className="text-sm text-muted-foreground">Não foi possível carregar.</p>
+            <button
+              type="button"
+              onClick={reset}
+              className="mt-4 inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground"
+            >
+              <RotateCcw className="h-4 w-4" /> Tentar de novo
+            </button>
+          </div>
+        ) : null}
+
+        {!loading && !current && !error && exhausted ? (
           <div className="flex h-full flex-col items-center justify-center rounded-3xl border border-border bg-card p-6 text-center">
             <Heart className="h-8 w-8 text-primary" />
             <h2 className="mt-3 font-serif text-xl font-bold text-foreground">Acabou por aqui</h2>

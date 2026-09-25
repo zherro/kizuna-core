@@ -3,13 +3,15 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 
 const decide = vi.fn();
+const reset = vi.fn();
+const pintor = { uid: 'u1', title: 'Pintor', price: 100, price_type: 'hour', category: 'Casa',
+  subcategory: null, sponsored: false, cover_file_id: null, provider_name: 'Ana',
+  provider_avatar: null, rating: 4.5, reviews: 3 };
+let deck: { cards: unknown[]; loading: boolean; exhausted: boolean; error: boolean } = {
+  cards: [pintor], loading: false, exhausted: false, error: false,
+};
 vi.mock('./use-swipe-deck', () => ({
-  useSwipeDeck: () => ({
-    cards: [{ uid: 'u1', title: 'Pintor', price: 100, price_type: 'hour', category: 'Casa',
-      subcategory: null, sponsored: false, cover_file_id: null, provider_name: 'Ana',
-      provider_avatar: null, rating: 4.5, reviews: 3 }],
-    loading: false, exhausted: false, decide, reset: vi.fn(),
-  }),
+  useSwipeDeck: () => ({ ...deck, decide, reset, drop: vi.fn() }),
 }));
 vi.mock('../search/location-gate', () => ({ LocationGate: (p: { children: React.ReactNode }) => <>{p.children}</> }));
 vi.mock('../search/search-filters-panel', () => ({ SearchFiltersPanel: () => null }));
@@ -30,7 +32,10 @@ vi.mock('next/link', () => ({ default: (p: { href: string; children: React.React
 
 import { SwipePage } from './swipe-page';
 
-afterEach(() => { cleanup(); decide.mockReset(); mockUser = null; });
+afterEach(() => {
+  cleanup(); decide.mockReset(); reset.mockReset(); mockUser = null;
+  deck = { cards: [pintor], loading: false, exhausted: false, error: false };
+});
 
 describe('SwipePage', () => {
   it('mostra o card', async () => {
@@ -53,5 +58,13 @@ describe('SwipePage', () => {
     render(<SwipePage />);
     fireEvent.click(await screen.findByLabelText('Curtir'));
     expect(decide).toHaveBeenCalledWith('like');
+  });
+  it('erro sem cards mostra "Tentar de novo" que chama reset', async () => {
+    deck = { cards: [], loading: false, exhausted: false, error: true };
+    render(<SwipePage />);
+    expect(await screen.findByText(/Não foi possível carregar/)).toBeTruthy();
+    expect(screen.queryByText('Acabou por aqui')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Tentar de novo' }));
+    expect(reset).toHaveBeenCalledOnce();
   });
 });

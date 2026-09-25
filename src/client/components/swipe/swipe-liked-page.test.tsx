@@ -76,4 +76,19 @@ describe('SwipeLikedPage', () => {
       expect(api.fetchLiked).toHaveBeenCalledWith('2026-09-02', 24);
     });
   });
+
+  it('erro ao carregar mostra mensagem e "Tentar de novo" recarrega', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    api.fetchLiked.mockRejectedValueOnce(new Error('fn_swipe_liked 500'));
+    api.fetchLiked.mockResolvedValueOnce([
+      { uid: 'u1', title: 'Pintor', price: null, price_type: 'quote', category: 'Casa', cover_file_id: null, liked_at: '2026-09-25' },
+    ]);
+    render(<SwipeLikedPage />);
+    expect(await screen.findByText(/Não foi possível carregar/)).toBeTruthy();
+    expect(screen.queryByText('Você ainda não curtiu nada.')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Tentar de novo' }));
+    expect(await screen.findByText('Pintor')).toBeTruthy();
+    expect(screen.queryByText(/Não foi possível carregar/)).toBeNull();
+    warn.mockRestore();
+  });
 });

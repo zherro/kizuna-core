@@ -17,6 +17,7 @@ const range = (a: number, b: number) => Array.from({ length: b - a }, (_, i) => 
 const baseBody = {
   p_state: 'PR', p_city_id: null, p_city_ibge: null, p_group_category_slug: null,
   p_category_id: null, p_subcategories: null, p_query: null,
+  p_price_min: null, p_price_max: null,
 };
 
 beforeEach(() => {
@@ -100,5 +101,30 @@ describe('useSwipeDeck', () => {
     expect(api.recordSwipe).toHaveBeenCalledWith(['u0'], 'skip');
     expect(api.recordSwipe).toHaveBeenCalledWith(['u1'], 'skip');
     expect(result.current.cards[0].uid).toBe('u2');
+  });
+
+  it('falha ao carregar expõe error, não marca exhausted e não entra em loop', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    api.fetchDeck.mockRejectedValueOnce(new Error('fn_swipe_deck 500'));
+    const { result } = renderHook(() => useSwipeDeck({ baseBody, filterKey: 'a', loggedIn: true }));
+    await waitFor(() => expect(result.current.error).toBe(true));
+    expect(result.current.loading).toBe(false);
+    expect(result.current.exhausted).toBe(false);
+    expect(result.current.cards).toEqual([]);
+    await new Promise((r) => setTimeout(r, 20));
+    expect(api.fetchDeck).toHaveBeenCalledTimes(1);
+    warn.mockRestore();
+  });
+
+  it('reset depois do erro limpa error e recarrega', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    api.fetchDeck.mockRejectedValueOnce(new Error('x')).mockResolvedValueOnce(range(0, 20));
+    const { result } = renderHook(() => useSwipeDeck({ baseBody, filterKey: 'a', loggedIn: true }));
+    await waitFor(() => expect(result.current.error).toBe(true));
+    act(() => result.current.reset());
+    expect(result.current.error).toBe(false);
+    await waitFor(() => expect(result.current.cards).toHaveLength(20));
+    expect(result.current.error).toBe(false);
+    warn.mockRestore();
   });
 });

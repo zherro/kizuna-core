@@ -16,6 +16,7 @@ export function useSwipeDeck({ baseBody, filterKey, loggedIn }: Opts) {
   const [cards, setCards] = useState<ServiceResult[]>([]);
   const [loading, setLoading] = useState(true);
   const [exhausted, setExhausted] = useState(false);
+  const [error, setError] = useState(false);
   const [generation, setGeneration] = useState(0);
 
   const seedRef = useRef(Math.random() * 2 - 1);
@@ -43,6 +44,7 @@ export function useSwipeDeck({ baseBody, filterKey, loggedIn }: Opts) {
         p_exclude: exclude.length ? exclude : null,
       });
       if (gen !== genRef.current) return; // filtro mudou no meio
+      setError(false);
       const prevQueue = cardsRef.current;
       const seen = new Set(prevQueue.map((c) => c.uid));
       const newItems = batch.filter((c) => !seen.has(c.uid));
@@ -57,6 +59,8 @@ export function useSwipeDeck({ baseBody, filterKey, loggedIn }: Opts) {
       }
     } catch (err) {
       console.warn('[swipe] falha ao carregar deck', err);
+      // erro não é "acabou": não marca exhausted; o prefetch para até um reset() (Tentar de novo)
+      if (gen === genRef.current) setError(true);
     } finally {
       if (gen === genRef.current) {
         fetchingRef.current = false;
@@ -73,15 +77,16 @@ export function useSwipeDeck({ baseBody, filterKey, loggedIn }: Opts) {
     cardsRef.current = [];
     setCards([]);
     setExhausted(false);
+    setError(false);
     setLoading(true);
     void load([]);
   }, [filterKey, generation, load]);
 
   // prefetch
   useEffect(() => {
-    if (loading || exhausted || fetchingRef.current) return;
+    if (loading || exhausted || error || fetchingRef.current) return;
     if (cards.length <= SWIPE_PREFETCH_AT) void load(cards);
-  }, [cards, loading, exhausted, load]);
+  }, [cards, loading, exhausted, error, load]);
 
   const decide = useCallback((action: SwipeAction) => {
     // Avança cardsRef de forma síncrona (fora do updater de setCards) antes de qualquer
@@ -103,5 +108,5 @@ export function useSwipeDeck({ baseBody, filterKey, loggedIn }: Opts) {
 
   const reset = useCallback(() => setGeneration((g) => g + 1), []);
 
-  return { cards, loading, exhausted, decide, reset };
+  return { cards, loading, exhausted, error, decide, reset };
 }

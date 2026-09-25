@@ -14,18 +14,27 @@ export function SwipeLikedPage({ discoverHref = '/descobrir' }: { discoverHref?:
   const [cursor, setCursor] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(false);
+  const [error, setError] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
   const load = useCallback(async (c: string | null) => {
     setLoading(true);
-    const batch = await fetchLiked(c, PAGE_SIZE);
-    setItems((prev) => (c === null ? batch : [...prev, ...batch]));
-    setHasMore(batch.length === PAGE_SIZE);
-    setLoading(false);
+    setError(false);
+    try {
+      const batch = await fetchLiked(c, PAGE_SIZE);
+      setItems((prev) => (c === null ? batch : [...prev, ...batch]));
+      setHasMore(batch.length === PAGE_SIZE);
+    } catch (err) {
+      console.warn('[swipe] falha ao carregar curtidos', err);
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
     void load(cursor);
-  }, [cursor, load]);
+  }, [cursor, attempt, load]);
 
   const unlike = (uid: string) => {
     setItems((prev) => prev.filter((i) => i.uid !== uid));
@@ -43,7 +52,20 @@ export function SwipeLikedPage({ discoverHref = '/descobrir' }: { discoverHref?:
     <div className="mx-auto w-full max-w-5xl px-4 pb-10 pt-4">
       <h1 className="font-serif text-2xl font-bold text-foreground">Curtidos</h1>
 
-      {!loading && items.length === 0 ? (
+      {!loading && error ? (
+        <div className="mt-10 text-center">
+          <p className="text-sm text-muted-foreground">Não foi possível carregar.</p>
+          <button
+            type="button"
+            onClick={() => setAttempt((a) => a + 1)}
+            className="mt-4 inline-block rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground"
+          >
+            Tentar de novo
+          </button>
+        </div>
+      ) : null}
+
+      {!loading && !error && items.length === 0 ? (
         <div className="mt-10 text-center">
           <p className="text-sm text-muted-foreground">Você ainda não curtiu nada.</p>
           <Link href={discoverHref} className="mt-4 inline-block rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground">
@@ -79,7 +101,7 @@ export function SwipeLikedPage({ discoverHref = '/descobrir' }: { discoverHref?:
         ))}
       </div>
 
-      {hasMore ? (
+      {hasMore && !error ? (
         <div className="mt-6 text-center">
           <button type="button" disabled={loading} onClick={loadMore} className="rounded-full border border-border px-5 py-2 text-sm font-semibold">
             {loading ? 'Carregando…' : 'Carregar mais'}
