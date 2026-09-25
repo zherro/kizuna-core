@@ -40,4 +40,6 @@ export type ResourceConfig = {
 export type RpcConfig = {
   schema?: string;
   requiresAuth?: boolean;
+  /** Com `requiresAuth: false`: repassa a sessão quando existir (anon continua permitido). */
+  optionalAuth?: boolean;
 };

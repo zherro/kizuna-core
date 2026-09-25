@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAuthHeaderFromCookies, getSession } from './auth';
+import { rpcAuthMode } from './rpc-auth';
 import { pgrstRpc, pgrstTable } from './postrest/conn';
 import { postgrestResources, postgrestRpcs, type ResourceConfig } from '@/lib/server/resources';
 
@@ -500,10 +501,14 @@ export async function executeRpcResource(resource: string, request: Request) {
   }
 
   let authHeader: string | null = null;
-  if (config.requiresAuth !== false) {
+  const authMode = rpcAuthMode(config);
+  if (authMode === 'required') {
     const authState = await ensureAuthenticated();
     if (authState.error) return authState.error;
     authHeader = authState.authHeader;
+  } else if (authMode === 'optional') {
+    const session = await getSession();
+    if (session?.role === 'auth_user') authHeader = await getAuthHeaderFromCookies();
   }
 
   const params = ((await request.json().catch(() => null)) ?? {}) as RecordValue;
