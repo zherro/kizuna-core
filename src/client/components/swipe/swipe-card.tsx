@@ -5,7 +5,7 @@ import type { ServiceResult } from '../search/search-types';
 import { formatCurrency } from '../../../lib/shared/currency-mask';
 import { PRICE_UNIT_LABEL } from '../services/service-labels';
 
-export function priceLabel(r: ServiceResult): string {
+export function priceLabel(r: { price: number | null; price_type: string }): string {
   const isQuote = r.price_type === 'quote' || r.price == null || Number(r.price) <= 0;
   if (isQuote) return 'Sob consulta';
   const unit = PRICE_UNIT_LABEL[r.price_type] ?? '';
