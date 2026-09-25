@@ -38,7 +38,7 @@ export function SwipeLikedPage({ discoverHref = '/descobrir' }: { discoverHref?:
 
   const unlike = (uid: string) => {
     setItems((prev) => prev.filter((i) => i.uid !== uid));
-    recordSwipe([uid], 'skip').catch((err) => console.warn('[swipe] falha ao descurtir', err));
+    recordSwipe([uid], 'unlike').catch((err) => console.warn('[swipe] falha ao descurtir', err));
   };
 
   const loadMore = () => {

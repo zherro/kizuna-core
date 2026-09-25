@@ -50,8 +50,9 @@ function SwipePageInner({ basePath = '/descobrir', likedHref = '/curtidos' }: Pr
     void p_seed;
     void p_page;
     void p_page_size;
-    return rest;
-  }, [toSearchAdsBody]);
+    // o /busca filtra preço no cliente; o deck manda a faixa pro SQL (e ela entra no filterKey)
+    return { ...rest, p_price_min: filters.priceMin, p_price_max: filters.priceMax };
+  }, [toSearchAdsBody, filters.priceMin, filters.priceMax]);
   const filterKey = JSON.stringify(baseBody);
 
   const { cards, loading, exhausted, error, decide, reset } = useSwipeDeck({

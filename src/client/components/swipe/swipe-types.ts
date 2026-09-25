@@ -1,9 +1,22 @@
 import type { SearchAdsBody } from '../search/search-types';
 
-export type SwipeAction = 'like' | 'skip';
+/** Decisão sobre um card do deck. */
+export type SwipeDecision = 'like' | 'skip';
+/**
+ * `p_action` de `fn_swipe_record`. `skip` nunca rebaixa um `like` já gravado; `unlike`
+ * (descurtir explícito, /curtidos) grava `skip` sobrescrevendo o `like`.
+ */
+export type SwipeAction = SwipeDecision | 'unlike';
 
-/** Corpo do `POST /api/resources/fn_swipe_deck` — filtros da busca, sempre página 0. */
-export type SwipeDeckBody = Omit<SearchAdsBody, 'p_page'> & { p_exclude: string[] | null };
+/**
+ * Corpo do `POST /api/resources/fn_swipe_deck` — filtros da busca, sempre página 0, mais a
+ * faixa de preço (que o /busca aplica no cliente e o deck aplica no SQL).
+ */
+export type SwipeDeckBody = Omit<SearchAdsBody, 'p_page'> & {
+  p_exclude: string[] | null;
+  p_price_min: number | null;
+  p_price_max: number | null;
+};
 
 export type LikedItem = {
   uid: string;

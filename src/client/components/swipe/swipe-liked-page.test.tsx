@@ -44,7 +44,7 @@ describe('SwipeLikedPage', () => {
     render(<SwipeLikedPage />);
     expect(await screen.findByText('Pintor')).toBeTruthy();
     fireEvent.click(screen.getByLabelText('Descurtir Pintor'));
-    expect(api.recordSwipe).toHaveBeenCalledWith(['u1'], 'skip');
+    expect(api.recordSwipe).toHaveBeenCalledWith(['u1'], 'unlike');
     await waitFor(() => expect(screen.queryByText('Pintor')).toBeNull());
   });
 
@@ -65,7 +65,7 @@ describe('SwipeLikedPage', () => {
     fireEvent.click(unlikeButtons[0]); // Unlike first item
 
     // Verify record was called
-    expect(api.recordSwipe).toHaveBeenCalledWith(['u0'], 'skip');
+    expect(api.recordSwipe).toHaveBeenCalledWith(['u0'], 'unlike');
 
     // Click load more
     const loadMoreBtn = screen.getByText('Carregar mais');

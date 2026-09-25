@@ -10,14 +10,20 @@ const pintor = { uid: 'u1', title: 'Pintor', price: 100, price_type: 'hour', cat
 let deck: { cards: unknown[]; loading: boolean; exhausted: boolean; error: boolean } = {
   cards: [pintor], loading: false, exhausted: false, error: false,
 };
+let deckOpts: { baseBody: Record<string, unknown>; filterKey: string } | null = null;
 vi.mock('./use-swipe-deck', () => ({
-  useSwipeDeck: () => ({ ...deck, decide, reset, drop: vi.fn() }),
+  useSwipeDeck: (opts: { baseBody: Record<string, unknown>; filterKey: string }) => {
+    deckOpts = opts;
+    return { ...deck, decide, reset, drop: vi.fn() };
+  },
 }));
 vi.mock('../search/location-gate', () => ({ LocationGate: (p: { children: React.ReactNode }) => <>{p.children}</> }));
 vi.mock('../search/search-filters-panel', () => ({ SearchFiltersPanel: () => null }));
+const noFilters = { groupSlug: null, categoryId: null, subcategoryIds: [], query: null, priceMin: null, priceMax: null };
+let mockFilters: Record<string, unknown> = noFilters;
 vi.mock('../search/use-search-filters', () => ({
   useSearchFilters: () => ({
-    filters: { groupSlug: null, categoryId: null, subcategoryIds: [], query: null, priceMin: null, priceMax: null },
+    filters: mockFilters,
     setFilters: vi.fn(), resetFilters: vi.fn(),
     toSearchAdsBody: () => ({ p_state: 'PR', p_city_id: null, p_city_ibge: null, p_group_category_slug: null,
       p_category_id: null, p_subcategories: null, p_query: null, p_seed: 0, p_page: 0, p_page_size: 24 }),
@@ -35,6 +41,7 @@ import { SwipePage } from './swipe-page';
 afterEach(() => {
   cleanup(); decide.mockReset(); reset.mockReset(); mockUser = null;
   deck = { cards: [pintor], loading: false, exhausted: false, error: false };
+  mockFilters = noFilters; deckOpts = null;
 });
 
 describe('SwipePage', () => {
@@ -66,5 +73,13 @@ describe('SwipePage', () => {
     expect(screen.queryByText('Acabou por aqui')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Tentar de novo' }));
     expect(reset).toHaveBeenCalledOnce();
+  });
+  it('faixa de preço vai no corpo do deck (e no filterKey, que reseta o deck)', async () => {
+    mockFilters = { ...noFilters, priceMin: 50, priceMax: 200 };
+    render(<SwipePage />);
+    await screen.findByText('Pintor');
+    expect(deckOpts!.baseBody).toMatchObject({ p_price_min: 50, p_price_max: 200 });
+    expect(deckOpts!.baseBody).not.toHaveProperty('p_page');
+    expect(deckOpts!.filterKey).toContain('"p_price_max":200');
   });
 });

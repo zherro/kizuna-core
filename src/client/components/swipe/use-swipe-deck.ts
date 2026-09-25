@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ServiceResult } from '../search/search-types';
 import { fetchDeck, recordSwipe } from './swipe-api';
 import { addAnonSkip, readAnonSkips } from './anon-skips';
-import { SWIPE_BATCH, SWIPE_PREFETCH_AT, type SwipeAction, type SwipeDeckBody } from './swipe-types';
+import { SWIPE_BATCH, SWIPE_PREFETCH_AT, type SwipeDecision, type SwipeDeckBody } from './swipe-types';
 
 type Opts = {
   baseBody: Omit<SwipeDeckBody, 'p_exclude' | 'p_seed' | 'p_page_size'>;
@@ -88,7 +88,7 @@ export function useSwipeDeck({ baseBody, filterKey, loggedIn }: Opts) {
     if (cards.length <= SWIPE_PREFETCH_AT) void load(cards);
   }, [cards, loading, exhausted, error, load]);
 
-  const decide = useCallback((action: SwipeAction) => {
+  const decide = useCallback((action: SwipeDecision) => {
     // Avança cardsRef de forma síncrona (fora do updater de setCards) antes de qualquer
     // outra coisa: isso garante que duas chamadas de decide() no mesmo tick (mesmo eventos
     // síncronos, sem render entre elas) operem sobre cards diferentes — a segunda já vê a
