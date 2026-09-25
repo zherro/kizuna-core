@@ -11,25 +11,32 @@ const PAGE_SIZE = 24;
 
 export function SwipeLikedPage({ discoverHref = '/descobrir' }: { discoverHref?: string }) {
   const [items, setItems] = useState<LikedItem[]>([]);
-  const [page, setPage] = useState(0);
+  const [cursor, setCursor] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(false);
 
-  const load = useCallback(async (p: number) => {
+  const load = useCallback(async (c: string | null) => {
     setLoading(true);
-    const batch = await fetchLiked(p, PAGE_SIZE);
-    setItems((prev) => (p === 0 ? batch : [...prev, ...batch]));
+    const batch = await fetchLiked(c, PAGE_SIZE);
+    setItems((prev) => (c === null ? batch : [...prev, ...batch]));
     setHasMore(batch.length === PAGE_SIZE);
     setLoading(false);
   }, []);
 
   useEffect(() => {
-    void load(page);
-  }, [page, load]);
+    void load(cursor);
+  }, [cursor, load]);
 
   const unlike = (uid: string) => {
     setItems((prev) => prev.filter((i) => i.uid !== uid));
     recordSwipe([uid], 'skip').catch((err) => console.warn('[swipe] falha ao descurtir', err));
+  };
+
+  const loadMore = () => {
+    const lastItem = items[items.length - 1];
+    if (lastItem) {
+      setCursor(lastItem.liked_at);
+    }
   };
 
   return (
@@ -74,7 +81,7 @@ export function SwipeLikedPage({ discoverHref = '/descobrir' }: { discoverHref?:
 
       {hasMore ? (
         <div className="mt-6 text-center">
-          <button type="button" disabled={loading} onClick={() => setPage((p) => p + 1)} className="rounded-full border border-border px-5 py-2 text-sm font-semibold">
+          <button type="button" disabled={loading} onClick={loadMore} className="rounded-full border border-border px-5 py-2 text-sm font-semibold">
             {loading ? 'Carregando…' : 'Carregar mais'}
           </button>
         </div>

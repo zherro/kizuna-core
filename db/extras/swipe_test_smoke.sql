@@ -36,10 +36,10 @@ BEGIN
   RAISE NOTICE 'skip ttl OK';
 
   -- curtidos
-  ASSERT (SELECT count(*) FROM public.fn_swipe_liked(0, 20) WHERE uid = v_a) = 1, 'liked lista A';
+  ASSERT (SELECT count(*) FROM public.fn_swipe_liked(NULL, 20) WHERE uid = v_a) = 1, 'liked lista A';
   -- descurtir = skip
   PERFORM public.fn_swipe_record(ARRAY[v_a], 'skip');
-  ASSERT (SELECT count(*) FROM public.fn_swipe_liked(0, 20) WHERE uid = v_a) = 0, 'descurtir';
+  ASSERT (SELECT count(*) FROM public.fn_swipe_liked(NULL, 20) WHERE uid = v_a) = 0, 'descurtir';
   RAISE NOTICE 'liked OK';
 
   -- action inválida

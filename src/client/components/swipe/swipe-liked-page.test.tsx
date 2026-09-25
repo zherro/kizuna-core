@@ -2,10 +2,26 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
 
+const createMockItems = (count: number, startIdx: number = 0) =>
+  Array.from({ length: count }, (_, i) => ({
+    uid: `u${startIdx + i}`,
+    title: `Item ${startIdx + i}`,
+    price: null,
+    price_type: 'quote',
+    category: 'Casa',
+    cover_file_id: null,
+    liked_at: `2026-09-${String(25 - i).padStart(2, '0')}`,
+  }));
+
 const api = vi.hoisted(() => ({
-  fetchLiked: vi.fn(async () => [
-    { uid: 'u1', title: 'Pintor', price: null, price_type: 'quote', category: 'Casa', cover_file_id: null, liked_at: '2026-09-25' },
-  ]),
+  fetchLiked: vi.fn(async (before: string | null, pageSize: number) => {
+    if (before === null) {
+      // First page: return 24 items
+      return createMockItems(24, 0);
+    }
+    // Subsequent pages: return items that come after the cursor
+    return [];
+  }),
   recordSwipe: vi.fn(async () => {}),
 }));
 vi.mock('./swipe-api', () => api);
@@ -13,14 +29,51 @@ vi.mock('next/link', () => ({ default: (p: { href: string; children: React.React
 
 import { SwipeLikedPage } from './swipe-liked-page';
 
-afterEach(() => cleanup());
+afterEach(() => {
+  cleanup();
+  vi.clearAllMocks();
+});
 
 describe('SwipeLikedPage', () => {
   it('lista e descurte', async () => {
+    // Reset mock for this test
+    api.fetchLiked.mockResolvedValueOnce([
+      { uid: 'u1', title: 'Pintor', price: null, price_type: 'quote', category: 'Casa', cover_file_id: null, liked_at: '2026-09-25' },
+    ]);
+
     render(<SwipeLikedPage />);
     expect(await screen.findByText('Pintor')).toBeTruthy();
     fireEvent.click(screen.getByLabelText('Descurtir Pintor'));
     expect(api.recordSwipe).toHaveBeenCalledWith(['u1'], 'skip');
     await waitFor(() => expect(screen.queryByText('Pintor')).toBeNull());
+  });
+
+  it('pagina com cursor baseado em liked_at', async () => {
+    // First page: 24 items
+    api.fetchLiked.mockResolvedValueOnce(createMockItems(24, 0));
+    // Second page (after load more): should be called with the liked_at of the last item
+    api.fetchLiked.mockResolvedValueOnce([]);
+
+    render(<SwipeLikedPage />);
+
+    // Wait for first batch to load
+    expect(await screen.findByText('Item 0')).toBeTruthy();
+    expect(screen.getByText('Item 23')).toBeTruthy();
+
+    // Unlike one item
+    const unlikeButtons = screen.getAllByLabelText(/Descurtir Item/);
+    fireEvent.click(unlikeButtons[0]); // Unlike first item
+
+    // Verify record was called
+    expect(api.recordSwipe).toHaveBeenCalledWith(['u0'], 'skip');
+
+    // Click load more
+    const loadMoreBtn = screen.getByText('Carregar mais');
+    fireEvent.click(loadMoreBtn);
+
+    // Verify fetchLiked was called with the liked_at of the last remaining item (Item 23)
+    await waitFor(() => {
+      expect(api.fetchLiked).toHaveBeenCalledWith('2026-09-02', 24);
+    });
   });
 });

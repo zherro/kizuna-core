@@ -22,8 +22,8 @@ export async function recordSwipe(uids: string[], action: SwipeAction): Promise<
   if (!res.ok) throw new Error(`fn_swipe_record ${res.status}`);
 }
 
-export async function fetchLiked(page: number, pageSize: number): Promise<LikedItem[]> {
-  const res = await rpc('fn_swipe_liked', { p_page: page, p_page_size: pageSize });
+export async function fetchLiked(before: string | null, pageSize: number): Promise<LikedItem[]> {
+  const res = await rpc('fn_swipe_liked', { p_before: before, p_page_size: pageSize });
   const data = (await res.json().catch(() => null)) as { items?: unknown[] } | null;
   return Array.isArray(data?.items) ? (data.items as LikedItem[]) : [];
 }

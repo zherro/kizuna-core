@@ -129,8 +129,9 @@ $function$;
 GRANT EXECUTE ON FUNCTION public.fn_swipe_record(uuid[], text) TO auth_user;
 
 DROP FUNCTION IF EXISTS public.fn_swipe_liked(integer, integer);
+DROP FUNCTION IF EXISTS public.fn_swipe_liked(timestamptz, integer);
 
-CREATE OR REPLACE FUNCTION public.fn_swipe_liked(p_page integer DEFAULT 0, p_page_size integer DEFAULT 24)
+CREATE OR REPLACE FUNCTION public.fn_swipe_liked(p_before timestamptz DEFAULT NULL, p_page_size integer DEFAULT 24)
 RETURNS TABLE(
   uid uuid,
   title character varying,
@@ -168,13 +169,13 @@ BEGIN
     AND sw.action = 'like'
     AND s.active = true
     AND s.status = 'active'
+    AND (p_before IS NULL OR sw.updated_at < p_before)
   ORDER BY sw.updated_at DESC
-  LIMIT LEAST(GREATEST(p_page_size, 1), 100)
-  OFFSET GREATEST(p_page, 0) * LEAST(GREATEST(p_page_size, 1), 100);
+  LIMIT LEAST(GREATEST(p_page_size, 1), 100);
 END;
 $function$;
 
-GRANT EXECUTE ON FUNCTION public.fn_swipe_liked(integer, integer) TO auth_user;
+GRANT EXECUTE ON FUNCTION public.fn_swipe_liked(timestamptz, integer) TO auth_user;
 
 INSERT INTO auth.plugin_registry (name, version)
 VALUES ('swipe', '1.0.0')
