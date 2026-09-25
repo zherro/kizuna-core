@@ -38,6 +38,8 @@ deploy/observability/
 ├── loki-config.yml
 ├── config.alloy
 ├── grafana/provisioning/datasources/loki.yml
+├── grafana/provisioning/dashboards/kizuna.yml   # carrega a pasta abaixo
+├── grafana/dashboards/kizuna-overview.json      # dashboard "Kizuna — Visão geral"
 └── .env.example
 ```
 
@@ -79,6 +81,7 @@ services:
       GF_ANALYTICS_REPORTING_ENABLED: "false"
     volumes:
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/etc/grafana/dashboards:ro
       - grafana_data:/var/lib/grafana
     depends_on: [loki]
 
@@ -278,8 +281,28 @@ Grafana não fique aberta para a internet inteira.
 
 1. Entre com o usuário e a senha do `.env`.
 2. **Connections → Data sources:** o **Loki** já aparece (vem provisionado, não editável).
-3. **Explore → Loki** para pesquisar.
-4. Crie usuários extras em **Administration → Users** em vez de compartilhar o admin.
+3. **Dashboards → Kizuna → "Kizuna — Visão geral"**, que já vem pronto (veja abaixo).
+4. **Explore → Loki** para consultas livres.
+5. Crie usuários extras em **Administration → Users** em vez de compartilhar o admin.
+
+Não é preciso expor Loki nem Alloy para ver logs: o Grafana consulta o Loki pela rede interna.
+
+### Dashboard "Kizuna — Visão geral"
+
+Provisionado de `grafana/dashboards/kizuna-overview.json` (provider em
+`grafana/provisioning/dashboards/kizuna.yml`, pasta **Kizuna**).
+
+| Linha      | Painéis                                                                                           |
+| ---------- | ------------------------------------------------------------------------------------------------- |
+| Contadores | Logins OK · Logins falhos · Lockouts · Captcha recusado · E-mails de reset · Falhas de e-mail    |
+| Gráficos   | Volume de logs por serviço · Erros (stderr) por serviço · Eventos de autenticação no tempo        |
+| Logs       | Erros do app (stderr) · Auth e e-mail · **Explorar**, com os filtros `Serviço` e `Buscar texto`   |
+
+Variáveis no topo: **Serviço do app** (o `compose_service` do Next, padrão `app`), **Serviço**
+(multi-seleção) e **Buscar texto** (regex, sem diferenciar maiúsculas).
+
+Dá para editar na interface (`allowUiUpdates`), mas o arquivo é a fonte da verdade. Para manter
+uma alteração, exporte o JSON (Share → Export) e sobrescreva `kizuna-overview.json`.
 
 ## 5. Consultas úteis (LogQL)
 
