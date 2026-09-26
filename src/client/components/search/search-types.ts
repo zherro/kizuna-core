@@ -25,6 +25,12 @@ export type ServiceResult = {
   rating: number | null;
   /** Total de avaliações publicadas; `0` quando não tem. */
   reviews: number;
+  /** Cidade do endereço principal (sem rua/número). Ausente em RPCs antigas. */
+  city?: string | null;
+  /** UF do endereço principal. */
+  state?: string | null;
+  /** Total de endereços ativos do serviço. */
+  address_count?: number | null;
 };
 
 export type SearchFilters = {

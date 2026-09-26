@@ -7,6 +7,7 @@ import { useAuth } from '../../providers/auth-provider';
 import { RequireAuthProvider, useRequireAuth } from '../auth/require-auth';
 import { fetchLiked, recordSwipe } from './swipe-api';
 import { coverUrl, priceLabel } from './swipe-card';
+import { formatLocationLabel } from '../search/format-location-label';
 import type { LikedItem } from './swipe-types';
 
 const PAGE_SIZE = 24;
@@ -131,6 +132,9 @@ function SwipeLikedInner({ discoverHref = '/descobrir' }: Props) {
                 {i.category ? <p className="text-xs text-muted-foreground">{i.category}</p> : null}
                 <p className="line-clamp-2 text-sm font-semibold text-foreground">{i.title}</p>
                 <p className="mt-1 text-xs font-medium text-foreground">{priceLabel(i)}</p>
+                {formatLocationLabel(i) ? (
+                  <p className="mt-0.5 truncate text-xs text-muted-foreground">{formatLocationLabel(i)}</p>
+                ) : null}
               </div>
             </Link>
             <button

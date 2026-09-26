@@ -5,6 +5,7 @@ import { ListingResultCard } from '../ui-better-soft/lists/listing-result-card';
 import { formatCurrency } from '../../../lib/shared/currency-mask';
 import { PRICE_UNIT_LABEL } from '../services/service-labels';
 import type { ServiceResult } from './search-types';
+import { formatLocationLabel } from './format-location-label';
 
 export type ResultsScope = 'city' | 'state' | 'related' | 'empty';
 
@@ -38,6 +39,7 @@ function toCardProps(r: ServiceResult) {
     tagLabel: r.category,
     subtitleLabel: r.subcategory,
     imageUrl: r.cover_file_id ? `/api/public/storage/files/${r.cover_file_id}/content` : null,
+    locationLabel: formatLocationLabel(r),
     highlighted: r.sponsored,
     highlightLabel: 'Patrocinado',
     providerName: r.provider_name,

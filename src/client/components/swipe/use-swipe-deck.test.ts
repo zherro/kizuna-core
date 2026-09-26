@@ -44,13 +44,14 @@ describe('useSwipeDeck', () => {
     expect(api.recordSwipe).toHaveBeenCalledWith(['u0'], 'like');
   });
 
-  it('anônimo: skip vai pro localStorage e não chama a API', async () => {
+  it('anônimo: skip só avança, não grava nada', async () => {
     api.fetchDeck.mockResolvedValueOnce(range(0, 20));
     const { result } = renderHook(() => useSwipeDeck({ baseBody, filterKey: 'a', loggedIn: false }));
     await waitFor(() => expect(result.current.cards).toHaveLength(20));
     act(() => result.current.decide('skip'));
+    expect(result.current.cards[0].uid).toBe('u1');
     expect(api.recordSwipe).not.toHaveBeenCalled();
-    expect(JSON.parse(localStorage.getItem('kizuna.swipe.anonSkips')!)).toEqual(['u0']);
+    expect(localStorage.length).toBe(0);
   });
 
   it('prefetch ao restar 5, com p_exclude da fila e dedup', async () => {
@@ -134,7 +135,6 @@ describe('useSwipeDeck', () => {
     await waitFor(() => expect(result.current.cards).toHaveLength(20));
     act(() => result.current.decide('like', { loggedIn: true }));
     expect(api.recordSwipe).toHaveBeenCalledWith(['u0'], 'like');
-    expect(localStorage.getItem('kizuna.swipe.anonSkips')).toBeNull();
     expect(result.current.cards[0].uid).toBe('u1');
   });
 

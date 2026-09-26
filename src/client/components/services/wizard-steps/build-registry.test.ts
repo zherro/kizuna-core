@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { buildServiceWizardRegistry } from './build-registry';
 import { SERVICE_WIZARD_STEPS } from './index';
 import { resolveLocationOptions } from './step-location';
+import { DEFAULT_LOCATION_PROFILE, resolveMaxAddresses } from './location-options';
 import { resolvePriceProfile } from './step-price';
 import { cleanPriceTable } from './price-options';
 import type { LocationProfile } from './location-options';
@@ -30,6 +31,7 @@ const ctx = (
       categoryId: '',
       serviceLocation: '',
       addressComplete: false,
+      addresses: [],
       priceUnit: 'quote',
       startingPrice: 0,
       ...over,
@@ -66,6 +68,106 @@ describe('buildServiceWizardRegistry', () => {
     expect(can(ctx({ serviceLocation: 'remoto' }))).toBe(true);
     // fora das opções configuradas não libera
     expect(can(ctx({ serviceLocation: 'no_cliente' }))).toBe(false);
+  });
+
+  it('location: model addresses exige ≥1 completo e 1 principal, em qualquer modo', () => {
+    const reg = buildServiceWizardRegistry(SERVICE_WIZARD_STEPS, {
+      ...base,
+      stepProfiles: {
+        location: {
+          default: {
+            options: [
+              { value: 'no_estabelecimento', model: 'addresses', maxAddresses: 3 },
+              { value: 'remoto', model: 'identifier' },
+            ],
+          },
+        },
+      },
+    });
+    const can = reg.location.canContinue!;
+    const addr = (over = {}) => ({
+      clientId: 'a',
+      label: '',
+      zipCode: '78000000',
+      street: 'Rua A',
+      number: '1',
+      complement: '',
+      neighborhood: '',
+      city: '',
+      state: '',
+      cityIbge: null,
+      latitude: null,
+      longitude: null,
+      placeId: null,
+      isPrimary: true,
+      ...over,
+    });
+    const at = 'no_estabelecimento';
+    expect(can(ctx({ serviceLocation: at }))).toBe(false);
+    expect(can(ctx({ serviceLocation: at, addresses: [addr()] }))).toBe(true);
+    expect(can(ctx({ serviceLocation: at, addresses: [addr()] }, { mode: 'edit' }))).toBe(true);
+    expect(can(ctx({ serviceLocation: at, addresses: [addr()] }, { mode: 'edit' }))).toBe(true);
+    expect(can(ctx({ serviceLocation: at, addresses: [], addressComplete: true }, { mode: 'edit' }))).toBe(false);
+    expect(can(ctx({ serviceLocation: at, addresses: [addr({ isPrimary: false })] }))).toBe(false);
+    expect(
+      can(ctx({ serviceLocation: at, addresses: [addr(), addr({ clientId: 'b' })] }))
+    ).toBe(false);
+    expect(can(ctx({ serviceLocation: at, addresses: [addr({ street: '' })] }))).toBe(false);
+    expect(can(ctx({ serviceLocation: 'remoto' }))).toBe(true);
+  });
+
+  it('location: padrão do core — só no_estabelecimento exige endereço; no_cliente/remoto não', async () => {
+    const reg = buildServiceWizardRegistry(SERVICE_WIZARD_STEPS, {
+      ...base,
+      stepProfiles: { location: { default: DEFAULT_LOCATION_PROFILE } },
+    });
+    const can = reg.location.canContinue!;
+    expect(can(ctx({ serviceLocation: 'no_estabelecimento' }))).toBe(false);
+    expect(can(ctx({ serviceLocation: 'no_cliente' }))).toBe(true);
+    expect(can(ctx({ serviceLocation: 'remoto' }))).toBe(true);
+    expect(DEFAULT_LOCATION_PROFILE.options.map((o) => [o.value, o.model])).toEqual([
+      ['no_estabelecimento', 'addresses'],
+      ['no_cliente', 'identifier'],
+      ['remoto', 'identifier'],
+    ]);
+  });
+
+  it('location persist: no_cliente/remoto só gravam serviceLocation e não tocam a API de endereços', async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    const step = buildServiceWizardRegistry(SERVICE_WIZARD_STEPS, {
+      ...base,
+      stepProfiles: { location: { default: DEFAULT_LOCATION_PROFILE } },
+    }).location;
+    const saved = { clientId: 'a', isPrimary: true, id: '9' } as never;
+    for (const loc of ['no_cliente', 'remoto'] as const) {
+      const persist = vi.fn().mockResolvedValue({ ok: true, item: { id: 1 } });
+      const patch = vi.fn();
+      await step.persist!(
+        ctx(
+          { serviceLocation: loc, addresses: [], addressesSnapshot: [saved] },
+          { persist, patch, resourceId: '1' }
+        )
+      );
+      expect(persist).toHaveBeenCalledWith({ serviceLocation: loc });
+      expect(patch).not.toHaveBeenCalled();
+    }
+    expect(fetchMock).not.toHaveBeenCalled();
+    vi.unstubAllGlobals();
+  });
+
+  it('validateLocationProfile: maxAddresses', () => {
+    const bad = (o: object) =>
+      buildServiceWizardRegistry(SERVICE_WIZARD_STEPS, {
+        ...base,
+        stepProfiles: { location: { default: { options: [o as never] } } },
+      });
+    expect(() => bad({ value: 'no_cliente', model: 'addresses', maxAddresses: 11 })).toThrow(/maxAddresses/);
+    expect(() => bad({ value: 'no_cliente', model: 'addresses', maxAddresses: 0 })).toThrow(/maxAddresses/);
+    expect(() => bad({ value: 'no_cliente', model: 'address', maxAddresses: 2 })).toThrow(/addresses/);
+    expect(() => bad({ value: 'no_cliente', model: 'addresses' })).not.toThrow();
+    expect(resolveMaxAddresses({})).toBe(5);
+    expect(resolveMaxAddresses({ maxAddresses: 10 })).toBe(10);
   });
 
   it('precedência: categoria → grupo → default custom → core (location e price)', () => {

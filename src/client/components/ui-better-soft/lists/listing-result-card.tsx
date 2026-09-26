@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Sparkles, Star } from 'lucide-react';
+import { MapPin, Sparkles, Star } from 'lucide-react';
 import { cn } from '../../../../lib/utils';
 import { MediaResultCard } from './media-result-card';
 
@@ -23,6 +23,8 @@ export type ListingResultCardProps = {
   /** Linha sob o título (ex. subcategoria). */
   subtitleLabel?: string | null;
   imageUrl?: string | null;
+  /** Local já formatado, ex. "Cuiabá +2". Opcional. */
+  locationLabel?: string | null;
   /** Estilo de destaque (ex. patrocinado). */
   highlighted?: boolean;
   highlightLabel?: string;
@@ -70,6 +72,15 @@ function RatingChip({
       ) : (
         <span className="font-normal text-muted-foreground">Novo</span>
       )}
+    </span>
+  );
+}
+
+function LocationLine({ label }: { label: string }) {
+  return (
+    <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground" title={label}>
+      <MapPin className="h-3 w-3 shrink-0" />
+      <span className="truncate">{label}</span>
     </span>
   );
 }
@@ -126,6 +137,7 @@ export function ListingResultCard({
   tagLabel,
   subtitleLabel,
   imageUrl,
+  locationLabel,
   highlighted,
   highlightLabel = 'Destaque',
   providerName,
@@ -166,6 +178,7 @@ export function ListingResultCard({
             <p className="line-clamp-1 text-[11px] text-muted-foreground">{subtitleLabel}</p>
           )}
           <RatingChip rating={rating} reviewCount={reviewCount} />
+          {locationLabel && <LocationLine label={locationLabel} />}
           <div className="mt-auto pt-1 text-sm font-black leading-none">{priceLabel}</div>
         </div>
       </Link>
@@ -197,6 +210,7 @@ export function ListingResultCard({
       leading={
         <div className="flex flex-col gap-2">
           <RatingChip rating={rating} reviewCount={reviewCount} />
+          {locationLabel && <LocationLine label={locationLabel} />}
           <ProviderRow providerName={providerName} providerAvatarUrl={providerAvatarUrl} />
         </div>
       }

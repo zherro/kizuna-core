@@ -3,6 +3,7 @@
 import { Star } from 'lucide-react';
 import type { ServiceResult } from '../search/search-types';
 import { formatCurrency } from '../../../lib/shared/currency-mask';
+import { formatLocationLabel } from '../search/format-location-label';
 import { PRICE_UNIT_LABEL } from '../services/service-labels';
 
 export function priceLabel(r: { price: number | null; price_type: string }): string {
@@ -26,6 +27,7 @@ type Props = {
 
 export function SwipeCard({ item, dragX = 0, className = '', style, handlers }: Props) {
   const img = coverUrl(item.cover_file_id);
+  const location = formatLocationLabel(item);
   return (
     <article
       {...handlers}
@@ -61,6 +63,7 @@ export function SwipeCard({ item, dragX = 0, className = '', style, handlers }: 
         <h2 className="mt-3 font-serif text-2xl font-bold text-background">{item.title}</h2>
         <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-background/90">
           <span className="font-semibold">{priceLabel(item)}</span>
+          {location ? <span>{location}</span> : null}
           {item.provider_name ? <span>{item.provider_name}</span> : null}
           {item.rating != null ? (
             <span className="inline-flex items-center gap-1">

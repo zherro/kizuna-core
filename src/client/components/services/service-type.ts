@@ -37,6 +37,8 @@ export type ServiceRecord = {
   sponsored: boolean;
   serviceLocation: string | null;
   active: boolean;
+  /** Fim da validade do anúncio (ISO UTC) ou null = sem validade. */
+  expiresAt?: string | null;
   createdBy?: string | null;
   createdAt?: string;
   updatedAt?: string;
@@ -65,6 +67,8 @@ export type ServiceWizardState = {
   serviceLocation: string;
   startingPrice: number;
   priceUnit: string;
+  /** Validade do anúncio (ISO UTC) ou null. Só editável quando o perfil `price` a habilita. */
+  expiresAt: string | null;
   imageIds: string[];
   /** Tabela de preços (só quando o perfil do passo `price` a habilita). Vive em
    * `services.extras.priceTable` (jsonb), não numa coluna — gravada via `persistExtras`. */
@@ -82,6 +86,30 @@ export type ServiceWizardState = {
    * only) — drives that step's `canContinue`. The address itself stays local-only/not persisted
    * (see `StepLocation`); this is just the completeness flag. */
   addressComplete: boolean;
+  /** Endereços do serviço (model `addresses` do passo `location`). */
+  addresses: ServiceAddress[];
+  /** Transient: último conjunto sabidamente gravado no banco — base do diff do `persist`. */
+  addressesSnapshot?: ServiceAddress[];
+};
+
+/** Endereço de atendimento do serviço (linha de `service_addresses`). `id` só existe depois de
+ * persistido; `clientId` é a chave estável da linha na UI (nunca vai pro banco). */
+export type ServiceAddress = {
+  id?: string;
+  clientId: string;
+  label: string;
+  zipCode: string;
+  street: string;
+  number: string;
+  complement: string;
+  neighborhood: string;
+  city: string;
+  state: string;
+  cityIbge: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  placeId: string | null;
+  isPrimary: boolean;
 };
 
 export const SERVICE_WIZARD_INITIAL_STATE: ServiceWizardState = {
@@ -93,12 +121,14 @@ export const SERVICE_WIZARD_INITIAL_STATE: ServiceWizardState = {
   serviceLocation: '',
   startingPrice: 0,
   priceUnit: 'quote',
+  expiresAt: null,
   imageIds: [],
   decision: '',
   rejectionReason: '',
   decisionNote: '',
   dynamicFormValid: true,
   addressComplete: false,
+  addresses: [],
 };
 
 /** Enum display labels moved to `./service-labels`; re-exported for back-compat. */

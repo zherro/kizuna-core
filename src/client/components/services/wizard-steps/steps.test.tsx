@@ -85,6 +85,8 @@ describe('stacked (scroll) layout adaptations', () => {
         rejectionReason: '',
         decisionNote: '',
         dynamicFormValid: true,
+        addressComplete: false,
+        addresses: [],
       },
       patch: () => {},
       entities: {

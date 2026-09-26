@@ -11,9 +11,11 @@ import {
 } from '../wizard';
 import { SERVICE_WIZARD_STEPS } from './wizard-steps';
 import { buildServiceWizardRegistry } from './wizard-steps/build-registry';
+import { isAddressComplete } from './wizard-steps/service-addresses';
 import type { PriceTableRow } from './wizard-steps/price-options';
 import type { ServiceWizardJsonConfig } from './wizard-steps/wizard-config';
 import type {
+  ServiceAddress,
   ServiceWizardState,
   ServiceGroup,
   ServiceCategory,
@@ -43,6 +45,7 @@ type ServiceRecord = {
   serviceLocation?: string | null;
   startingPrice?: number | null;
   priceUnit?: string | null;
+  expiresAt?: string | null;
   extras?: Record<string, unknown> | null;
   [key: string]: unknown;
 };
@@ -53,6 +56,8 @@ type ServiceSubcategoryLink = {
   [key: string]: unknown;
 };
 
+type ServiceAddressRecord = Omit<ServiceAddress, 'clientId'> & { id: string };
+
 const EMPTY_STATE: ServiceWizardState = {
   title: '',
   groupId: '',
@@ -62,12 +67,14 @@ const EMPTY_STATE: ServiceWizardState = {
   serviceLocation: '',
   startingPrice: 0,
   priceUnit: 'quote',
+  expiresAt: null,
   imageIds: [],
   decision: '',
   rejectionReason: '',
   decisionNote: '',
   dynamicFormValid: true,
   addressComplete: false,
+  addresses: [],
 };
 
 const ACTIVE_ONLY = { active: true } as const;
@@ -109,6 +116,7 @@ export function ServicoWizardPage({
 
   const [record, setRecord] = useState<ServiceRecord | null>(null);
   const [links, setLinks] = useState<ServiceSubcategoryLink[]>([]);
+  const [addressRecords, setAddressRecords] = useState<ServiceAddressRecord[]>([]);
   const [loadingRecord, setLoadingRecord] = useState(mode !== 'create');
   const [loadError, setLoadError] = useState('');
 
@@ -135,16 +143,24 @@ export function ServicoWizardPage({
         }
         setRecord(data.item);
 
-        const linksRes = await fetch(
-          `/api/resources/service_categories_sub?pageSize=100&filter.service_id=${serviceId}`,
-          { cache: 'no-store' },
-        );
-        const linksData =
-          ((await linksRes.json().catch(() => null)) as {
-            items?: ServiceSubcategoryLink[];
-          } | null) ?? null;
+        // Links e endereços são independentes — buscados em paralelo.
+        const [linksRes, addressesRes] = await Promise.all([
+          fetch(`/api/resources/service_categories_sub?pageSize=100&filter.service_id=${serviceId}`, {
+            cache: 'no-store',
+          }),
+          fetch(`/api/resources/service_addresses?pageSize=50&filter.service_id=${serviceId}`, {
+            cache: 'no-store',
+          }),
+        ]);
+        const [linksData, addressesData] = await Promise.all([
+          linksRes.json().catch(() => null) as Promise<{ items?: ServiceSubcategoryLink[] } | null>,
+          addressesRes.json().catch(() => null) as Promise<{
+            items?: ServiceAddressRecord[];
+          } | null>,
+        ]);
         if (!active) return;
         setLinks(Array.isArray(linksData?.items) ? linksData.items : []);
+        setAddressRecords(Array.isArray(addressesData?.items) ? addressesData.items : []);
       } catch {
         if (active) setLoadError(t.loadError);
       } finally {
@@ -182,6 +198,10 @@ export function ServicoWizardPage({
   const initialState = useMemo<ServiceWizardState>(() => {
     if (mode === 'create' || !record) return EMPTY_STATE;
     const savedImages = record.extras?.images;
+    const addresses: ServiceAddress[] = addressRecords.map((a) => ({
+      ...a,
+      clientId: `addr-${a.id}`,
+    }));
     return {
       title: record.title ?? '',
       groupId: record.categoryGroupId ?? '',
@@ -191,6 +211,7 @@ export function ServicoWizardPage({
       serviceLocation: record.serviceLocation ?? '',
       startingPrice: record.startingPrice ?? 0,
       priceUnit: record.priceUnit ?? 'quote',
+      expiresAt: record.expiresAt ?? null,
       imageIds: Array.isArray(savedImages) ? savedImages.map(String) : [],
       priceTable: Array.isArray(record.extras?.priceTable)
         ? (record.extras.priceTable as PriceTableRow[])
@@ -199,9 +220,11 @@ export function ServicoWizardPage({
       rejectionReason: '',
       decisionNote: '',
       dynamicFormValid: true,
-      addressComplete: true,
+      addressComplete: addresses.some(isAddressComplete),
+      addresses,
+      addressesSnapshot: addresses,
     };
-  }, [mode, record, links]);
+  }, [mode, record, links, addressRecords]);
 
   // Naví conversacional é `create`-only e opt-in pelo JSON (`assistant: true`). O hook, quando
   // fornecido, roda sempre (regra de hooks) — só não é passado fora do create.

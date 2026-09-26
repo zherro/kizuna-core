@@ -33,6 +33,26 @@ function parseIdList(value: string | null): number[] {
   ];
 }
 
+/** Quantos filtros estão ativos (grupo, categoria, cada especialidade, texto, faixa de preço). */
+export function countActiveFilters(f: SearchFilters): number {
+  return (
+    (f.groupSlug ? 1 : 0) +
+    (f.categoryId ? 1 : 0) +
+    f.subcategoryIds.length +
+    (f.query ? 1 : 0) +
+    (f.priceMin != null || f.priceMax != null ? 1 : 0)
+  );
+}
+
+/**
+ * O carrossel de categorias só some quando há categoria E mais algum filtro (especialidade, texto ou
+ * preço). Só com a categoria ele continua — quem está navegando ainda quer ver as outras.
+ */
+export function shouldHideCategoryCarousel(f: SearchFilters): boolean {
+  if (!f.categoryId) return false;
+  return f.subcategoryIds.length > 0 || Boolean(f.query) || f.priceMin != null || f.priceMax != null;
+}
+
 /**
  * Fonte única do estado de filtro da /busca, sincronizada com a URL (que é a fonte de verdade —
  * busca compartilhável). Escrita tanto pelo painel de filtro manual quanto pelo resultado da IA.

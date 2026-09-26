@@ -21,7 +21,7 @@ export const resourceServices: Record<string, ResourceConfig> = {
     table: 'services',
     returnRepresentation: true,
     select:
-      'id,uid,title,category_group:categories_group(id, name, slug, active, icon),category:categories(id, name, slug, icon),category_id,description,starting_price,price_unit,urgent_available,extras,status,sponsored,service_location,active,created_by,created_at,updated_at',
+      'id,uid,title,category_group:categories_group(id, name, slug, active, icon),category:categories(id, name, slug, icon),category_id,description,starting_price,price_unit,urgent_available,extras,status,sponsored,service_location,active,expires_at,created_by,created_at,updated_at',
     primaryKey: 'id',
     defaultOrder: 'created_at',
     searchableColumns: ['title', 'description'],
@@ -43,6 +43,13 @@ export const resourceServices: Record<string, ResourceConfig> = {
       // null, never the empty-string default a not-yet-selected form field starts with.
       const serviceLocation = String(input.serviceLocation ?? input.service_location ?? '').trim();
 
+      // expires_at é timestamptz NULL: só ISO válido passa; vazio/inválido → null.
+      const expiresRaw = input.expiresAt ?? input.expires_at;
+      const expiresDate =
+        typeof expiresRaw === 'string' && expiresRaw.trim() ? new Date(expiresRaw.trim()) : null;
+      const expiresAt =
+        expiresDate && Number.isFinite(expiresDate.getTime()) ? expiresDate.toISOString() : null;
+
       return {
         title,
         category_group_id: Number.isFinite(categoryGroupId) ? categoryGroupId : null,
@@ -56,6 +63,7 @@ export const resourceServices: Record<string, ResourceConfig> = {
         sponsored: parseActive(input.sponsored ?? false),
         service_location: serviceLocation || null,
         active: parseActive(input.active ?? true),
+        expires_at: expiresAt,
       };
     },
     mapOutput: (record) => {
@@ -85,6 +93,7 @@ export const resourceServices: Record<string, ResourceConfig> = {
         sponsored: parseActive(record.sponsored),
         serviceLocation: record.service_location ?? null,
         active: parseActive(record.active),
+        expiresAt: record.expires_at ?? null,
         createdBy: record.created_by ? String(record.created_by) : null,
         createdAt: record.created_at ?? record.createdAt,
         updatedAt: record.updated_at ?? record.updatedAt,
@@ -131,6 +140,74 @@ export const resourceServices: Record<string, ResourceConfig> = {
       createdAt: record.created_at ?? record.createdAt,
       updatedAt: record.updated_at ?? record.updatedAt,
     }),
+  },
+  // Endereços do serviço (N por serviço). `tenant_id`/`created_by` são default do banco — nunca emitidos.
+  service_addresses: {
+    schema: 'public',
+    table: 'service_addresses',
+    returnRepresentation: true,
+    select:
+      'id,service_id,label,zip_code,street,number,complement,neighborhood,city,state,city_ibge,latitude,longitude,place_id,is_primary,active,created_at,updated_at',
+    primaryKey: 'id',
+    defaultOrder: 'created_at',
+    searchableColumns: [],
+    requiredFields: ['service_id'],
+    maxPageSize: 50,
+    mapInput: (input) => {
+      const serviceId = Number(input.serviceId ?? input.service_id);
+      const text = (v: unknown) => {
+        const t = String(v ?? '').trim();
+        return t || null;
+      };
+      const coord = (v: unknown) => {
+        if (v === null || v === undefined || v === '') return null;
+        const n = Number(v);
+        return Number.isFinite(n) ? n : null;
+      };
+      const state = text(input.state)?.toUpperCase().slice(0, 2) ?? null;
+      const ibge = String(input.cityIbge ?? input.city_ibge ?? '').replace(/\D/g, '');
+      const zip = String(input.zipCode ?? input.zip_code ?? '').replace(/\D/g, '');
+      return {
+        service_id: Number.isFinite(serviceId) ? serviceId : null,
+        label: text(input.label),
+        zip_code: zip || null,
+        street: text(input.street),
+        number: text(input.number),
+        complement: text(input.complement),
+        neighborhood: text(input.neighborhood),
+        city: text(input.city),
+        state,
+        city_ibge: ibge || null,
+        latitude: coord(input.latitude),
+        longitude: coord(input.longitude),
+        place_id: text(input.placeId ?? input.place_id),
+        is_primary: parseActive(input.isPrimary ?? input.is_primary ?? false),
+        active: parseActive(input.active ?? true),
+      };
+    },
+    mapOutput: (record) => {
+      const coord = (v: unknown) => (v === null || v === undefined ? null : Number(v));
+      return {
+        id: String(record.id ?? ''),
+        serviceId: record.service_id != null ? String(record.service_id) : '',
+        label: record.label ?? '',
+        zipCode: record.zip_code ?? '',
+        street: record.street ?? '',
+        number: record.number ?? '',
+        complement: record.complement ?? '',
+        neighborhood: record.neighborhood ?? '',
+        city: record.city ?? '',
+        state: record.state ?? '',
+        cityIbge: record.city_ibge ?? null,
+        latitude: coord(record.latitude),
+        longitude: coord(record.longitude),
+        placeId: record.place_id ?? null,
+        isPrimary: parseActive(record.is_primary),
+        active: parseActive(record.active),
+        createdAt: record.created_at ?? record.createdAt,
+        updatedAt: record.updated_at ?? record.updatedAt,
+      };
+    },
   },
   // One row per moderation decision — never updated, always inserted, and only ever by the
   // `fn_service_moderate` RPC (which also derives `services.status`). The generic route must not

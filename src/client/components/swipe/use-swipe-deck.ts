@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ServiceResult } from '../search/search-types';
 import { fetchDeck, recordSwipe } from './swipe-api';
-import { addAnonSkip, readAnonSkips } from './anon-skips';
 import { SWIPE_BATCH, SWIPE_PREFETCH_AT, type SwipeDecision, type SwipeDeckBody } from './swipe-types';
 
 type Opts = {
@@ -32,10 +31,8 @@ export function useSwipeDeck({ baseBody, filterKey, loggedIn }: Opts) {
     if (fetchingRef.current) return;
     fetchingRef.current = true;
     const gen = genRef.current;
-    const exclude = [
-      ...queue.map((c) => c.uid),
-      ...(loggedInRef.current ? [] : readAnonSkips()),
-    ];
+    // Anônimo não tem controle de passados (pode ver repetido); só a fila local sai do lote.
+    const exclude = queue.map((c) => c.uid);
     try {
       const batch = await fetchDeck({
         ...bodyRef.current,
@@ -105,8 +102,6 @@ export function useSwipeDeck({ baseBody, filterKey, loggedIn }: Opts) {
       recordSwipe([current.uid], action).catch((err) =>
         console.warn('[swipe] falha ao gravar swipe', err)
       );
-    } else if (action === 'skip') {
-      addAnonSkip(current.uid);
     }
     setCards(rest);
   }, []);

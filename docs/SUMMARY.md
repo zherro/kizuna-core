@@ -35,6 +35,8 @@
 ## Plugins
 
 * [Plugins](plugins/README.md)
+  * [Plugin services](plugins/services.md)
+  * [Plugin search](plugins/search.md)
 
 ## Manutenção
 

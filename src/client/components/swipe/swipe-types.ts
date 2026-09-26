@@ -26,6 +26,9 @@ export type LikedItem = {
   category: string | null;
   cover_file_id: string | null;
   liked_at: string;
+  city?: string | null;
+  state?: string | null;
+  address_count?: number | null;
 };
 
 export const SWIPE_BATCH = 20;

@@ -14,7 +14,6 @@ import { RequireAuthProvider, consumePendingAuthAction, useRequireAuth } from '.
 import { SwipeCard, coverUrl } from './swipe-card';
 import { useSwipeDeck } from './use-swipe-deck';
 import { recordSwipe } from './swipe-api';
-import { clearAnonSkips, readAnonSkips } from './anon-skips';
 
 type Props = { basePath?: string; likedHref?: string };
 
@@ -91,7 +90,7 @@ function SwipePageInner({ basePath = '/descobrir', likedHref = '/curtidos' }: Pr
   };
 
   // Uma vez por transição anônimo → logado (inclui a hidratação do /api/auth/me depois de um
-  // reload): migra os passados do anônimo e aplica a curtida pendente que sobreviveu ao reload
+  // reload): aplica a curtida pendente que sobreviveu ao reload
   // (sessionStorage), gravando pelo uid — independente de qual card está no topo agora.
   const wasLoggedIn = useRef(false);
   useEffect(() => {
@@ -101,12 +100,6 @@ function SwipePageInner({ basePath = '/descobrir', likedHref = '/curtidos' }: Pr
     }
     if (wasLoggedIn.current) return;
     wasLoggedIn.current = true;
-    const skips = readAnonSkips();
-    if (skips.length) {
-      recordSwipe(skips, 'skip')
-        .then(clearAnonSkips)
-        .catch((err) => console.warn('[swipe] falha ao migrar passados', err));
-    }
     const pending = consumePendingAuthAction();
     if (pending?.startsWith('like:')) {
       const uid = pending.slice('like:'.length);

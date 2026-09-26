@@ -11,12 +11,22 @@ import {
 import type { WizardEntities, WizardStep, WizardStepProps } from '../../wizard/types';
 import {
   SERVICE_LOCATION_LABEL,
+  type ServiceAddress,
   type ServiceWizardState,
 } from '../service-type';
 import { StepHeader } from './step-header';
+import { AddressListEditor, type AddressListLabels } from './address-list-editor';
+import {
+  addAddress,
+  hasSinglePrimary,
+  isAddressComplete,
+  normalizePrimary,
+  syncServiceAddresses,
+} from './service-addresses';
 import { StepHint } from './step-hint';
 import {
   DEFAULT_LOCATION_PROFILE,
+  resolveMaxAddresses,
   type LocationOptionConfig,
   type LocationProfile,
   type ServiceLocationValue,
@@ -91,6 +101,8 @@ export function createStepLocation(profiles?: StepProfiles<LocationProfile>) {
     const { messages } = useAppPreferences();
     const t = messages.wizard;
     const optionMessages = (t.location as { options?: LocationOptionMessages }).options ?? {};
+    const addressesLabels = (t.location as { addresses?: AddressListLabels }).addresses;
+    const addresses = state.addresses ?? [];
     const [address, setAddress] = useState<AddressValue>(initialAddress);
     const selected = options.find((option) => option.value === value);
 
@@ -109,6 +121,19 @@ export function createStepLocation(profiles?: StepProfiles<LocationProfile>) {
         patch({ serviceLocation: '' });
       }
     }, [value, options, patch]);
+
+    // Model `addresses` selecionado sem nenhuma linha → abre já com uma linha (a principal).
+    const isAddresses = selected?.model === 'addresses';
+    useEffect(() => {
+      if (isAddresses && addresses.length === 0) {
+        patch({ addresses: addAddress([], resolveMaxAddresses(selected)) });
+      }
+    }, [isAddresses, addresses.length, selected, patch]);
+
+    const handleAddressesChange = (next: ServiceAddress[]) => {
+      const list = normalizePrimary(next);
+      patch({ addresses: list, addressComplete: list.some(isAddressComplete) });
+    };
 
     // O endereço em si continua local-only (não vira coluna — ver comentário da função), mas o
     // "completo?" precisa chegar no estado do wizard pra `canContinue` poder exigir o
@@ -178,6 +203,17 @@ export function createStepLocation(profiles?: StepProfiles<LocationProfile>) {
           </div>
         ) : null}
 
+        {isAddresses ? (
+          <div className="border-t border-border pt-6">
+            <AddressListEditor
+              addresses={addresses}
+              onChange={handleAddressesChange}
+              maxAddresses={resolveMaxAddresses(selected)}
+              labels={{ search: t.location.addressSearch, ...addressesLabels }}
+            />
+          </div>
+        ) : null}
+
         {selected?.model === 'identifier' && selectedHint ? (
           <StepHint tone="info">{selectedHint}</StepHint>
         ) : null}
@@ -203,11 +239,31 @@ export function createLocationStep(
       const options = resolveLocationOptions(profiles, ctx.entities, ctx.state);
       const option = options.find((o) => o.value === loc);
       if (!option) return false;
+      if (option.model === 'addresses') {
+        // Presencial com lista: ≥1 endereço completo e exatamente 1 principal (completo), em
+        // qualquer modo — o endereço agora é persistido, então vale também em edit/review.
+        const list = ctx.state.addresses ?? [];
+        const primary = list.find((a) => a.isPrimary);
+        return list.some(isAddressComplete) && hasSinglePrimary(list) && isAddressComplete(primary!);
+      }
       if (option.model !== 'address' || ctx.mode !== 'create') return true;
       return Boolean(ctx.state.addressComplete);
     },
     persist: async (ctx) => {
-      await ctx.persist({ serviceLocation: ctx.state.serviceLocation });
+      const r = await ctx.persist({ serviceLocation: ctx.state.serviceLocation });
+      const option = resolveLocationOptions(profiles, ctx.entities, ctx.state).find(
+        (o) => o.value === ctx.state.serviceLocation
+      );
+      if (option?.model !== 'addresses') return;
+      // Sem serviço ainda (mesma guarda do passo `images`) → nada a gravar; o estado segue local.
+      const serviceId = ctx.resourceId ?? (r?.item?.id as string | number | undefined) ?? null;
+      if (serviceId == null) return;
+      const saved = await syncServiceAddresses(
+        String(serviceId),
+        ctx.state.addresses ?? [],
+        ctx.state.addressesSnapshot ?? []
+      );
+      ctx.patch({ addresses: saved, addressesSnapshot: saved });
     },
   };
 }

@@ -25,7 +25,20 @@ export type PriceProfile = {
   /** Tabela de preços (salva em `services.extras.priceTable`). `true` = todos os campos;
    * objeto = escolhe os campos e o limite de linhas. Padrão: sem tabela. */
   priceTable?: boolean | PriceTableConfig;
+  /** Validade do anúncio (`services.expires_at`). Ausente/`false` = campo oculto; `true` =
+   * `'optional'`; `'optional'` = pode deixar em branco; `'required'` = exige data futura. */
+  expiresAt?: false | true | 'optional' | 'required';
 };
+
+export type ExpiresAtMode = 'hidden' | 'optional' | 'required';
+
+/** Modo da validade no perfil: `hidden` (padrão), `optional` ou `required`. */
+export function resolveExpiresAtMode(profile: PriceProfile): ExpiresAtMode {
+  const v = profile.expiresAt;
+  if (v === 'required') return 'required';
+  if (v === true || v === 'optional') return 'optional';
+  return 'hidden';
+}
 
 /** Campos de cada linha da tabela. O título aparece sempre; os demais são opcionais. */
 export const PRICE_TABLE_FIELDS = ['description', 'amount', 'link'] as const;
@@ -78,6 +91,18 @@ export function validatePriceProfile(profile: PriceProfile) {
       `stepProfiles.price: defaultValue "${String(profile.defaultValue)}" não está em "options"`
     );
   }
+  const expiresAt = profile.expiresAt as unknown;
+  if (
+    expiresAt !== undefined &&
+    expiresAt !== true &&
+    expiresAt !== false &&
+    expiresAt !== 'optional' &&
+    expiresAt !== 'required'
+  ) {
+    throw new Error(
+      `stepProfiles.price: expiresAt inválido "${String(expiresAt)}" (use true, false, 'optional' ou 'required')`
+    );
+  }
   if (typeof profile.priceTable === 'object' && profile.priceTable !== null) {
     const { fields, maxRows } = profile.priceTable;
     for (const field of fields ?? []) {
@@ -126,4 +151,44 @@ export function cleanPriceTable(rows: PriceTableRow[] | undefined): PriceTableRo
       };
     })
     .filter((row) => row.title.length > 0);
+}
+
+/** "YYYY-MM-DD" (input date) → fim desse dia no fuso local, em ISO UTC. Data inválida → `null`. */
+export function endOfLocalDayToIso(date: string): string | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
+  if (!m) return null;
+  const [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  const local = new Date(y, mo - 1, d, 23, 59, 59, 999);
+  // Rejeita datas que o Date "corrige" (ex.: 2026-02-31).
+  if (local.getFullYear() !== y || local.getMonth() !== mo - 1 || local.getDate() !== d) return null;
+  return local.toISOString();
+}
+
+/** ISO → "YYYY-MM-DD" no fuso local (o que o input date mostra). Vazio/inválido → `''`. */
+export function isoToLocalDate(iso: string | null | undefined): string {
+  if (!iso) return '';
+  const date = new Date(iso);
+  if (!Number.isFinite(date.getTime())) return '';
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+export type ExpiresAtError = 'required' | 'past' | null;
+
+/**
+ * Valida a validade do anúncio. `checkPast`: só checa "data no passado" quando o usuário criou
+ * o anúncio ou mexeu na data — um anúncio existente já vencido não trava o wizard.
+ */
+export function validateExpiresAt(
+  mode: ExpiresAtMode,
+  value: string | null | undefined,
+  checkPast: boolean,
+  now: Date = new Date()
+): ExpiresAtError {
+  if (mode === 'hidden') return null;
+  if (!value) return mode === 'required' ? 'required' : null;
+  const time = new Date(value).getTime();
+  if (!Number.isFinite(time)) return 'required';
+  if (checkPast && time < now.getTime()) return 'past';
+  return null;
 }

@@ -5,9 +5,14 @@ export type ServiceLocationValue = (typeof SERVICE_LOCATION_VALUES)[number];
 /**
  * Modelo de uma opção do passo de localização:
  *  - `address`: mostra o formulário de endereço e o exige antes de avançar;
+ *  - `addresses`: lista editável de N endereços (`maxAddresses`, padrão 5, 1..10) persistida em
+ *    `service_addresses`;
  *  - `identifier`: só o identificador (ex.: online) — sem endereço.
  */
-export type LocationModel = 'address' | 'identifier';
+export type LocationModel = 'address' | 'addresses' | 'identifier';
+
+export const DEFAULT_MAX_ADDRESSES = 5;
+export const MAX_ADDRESSES_LIMIT = 10;
 
 export type LocationOptionConfig = {
   /** O que vai pro banco (enum). O texto mostrado vem de `messages.wizard.location.options`. */
@@ -18,6 +23,8 @@ export type LocationOptionConfig = {
   /** Chave em `messages.wizard.location.options` dos textos desta opção. Padrão: o próprio
    * `value`. Serve pra mesma opção ter textos diferentes em grupos/categorias diferentes. */
   textKey?: string;
+  /** Só `model: 'addresses'`: máximo de endereços por serviço (padrão 5, mín 1, máx 10). */
+  maxAddresses?: number;
 };
 
 /** Perfil do passo `location` (ver `StepProfiles`). */
@@ -32,8 +39,9 @@ export type LocationProfile = {
 /** Padrão do core — o que o passo sempre teve. */
 export const DEFAULT_LOCATION_PROFILE: LocationProfile = {
   options: [
-    { value: 'no_cliente', model: 'address' },
-    { value: 'no_estabelecimento', model: 'address' },
+    // Endereço só existe no estabelecimento; no cliente e remoto não pedem endereço.
+    { value: 'no_estabelecimento', model: 'addresses', maxAddresses: DEFAULT_MAX_ADDRESSES },
+    { value: 'no_cliente', model: 'identifier' },
     { value: 'remoto', model: 'identifier' },
   ],
 };
@@ -50,10 +58,21 @@ export function validateLocationProfile(profile: LocationProfile) {
         `stepProfiles.location: value inválido "${String(option?.value)}" (use ${SERVICE_LOCATION_VALUES.join(', ')})`
       );
     }
-    if (option.model !== 'address' && option.model !== 'identifier') {
+    if (option.model !== 'address' && option.model !== 'addresses' && option.model !== 'identifier') {
       throw new Error(
-        `stepProfiles.location: model inválido "${String(option.model)}" (address|identifier)`
+        `stepProfiles.location: model inválido "${String(option.model)}" (address|addresses|identifier)`
       );
+    }
+    if (option.maxAddresses !== undefined) {
+      const n = option.maxAddresses;
+      if (option.model !== 'addresses') {
+        throw new Error('stepProfiles.location: "maxAddresses" só vale com model "addresses"');
+      }
+      if (!Number.isInteger(n) || n < 1 || n > MAX_ADDRESSES_LIMIT) {
+        throw new Error(
+          `stepProfiles.location: maxAddresses inválido "${String(n)}" (inteiro de 1 a ${MAX_ADDRESSES_LIMIT})`
+        );
+      }
     }
     if (seen.has(option.value)) {
       throw new Error(`stepProfiles.location: value repetido "${option.value}"`);
@@ -65,4 +84,11 @@ export function validateLocationProfile(profile: LocationProfile) {
       `stepProfiles.location: defaultValue "${String(profile.defaultValue)}" não está em "options"`
     );
   }
+}
+
+/** `maxAddresses` efetivo de uma opção (padrão 5, limitado a 1..10). */
+export function resolveMaxAddresses(option?: Pick<LocationOptionConfig, 'maxAddresses'>): number {
+  const raw = option?.maxAddresses;
+  if (raw === undefined) return DEFAULT_MAX_ADDRESSES;
+  return Math.min(MAX_ADDRESSES_LIMIT, Math.max(1, Math.trunc(raw)));
 }

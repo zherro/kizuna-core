@@ -74,7 +74,23 @@ export const WIZARD_PT_BR = {
     addressHint:
       'Usado só para posicionar você na busca por região. O endereço exato não aparece no anúncio.',
     addressSearch: 'Não sei meu CEP',
+    options: {
+      no_cliente: {
+        hint: 'O profissional vai até o cliente; nenhum endereço é necessário.',
+      },
+    },
     remoteHint: 'Anúncios online aparecem para todo o país, sem filtro de região.',
+    addresses: {
+      title: 'Endereços de atendimento',
+      hint: 'Adicione os locais onde você atende. Marque um como principal — é ele que define sua posição na busca.',
+      label: 'Apelido (opcional, ex.: Matriz)',
+      primary: 'Principal',
+      makePrimary: 'Tornar principal',
+      add: 'Adicionar endereço',
+      remove: 'Remover endereço',
+      empty: 'Nenhum endereço ainda.',
+      limit: 'Limite de endereços atingido.',
+    },
   },
   price: {
     title: 'Quanto custa?',
@@ -87,6 +103,15 @@ export const WIZARD_PT_BR = {
     quoteHint:
       'Com “sob orçamento” você pode deixar em branco. Se preencher, o público vê “a partir de R$ X”.',
     agree: 'A combinar',
+    // Validade do anúncio (perfil `stepProfiles.price` com `expiresAt`).
+    expiresAt: {
+      label: 'Válido até',
+      optional: '(opcional)',
+      hint: 'Depois dessa data o anúncio deixa de valer. O prazo termina no fim do dia escolhido.',
+      clear: 'Limpar data',
+      required: 'Informe até quando o anúncio vale',
+      past: 'A data não pode estar no passado',
+    },
     // Tabela de preços (perfil `stepProfiles.price` com `priceTable: true`).
     table: {
       title: 'Tabela de preços',

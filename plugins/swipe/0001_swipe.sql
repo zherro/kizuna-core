@@ -7,7 +7,7 @@
 --    TTL). Um `skip` comum nunca rebaixa um `like`.
 --  * `fn_swipe_deck`: embrulha `fn_search_services` (mesmos filtros, página 0, até 1000
 --    candidatos) e tira: curtidos, passados há menos de `swipe.skip_ttl_days` e `p_exclude`
---    (cards que o cliente já tem no buffer / passados do anônimo). Sempre página 0: o que já foi
+--    (cards que o cliente já tem no buffer). Sempre página 0: o que já foi
 --    decidido sai pelo anti-join, então offset não é necessário (e daria pulos/repetições).
 --    `p_price_min/p_price_max` aplicam a faixa de preço que o /busca filtra no cliente.
 --  * Usuário vem da sessão (`auth.fun_auth_user_id()`, NULL para anon), nunca de parâmetro.
@@ -124,7 +124,7 @@ BEGIN
   END IF;
 
   -- 'unlike' (descurtir explícito) grava 'skip' e sempre sobrescreve; um 'skip' comum nunca
-  -- rebaixa um 'like' existente (ex.: passados do anônimo migrados no login).
+  -- rebaixa um 'like' existente (ex.: passar de novo um card já curtido).
   INSERT INTO public.service_swipes (user_id, service_uid, action, updated_at)
   SELECT v_user, s.uid, CASE WHEN p_action = 'unlike' THEN 'skip' ELSE p_action END, now()
   FROM public.services s

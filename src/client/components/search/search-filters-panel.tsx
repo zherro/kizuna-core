@@ -3,6 +3,7 @@
 import { useMemo } from 'react';
 import { SlidersHorizontal, X } from 'lucide-react';
 import { useResourceOptions } from '../../hooks';
+import { countActiveFilters } from './use-search-filters';
 import type {
   SearchFilterPatch,
   SearchFilters,
@@ -57,12 +58,7 @@ export function SearchFiltersPanel({ filters, setFilters, resetFilters }: Props)
     [categories, filters.categoryId]
   );
 
-  const activeCount =
-    (filters.groupSlug ? 1 : 0) +
-    (filters.categoryId ? 1 : 0) +
-    filters.subcategoryIds.length +
-    (filters.query ? 1 : 0) +
-    (filters.priceMin != null || filters.priceMax != null ? 1 : 0);
+  const activeCount = countActiveFilters(filters);
 
   function toggleSub(id: number) {
     const next = filters.subcategoryIds.includes(id)
@@ -76,10 +72,14 @@ export function SearchFiltersPanel({ filters, setFilters, resetFilters }: Props)
       <div className="flex items-center gap-2">
         <SlidersHorizontal className="h-5 w-5 text-primary sm:h-4 sm:w-4" />
         <h2 className="text-lg font-bold sm:text-sm">Filtros</h2>
+        {/* Painel aberto: só uma bolinha avisa que há filtro ativo (o número fica no botão que
+            abre/minimiza o filtro). */}
         {activeCount > 0 && (
-          <span className="ml-auto rounded-full bg-primary/10 px-2 py-0.5 text-sm font-semibold text-primary sm:text-xs">
-            {activeCount}
-          </span>
+          <span
+            role="status"
+            aria-label={`${activeCount} filtro${activeCount > 1 ? 's' : ''} aplicado${activeCount > 1 ? 's' : ''}`}
+            className="ml-auto h-2.5 w-2.5 rounded-full bg-primary"
+          />
         )}
       </div>
 
@@ -151,7 +151,7 @@ export function SearchFiltersPanel({ filters, setFilters, resetFilters }: Props)
               onClick={() => setFilters({ categoryId: null, subcategoryIds: [] })}
               className="mt-1 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground sm:text-xs"
             >
-              <X className="h-4 w-4 sm:h-3 sm:w-3" /> limpar categoria
+              <X className="h-4 w-4 sm:h-3 sm:w-3" /> mudar categoria
             </button>
           )}
         </div>

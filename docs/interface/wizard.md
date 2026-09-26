@@ -295,8 +295,8 @@ outro é só o conteúdo do perfil:
 
 | Passo      | Perfil                                                                                     | Padrão do core                             |
 | ---------- | ------------------------------------------------------------------------------------------ | ------------------------------------------ |
-| `location` | `{ options: [{ value, model: "address"\|"identifier", icon?, textKey? }] }`                | as 3 opções do enum, como sempre           |
-| `price`    | `{ options: [{ value, textKey? }], startingPrice?: bool, priceTable?: bool }`               | todas as formas de cobrança + "a partir de", sem tabela |
+| `location` | `{ options: [{ value, model: "address"\|"addresses"\|"identifier", icon?, textKey?, maxAddresses? }] }`                | `no_estabelecimento` com `addresses` (máx. 5); `no_cliente` e `remoto` com `identifier`          |
+| `price`    | `{ options: [{ value, textKey? }], startingPrice?: bool, priceTable?: bool, expiresAt?: bool|"optional"|"required" }`               | todas as formas de cobrança + "a partir de", sem tabela |
 
 - **Seleção inicial** — `defaultValue` (um `value` de `options`) já abre com aquela opção
   selecionada, em `location` e `price`. **Sem `defaultValue` nada vem selecionado** (no `price` o passo
@@ -319,6 +319,83 @@ outro é só o conteúdo do perfil:
   de". Rótulos dos campos em `messages.wizard.price.table`.
 - Se o grupo/categoria muda e o valor já escolhido não existe nas novas opções, é trocado
   (`location` limpa; `price` cai na primeira opção).
+
+#### Model `addresses` (vários endereços)
+
+`model: "addresses"` troca o formulário único por uma **lista editável** de endereços (adicionar,
+remover, marcar o principal), gravada em `service_addresses` (ver [Plugin services](../plugins/services.md)).
+
+| Chave          | Padrão | Efeito                                                                                          |
+| -------------- | ------ | ----------------------------------------------------------------------------------------------- |
+| `maxAddresses` | `5`    | Máximo de endereços por serviço (inteiro de 1 a 10). Só vale com `addresses`; em outro model lança erro. |
+
+* Sempre há **um único endereço principal**.
+* **Endereço só no estabelecimento**: só a opção com `addresses` (`no_estabelecimento`) exige ao menos
+  1 endereço completo e 1 principal. `no_cliente` (atendimento na casa do cliente) e `remoto`
+  usam `model: "identifier"` e **não pedem endereço**. Trocar para uma opção `identifier` não apaga
+  os endereços já salvos: apenas deixam de ser exigidos e o passo não sincroniza (sem DELETE).
+* O passo persiste **por diff** (cria, atualiza e remove linhas) e só grava com o serviço já criado.
+* O perfil escolhido **substitui o anterior por inteiro** (sem merge), como em todo `stepProfiles`.
+* A busca filtra por **qualquer** endereço do serviço; veja [Plugin search](../plugins/search.md).
+
+```json
+"stepProfiles": {
+  "location": {
+    "default": {
+      "options": [
+        { "value": "no_estabelecimento", "model": "addresses", "maxAddresses": 5 },
+        { "value": "no_cliente", "model": "identifier" },
+        { "value": "remoto", "model": "identifier" }
+      ]
+    },
+    "byCategory": {
+      "cinema": {
+        "options": [{ "value": "no_estabelecimento", "model": "addresses", "maxAddresses": 3 }]
+      }
+    }
+  }
+}
+```
+
+#### Validade do anúncio (`price.expiresAt`)
+
+O perfil `price` também controla a validade do anúncio (coluna `services.expires_at`, `timestamptz`,
+nula = sem validade). A obrigatoriedade é definida por categoria/grupo, com a mesma precedência dos
+outros perfis:
+
+| Valor de `expiresAt`      | Modo       | Efeito                                                                              |
+| ------------------------- | ---------- | ----------------------------------------------------------------------------------- |
+| ausente ou `false`        | `hidden`   | Sem campo. O valor já gravado no anúncio é preservado.                              |
+| `true` ou `"optional"`    | `optional` | Campo "Válido até (opcional)". Pode ficar em branco; se preenchido, não pode ser passado. |
+| `"required"`              | `required` | Campo "Válido até" obrigatório, com data hoje ou futura.                            |
+
+- O campo é uma data (`input date`); o core grava o **fim do dia local** convertido para ISO UTC, e
+  mostra a data local ao editar. Há botão para limpar (grava `null`).
+- Em edição/revisão, uma data **já vencida** de um anúncio existente não trava o passo; só trava se a
+  pessoa alterar a data para o passado.
+- Valor inválido em `expiresAt` lança erro no boot (`true`, `false`, `"optional"` ou `"required"`).
+- Textos em `messages.wizard.price.expiresAt` (`label`, `optional`, `hint`, `clear`, `required`, `past`).
+- Como o perfil escolhido **substitui o anterior por inteiro**, uma categoria que exige validade precisa
+  repetir `options` (e o que mais quiser do perfil `default`). Exemplo — validade obrigatória só em cinema:
+
+```json
+"stepProfiles": {
+  "price": {
+    "default": { "options": [{ "value": "day" }, { "value": "service" }] },
+    "byCategory": {
+      "cinema": {
+        "options": [{ "value": "day" }, { "value": "service" }],
+        "expiresAt": "required"
+      }
+    }
+  }
+}
+```
+
+{% hint style="info" %}
+A validade é gravada em `services.expires_at`, mas a busca e o swipe ainda **não** filtram anúncios
+vencidos.
+{% endhint %}
 
 ```json
 "stepProfiles": {

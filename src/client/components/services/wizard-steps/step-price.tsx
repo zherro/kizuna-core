@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useAppPreferences } from '../../../providers/app-preferences-provider';
 import { Button } from '../../ui/button';
+import { Input } from '../../ui/input';
 import { CurrencyInput } from '../../ui/currency-input';
 import type { WizardEntities, WizardStep, WizardStepProps } from '../../wizard/types';
 import { PRICE_UNIT_LABEL } from '../service-labels';
@@ -15,13 +16,31 @@ import {
 import {
   DEFAULT_PRICE_PROFILE,
   cleanPriceTable,
+  endOfLocalDayToIso,
+  isoToLocalDate,
+  resolveExpiresAtMode,
   resolvePriceTable,
+  validateExpiresAt,
   type PriceProfile,
 } from './price-options';
 import { PriceTableEditor, type PriceTableLabels } from './price-table-editor';
 import { resolveStepProfile, type StepProfiles } from './step-profiles';
 import { StepHeader } from './step-header';
 import { StepHint } from './step-hint';
+
+type ExpiresAtMessages = {
+  label?: string;
+  optional?: string;
+  hint?: string;
+  clear?: string;
+  required?: string;
+  past?: string;
+};
+
+/** Mostra o erro de validade só se a validação de `canContinue` também barraria. */
+function expiresAtCheckPast(mode: string, touched: ReadonlySet<unknown>) {
+  return mode === 'create' || touched.has('expiresAt');
+}
 
 type PriceOptionMessages = Record<string, { title?: string; description?: string } | undefined>;
 
@@ -54,6 +73,7 @@ export function createStepPrice(profiles?: StepProfiles<PriceProfile>) {
     const profile = resolvePriceProfile(profiles, entities, state);
     const showAmount = profile.startingPrice !== false;
     const table = resolvePriceTable(profile);
+    const expiresMode = resolveExpiresAtMode(profile);
     const startingPrice = state.startingPrice ?? 0;
     const priceUnit = state.priceUnit ?? '';
     // "A combinar": sem valor fixo — desabilita o campo (o valor gravado fica 0). Começa ligado
@@ -64,6 +84,20 @@ export function createStepPrice(profiles?: StepProfiles<PriceProfile>) {
     const t = messages.wizard;
     const optionMessages = (t.price as { options?: PriceOptionMessages }).options ?? {};
     const tableLabels = (t.price as { table?: PriceTableLabels }).table;
+    const expiresMsg = (t.price as { expiresAt?: ExpiresAtMessages }).expiresAt ?? {};
+    const expiresLabels = {
+      label: expiresMsg.label ?? 'Válido até',
+      optional: expiresMsg.optional ?? '(opcional)',
+      hint:
+        expiresMsg.hint ??
+        'Depois dessa data o anúncio deixa de valer. O prazo termina no fim do dia escolhido.',
+      clear: expiresMsg.clear ?? 'Limpar data',
+      required: expiresMsg.required ?? 'Informe até quando o anúncio vale',
+      past: expiresMsg.past ?? 'A data não pode estar no passado',
+    };
+    const expiresError = touched.has('expiresAt')
+      ? validateExpiresAt(expiresMode, state.expiresAt, expiresAtCheckPast(mode, touched))
+      : null;
 
     // Default do perfil: `defaultValue`, senão (padrão do core) o default por categoria; sem
     // nenhum dos dois, nada vem selecionado. Só entra se for uma das opções do perfil.
@@ -148,6 +182,43 @@ export function createStepPrice(profiles?: StepProfiles<PriceProfile>) {
           </div>
         ) : null}
 
+        {expiresMode !== 'hidden' ? (
+          <div className="space-y-1.5">
+            <label htmlFor="expires-at" className="block text-sm font-medium text-foreground">
+              {expiresLabels.label}
+              {expiresMode === 'optional' ? ` ${expiresLabels.optional}` : ''}
+            </label>
+            <div className="flex max-w-md gap-2">
+              <Input
+                id="expires-at"
+                type="date"
+                value={isoToLocalDate(state.expiresAt)}
+                min={isoToLocalDate(new Date().toISOString())}
+                onChange={(event) => patch({ expiresAt: endOfLocalDayToIso(event.target.value) })}
+                aria-invalid={expiresError ? true : undefined}
+                className="h-12 text-base"
+              />
+              {state.expiresAt ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-12 shrink-0"
+                  onClick={() => patch({ expiresAt: null })}
+                >
+                  {expiresLabels.clear}
+                </Button>
+              ) : null}
+            </div>
+            {expiresError ? (
+              <p role="alert" className="text-sm text-destructive">
+                {expiresError === 'past' ? expiresLabels.past : expiresLabels.required}
+              </p>
+            ) : (
+              <p className="text-xs text-muted-foreground">{expiresLabels.hint}</p>
+            )}
+          </div>
+        ) : null}
+
         {table ? (
           <PriceTableEditor
             rows={state.priceTable ?? []}
@@ -172,12 +243,25 @@ export function createPriceStep(
     Component: createStepPrice(profiles),
     // Com forma de cobrança padrão sempre há uma selecionada; num perfil sem default o usuário
     // precisa escolher uma (nada vem selecionado).
-    canContinue: (ctx) => Boolean(ctx.state.priceUnit),
+    canContinue: (ctx) => {
+      if (!ctx.state.priceUnit) return false;
+      const mode = resolveExpiresAtMode(resolvePriceProfile(profiles, ctx.entities, ctx.state));
+      // Data vencida de um anúncio existente só barra se o usuário mexeu nela.
+      return !validateExpiresAt(
+        mode,
+        ctx.state.expiresAt,
+        expiresAtCheckPast(ctx.mode, ctx.touched)
+      );
+    },
     persist: async (ctx) => {
       const profile = resolvePriceProfile(profiles, ctx.entities, ctx.state);
       await ctx.persist({
         startingPrice: profile.startingPrice === false ? 0 : ctx.state.startingPrice,
         ...(ctx.state.priceUnit ? { priceUnit: ctx.state.priceUnit } : {}),
+        // Oculto: não manda a chave — o baseline (registro carregado) já carrega o valor atual.
+        ...(resolveExpiresAtMode(profile) !== 'hidden'
+          ? { expiresAt: ctx.state.expiresAt ?? null }
+          : {}),
       });
       // A tabela vive no jsonb `extras` (read-merge-write) — o resto de `extras` é preservado.
       if (resolvePriceTable(profile)) {

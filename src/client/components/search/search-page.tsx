@@ -9,9 +9,8 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ChevronRight, Filter, Search, X } from 'lucide-react';
+import { Filter, MapPin, Search, X } from 'lucide-react';
 import {
   Sheet,
   SheetContent,
@@ -27,7 +26,18 @@ import { LocationGate } from './location-gate';
 import { SearchChat } from './search-chat';
 import { SearchFiltersPanel } from './search-filters-panel';
 import { SearchResultsView, type ResultsScope } from './search-results-view';
-import { useSearchFilters } from './use-search-filters';
+import {
+  CategoryCarousel,
+  type CategoryCarouselItem,
+  type CategoryCarouselProps,
+} from '../taxonomy/category-carousel';
+import { useResourceOptions } from '../../hooks';
+import { Typography } from '../ui/typography';
+import {
+  countActiveFilters,
+  shouldHideCategoryCarousel,
+  useSearchFilters,
+} from './use-search-filters';
 import {
   SEARCH_RPC,
   type ServiceResult,
@@ -38,6 +48,13 @@ import {
 export type SearchPageProps = {
   /** Rota em que a página está montada (os filtros vivem na URL). Padrão `/busca`. */
   basePath?: string;
+  /**
+   * Props repassadas ao `CategoryCarousel` (o mesmo componente da home, sem alteração) — passe as
+   * mesmas da home (`variant`, `onlyWithListings`…) pra ficar igual; sem elas valem os padrões do
+   * componente, como na home.
+   * `hrefFor` é controlado pela página (mantém os filtros da URL).
+   */
+  categoryCarousel?: Omit<CategoryCarouselProps, 'hrefFor'>;
   /**
    * Segundo modo da página (ex.: "Pedir um serviço" — criar demanda). Quando informado, aparece um
    * toggle no topo e `?modo=pedir` troca a busca pelo conteúdo de `render`. O plugin `search` não
@@ -71,7 +88,11 @@ function priceOf(r: ServiceResult): number | null {
  * absurdo na URL disparar dezenas de requests em sequência no mount. */
 const MAX_REPLAY_PAGES = 10;
 
-function SearchPageInner({ basePath = '/busca', requestMode }: SearchPageProps) {
+function SearchPageInner({
+  basePath = '/busca',
+  requestMode,
+  categoryCarousel,
+}: SearchPageProps) {
   const stored = getStoredLocation();
   const location = useMemo(
     () => ({
@@ -148,6 +169,7 @@ function SearchPageInner({ basePath = '/busca', requestMode }: SearchPageProps) 
     return JSON.stringify([
       b.p_state,
       b.p_city_id,
+      b.p_city_ibge,
       b.p_group_category_slug,
       b.p_category_id,
       b.p_subcategories,
@@ -356,10 +378,33 @@ function SearchPageInner({ basePath = '/busca', requestMode }: SearchPageProps) 
     });
   };
 
-  const activeFilterCount =
-    (filters.categoryId ? 1 : 0) +
-    filters.subcategoryIds.length +
-    (filters.priceMin != null || filters.priceMax != null ? 1 : 0);
+  const activeFilterCount = countActiveFilters(filters);
+  // Carrossel de categorias sob a busca: some (com transição) só com categoria + mais um filtro.
+  const hideCarousel = shouldHideCategoryCarousel(filters);
+  const { options: categoryRows } = useResourceOptions<{
+    id: string | number;
+    categoryId: string | number;
+    categoryName?: string;
+  }>({ resource: 'category_stats' });
+  const activeCategoryName = useMemo(
+    () =>
+      (categoryRows ?? []).find((row) => Number(row.categoryId) === filters.categoryId)
+        ?.categoryName ?? null,
+    [categoryRows, filters.categoryId]
+  );
+  const carouselHref = useCallback(
+    (item: CategoryCarouselItem) => {
+      const sp = new URLSearchParams(searchParams.toString());
+      sp.set('categoryId', String(item.id));
+      sp.delete('subcategoryIds');
+      sp.delete('page');
+      return `${basePath}?${sp.toString()}`;
+    },
+    [searchParams, basePath]
+  );
+  const locationLabel = location.cityName || location.stateName || location.state;
+  const collapseBase =
+    'grid transition-[grid-template-rows,opacity] duration-300 ease-out motion-reduce:transition-none';
 
   return (
     <main className="min-h-screen bg-background pb-10 xl:pb-0">
@@ -371,30 +416,17 @@ function SearchPageInner({ basePath = '/busca', requestMode }: SearchPageProps) 
       >
         <div
           className={cn(
-            'mx-auto w-full px-4 py-8',
+            'mx-auto w-full px-4 py-4 sm:py-5',
             pageMode === 'demanda' ? 'max-w-4xl text-left' : 'max-w-3xl text-center'
           )}
         >
-          <nav
-            className={cn(
-              'mb-3 flex items-center gap-1 text-xs text-muted-foreground',
-              pageMode === 'demanda' ? 'justify-start' : 'justify-center'
-            )}
-          >
-            <Link href="/" className="hover:text-foreground">
-              Início
-            </Link>
-            <ChevronRight className="h-3 w-3" />
-            <span className="text-foreground">Buscar serviços</span>
-          </nav>
-
           {/* Toggle "Buscar profissionais" / "Pedir um serviço" — funciona como o título da
               página: escolher "Pedir um serviço" substitui busca+resultados pelo fluxo de criar
               demanda (categoria + formulário), sem modal. */}
           {requestMode ? (
           <div
             className={cn(
-              'mb-4 inline-flex rounded-full border border-border bg-muted p-1 text-sm',
+              'mb-3 inline-flex rounded-full border border-border bg-muted p-1 text-sm',
               pageMode !== 'demanda' && 'mx-auto'
             )}
           >
@@ -429,62 +461,105 @@ function SearchPageInner({ basePath = '/busca', requestMode }: SearchPageProps) 
             requestMode.render({ categoryId: filters.categoryId ?? null })
           ) : (
             <>
-              <h1 className="text-2xl font-bold sm:text-3xl">Buscar com IA</h1>
-              <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
-                Descreva o que você precisa em poucas palavras — nossa IA entende e já filtra pra
-                você.
-              </p>
+              <Typography.H4 font="display" className="text-muted-foreground">
+                Buscar com IA
+              </Typography.H4>
               <form
-                className="mt-4 flex items-center gap-2 rounded-full border border-border bg-background p-1.5 shadow-sm"
+                className="mt-3 flex items-center gap-2 rounded-full border-2 border-primary/40 bg-background p-2 shadow-md transition focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/15"
                 onSubmit={(e) => {
                   e.preventDefault();
                   openChat(heroInput);
                   setHeroInput('');
                 }}
               >
+                <button
+                  type="button"
+                  onClick={() => setLocationOpen(true)}
+                  aria-label="Trocar localização"
+                  title={location.autoDetected ? 'Detectado automaticamente — clique para trocar' : 'Trocar localização'}
+                  className="hidden h-12 shrink-0 items-center gap-1 rounded-full bg-muted px-3 text-xs font-medium text-foreground transition hover:bg-muted/70 sm:inline-flex"
+                >
+                  <MapPin className="h-3.5 w-3.5 text-primary" />
+                  <span className="max-w-[9rem] truncate">{locationLabel}</span>
+                </button>
                 <input
                   value={heroInput}
                   onChange={(e) => setHeroInput(e.target.value)}
                   placeholder="Descreva o que você precisa…"
-                  className="h-10 min-w-0 flex-1 bg-transparent px-3 text-sm outline-none"
+                  className="h-12 min-w-0 flex-1 bg-transparent px-3 text-base outline-none placeholder:text-muted-foreground/70"
                 />
                 <button
                   type="button"
                   onClick={() => openChat(heroInput)}
                   aria-label="Falar com o assistente"
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary transition hover:bg-primary/20"
+                  className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary transition hover:bg-primary/20"
                 >
                   <AssistantIcon className="h-[30px] w-[30px]" />
                 </button>
                 <button
                   type="submit"
                   aria-label="Buscar"
-                  className="h-10 shrink-0 rounded-full bg-primary px-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90 sm:px-5"
+                  className="h-12 shrink-0 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90 sm:px-5"
                 >
                   <Search className="h-4 w-4 sm:hidden" />
                   <span className="hidden sm:inline">Buscar</span>
                 </button>
               </form>
-              <p className="mt-2 text-xs text-muted-foreground">
-                Buscando em{' '}
-                <span className="font-medium text-foreground">
-                  {location.cityName || location.stateName || location.state}
-                </span>
-                {location.cityName && location.stateName ? ` · ${location.stateName}` : ''}
-                {location.autoDetected && (
-                  <span className="italic"> (detectado automaticamente)</span>
-                )}
+              {/* Localização no mobile (no desktop ela é o chip dentro da barra). */}
+              <p className="mt-1.5 text-xs text-muted-foreground sm:hidden">
+                Buscando em <span className="font-medium text-foreground">{locationLabel}</span>
+                {location.autoDetected && <span className="italic"> (detectado automaticamente)</span>}
                 {' — '}
-                <button
-                  onClick={() => setLocationOpen(true)}
-                  className="underline hover:text-foreground"
-                >
+                <button onClick={() => setLocationOpen(true)} className="underline hover:text-foreground">
                   trocar
                 </button>
               </p>
+
+              {/* Categoria ativa: entra (com transição) quando o carrossel sai. Clicar remove a
+                  categoria — e o carrossel volta pra escolher outra. */}
+              <div
+                className={cn(collapseBase, hideCarousel ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0')}
+                aria-hidden={!hideCarousel}
+                inert={!hideCarousel}
+              >
+                <div className="overflow-hidden">
+                  <div className="pt-3">
+                    <button
+                      type="button"
+                      onClick={() => setFilters({ categoryId: null, subcategoryIds: [] })}
+                      aria-label={`Remover a categoria ${activeCategoryName ?? ''} e escolher outra`}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-primary bg-primary/10 px-3 py-1.5 text-sm font-medium text-primary"
+                    >
+                      {activeCategoryName ?? 'Categoria'}
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
             </>
           )}
         </div>
+
+        {/* Carrossel de categorias logo abaixo da busca. Só some com categoria + mais um filtro —
+            só com a categoria ele fica, pra quem está navegando entre elas. */}
+        {pageMode === 'buscar' && (
+          <div
+            className={cn(collapseBase, hideCarousel ? 'grid-rows-[0fr] opacity-0' : 'grid-rows-[1fr] opacity-100')}
+            aria-hidden={hideCarousel}
+            inert={hideCarousel}
+          >
+            <div className="overflow-hidden">
+              {/* Sem o título "Categorias": só um filete suave separando a busca do carrossel. */}
+              <hr className="w-full border-border/40" />
+              <CategoryCarousel
+                title=""
+                className="w-full px-4 pb-6 pt-6"
+                {...categoryCarousel}
+                hrefFor={carouselHref}
+              />
+            </div>
+          </div>
+        )}
       </section>
 
       {pageMode === 'buscar' && (

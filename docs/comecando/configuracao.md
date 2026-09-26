@@ -221,6 +221,49 @@ passos para certos grupos). A referência completa, com precedência e exemplos,
 }
 ```
 
+### Vários endereços por serviço
+
+No `stepProfiles.location`, `model: "addresses"` permite N endereços (com um principal) por opção.
+
+| Campo          | Tipo    | Padrão | Efeito                                         |
+| -------------- | ------- | ------ | ---------------------------------------------- |
+| `model`        | string  | —      | `address`, `addresses` ou `identifier`.        |
+| `maxAddresses` | inteiro | `5`    | Só com `addresses`; de 1 a 10.                 |
+
+```json
+"stepProfiles": {
+  "location": {
+    "default": {
+      "options": [
+        { "value": "no_estabelecimento", "model": "addresses", "maxAddresses": 5 },
+        { "value": "no_cliente", "model": "identifier" },
+        { "value": "remoto", "model": "identifier" }
+      ]
+    }
+  }
+}
+```
+
+Endereço só no estabelecimento: `no_estabelecimento` exige ao menos um endereço; `no_cliente` e `remoto` não pedem endereço. Detalhes em [Wizard](../interface/wizard.md).
+
+### Validade do anúncio
+
+O perfil `price` aceita `"expiresAt": "required" | "optional" | true | false` (ausente = campo oculto),
+por categoria/grupo. Como o perfil escolhido substitui o anterior por inteiro, repita `options`:
+
+```json
+"stepProfiles": {
+  "price": {
+    "byCategory": {
+      "cinema": { "options": [{ "value": "day" }, { "value": "service" }], "expiresAt": "required" }
+    }
+  }
+}
+```
+
+Detalhes (modos, fuso, edição) em [Wizard](../interface/wizard.md). A validade fica em
+`services.expires_at`; a busca e o swipe omitem anúncios vencidos.
+
 ## Adicionando uma chave nova
 
 Se uma feature do core ou do app precisa ser configurável por projeto:
