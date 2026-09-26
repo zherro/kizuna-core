@@ -3,7 +3,14 @@
 import { useState } from 'react';
 import { Button } from '../ui/button';
 import { Code, List } from 'lucide-react';
-import { NON_VALUE_TYPES, fieldKey, type FormSchema, type FormValues } from './types';
+import {
+  NON_VALUE_TYPES,
+  fieldKey,
+  resolveItemFields,
+  type FormField,
+  type FormSchema,
+  type FormValues,
+} from './types';
 import { collectOutput, isFieldVisible } from './validate';
 
 type Props = {
@@ -16,6 +23,42 @@ function formatValue(v: unknown): string {
   if (Array.isArray(v)) return v.length ? v.join(', ') : '—';
   if (typeof v === 'boolean') return v ? 'Sim' : 'Não';
   return String(v);
+}
+
+function ListResult({ field, value }: { field: FormField; value: unknown }) {
+  const subs = resolveItemFields(field).filter((s) => !s.behavior.hidden);
+  const rows = (Array.isArray(value) ? value : []).filter(
+    (r): r is Record<string, unknown> => Boolean(r) && typeof r === 'object'
+  );
+  if (rows.length === 0) return <span>—</span>;
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-left text-xs">
+        <thead>
+          <tr className="text-muted-foreground">
+            <th className="pr-3 font-medium">#</th>
+            {subs.map((s) => (
+              <th key={s.id} className="pr-3 font-medium">
+                {s.label || fieldKey(s)}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, i) => (
+            <tr key={i} className="align-top">
+              <td className="pr-3 text-muted-foreground">{i + 1}</td>
+              {subs.map((s) => (
+                <td key={s.id} className="pr-3">
+                  {formatValue(row[fieldKey(s)])}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 }
 
 export function FormResultViewer({ schema, values }: Props) {
@@ -58,9 +101,13 @@ export function FormResultViewer({ schema, values }: Props) {
                   <span className="truncate font-medium text-muted-foreground">
                     {f.label || key}
                   </span>
-                  <span className="truncate">
+                  <span className={f.type === 'list' ? 'min-w-0' : 'truncate'}>
                     {visible ? (
-                      formatValue(values[key])
+                      f.type === 'list' ? (
+                        <ListResult field={f} value={output[key]} />
+                      ) : (
+                        formatValue(values[key])
+                      )
                     ) : (
                       <em className="text-muted-foreground">oculto</em>
                     )}

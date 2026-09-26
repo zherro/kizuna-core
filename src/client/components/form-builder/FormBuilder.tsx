@@ -76,6 +76,7 @@ const TOOLBOX: FieldType[] = [
   'divider',
   'heading',
   'info',
+  'list',
 ];
 
 const SIMPLE_TOOLBOX: FieldType[] = [
@@ -89,6 +90,7 @@ const SIMPLE_TOOLBOX: FieldType[] = [
   'radio',
   'checkbox',
   'upload',
+  'list',
   'heading',
 ];
 
@@ -132,6 +134,7 @@ export function FormBuilder({ value: schema, onChange }: Props) {
       key: orig.key ? `${orig.key}_copy` : '',
       name: orig.key ? `${orig.key}_copy` : '',
       visibleWhen: orig.visibleWhen ? { ...orig.visibleWhen } : undefined,
+      itemFields: orig.itemFields?.map((sub) => ({ ...sub, id: uid() })),
     };
     const next = [...schema.fields];
     next.splice(idx + 1, 0, copy);
@@ -157,6 +160,7 @@ export function FormBuilder({ value: schema, onChange }: Props) {
         mode={mode}
         priorFields={priorFields}
         keyError={keyIssues[selected.id]}
+        keyIssues={keyIssues}
         onChange={(f) => updateField(selected.id, f)}
         onDelete={() => {
           deleteField(selected.id);

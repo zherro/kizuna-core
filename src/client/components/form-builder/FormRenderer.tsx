@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useEffect, useMemo, useState } from 'react';
-import { HelpCircle, Star } from 'lucide-react';
+import { ChevronDown, ChevronUp, HelpCircle, Plus, Star, Trash2 } from 'lucide-react';
 import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
 import { Label } from '../ui/label';
@@ -17,13 +17,17 @@ import { cn, resolveLucideIcon } from '../../../lib/utils';
 import { useResourceOptions } from '../../hooks/use-resource-options';
 import {
   DEFAULT_GRID,
+  DEFAULT_LIST_MAX_ITEMS,
   OPTION_TYPES,
   fieldKey,
+  listErrorKey,
+  resolveItemFields,
   type Breakpoint,
   type FormField,
   type FormSchema,
   type FormValues,
   type GridConfig,
+  type ListItem,
   type SelectOption,
 } from './types';
 import { collectOutput, isFieldVisible, validate } from './validate';
@@ -94,6 +98,7 @@ function StaticOptionsField(props: BaseFieldProps) {
 }
 
 function FieldSlot(props: BaseFieldProps) {
+  if (props.field.type === 'list') return <ListField {...props} />;
   const usesResource =
     OPTION_TYPES.has(props.field.type) && Boolean(props.field.optionsSource?.resource);
   return usesResource ? <ResourceOptionsField {...props} /> : <StaticOptionsField {...props} />;
@@ -108,6 +113,10 @@ type BaseFieldProps = {
   value: unknown;
   error?: string;
   onChange: (v: unknown) => void;
+  /** `list` only — the full error map (cells are keyed `campo[index].sub`). */
+  errors?: Record<string, string>;
+  /** `list` only — width used to resolve the sub-field grid. */
+  width?: number;
 };
 
 function BaseField({
@@ -398,6 +407,148 @@ function BaseField({
 }
 
 /* ------------------------------------------------------------------ */
+/* List field (repeatable group of sub-fields)                          */
+/* ------------------------------------------------------------------ */
+
+function ListField({ field, value, error, onChange, errors = {}, width = 1280 }: BaseFieldProps) {
+  const subs = resolveItemFields(field).filter((s) => !s.behavior.hidden);
+  const items: ListItem[] = Array.isArray(value)
+    ? (value as unknown[]).map((it) => (it && typeof it === 'object' ? (it as ListItem) : {}))
+    : [];
+  const locked = Boolean(field.behavior.readOnly || field.behavior.disabled);
+  const maxItems = field.maxItems ?? DEFAULT_LIST_MAX_ITEMS;
+  const canAdd = !locked && items.length < maxItems;
+  const key = fieldKey(field);
+  const itemLabel = field.itemLabel || 'Item';
+
+  const emit = (next: ListItem[]) => onChange(next);
+  const move = (from: number, to: number) => {
+    if (to < 0 || to >= items.length) return;
+    const next = [...items];
+    const [it] = next.splice(from, 1);
+    next.splice(to, 0, it);
+    emit(next);
+  };
+
+  return (
+    <div className="space-y-2" data-list-field={key}>
+      {field.label && (
+        <Label className="flex items-center gap-1">
+          {field.label}
+          {field.behavior.required && <span className="text-destructive">*</span>}
+        </Label>
+      )}
+      {field.description && <p className="text-xs text-muted-foreground">{field.description}</p>}
+
+      {items.length === 0 && (
+        <p className="rounded-md border border-dashed p-3 text-center text-xs text-muted-foreground">
+          Nenhum item adicionado.
+        </p>
+      )}
+
+      {items.map((item, index) => (
+        <div key={index} className="space-y-3 rounded-md border bg-card p-3" data-list-item={index}>
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-sm font-medium">
+              {itemLabel} {index + 1}
+            </p>
+            {!locked && (
+              <div className="flex items-center gap-1">
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  className="h-7 w-7"
+                  disabled={index === 0}
+                  onClick={() => move(index, index - 1)}
+                  aria-label={`Subir ${itemLabel} ${index + 1}`}
+                >
+                  <ChevronUp className="h-4 w-4" />
+                </Button>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  className="h-7 w-7"
+                  disabled={index === items.length - 1}
+                  onClick={() => move(index, index + 1)}
+                  aria-label={`Descer ${itemLabel} ${index + 1}`}
+                >
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  className="h-7 w-7"
+                  onClick={() => emit(items.filter((_, i) => i !== index))}
+                  aria-label={`Remover ${itemLabel} ${index + 1}`}
+                >
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+              </div>
+            )}
+          </div>
+          <div className="grid grid-cols-12 gap-3">
+            {subs.map((sub) => {
+              const subKey = fieldKey(sub);
+              const cell: FormField = {
+                ...sub,
+                id: `${field.id}_${index}_${sub.id}`,
+                behavior: locked ? { ...sub.behavior, disabled: true } : sub.behavior,
+              };
+              const span = activeSpan(sub.grid, width);
+              return (
+                <div
+                  key={sub.id}
+                  style={{ gridColumn: `span ${span} / span ${span}`, order: sub.grid.order }}
+                >
+                  <FieldSlot
+                    field={cell}
+                    value={item[subKey]}
+                    error={errors[listErrorKey(key, index, subKey)]}
+                    onChange={(v) => {
+                      const next = [...items];
+                      next[index] = { ...item, [subKey]: v };
+                      emit(next);
+                    }}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+
+      <div className="flex items-center justify-between gap-2">
+        {!locked ? (
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={!canAdd}
+            onClick={() => emit([...items, {}])}
+          >
+            <Plus className="mr-1 h-3.5 w-3.5" /> Adicionar {itemLabel.toLowerCase()}
+          </Button>
+        ) : (
+          <span />
+        )}
+        {field.maxItems != null && (
+          <span className="text-xs text-muted-foreground">
+            {items.length}/{maxItems}
+          </span>
+        )}
+      </div>
+      {field.appearance.helpText && (
+        <p className="text-xs text-muted-foreground">{field.appearance.helpText}</p>
+      )}
+      {error && <p className="text-xs font-medium text-destructive">{error}</p>}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /* FormRenderer                                                         */
 /* ------------------------------------------------------------------ */
 
@@ -439,7 +590,8 @@ export function FormRenderer({
       )}
       <div className="grid grid-cols-12 gap-4">
         {visibleFields.map((f) => {
-          const fullWidth = f.type === 'divider' || f.type === 'heading' || f.type === 'info';
+          const fullWidth =
+            f.type === 'divider' || f.type === 'heading' || f.type === 'info' || f.type === 'list';
           const span = fullWidth ? 12 : activeSpan(f.grid, width);
           const key = fieldKey(f);
           return (
@@ -451,6 +603,8 @@ export function FormRenderer({
                 field={f}
                 value={values[key]}
                 error={errors[key]}
+                errors={f.type === 'list' ? errors : undefined}
+                width={width}
                 onChange={(v) => onChange({ ...values, [key]: v })}
               />
             </div>

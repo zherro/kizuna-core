@@ -35,7 +35,8 @@ export type FieldType =
   | 'hidden'
   | 'divider'
   | 'heading'
-  | 'info';
+  | 'info'
+  | 'list';
 
 export type Breakpoint = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl';
 
@@ -111,6 +112,14 @@ export type FormField = {
   min?: number;
   max?: number;
   step?: number;
+  /** `list` only — sub-fields repeated in every item (keys unique within the list). */
+  itemFields?: FormField[];
+  /** `list` only — minimum number of items. */
+  minItems?: number;
+  /** `list` only — maximum number of items (default `DEFAULT_LIST_MAX_ITEMS`). */
+  maxItems?: number;
+  /** `list` only — label of each item, e.g. `Sessão` (rendered as "Sessão 1", "Sessão 2"…). */
+  itemLabel?: string;
 };
 
 export type FormSchema = {
@@ -148,6 +157,7 @@ export const FIELD_TYPE_LABELS: Record<FieldType, string> = {
   divider: 'Divider',
   heading: 'Heading',
   info: 'Texto Informativo',
+  list: 'Lista repetível',
 };
 
 export const DEFAULT_GRID: GridConfig = { xs: 12, sm: 12, md: 6, lg: 6, xl: 6, '2xl': 6 };
@@ -158,6 +168,33 @@ export const NON_VALUE_TYPES: ReadonlySet<FieldType> = new Set<FieldType>([
   'heading',
   'info',
 ]);
+
+/** Default upper bound of items in a `list` field when `maxItems` is not set. */
+export const DEFAULT_LIST_MAX_ITEMS = 200;
+
+/** Types allowed as `list` sub-fields (no nested `list`, layout, upload or image). */
+export const LIST_ITEM_TYPES: ReadonlySet<FieldType> = new Set<FieldType>([
+  'text',
+  'textarea',
+  'number',
+  'decimal',
+  'currency',
+  'date',
+  'time',
+  'datetime',
+  'phone',
+  'email',
+  'url',
+  'select',
+  'multiselect',
+  'radio',
+  'checkbox',
+  'switch',
+  'hidden',
+]);
+
+/** A `list` value: one record per item, keyed by the sub-field keys. */
+export type ListItem = Record<string, unknown>;
 
 /** Field types offering an option list. */
 export const OPTION_TYPES: ReadonlySet<FieldType> = new Set<FieldType>([
@@ -213,12 +250,45 @@ export function createField(type: FieldType): FormField {
   if (type === 'heading') base.label = 'Título da seção';
   if (type === 'info') base.label = 'Texto informativo';
   if (type === 'divider') base.label = '';
+  if (type === 'list') {
+    base.itemFields = [];
+    base.itemLabel = 'Item';
+    base.grid = { ...DEFAULT_GRID, md: 12, lg: 12, xl: 12, '2xl': 12 };
+  }
   return base;
 }
 
 /** Effective output key for a field (falls back to id for not-yet-keyed drafts). */
 export function fieldKey(field: Pick<FormField, 'key' | 'id'>): string {
   return field.key || field.id;
+}
+
+/**
+ * Sub-fields of a `list`, normalized: disallowed types are dropped and missing
+ * `id`/`grid`/`behavior`/`validation`/`appearance` are defaulted, so schemas
+ * authored by hand (SQL seeds) render and validate without extra guards.
+ */
+export function resolveItemFields(field: Pick<FormField, 'itemFields' | 'id'>): FormField[] {
+  const out: FormField[] = [];
+  for (const sub of field.itemFields ?? []) {
+    if (!sub || !LIST_ITEM_TYPES.has(sub.type)) continue;
+    out.push({
+      ...sub,
+      id: sub.id || `${field.id}_${sub.key}`,
+      name: sub.name || sub.key,
+      label: sub.label ?? '',
+      grid: sub.grid ?? {},
+      behavior: sub.behavior ?? {},
+      validation: sub.validation ?? {},
+      appearance: sub.appearance ?? {},
+    });
+  }
+  return out;
+}
+
+/** Error-map key of a list cell: `campo[index].sub`. */
+export function listErrorKey(listKey: string, index: number, subKey: string): string {
+  return `${listKey}[${index}].${subKey}`;
 }
 
 /**
@@ -245,6 +315,34 @@ export function collectKeyIssues(schema: FormSchema): Record<string, string> {
       continue;
     }
     seen.set(f.key, f.id);
+  }
+  for (const f of schema.fields) {
+    if (f.type !== 'list') continue;
+    const subSeen = new Map<string, string>();
+    for (const sub of f.itemFields ?? []) {
+      if (!LIST_ITEM_TYPES.has(sub.type)) {
+        issues[sub.id] = `Tipo "${sub.type}" não é permitido dentro de uma lista.`;
+        continue;
+      }
+      if (!sub.key) {
+        issues[sub.id] = 'Defina uma chave para este sub-campo.';
+        continue;
+      }
+      if (!KEY_REGEX.test(sub.key)) {
+        issues[sub.id] = 'Chave inválida (use letras minúsculas, números e _).';
+        continue;
+      }
+      const prev = subSeen.get(sub.key);
+      if (prev) {
+        issues[sub.id] = `Chave duplicada: "${sub.key}".`;
+        issues[prev] = `Chave duplicada: "${sub.key}".`;
+        continue;
+      }
+      subSeen.set(sub.key, sub.id);
+    }
+    if (issues[f.id] === undefined && (f.itemFields ?? []).some((s) => issues[s.id] !== undefined)) {
+      issues[f.id] = 'Corrija as chaves dos sub-campos da lista.';
+    }
   }
   return issues;
 }

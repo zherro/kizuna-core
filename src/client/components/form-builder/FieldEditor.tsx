@@ -7,13 +7,28 @@ import { Label } from '../ui/label';
 import { Switch } from '../ui/switch';
 import { Button } from '../ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../ui/accordion';
-import { Copy, Trash2, GripVertical, Plus, Lock, Unlock } from 'lucide-react';
 import {
+  ChevronDown,
+  ChevronUp,
+  Copy,
+  Trash2,
+  GripVertical,
+  Plus,
+  Lock,
+  Unlock,
+} from 'lucide-react';
+import { cn } from '../../../lib/utils';
+import {
+  DEFAULT_LIST_MAX_ITEMS,
+  FIELD_TYPE_LABELS,
   KEY_REGEX,
+  LIST_ITEM_TYPES,
   OPTION_TYPES,
+  createField,
   slugifyKey,
   uid,
   type Breakpoint,
+  type FieldType,
   type FormField,
   type SelectOption,
   type VisibleWhen,
@@ -21,6 +36,7 @@ import {
 
 const BPS: Breakpoint[] = ['xs', 'sm', 'md', 'lg', 'xl', '2xl'];
 const VISIBLE_OPS: VisibleWhen['op'][] = ['eq', 'ne', 'in', 'gt', 'lt', 'truthy'];
+const LIST_ITEM_TYPE_ORDER = Array.from(LIST_ITEM_TYPES);
 
 type Props = {
   field: FormField;
@@ -32,6 +48,8 @@ type Props = {
   priorFields?: FormField[];
   /** duplicate/invalid-key message for this field, surfaced by FormBuilder */
   keyError?: string;
+  /** key problems by field id (also covers the sub-fields of a list), from collectKeyIssues */
+  keyIssues?: Record<string, string>;
 };
 
 export function FieldEditor({
@@ -42,6 +60,7 @@ export function FieldEditor({
   mode = 'advanced',
   priorFields = [],
   keyError,
+  keyIssues = {},
 }: Props) {
   const [keyLocked, setKeyLocked] = React.useState(true);
   const trackingKey = !field.key;
@@ -146,9 +165,15 @@ export function FieldEditor({
       </div>
 
       {mode === 'simple' ? (
-        <SimpleEditor field={field} patch={patch} patchBeh={patchBeh} setLabel={setLabel} />
+        <SimpleEditor
+          field={field}
+          patch={patch}
+          patchBeh={patchBeh}
+          setLabel={setLabel}
+          keyIssues={keyIssues}
+        />
       ) : (
-        <Accordion type="multiple" defaultValue={['info', 'behavior']}>
+        <Accordion type="multiple" defaultValue={field.type === 'list' ? ['info', 'behavior', 'list'] : ['info', 'behavior']}>
           <AccordionItem value="info">
             <AccordionTrigger>Informações</AccordionTrigger>
             <AccordionContent className="space-y-2">
@@ -202,6 +227,15 @@ export function FieldEditor({
               </div>
             </AccordionContent>
           </AccordionItem>
+
+          {field.type === 'list' && (
+            <AccordionItem value="list">
+              <AccordionTrigger>Itens da lista</AccordionTrigger>
+              <AccordionContent>
+                <ListItemsEditor field={field} patch={patch} issues={keyIssues} />
+              </AccordionContent>
+            </AccordionItem>
+          )}
 
           <AccordionItem value="visibility">
             <AccordionTrigger>Visibilidade condicional</AccordionTrigger>
@@ -470,6 +504,192 @@ export function FieldEditor({
   );
 }
 
+function ListItemsEditor({
+  field,
+  patch,
+  issues,
+}: {
+  field: FormField;
+  patch: (p: Partial<FormField>) => void;
+  issues: Record<string, string>;
+}) {
+  const subs = field.itemFields ?? [];
+  const setSubs = (next: FormField[]) => patch({ itemFields: next });
+  const updateSub = (idx: number, p: Partial<FormField>) =>
+    setSubs(subs.map((s, i) => (i === idx ? { ...s, ...p } : s)));
+  const move = (from: number, to: number) => {
+    if (to < 0 || to >= subs.length) return;
+    const next = [...subs];
+    const [it] = next.splice(from, 1);
+    next.splice(to, 0, it);
+    setSubs(next);
+  };
+  const numOrUndef = (raw: string) => (raw === '' ? undefined : Number(raw));
+
+  return (
+    <div className="space-y-3">
+      <div>
+        <Label className="text-xs">Rótulo de cada item</Label>
+        <Input
+          value={field.itemLabel ?? ''}
+          placeholder="ex: Sessão"
+          onChange={(e) => patch({ itemLabel: e.target.value })}
+        />
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <Label className="text-xs">Mínimo de itens</Label>
+          <Input
+            type="number"
+            min={0}
+            value={field.minItems ?? ''}
+            onChange={(e) => patch({ minItems: numOrUndef(e.target.value) })}
+          />
+        </div>
+        <div>
+          <Label className="text-xs">Máximo de itens</Label>
+          <Input
+            type="number"
+            min={1}
+            value={field.maxItems ?? ''}
+            placeholder={String(DEFAULT_LIST_MAX_ITEMS)}
+            onChange={(e) => patch({ maxItems: numOrUndef(e.target.value) })}
+          />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label className="text-xs">Sub-campos</Label>
+        {subs.length === 0 && (
+          <p className="rounded-md border border-dashed p-3 text-center text-xs text-muted-foreground">
+            Adicione os campos que se repetem em cada item.
+          </p>
+        )}
+        {subs.map((sub, idx) => (
+          <div
+            key={sub.id}
+            className={cn(
+              'space-y-2 rounded-md border p-2',
+              issues[sub.id] ? 'border-destructive' : undefined
+            )}
+          >
+            <div className="flex items-center justify-between gap-1">
+              <span className="truncate text-xs font-medium">
+                {sub.label || sub.key || 'Sem título'}
+              </span>
+              <div className="flex items-center">
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  className="h-7 w-7"
+                  disabled={idx === 0}
+                  onClick={() => move(idx, idx - 1)}
+                  title="Subir"
+                >
+                  <ChevronUp className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  className="h-7 w-7"
+                  disabled={idx === subs.length - 1}
+                  onClick={() => move(idx, idx + 1)}
+                  title="Descer"
+                >
+                  <ChevronDown className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  className="h-7 w-7"
+                  onClick={() => setSubs(subs.filter((_, i) => i !== idx))}
+                  title="Remover sub-campo"
+                >
+                  <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                </Button>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label className="text-xs">Label</Label>
+                <Input
+                  className="h-8"
+                  value={sub.label}
+                  onChange={(e) => {
+                    const label = e.target.value;
+                    if (!sub.key) {
+                      const k = slugifyKey(label);
+                      updateSub(idx, { label, key: k, name: k });
+                    } else {
+                      updateSub(idx, { label });
+                    }
+                  }}
+                />
+              </div>
+              <div>
+                <Label className="text-xs">Chave (key)</Label>
+                <Input
+                  className="h-8"
+                  value={sub.key}
+                  onChange={(e) => {
+                    const k = e.target.value.trim();
+                    updateSub(idx, { key: k, name: k });
+                  }}
+                />
+              </div>
+              <div>
+                <Label className="text-xs">Tipo</Label>
+                <select
+                  className="h-8 w-full rounded-md border bg-background px-2 text-sm"
+                  value={sub.type}
+                  onChange={(e) => {
+                    const type = e.target.value as FieldType;
+                    const fresh = createField(type);
+                    updateSub(idx, {
+                      type,
+                      options: OPTION_TYPES.has(type) ? (sub.options ?? fresh.options) : undefined,
+                    });
+                  }}
+                >
+                  {LIST_ITEM_TYPE_ORDER.map((t) => (
+                    <option key={t} value={t}>
+                      {FIELD_TYPE_LABELS[t]}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <label className="flex items-end justify-between gap-2 pb-1 text-xs">
+                Obrigatório
+                <Switch
+                  checked={!!sub.behavior.required}
+                  onCheckedChange={(c) =>
+                    updateSub(idx, { behavior: { ...sub.behavior, required: c } })
+                  }
+                />
+              </label>
+            </div>
+            {OPTION_TYPES.has(sub.type) && (
+              <OptionListEditor field={sub} patch={(p) => updateSub(idx, p)} />
+            )}
+            {issues[sub.id] && <p className="text-xs text-destructive">{issues[sub.id]}</p>}
+          </div>
+        ))}
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={() => setSubs([...subs, createField('text')])}
+        >
+          <Plus className="mr-1 h-3.5 w-3.5" /> Adicionar sub-campo
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function OptionListEditor({
   field,
   patch,
@@ -534,6 +754,7 @@ type SimpleEditorProps = {
   patch: (p: Partial<FormField>) => void;
   patchBeh: (p: Partial<FormField['behavior']>) => void;
   setLabel: (label: string) => void;
+  keyIssues: Record<string, string>;
 };
 
 type WidthKey = 'full' | 'half' | 'third';
@@ -545,7 +766,7 @@ const widthFromSpan = (span: number | undefined, fallback: WidthKey): WidthKey =
   return 'half';
 };
 
-function SimpleEditor({ field, patch, patchBeh, setLabel }: SimpleEditorProps) {
+function SimpleEditor({ field, patch, patchBeh, setLabel, keyIssues }: SimpleEditorProps) {
   const hasOptions = OPTION_TYPES.has(field.type);
   const mobileWidth = widthFromSpan(field.grid.xs, 'full');
   const tabletWidth = widthFromSpan(field.grid.md, 'half');
@@ -636,6 +857,9 @@ function SimpleEditor({ field, patch, patchBeh, setLabel }: SimpleEditorProps) {
       </div>
 
       {hasOptions && <OptionListEditor field={field} patch={patch} />}
+      {field.type === 'list' && (
+        <ListItemsEditor field={field} patch={patch} issues={keyIssues} />
+      )}
     </div>
   );
 }

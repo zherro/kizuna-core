@@ -24,6 +24,7 @@
   * [Componentes & hooks](interface/componentes.md)
   * [Screen Engine](interface/screen-engine.md)
   * [Wizard](interface/wizard.md)
+  * [Formulários dinâmicos](interface/formularios-dinamicos.md)
 
 ## Serviços
 

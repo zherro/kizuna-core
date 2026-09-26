@@ -22,6 +22,10 @@ function isCompact(field: FormField, compactMaxOptions: number): boolean {
  * together up to `maxCompactPerStep`; anything else (text, textarea, larger option lists, layout
  * fields) gets its own step. Layout-only fields (`NON_VALUE_TYPES`) attach to the step of the
  * next value-holding field instead of getting a step of their own.
+ *
+ * A `list` field is a "large" field (a whole repeatable group of sub-fields): it is never compact,
+ * so it always lands in its own step (together with any pending layout fields before it) and
+ * closes the compact bundle in progress.
  */
 export function groupFieldsIntoSteps(
   fields: FormField[],
