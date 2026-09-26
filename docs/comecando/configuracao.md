@@ -266,6 +266,71 @@ por categoria/grupo. Como o perfil escolhido substitui o anterior por inteiro, r
 Detalhes (modos, fuso, edição) em [Wizard](../interface/wizard.md). A validade fica em
 `services.expires_at`; a busca e o swipe omitem anúncios vencidos.
 
+## `accountLevels`
+
+Níveis de conta progressivos. A pessoa entra sem burocracia, e cada ação sensível exige um nível
+mais alto. Este bloco só define **quais níveis existem, os textos e a ordem**. O que cada nível
+**libera** fica no código do projeto (`src/lib/account-levels.ts`), e o que cada requisito
+**exige** fica no core. Guia completo: [Níveis de conta](../arquitetura/niveis-de-conta.md).
+
+```json
+"accountLevels": {
+  "levels": [
+    { "key": "conta",      "level": 1, "title": "Conta criada",          "requirement": "authenticated" },
+    { "key": "contato",    "level": 2, "title": "Contato verificado",    "requirement": "contact_verified", "href": "/painel/onboarding#contato" },
+    { "key": "perfil",     "level": 3, "title": "Perfil completo",       "requirement": "profile_complete", "href": "/painel/minha-conta" },
+    { "key": "identidade", "level": 4, "title": "Identidade verificada", "requirement": "identity_verified", "enabled": false }
+  ]
+}
+```
+
+| Campo             | Tipo    | Padrão      | Efeito                                                                              |
+| ----------------- | ------- | ----------- | ----------------------------------------------------------------------------------- |
+| `key`             | string  | obrigatório | Nome do nível, usado no mapa de capacidades. Minúsculas, única.                     |
+| `level`           | inteiro | obrigatório | 1..N, único. Os níveis são sequenciais; 0 é o visitante (implícito).                |
+| `title`           | string  | obrigatório | Nome mostrado na escada e no modal "Evolua sua conta".                              |
+| `description`     | string  | —           | Texto de apoio abaixo do título.                                                    |
+| `onboardingOrder` | inteiro | = `level`   | Ordem na tela `/painel/onboarding`.                                                 |
+| `profileOrder`    | inteiro | = `level`   | Ordem no resumo da conta (`<AccountLevelsPanel order="profile" />`).                |
+| `requirement`     | string  | obrigatório | `authenticated`, `contact_verified` (email **ou** celular verificado), `profile_complete` (nome, foto, documento válido quando exigido, CEP, estado e cidade) ou `identity_verified`. |
+| `enabled`         | boolean | `true`      | `false` deixa o nível como "em breve": ele aparece, mas ninguém alcança.            |
+| `href`            | string  | —           | Destino do botão "Completar".                                                       |
+
+Para mudar **o que cada nível libera**, edite o mapa `CAPABILITIES` em `src/lib/account-levels.ts`
+(ação → `key` do nível mínimo). Uma ação fora do mapa exige só estar logado.
+
+{% hint style="warning" %}
+Uma config inválida (key repetida, requisito desconhecido, bloco vazio) ou uma capacidade que
+aponta para uma `key` inexistente **quebra o boot**, com uma mensagem dizendo o campo errado. É de
+propósito: regra de acesso quebrada não pode passar despercebida.
+{% endhint %}
+
+## `otp`
+
+Login por telefone com código de uso único. Guia completo, incluindo como plugar WhatsApp ou SMS:
+[Login com Google e telefone](login-social-telefone.md).
+
+```json
+"otp": { "providers": ["log"], "codeLength": 6, "ttlSec": 300, "cooldownSec": 60, "dailyLimit": 10, "maxAttempts": 5 }
+```
+
+| Campo         | Tipo     | Padrão           | Efeito                                                                  |
+| ------------- | -------- | ---------------- | ----------------------------------------------------------------------- |
+| `providers`   | string[] | `[]` (desligado) | Cadeia de envio, em ordem de fallback. `log` só imprime o código no log do servidor e é ignorado em produção. |
+| `codeLength`  | inteiro  | `6`              | Dígitos do código (4–8).                                                |
+| `ttlSec`      | inteiro  | `300`            | Validade do código, em segundos (60–1800).                              |
+| `cooldownSec` | inteiro  | `60`             | Intervalo mínimo entre pedidos para o mesmo número.                     |
+| `dailyLimit`  | inteiro  | `10`             | Máximo de códigos por número em 24h.                                    |
+| `maxAttempts` | inteiro  | `5`              | Tentativas erradas antes de o código ser queimado.                      |
+| `locale`      | string   | `"pt-BR"`        | Repassado ao provedor, para ele escolher o template.                    |
+
+{% hint style="info" %}
+Sem o bloco, ou sem nenhum provedor utilizável no ambiente, o botão "Entrar com telefone" não
+aparece e `/api/auth/otp/*` responde 404. O login com Google não usa este arquivo: ele é ligado
+pelas envs `GOOGLE_CLIENT_ID` e `GOOGLE_CLIENT_SECRET` (ver
+[Login com Google e telefone](login-social-telefone.md)).
+{% endhint %}
+
 ## Adicionando uma chave nova
 
 Se uma feature do core ou do app precisa ser configurável por projeto:

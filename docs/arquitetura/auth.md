@@ -52,6 +52,34 @@ no state wiring; a project either extends them or writes its own page calling
 `purpose: "password_reset"` num JWT que só o servidor assina. Guia completo, envs e
 personalização: [Recuperar senha](../comecando/recuperar-senha.md).
 
+## Login com Google e com telefone
+
+Métodos sem senha, no mesmo modelo de sessão (JWT no cookie `session`).
+
+- **OAuth / Google** (`server/oauth-handlers.ts`, `server/oauth/*`):
+  - `createOAuthStartHandler()` e `createOAuthCallbackHandler(pgrstRpc, { pgrstTable })`, em
+    `/api/auth/oauth/[provider]/start` e `/callback`. Usa Authorization Code + PKCE, com state e
+    nonce num cookie assinado.
+  - A RPC `auth.fun_auth__external_login` acha a identidade em `auth.user_identities`; se não
+    achar, vincula pelo email verificado; se não houver conta, cria uma sem senha.
+  - Proteção contra pre-hijack: se a conta vinculada nunca teve o email verificado, a senha dela
+    é anulada.
+  - Migration: `sql/0113_external_identities.sql`.
+- **Telefone / OTP** (`server/otp-handlers.ts`, `server/otp/*`):
+  - `createOtpRequestHandler` e `createOtpVerifyHandler`, em `/api/auth/otp/request` e `/verify`.
+  - O envio sai pela porta `OtpProvider` (`registerOtpProvider`). O banco guarda só um HMAC do
+    código, em `auth.otp_challenges`.
+  - Migration: `sql/0114_phone_otp.sql`.
+- `createAuthProvidersHandler({ otp })` → `GET /api/auth/providers`. Diz à UI o que está
+  configurado, e o `LoginForm` esconde o que não vier.
+
+Assim como no reset de senha, as RPCs exigem um claim `purpose` (`external_login` ou `otp`) que só
+o servidor assina. `auth.users.password` passou a ser opcional, e `fun_auth__login_verify` nunca
+autentica uma conta sem senha.
+
+Configuração: [Login com Google e telefone](../comecando/login-social-telefone.md). Liberação de
+ações por nível de conta: [Níveis de conta](niveis-de-conta.md).
+
 ## `is_root`
 
 `auth.users.is_root` marks a super-admin. `fun_auth_has_perm` (see below) short-circuits to `true`

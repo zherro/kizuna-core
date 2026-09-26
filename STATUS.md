@@ -121,6 +121,13 @@ a materializa num projeto e mantém projeto ↔ core alinhados. Ver **`docs/come
   (`(referenceId, nextIds) => Promise<ids>`, returns the saved-id list). See `docs/servicos/storage.md`.
 - `@kizuna/core/client/components/showcase/*`: `ShowcaseShell`, `ShowcaseSectionPage`,
   `showcase-sections` (`SHOWCASE_SECTIONS`, `DEFAULT_SHOWCASE_SECTION`, `normalizeShowcaseSection`)
+- `@kizuna/core/client/components/account-levels`: `AccountLevelsPanel`, `LevelGateProvider`,
+  `useLevelGate`, `LevelUpDialog`, `useAccountLevel`, `fetchAccountLevel`
+- `@kizuna/core/client/components/auth/social-login-buttons` (`SocialLoginButtons`) and
+  `auth/phone-login-form` (`PhoneLoginForm`, `purpose: 'login' | 'verify_phone'`) — already
+  rendered by `LoginForm`/`RegisterForm`
+- `@kizuna/core/shared/account-levels`: `parseAccountLevelsConfig`, `defineCapabilities`,
+  `computeAccountStatus`, `canDo`, `REQUIREMENTS`, `REQUIREMENT_IDS`
 - `@kizuna/core/client/components/ui/*` and `ui-better-soft/*` — see `docs/interface/componentes.md`
 - `@kizuna/core/server`: `SESSION_COOKIE_NAME`, `signSession`, `verifySession`,
   `getTokenFromCookies`, `getAuthHeaderFromCookies`, `getServiceAuthHeader`, `getSession`,
@@ -130,6 +137,14 @@ a materializa num projeto e mantém projeto ↔ core alinhados. Ver **`docs/come
   `checkKizunaEnv`, `EnvCheck`, `MissingEnv`, `checkLockout`, `recordLoginFailure`,
   `clearLoginFailures`, `LOCKOUT_TIERS_ENV`, `isCaptchaEnabled`, `verifyCaptcha`,
   `VerifyCaptchaResult`, `getSeoSitemapCacheSeconds`, `SEO_SITEMAP_CACHE_ENV`,
+  `sessionCookieOptions`, `sanitizeReturnTo`,
+  `createOAuthStartHandler`, `createOAuthCallbackHandler`, `createAuthProvidersHandler`,
+  `listEnabledOAuthProviders`, `OAuthProvider`, `OAuthProfile` (login Google — `sql/0113`),
+  `createOtpRequestHandler`, `createOtpVerifyHandler`, `registerOtpProvider`,
+  `isPhoneLoginEnabled`, `logOtpProvider`, `normalizeBrMobile`, `maskPhone`, `OtpProvider`,
+  `OtpPayload`, `OtpSendResult`, `OtpConfig`, `OtpPurpose` (login por telefone — `sql/0114`),
+  `getAccountFacts`, `getAccountStatus`, `canDoServer`, `createAccountLevelHandler`,
+  `AccountLevelsSetup` (níveis de conta — `sql/0115`, ver `docs/arquitetura/niveis-de-conta.md`),
   `getSeoSitemapPageSize`, `SEO_SITEMAP_PAGE_SIZE_ENV` (SEO — `server/seo-config.ts`, env
   `SEO_SITEMAP_CACHE`/`SEO_SITEMAP_PAGE_SIZE`, TTL e teto de itens do `sitemap.ts` do projeto
   consumidor)
@@ -197,7 +212,7 @@ the generic `/api/resources/[resource]` route via `listResource`/`createResource
 
 ## SQL side
 
-`sql/0001-0110` (auth schema, RBAC, plugin registry — apply in numeric order), all `SECURITY
+`sql/0001-0115` (auth schema, RBAC, plugin registry — apply in numeric order), all `SECURITY
 DEFINER` functions in `auth` pinning `SET search_path = auth, public`. Recreate the whole thing
 from scratch on a scratch DB any time — nothing here targets a live migration history, it's a
 from-zero installer (`scripts/install.sh`).
