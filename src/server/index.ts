@@ -6,6 +6,7 @@ export {
   getAuthHeaderFromCookies,
   getServiceAuthHeader,
   getSession,
+  sessionCookieOptions,
   maskEmail,
   getDisplayNameFromEmail,
   isValidEmail,
@@ -23,6 +24,31 @@ export {
   type RegisterRequestBody,
   type LogoutRequestBody,
 } from './auth-handlers';
+
+export {
+  createOAuthStartHandler,
+  createOAuthCallbackHandler,
+  createAuthProvidersHandler,
+} from './oauth-handlers';
+export { listEnabledOAuthProviders } from './oauth/providers';
+export type { OAuthProvider, OAuthProfile } from './oauth/types';
+export { sanitizeReturnTo } from './app-url';
+export {
+  createOtpRequestHandler,
+  createOtpVerifyHandler,
+  type OtpRequestBody,
+  type OtpVerifyBody,
+} from './otp-handlers';
+export { registerOtpProvider, isPhoneLoginEnabled, logOtpProvider } from './otp/registry';
+export type { OtpProvider, OtpPayload, OtpSendResult, OtpConfig, OtpPurpose } from './otp/types';
+export { normalizeBrMobile, maskPhone } from './otp/phone';
+export {
+  getAccountFacts,
+  getAccountStatus,
+  canDoServer,
+  createAccountLevelHandler,
+  type AccountLevelsSetup,
+} from './account-levels';
 
 export {
   listResource,

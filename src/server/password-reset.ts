@@ -16,6 +16,7 @@ import { NextResponse } from 'next/server';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import jwt from 'jsonwebtoken';
 import { apiError } from './api-error';
+import { resolveAppUrl } from './app-url';
 import { isValidEmail, maskEmail } from './auth';
 import { verifyCaptcha } from './captcha';
 import { checkLockout, recordLoginFailure } from './login-lockout';
@@ -75,19 +76,6 @@ function purposeAuthHeader(): string {
   return `Bearer ${token}`;
 }
 
-/**
- * URL pública do app. Use `APP_URL` em produção — o fallback pelo host da requisição
- * existe só para dev e confia no header `Host`.
- */
-function resolveAppUrl(request: Request): string {
-  const fromEnv = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL;
-  if (fromEnv) return fromEnv.replace(/\/+$/, '');
-  const url = new URL(request.url);
-  const host = request.headers.get('x-forwarded-host') || url.host;
-  const proto = request.headers.get('x-forwarded-proto') || url.protocol.replace(':', '');
-  return `${proto}://${host}`;
-}
-
 function resolveTtl(opt?: number): number {
   const raw = opt ?? Number(process.env.PASSWORD_RESET_TTL_MINUTES || 60);
   return Number.isFinite(raw) ? Math.min(1440, Math.max(5, Math.round(raw))) : 60;
@@ -128,7 +116,10 @@ export function buildPasswordResetEmail(input: PasswordResetEmailInput): EmailTe
  * `POST /api/auth/forgot-password` — `{ email, captchaToken? }`.
  * Sempre responde 200 com a mesma mensagem (exceto validação, captcha e throttle).
  */
-export function createForgotPasswordHandler(pgrstRpc: PgrstRpc, options: ForgotPasswordOptions = {}) {
+export function createForgotPasswordHandler(
+  pgrstRpc: PgrstRpc,
+  options: ForgotPasswordOptions = {}
+) {
   const resetPath = options.resetPath ?? '/redefinir-senha';
   const buildEmail = options.buildEmail ?? buildPasswordResetEmail;
 

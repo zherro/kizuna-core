@@ -48,6 +48,9 @@ const listConfig: ListBlockConfig = {
   // Resolved from `context.session.userId` (see `app/painel/meus-servicos/page.tsx`) by
   // `resolveContextRefs`; see `list-block.tsx`'s `GatedCreateLink`.
   createGateUserId: '$session.userId',
+  // Níveis de conta: quando o projeto expõe /api/account/level, vale o nível exigido por
+  // 'service.create' (mapa de capacidades do projeto) em vez do check de onboarding acima.
+  createGateAction: 'service.create',
   emptyState: {
     message: 'Nenhum servico cadastrado ainda.',
     ctaHref: '/painel/meus-servicos/novo',

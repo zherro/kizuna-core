@@ -7,6 +7,7 @@
 * [Instalação](comecando/README.md)
 * [Captcha (Turnstile)](comecando/captcha.md)
 * [Recuperar senha](comecando/recuperar-senha.md)
+* [Login com Google e telefone](comecando/login-social-telefone.md)
 * [Configuração (kizuna.config.json)](comecando/configuracao.md)
 * [CLI](comecando/cli.md)
 
@@ -15,6 +16,7 @@
 * [Visão geral](arquitetura/README.md)
   * [API & camada de dados](arquitetura/api.md)
   * [Auth & permissões](arquitetura/auth.md)
+  * [Níveis de conta](arquitetura/niveis-de-conta.md)
   * [Exemplos de schemas](arquitetura/schemas.md)
   * [Utils & helpers](arquitetura/utils.md)
 

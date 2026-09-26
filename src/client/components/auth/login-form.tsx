@@ -10,6 +10,8 @@ import { Button } from '../ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
+import { SocialLoginButtons } from './social-login-buttons';
+import { PhoneLoginForm } from './phone-login-form';
 
 type LoginResponse = { message: string; user?: PublicSession };
 
@@ -33,6 +35,7 @@ export function LoginForm({
 }: LoginFormProps) {
   const { setUser } = useAuth();
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [usePhone, setUsePhone] = useState(false);
   const captchaRequired = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
 
   const form = useForm({
@@ -77,95 +80,102 @@ export function LoginForm({
         <CardTitle>Login</CardTitle>
         <CardDescription>Entre para acessar a plataforma.</CardDescription>
       </CardHeader>
-      <CardContent>
-        <form onSubmit={form.handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              required
-              value={formik.values.email}
-              onChange={formik.handleChange}
-              onBlur={formik.handleBlur}
-              placeholder="voce@empresa.com"
-            />
-            {formik.touched.email && formik.errors.email ? (
-              <p className="text-xs text-red-600 dark:text-red-300">{formik.errors.email}</p>
-            ) : null}
-          </div>
+      <CardContent className="space-y-4">
+        {usePhone ? (
+          <PhoneLoginForm onSuccess={onSuccess} onBack={() => setUsePhone(false)} />
+        ) : (
+          <>
+            <SocialLoginButtons onPhoneLogin={() => setUsePhone(true)} />
+            <form onSubmit={form.handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  required
+                  value={formik.values.email}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  placeholder="voce@empresa.com"
+                />
+                {formik.touched.email && formik.errors.email ? (
+                  <p className="text-xs text-red-600 dark:text-red-300">{formik.errors.email}</p>
+                ) : null}
+              </div>
 
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="password">Senha</Label>
-              {forgotPasswordHref ? (
-                <Link
-                  href={forgotPasswordHref}
-                  className="text-xs font-medium text-primary hover:underline"
-                >
-                  Esqueci minha senha
-                </Link>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password">Senha</Label>
+                  {forgotPasswordHref ? (
+                    <Link
+                      href={forgotPasswordHref}
+                      className="text-xs font-medium text-primary hover:underline"
+                    >
+                      Esqueci minha senha
+                    </Link>
+                  ) : null}
+                </div>
+                <Input
+                  id="password"
+                  name="password"
+                  type="password"
+                  required
+                  minLength={6}
+                  value={formik.values.password}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  placeholder="Sua senha"
+                />
+                {formik.touched.password && formik.errors.password ? (
+                  <p className="text-xs text-red-600 dark:text-red-300">{formik.errors.password}</p>
+                ) : null}
+              </div>
+
+              {form.error ? (
+                <p className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/70 dark:bg-red-950/40 dark:text-red-300">
+                  {form.error}
+                </p>
               ) : null}
-            </div>
-            <Input
-              id="password"
-              name="password"
-              type="password"
-              required
-              minLength={6}
-              value={formik.values.password}
-              onChange={formik.handleChange}
-              onBlur={formik.handleBlur}
-              placeholder="Sua senha"
-            />
-            {formik.touched.password && formik.errors.password ? (
-              <p className="text-xs text-red-600 dark:text-red-300">{formik.errors.password}</p>
-            ) : null}
-          </div>
 
-          {form.error ? (
-            <p className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/70 dark:bg-red-950/40 dark:text-red-300">
-              {form.error}
-            </p>
-          ) : null}
+              {form.success ? (
+                <p className="rounded-md border border-border bg-primary/10 px-3 py-2 text-sm text-foreground">
+                  {form.success}
+                </p>
+              ) : null}
 
-          {form.success ? (
-            <p className="rounded-md border border-border bg-primary/10 px-3 py-2 text-sm text-foreground">
-              {form.success}
-            </p>
-          ) : null}
+              <TurnstileWidget onToken={setCaptchaToken} />
 
-          <TurnstileWidget onToken={setCaptchaToken} />
-
-          <Button
-            type="submit"
-            className="w-full"
-            disabled={form.submitting || (captchaRequired && !captchaToken)}
-          >
-            {form.submitting ? 'Entrando...' : 'Entrar'}
-          </Button>
-
-          {onSwitchToRegister ? (
-            <p className="text-center text-sm text-muted-foreground">
-              Ainda nao tem conta?{' '}
-              <button
-                type="button"
-                onClick={onSwitchToRegister}
-                className="font-medium text-primary hover:underline"
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={form.submitting || (captchaRequired && !captchaToken)}
               >
-                Registre-se
-              </button>
-            </p>
-          ) : registerHref ? (
-            <p className="text-center text-sm text-muted-foreground">
-              Ainda nao tem conta?{' '}
-              <Link href={registerHref} className="font-medium text-primary hover:underline">
-                Registre-se
-              </Link>
-            </p>
-          ) : null}
-        </form>
+                {form.submitting ? 'Entrando...' : 'Entrar'}
+              </Button>
+
+              {onSwitchToRegister ? (
+                <p className="text-center text-sm text-muted-foreground">
+                  Ainda nao tem conta?{' '}
+                  <button
+                    type="button"
+                    onClick={onSwitchToRegister}
+                    className="font-medium text-primary hover:underline"
+                  >
+                    Registre-se
+                  </button>
+                </p>
+              ) : registerHref ? (
+                <p className="text-center text-sm text-muted-foreground">
+                  Ainda nao tem conta?{' '}
+                  <Link href={registerHref} className="font-medium text-primary hover:underline">
+                    Registre-se
+                  </Link>
+                </p>
+              ) : null}
+            </form>
+          </>
+        )}
       </CardContent>
     </Card>
   );

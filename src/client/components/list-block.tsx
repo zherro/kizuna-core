@@ -111,6 +111,13 @@ export type ListBlockConfig = {
    */
   createGateUserId?: string;
   /**
+   * Níveis de conta: ação (ex.: `'service.create'`) checada em `GET /api/account/level?action=`
+   * no clique do "Novo". Negado → `/painel/onboarding?acao=<acao>`. Tem precedência sobre o
+   * check de onboarding; se o projeto não tiver a rota (404), cai no check antigo. Só UX — a
+   * página de criação barra de novo no servidor (`canDoServer`).
+   */
+  createGateAction?: string;
+  /**
    * Always-on filters (raw PostgREST column name → value, e.g. `{ tenant_id: '...' }`), merged
    * with `statusFilter`'s current value and sent on every request — not user-adjustable, unlike
    * `statusFilter`. The one way to scope a listing (e.g. `/painel/meus-servicos` to the caller's
@@ -218,14 +225,34 @@ async function isOnboardingCompleted(): Promise<boolean> {
  * never lets the click through. The check runs on demand (not on mount) since it's only needed
  * at the moment of the click.
  */
+/**
+ * Nível de conta para `action`: true/false, ou null quando o projeto não expõe a rota de níveis
+ * (404) — aí o chamador usa o check de onboarding. Erro de rede/servidor = false (fecha).
+ */
+async function isActionAllowed(action: string): Promise<boolean | null> {
+  try {
+    const res = await fetch(`/api/account/level?action=${encodeURIComponent(action)}`, {
+      cache: 'no-store',
+    });
+    if (res.status === 404) return null;
+    if (!res.ok) return false;
+    const data = (await res.json().catch(() => null)) as { can?: { allowed?: boolean } } | null;
+    return data?.can?.allowed === true;
+  } catch {
+    return false;
+  }
+}
+
 function GatedCreateLink({
   href,
   gateUserId,
+  gateAction,
   className,
   children,
 }: {
   href: string;
   gateUserId?: string;
+  gateAction?: string;
   className?: string;
   children: ReactNode;
 }) {
@@ -233,10 +260,17 @@ function GatedCreateLink({
   const [checking, setChecking] = useState(false);
 
   async function handleClick(event: MouseEvent<HTMLAnchorElement>) {
-    if (!gateUserId || checking) return;
+    if ((!gateUserId && !gateAction) || checking) return;
     event.preventDefault();
     setChecking(true);
     try {
+      if (gateAction) {
+        const allowed = await isActionAllowed(gateAction);
+        if (allowed !== null) {
+          router.push(allowed ? href : `/painel/onboarding?acao=${encodeURIComponent(gateAction)}`);
+          return;
+        }
+      }
       const completed = await isOnboardingCompleted();
       router.push(completed ? href : '/painel/onboarding?motivo=novo-servico');
     } catch {
@@ -313,6 +347,7 @@ export function ListBlock({ config }: { config: ListBlockConfig }) {
           <GatedCreateLink
             href={config.createAction.href}
             gateUserId={config.createGateUserId}
+            gateAction={config.createGateAction}
             className={buttonVariants({ size: 'sm' })}
           >
             <Plus className="h-3.5 w-3.5" />
@@ -367,6 +402,7 @@ export function ListBlock({ config }: { config: ListBlockConfig }) {
               <GatedCreateLink
                 href={config.emptyState.ctaHref}
                 gateUserId={config.createGateUserId}
+                gateAction={config.createGateAction}
                 className={buttonVariants()}
               >
                 <Plus className="h-4 w-4" />

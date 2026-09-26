@@ -35,7 +35,9 @@ postcss.config.mjs next.config.ts next-env.d.ts kizuna.lock`.
 Plugins disponíveis e ordem de dependência: [Plugins](../plugins/README.md). Nome, tema, home,
 cabeçalho, clima e wizards: [Configuração](configuracao.md). Captcha no login/cadastro:
 [Captcha (Turnstile)](captcha.md). "Esqueci minha senha":
-[Recuperar senha](recuperar-senha.md).
+[Recuperar senha](recuperar-senha.md). Login com Google e por telefone:
+[Login com Google e telefone](login-social-telefone.md). Níveis de conta progressivos:
+[Níveis de conta](../arquitetura/niveis-de-conta.md).
 
 ## Atualizar o core
 

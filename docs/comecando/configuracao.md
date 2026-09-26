@@ -32,6 +32,8 @@ instala. Ele é lido pelo CLI no `install`, não pelo app. Ver [Plugins](../plug
 | [`home`](#home)        | seções da home e formato do carrossel de categorias                | `app/page.tsx`                                  |
 | [`weather`](#weather)  | widget de clima no cabeçalho (plugin `weather`)                    | `app/api/weather/route.ts`, `layout.tsx`, `footer.tsx` |
 | [`wizards`](#wizards)  | passos, layout e perfis dos wizards (ex.: cadastro de serviço)     | páginas do plugin `services`                    |
+| `accountLevels`        | níveis de conta progressivos (título, ordem, requisito) — ver [Níveis de conta](../arquitetura/niveis-de-conta.md) | `src/lib/account-levels.ts` |
+| `otp`                  | login por telefone: provedores de envio, validade, limites — ver [Login com Google e telefone](login-social-telefone.md) | `app/api/auth/otp/*`, `app/api/auth/providers` |
 
 Todos os blocos são opcionais. Sem um bloco, cada leitor usa o padrão indicado nas tabelas abaixo.
 

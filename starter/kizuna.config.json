@@ -34,12 +34,51 @@
       "layout": "stepper",
       "lockLayout": true,
       "assistant": false,
-      "steps": ["start", "category", "location", "price", "images", "description", "dynamic-form", "moderation"],
+      "steps": [
+        "start",
+        "category",
+        "location",
+        "price",
+        "images",
+        "description",
+        "dynamic-form",
+        "moderation"
+      ],
       "disable": [],
       "finishHrefByMode": {
         "create": "/painel/meus-servicos",
         "review": "/painel/administracao/aprovacoes"
       }
     }
+  },
+  "otp": {
+    "_comment": "Login por telefone (código de uso único). providers = cadeia de envio em ordem (fallback). \"log\" só imprime o JSON no log do servidor e é ignorado em produção. Vazio = desligado (o botão não aparece). Ver docs/comecando/login-social-telefone.md.",
+    "providers": [
+      "log"
+    ]
+  },
+  "accountLevels": {
+    "_comment": "Níveis de conta progressivos: título/ordem/requisito aqui; o que cada nível libera fica no código do projeto (defineCapabilities). Ver docs/arquitetura/niveis-de-conta.md.",
+    "levels": [
+      {
+        "key": "conta",
+        "level": 1,
+        "title": "Conta criada",
+        "requirement": "authenticated"
+      },
+      {
+        "key": "contato",
+        "level": 2,
+        "title": "Contato verificado",
+        "requirement": "contact_verified"
+      },
+      {
+        "key": "perfil",
+        "level": 3,
+        "title": "Perfil completo",
+        "requirement": "profile_complete",
+        "href": "/painel/minha-conta"
+      }
+    ]
   }
 }

@@ -41,6 +41,18 @@ export function signSession(
   return jwt.sign(withRole, getJwtSecret(), signOptions);
 }
 
+/** Opções do cookie de sessão — única fonte, usada por todo fluxo que emite sessão. */
+export function sessionCookieOptions(token: string) {
+  return {
+    name: SESSION_COOKIE_NAME,
+    value: token,
+    httpOnly: true,
+    sameSite: 'lax' as const,
+    path: '/',
+    secure: process.env.NODE_ENV === 'production',
+  };
+}
+
 export function verifySession(token: string): SessionPayload | null {
   try {
     return jwt.verify(token, getJwtSecret()) as SessionPayload;

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth, type PublicSession } from '../providers/auth-provider';
 import { LoginForm } from './auth/login-form';
@@ -21,6 +21,17 @@ interface LoginPageProps {
   forgotPasswordHref?: string | null;
 }
 
+const OAUTH_ERRORS: Record<string, string> = {
+  cancelado: 'Login cancelado. Tente de novo quando quiser.',
+  sessao_expirada: 'A tentativa de login expirou. Tente de novo.',
+  falha_provedor: 'Nao conseguimos falar com o provedor de login. Tente de novo.',
+  email_nao_verificado:
+    'Este email ja tem conta aqui e nao foi verificado pelo provedor. Entre com email e senha.',
+  conta_bloqueada: 'Esta conta esta bloqueada.',
+  provedor_indisponivel: 'Este metodo de login nao esta disponivel.',
+  falha_login: 'Nao foi possivel entrar agora. Tente de novo.',
+};
+
 export function LoginPageContent({
   onLoginSuccess,
   redirectTo = '/painel',
@@ -28,18 +39,41 @@ export function LoginPageContent({
 }: LoginPageProps) {
   const router = useRouter();
   const { user } = useAuth();
+  const [oauthError, setOauthError] = useState<string | null>(null);
+
+  // `?returnTo=` (vindo de um login social que falhou ou de um link) vence o padrão, se for local.
+  const [target, setTarget] = useState(redirectTo);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('erro');
+    if (code) setOauthError(OAUTH_ERRORS[code] ?? OAUTH_ERRORS.falha_login!);
+    const back = params.get('returnTo');
+    if (back && back.startsWith('/') && !back.startsWith('//') && !back.startsWith('/\\')) {
+      setTarget(back);
+    }
+  }, []);
 
   useEffect(() => {
-    if (user) router.replace(redirectTo);
-  }, [user, router, redirectTo]);
+    if (user) router.replace(target);
+  }, [user, router, target]);
 
   return (
-    <LoginForm
-      {...formProps}
-      onSuccess={(u) => {
-        onLoginSuccess?.(u);
-        setTimeout(() => router.push(redirectTo), 800);
-      }}
-    />
+    <div className="flex w-full flex-col items-center gap-4">
+      {oauthError ? (
+        <p
+          role="alert"
+          className="w-full max-w-md rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/70 dark:bg-red-950/40 dark:text-red-300"
+        >
+          {oauthError}
+        </p>
+      ) : null}
+      <LoginForm
+        {...formProps}
+        onSuccess={(u) => {
+          onLoginSuccess?.(u);
+          setTimeout(() => router.push(target), 800);
+        }}
+      />
+    </div>
   );
 }

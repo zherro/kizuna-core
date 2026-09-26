@@ -11,6 +11,8 @@ import { Button } from '../ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
+import { SocialLoginButtons } from './social-login-buttons';
+import { PhoneLoginForm } from './phone-login-form';
 
 type RegisterResponse = { message: string; user?: PublicSession };
 
@@ -34,6 +36,7 @@ export function RegisterForm({
 }: RegisterFormProps) {
   const { setUser } = useAuth();
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [usePhone, setUsePhone] = useState(false);
   const captchaRequired = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
 
   const form = useForm({
@@ -95,152 +98,161 @@ export function RegisterForm({
         <CardTitle>Registre-se</CardTitle>
         <CardDescription>Crie sua conta para comecar.</CardDescription>
       </CardHeader>
-      <CardContent>
-        <form onSubmit={form.handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Nome</Label>
-            <Input
-              id="name"
-              name="name"
-              type="text"
-              required
-              value={formik.values.name}
-              onChange={formik.handleChange}
-              onBlur={formik.handleBlur}
-              placeholder="Seu nome"
-            />
-            {formik.touched.name && formik.errors.name ? (
-              <p className="text-xs text-red-600 dark:text-red-300">{formik.errors.name}</p>
-            ) : null}
-          </div>
+      <CardContent className="space-y-4">
+        {usePhone ? (
+          <PhoneLoginForm onSuccess={onSuccess} onBack={() => setUsePhone(false)} />
+        ) : (
+          <>
+            <SocialLoginButtons onPhoneLogin={() => setUsePhone(true)} />
+            <form onSubmit={form.handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Nome</Label>
+                <Input
+                  id="name"
+                  name="name"
+                  type="text"
+                  required
+                  value={formik.values.name}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  placeholder="Seu nome"
+                />
+                {formik.touched.name && formik.errors.name ? (
+                  <p className="text-xs text-red-600 dark:text-red-300">{formik.errors.name}</p>
+                ) : null}
+              </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              required
-              value={formik.values.email}
-              onChange={formik.handleChange}
-              onBlur={formik.handleBlur}
-              placeholder="voce@empresa.com"
-            />
-            {formik.touched.email && formik.errors.email ? (
-              <p className="text-xs text-red-600 dark:text-red-300">{formik.errors.email}</p>
-            ) : null}
-          </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  required
+                  value={formik.values.email}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  placeholder="voce@empresa.com"
+                />
+                {formik.touched.email && formik.errors.email ? (
+                  <p className="text-xs text-red-600 dark:text-red-300">{formik.errors.email}</p>
+                ) : null}
+              </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="password">Senha</Label>
-            <Input
-              id="password"
-              name="password"
-              type="password"
-              required
-              minLength={6}
-              value={formik.values.password}
-              onChange={formik.handleChange}
-              onBlur={formik.handleBlur}
-              placeholder="Minimo 6 caracteres"
-            />
-            {formik.touched.password && formik.errors.password ? (
-              <p className="text-xs text-red-600 dark:text-red-300">{formik.errors.password}</p>
-            ) : null}
-          </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Senha</Label>
+                <Input
+                  id="password"
+                  name="password"
+                  type="password"
+                  required
+                  minLength={6}
+                  value={formik.values.password}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  placeholder="Minimo 6 caracteres"
+                />
+                {formik.touched.password && formik.errors.password ? (
+                  <p className="text-xs text-red-600 dark:text-red-300">{formik.errors.password}</p>
+                ) : null}
+              </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="confirm-password">Confirmar senha</Label>
-            <Input
-              id="confirm-password"
-              name="confirmPassword"
-              type="password"
-              required
-              minLength={6}
-              value={formik.values.confirmPassword}
-              onChange={formik.handleChange}
-              onBlur={formik.handleBlur}
-              placeholder="Repita sua senha"
-            />
-            {formik.touched.confirmPassword && formik.errors.confirmPassword ? (
-              <p className="text-xs text-red-600 dark:text-red-300">
-                {formik.errors.confirmPassword}
-              </p>
-            ) : null}
-          </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirm-password">Confirmar senha</Label>
+                <Input
+                  id="confirm-password"
+                  name="confirmPassword"
+                  type="password"
+                  required
+                  minLength={6}
+                  value={formik.values.confirmPassword}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  placeholder="Repita sua senha"
+                />
+                {formik.touched.confirmPassword && formik.errors.confirmPassword ? (
+                  <p className="text-xs text-red-600 dark:text-red-300">
+                    {formik.errors.confirmPassword}
+                  </p>
+                ) : null}
+              </div>
 
-          <div className="flex items-start gap-2 rounded-md border border-border bg-muted/30 p-3">
-            <input
-              id="accept-terms"
-              name="acceptTerms"
-              type="checkbox"
-              checked={formik.values.acceptTerms}
-              onChange={formik.handleChange}
-              onBlur={formik.handleBlur}
-              className="mt-1 h-4 w-4 rounded border-input accent-[var(--primary)]"
-            />
-            <Label htmlFor="accept-terms" className="text-sm leading-6 text-muted-foreground">
-              Eu li e aceito os{' '}
-              <Link href={termsHref} className="font-medium text-primary hover:underline">
-                termos de uso
-              </Link>
-              .
-            </Label>
-          </div>
-          {formik.touched.acceptTerms && formik.errors.acceptTerms ? (
-            <p className="text-xs text-red-600 dark:text-red-300">{formik.errors.acceptTerms}</p>
-          ) : null}
+              <div className="flex items-start gap-2 rounded-md border border-border bg-muted/30 p-3">
+                <input
+                  id="accept-terms"
+                  name="acceptTerms"
+                  type="checkbox"
+                  checked={formik.values.acceptTerms}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  className="mt-1 h-4 w-4 rounded border-input accent-[var(--primary)]"
+                />
+                <Label htmlFor="accept-terms" className="text-sm leading-6 text-muted-foreground">
+                  Eu li e aceito os{' '}
+                  <Link href={termsHref} className="font-medium text-primary hover:underline">
+                    termos de uso
+                  </Link>
+                  .
+                </Label>
+              </div>
+              {formik.touched.acceptTerms && formik.errors.acceptTerms ? (
+                <p className="text-xs text-red-600 dark:text-red-300">
+                  {formik.errors.acceptTerms}
+                </p>
+              ) : null}
 
-          {form.error ? (
-            <div
-              role="alert"
-              className="flex items-start gap-2 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/70 dark:bg-red-950/40 dark:text-red-300"
-            >
-              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-              <p>{form.error}</p>
-            </div>
-          ) : null}
+              {form.error ? (
+                <div
+                  role="alert"
+                  className="flex items-start gap-2 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/70 dark:bg-red-950/40 dark:text-red-300"
+                >
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                  <p>{form.error}</p>
+                </div>
+              ) : null}
 
-          {form.success ? (
-            <div
-              role="status"
-              className="flex items-start gap-2 rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 dark:border-emerald-900/70 dark:bg-emerald-950/40 dark:text-emerald-300"
-            >
-              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-              <p>{form.success}</p>
-            </div>
-          ) : null}
+              {form.success ? (
+                <div
+                  role="status"
+                  className="flex items-start gap-2 rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 dark:border-emerald-900/70 dark:bg-emerald-950/40 dark:text-emerald-300"
+                >
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                  <p>{form.success}</p>
+                </div>
+              ) : null}
 
-          <TurnstileWidget onToken={setCaptchaToken} />
+              <TurnstileWidget onToken={setCaptchaToken} />
 
-          <Button
-            type="submit"
-            className="w-full"
-            disabled={form.submitting || (captchaRequired && !captchaToken)}
-          >
-            {form.submitting ? 'Criando...' : 'Criar conta'}
-          </Button>
-
-          {onSwitchToLogin ? (
-            <p className="text-center text-sm text-muted-foreground">
-              Ja tem conta?{' '}
-              <button
-                type="button"
-                onClick={onSwitchToLogin}
-                className="font-medium text-primary hover:underline"
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={form.submitting || (captchaRequired && !captchaToken)}
               >
-                Fazer login
-              </button>
-            </p>
-          ) : loginHref ? (
-            <p className="text-center text-sm text-muted-foreground">
-              Ja tem conta?{' '}
-              <Link href={loginHref} className="font-medium text-primary hover:underline">
-                Fazer login
-              </Link>
-            </p>
-          ) : null}
-        </form>
+                {form.submitting ? 'Criando...' : 'Criar conta'}
+              </Button>
+
+              {onSwitchToLogin ? (
+                <p className="text-center text-sm text-muted-foreground">
+                  Ja tem conta?{' '}
+                  <button
+                    type="button"
+                    onClick={onSwitchToLogin}
+                    className="font-medium text-primary hover:underline"
+                  >
+                    Fazer login
+                  </button>
+                </p>
+              ) : loginHref ? (
+                <p className="text-center text-sm text-muted-foreground">
+                  Ja tem conta?{' '}
+                  <Link href={loginHref} className="font-medium text-primary hover:underline">
+                    Fazer login
+                  </Link>
+                </p>
+              ) : null}
+            </form>
+          </>
+        )}
       </CardContent>
     </Card>
   );
