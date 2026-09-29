@@ -2,7 +2,6 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
-import { Grid } from '../../ui/grid';
 import { Typography } from '../../ui/typography';
 import { SectionLabel } from '../../ui/label';
 import { ACTIVE_UI_STYLE } from '../../../lib/ui-theme';
@@ -18,7 +17,7 @@ type PageHeaderProps = {
   eyebrow?: string;
   title: string;
   description?: string;
-  /** Botão "voltar" (invertido, seta + rótulo) na mesma linha do eyebrow. Omita para não renderizar — sem href padrão. */
+  /** Botão "voltar" redondo (só ícone; `backLabel` vira aria-label/tooltip). Omita para não renderizar — sem href padrão. */
   backHref?: string;
   backLabel?: string;
   actions?: ReactNode;
@@ -26,12 +25,10 @@ type PageHeaderProps = {
 };
 
 /**
- * List/manager page header: eyebrow + title + description on the left,
- * actions (back link, primary action…) on the right, laid out on the
- * app's 12-col `Grid` so it stacks cleanly at every breakpoint instead of
- * only flipping once at `md`. Always closes with a bottom divider + padding
- * to separate it from the content below — a header should never sit flush
- * against the next block.
+ * List/manager page header. Composição enxuta: o "voltar" é um botão redondo só com ícone (no tom
+ * escuro da cor primária do tema) alinhado ao bloco de texto — eyebrow, título e descrição numa
+ * coluna só —, e as ações ficam à direita no desktop / embaixo no mobile. Fecha com um traço fino
+ * em degradê a partir da primária, em vez de uma borda cheia, para separar do conteúdo sem pesar.
  */
 export function PageHeader({
   eyebrow,
@@ -43,44 +40,44 @@ export function PageHeader({
   className,
 }: Readonly<PageHeaderProps>) {
   return (
-    <Grid
-      container
-      containerSize="fluid"
-      padding="none"
-      gap={3}
-      className={cn('items-end border-b border-border pb-6', className)}
-    >
-      <Grid xs={12} sm={9} md={9} lg={8}>
-        {backHref || eyebrow ? (
-          <div className="mb-2 flex flex-wrap items-center gap-3">
-            {backHref ? (
-              <Link
-                href={backHref}
-                className="inline-flex h-8 items-center gap-1.5 rounded-[var(--ui-radius-pill,0.375rem)] bg-[color-mix(in_oklab,var(--primary)_75%,black)] px-3 font-display text-xs font-semibold tracking-wide text-primary-foreground transition-colors hover:bg-[color-mix(in_oklab,var(--primary)_65%,black)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              >
-                <ArrowLeft className="h-3.5 w-3.5" />
-                {backLabel}
-              </Link>
-            ) : null}
+    <header className={cn('pb-6', className)}>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 items-start gap-4">
+          {backHref ? (
+            <Link
+              href={backHref}
+              aria-label={backLabel}
+              title={backLabel}
+              className="mt-0.5 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[color-mix(in_oklab,var(--primary)_75%,black)] text-primary-foreground shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] transition-[background-color,transform] hover:-translate-x-0.5 hover:bg-[color-mix(in_oklab,var(--primary)_65%,black)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
+          ) : null}
+          <div className="min-w-0 space-y-1">
             {eyebrow ? <SectionLabel>{eyebrow}</SectionLabel> : null}
+            <Typography.H2
+              size={PAGE_HEADER_TITLE[ACTIVE_UI_STYLE].size}
+              weight={PAGE_HEADER_TITLE[ACTIVE_UI_STYLE].weight}
+              className="leading-tight"
+            >
+              {title}
+            </Typography.H2>
+            {description ? (
+              <Typography.P color="muted" className="max-w-2xl text-sm">
+                {description}
+              </Typography.P>
+            ) : null}
           </div>
-        ) : null}
-        <Typography.H2
-          size={PAGE_HEADER_TITLE[ACTIVE_UI_STYLE].size}
-          weight={PAGE_HEADER_TITLE[ACTIVE_UI_STYLE].weight}
-        >
-          {title}
-        </Typography.H2>
-        {description ? (
-          <Typography.P color="muted">{description}</Typography.P>
-        ) : null}
-      </Grid>
+        </div>
 
-      {actions ? (
-        <Grid xs={12} sm={3} md={3} lg={4} className="flex flex-wrap gap-2 justify-end">
-          {actions}
-        </Grid>
-      ) : null}
-    </Grid>
+        {actions ? (
+          <div className="flex shrink-0 flex-wrap gap-2 sm:justify-end">{actions}</div>
+        ) : null}
+      </div>
+      <div
+        aria-hidden="true"
+        className="mt-6 h-px bg-gradient-to-r from-primary/50 via-border to-transparent"
+      />
+    </header>
   );
 }
