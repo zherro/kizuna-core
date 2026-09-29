@@ -1,22 +1,13 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { notFound, usePathname } from "next/navigation";
-import {
-  useMemo,
-  useRef,
-  useState,
-  type ComponentType,
-  type ReactNode,
-} from "react";
-import { LogOut, Menu, X } from "lucide-react";
-import { buttonVariants } from "./ui/button";
-import { useAuth } from "../providers/auth-provider";
-import { cn } from "../../lib/utils";
-import {
-  PanelSidebarContext,
-  type PanelSidebarControl,
-} from "./panel-sidebar-context";
+import Link from 'next/link';
+import { notFound, usePathname } from 'next/navigation';
+import { useMemo, useRef, useState, type ComponentType, type ReactNode } from 'react';
+import { LogOut, Menu, X } from 'lucide-react';
+import { buttonVariants } from './ui/button';
+import { useAuth } from '../providers/auth-provider';
+import { cn } from '../../lib/utils';
+import { PanelSidebarContext, type PanelSidebarControl } from './panel-sidebar-context';
 
 export type PanelNavIcon = ComponentType<{ className?: string }>;
 
@@ -83,14 +74,14 @@ export type PanelNavAccessUser =
  * instead of re-implementing it.
  */
 export function isPanelNavItemAccessible(
-  item: Pick<PanelNavItem, "permResource" | "rootOnly" | "visibleIf">,
-  user: PanelNavAccessUser,
+  item: Pick<PanelNavItem, 'permResource' | 'rootOnly' | 'visibleIf'>,
+  user: PanelNavAccessUser
 ): boolean {
   if (item.visibleIf && item.visibleIf.length > 0) {
     return item.visibleIf.some(
       (cond) =>
         (!cond.permResource || (user?.hasPerm?.(cond.permResource) ?? false)) &&
-        (!cond.rootOnly || (user?.is_root ?? false)),
+        (!cond.rootOnly || (user?.is_root ?? false))
     );
   }
   return (
@@ -110,11 +101,11 @@ export type PanelShellBranding = {
 
 const topActionClassName = (active: boolean, collapsed: boolean) =>
   cn(
-    "flex items-center justify-center gap-1.5 rounded-2xl py-2.5 text-xs font-semibold transition",
-    collapsed ? "lg:flex-col lg:gap-1 lg:py-2" : "flex-col",
+    'flex items-center justify-center gap-1.5 rounded-2xl py-2.5 text-xs font-semibold transition',
+    collapsed ? 'lg:flex-col lg:gap-1 lg:py-2' : 'flex-col',
     active
-      ? "bg-primary text-primary-foreground shadow-sm"
-      : "bg-muted/60 text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+      ? 'bg-primary text-primary-foreground shadow-sm'
+      : 'bg-muted/60 text-muted-foreground hover:bg-accent hover:text-accent-foreground'
   );
 
 export type PanelShellBaseProps = {
@@ -126,6 +117,11 @@ export type PanelShellBaseProps = {
    * above the nav groups (e.g. Home / Busca / Painel).
    */
   topActions?: PanelTopAction[];
+  /**
+   * Só o ícone nos chips de `topActions` (sem legenda visível). O título continua como
+   * `aria-label` e `title` (tooltip nativo).
+   */
+  topActionsIconOnly?: boolean;
   /**
    * Routes that should render children full-bleed (just a brand header, no sidebar) —
    * e.g. a wizard flow. Receives the current pathname.
@@ -157,6 +153,7 @@ export function PanelShellBase({
   navGroups,
   branding,
   topActions,
+  topActionsIconOnly = false,
   isFullBleedRoute,
   renderItemBadge,
   fullBleedHeaderExtra,
@@ -179,8 +176,7 @@ export function PanelShellBase({
     () => ({
       collapseWhileMounted: () => {
         const isDesktop =
-          typeof window !== "undefined" &&
-          window.matchMedia("(min-width: 1024px)").matches;
+          typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches;
         if (!isDesktop) return () => {};
         const auto = autoCollapse.current;
         if (auto.holders === 0) {
@@ -195,30 +191,27 @@ export function PanelShellBase({
         };
       },
     }),
-    [],
+    []
   );
 
-  const isDevEnvironment = process.env.NODE_ENV !== "production";
+  const isDevEnvironment = process.env.NODE_ENV !== 'production';
   const fullBleed = isFullBleedRoute?.(pathname) ?? false;
 
   // Tag ao lado do nome: ROOT tem precedência sobre ADMIN (tenant_type).
   const roleTag = user?.is_root
-    ? "Root"
-    : (user?.tenant_type ?? "").toUpperCase() === "ADMIN"
-      ? "Admin"
+    ? 'Root'
+    : (user?.tenant_type ?? '').toUpperCase() === 'ADMIN'
+      ? 'Admin'
       : null;
 
-  const passesAccessGate = (item: PanelNavItem) =>
-    isPanelNavItemAccessible(item, user);
+  const passesAccessGate = (item: PanelNavItem) => isPanelNavItemAccessible(item, user);
 
   const visibleNavigationGroups = navGroups
     .map((group) => ({
       ...group,
       items: group.items.filter(
         (item) =>
-          passesAccessGate(item) &&
-          (!item.devOnly || isDevEnvironment) &&
-          !item.sidebarHidden,
+          passesAccessGate(item) && (!item.devOnly || isDevEnvironment) && !item.sidebarHidden
       ),
     }))
     .filter((group) => group.items.length > 0);
@@ -227,9 +220,7 @@ export function PanelShellBase({
     // O item que decide é o de href mais específico que casa com a rota (por segmento). Sem isso,
     // um item genérico como "/painel" liberava qualquer subrota, inclusive as rootOnly.
     const matches = (href: string) =>
-      !!path &&
-      (path === href ||
-        path.startsWith(href.endsWith("/") ? href : `${href}/`));
+      !!path && (path === href || path.startsWith(href.endsWith('/') ? href : `${href}/`));
     const item = navGroups
       .flatMap((group) => group.items)
       .filter((candidate) => matches(candidate.href))
@@ -252,21 +243,18 @@ export function PanelShellBase({
         <button
           type="button"
           aria-label="Fechar menu lateral"
-          className={cn(
-            "fixed inset-0 z-40 bg-black/40",
-            !overlayOnly && "lg:hidden",
-          )}
+          className={cn('fixed inset-0 z-40 bg-black/40', !overlayOnly && 'lg:hidden')}
           onClick={() => setMobileOpen(false)}
         />
       ) : null}
 
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex border-r border-border bg-background transition-transform duration-200",
-          !overlayOnly && "lg:fixed lg:translate-x-0",
-          "w-72",
-          collapsed && "lg:w-24",
-          mobileOpen ? "translate-x-0" : "-translate-x-full",
+          'fixed inset-y-0 left-0 z-50 flex border-r border-border bg-background transition-transform duration-200',
+          !overlayOnly && 'lg:fixed lg:translate-x-0',
+          'w-72',
+          collapsed && 'lg:w-24',
+          mobileOpen ? 'translate-x-0' : '-translate-x-full'
         )}
       >
         <div className="flex h-full w-full flex-col">
@@ -274,10 +262,7 @@ export function PanelShellBase({
             <div className="flex items-center justify-between gap-3">
               <Link
                 href="/"
-                className={cn(
-                  "flex min-w-0 items-center gap-3",
-                  collapsed && "lg:justify-center",
-                )}
+                className={cn('flex min-w-0 items-center gap-3', collapsed && 'lg:justify-center')}
               >
                 <span
                   className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary text-sm font-bold text-primary-foreground"
@@ -285,7 +270,7 @@ export function PanelShellBase({
                 >
                   {branding.shortLabel}
                 </span>
-                <span className={cn("min-w-0", collapsed && "lg:hidden")}>
+                <span className={cn('min-w-0', collapsed && 'lg:hidden')}>
                   <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-primary">
                     {branding.kicker}
                   </p>
@@ -299,8 +284,8 @@ export function PanelShellBase({
                 type="button"
                 aria-label="Fechar menu lateral"
                 className={cn(
-                  buttonVariants({ variant: "ghost", size: "icon" }),
-                  "shrink-0 rounded-xl bg-danger/10 text-danger hover:bg-danger/20 lg:hidden",
+                  buttonVariants({ variant: 'ghost', size: 'icon' }),
+                  'shrink-0 rounded-xl bg-danger/10 text-danger hover:bg-danger/20 lg:hidden'
                 )}
                 onClick={() => setMobileOpen(false)}
               >
@@ -309,26 +294,16 @@ export function PanelShellBase({
             </div>
 
             {topActions && topActions.length > 0 ? (
-              <div
-                className={cn(
-                  "mt-4 grid grid-cols-3 gap-2",
-                  collapsed && "lg:grid-cols-1",
-                )}
-              >
+              <div className={cn('mt-4 grid grid-cols-3 gap-2', collapsed && 'lg:grid-cols-1')}>
                 {topActions.map((action) => {
                   const Icon = action.icon;
-                  const className = topActionClassName(
-                    action.isActive ?? false,
-                    collapsed,
-                  );
+                  const className = topActionClassName(action.isActive ?? false, collapsed);
                   const content = (
                     <>
                       <Icon className="h-5 w-5 shrink-0" />
-                      <span
-                        className={cn("truncate", collapsed && "lg:hidden")}
-                      >
-                        {action.title}
-                      </span>
+                      {topActionsIconOnly ? null : (
+                        <span className={cn('truncate', collapsed && 'lg:hidden')}>{action.title}</span>
+                      )}
                     </>
                   );
 
@@ -339,6 +314,8 @@ export function PanelShellBase({
                         href={action.href}
                         onClick={() => setMobileOpen(false)}
                         className={className}
+                        aria-label={topActionsIconOnly ? action.title : undefined}
+                        title={topActionsIconOnly ? action.title : undefined}
                       >
                         {content}
                       </Link>
@@ -351,6 +328,8 @@ export function PanelShellBase({
                       type="button"
                       onClick={action.onClick}
                       className={className}
+                      aria-label={topActionsIconOnly ? action.title : undefined}
+                      title={topActionsIconOnly ? action.title : undefined}
                     >
                       {content}
                     </button>
@@ -366,15 +345,12 @@ export function PanelShellBase({
             {visibleNavigationGroups.map((group, groupIndex) => (
               <div
                 key={group.title}
-                className={cn(
-                  "space-y-2",
-                  groupIndex > 0 && "border-t border-border pt-6",
-                )}
+                className={cn('space-y-2', groupIndex > 0 && 'border-t border-border pt-6')}
               >
                 <p
                   className={cn(
-                    "px-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground",
-                    collapsed && "lg:hidden",
+                    'px-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground',
+                    collapsed && 'lg:hidden'
                   )}
                 >
                   <b>{group.title}</b>
@@ -384,10 +360,9 @@ export function PanelShellBase({
                   {group.items.map((item) => {
                     const Icon = item.icon;
                     const active =
-                      item.href === "/painel"
+                      item.href === '/painel'
                         ? pathname === item.href
-                        : pathname === item.href ||
-                          pathname.startsWith(`${item.href}/`);
+                        : pathname === item.href || pathname.startsWith(`${item.href}/`);
 
                     return (
                       <Link
@@ -396,26 +371,22 @@ export function PanelShellBase({
                         title={collapsed ? item.title : undefined}
                         onClick={() => setMobileOpen(false)}
                         className={cn(
-                          "flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-semibold transition",
+                          'flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-semibold transition',
                           active
-                            ? "bg-primary text-primary-foreground shadow-sm"
-                            : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
-                          collapsed && "justify-center lg:px-0",
+                            ? 'bg-primary text-primary-foreground shadow-sm'
+                            : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
+                          collapsed && 'justify-center lg:px-0'
                         )}
                       >
                         <span
                           className={cn(
-                            "flex h-8 w-8 shrink-0 items-center justify-center rounded-full",
-                            active ? "bg-primary-foreground/15" : "bg-muted/60",
+                            'flex h-8 w-8 shrink-0 items-center justify-center rounded-full',
+                            active ? 'bg-primary-foreground/15' : 'bg-muted/60'
                           )}
                         >
                           <Icon className="h-4 w-4" />
                         </span>
-                        <span
-                          className={cn("truncate", collapsed && "lg:hidden")}
-                        >
-                          {item.title}
-                        </span>
+                        <span className={cn('truncate', collapsed && 'lg:hidden')}>{item.title}</span>
                         {renderItemBadge?.(item, collapsed) ?? null}
                       </Link>
                     );
@@ -438,10 +409,7 @@ export function PanelShellBase({
             <button
               type="button"
               onClick={() => setMobileOpen(true)}
-              className={cn(
-                buttonVariants({ variant: "ghost", size: "sm" }),
-                "rounded-full",
-              )}
+              className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'rounded-full')}
               aria-label="Abrir menu"
             >
               <Menu className="mr-1 h-4 w-4" /> Menu
@@ -457,10 +425,7 @@ export function PanelShellBase({
                 {branding.fullLabel}
               </span>
             </Link>
-            <div
-              id="wz-header-slot"
-              className="ml-auto flex min-w-0 items-center gap-2"
-            >
+            <div id="wz-header-slot" className="ml-auto flex min-w-0 items-center gap-2">
               {fullBleedHeaderExtra}
             </div>
           </div>
@@ -473,103 +438,84 @@ export function PanelShellBase({
 
   return (
     <PanelSidebarContext.Provider value={sidebarControl}>
-      <div
-        className="flex h-full min-h-0 overflow-hidden bg-muted/20"
-        // Largura do menu fixo (w-24 / w-72) — barras `fixed` de telas filhas (rodapé do wizard)
-        // começam depois dele em vez de ficarem por baixo.
-        style={{
-          ["--panel-sidebar-w" as string]: collapsed ? "6rem" : "18rem",
-        }}
-      >
-        {renderDrawer(false)}
+    <div
+      className="flex h-full min-h-0 overflow-hidden bg-muted/20"
+      // Largura do menu fixo (w-24 / w-72) — barras `fixed` de telas filhas (rodapé do wizard)
+      // começam depois dele em vez de ficarem por baixo.
+      style={{ ['--panel-sidebar-w' as string]: collapsed ? '6rem' : '18rem' }}
+    >
+      {renderDrawer(false)}
 
-        <div
-          className={cn(
-            "flex h-full min-h-0 min-w-0 flex-1 flex-col",
-            collapsed ? "lg:pl-24" : "lg:pl-72",
-          )}
-        >
-          <header className="sticky top-0 z-30 bg-background/95 px-4 py-3 shadow-sm backdrop-blur md:px-6">
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-2">
+      <div
+        className={cn(
+          'flex h-full min-h-0 min-w-0 flex-1 flex-col',
+          collapsed ? 'lg:pl-24' : 'lg:pl-72'
+        )}
+      >
+        <header className="sticky top-0 z-30 bg-background/95 px-4 py-3 shadow-sm backdrop-blur md:px-6">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                aria-label={collapsed ? 'Expandir menu lateral' : 'Abrir ou retrair menu lateral'}
+                className={cn(buttonVariants({ variant: 'ghost', size: 'icon' }), 'rounded-full')}
+                onClick={() => {
+                  const isDesktop =
+                    typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches;
+                  if (isDesktop) {
+                    autoCollapse.current.touched = true;
+                    setCollapsed((current) => !current);
+                  } else {
+                    setMobileOpen(true);
+                  }
+                }}
+              >
+                <Menu className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="ml-auto flex items-center gap-3">
+              {headerExtra}
+              <div className="flex min-w-0 items-center gap-3 rounded-full bg-muted/60 py-1.5 pr-2 pl-1.5">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
+                  {user?.initials}
+                </div>
+                <div className="hidden min-w-0 sm:block">
+                  <div className="flex min-w-0 items-center gap-2">
+                    {userProfileHref ? (
+                      <Link
+                        href={userProfileHref}
+                        className="block truncate text-sm font-semibold text-foreground underline decoration-muted-foreground/40 underline-offset-2 hover:decoration-foreground"
+                      >
+                        {user?.name}
+                      </Link>
+                    ) : (
+                      <p className="truncate text-sm font-semibold text-foreground">{user?.name}</p>
+                    )}
+                    {roleTag ? (
+                      <span className="shrink-0 rounded bg-muted px-1.5 py-px text-[9px] font-medium uppercase leading-none tracking-wide text-muted-foreground">
+                        {roleTag}
+                      </span>
+                    ) : null}
+                  </div>
+                  <p className="truncate text-xs text-muted-foreground">{user?.subtitle}</p>
+                </div>
                 <button
                   type="button"
-                  aria-label={
-                    collapsed
-                      ? "Expandir menu lateral"
-                      : "Abrir ou retrair menu lateral"
-                  }
-                  className={cn(
-                    buttonVariants({ variant: "ghost", size: "icon" }),
-                    "rounded-full",
-                  )}
-                  onClick={() => {
-                    const isDesktop =
-                      typeof window !== "undefined" &&
-                      window.matchMedia("(min-width: 1024px)").matches;
-                    if (isDesktop) {
-                      autoCollapse.current.touched = true;
-                      setCollapsed((current) => !current);
-                    } else {
-                      setMobileOpen(true);
-                    }
-                  }}
+                  aria-label="Sair"
+                  onClick={() => void logout()}
+                  className={cn(buttonVariants({ variant: 'ghost', size: 'icon' }), 'rounded-full shrink-0')}
                 >
-                  <Menu className="h-4 w-4" />
+                  <LogOut className="h-4 w-4" />
                 </button>
               </div>
-
-              <div className="ml-auto flex items-center gap-3">
-                {headerExtra}
-                <div className="flex min-w-0 items-center gap-3 rounded-full bg-muted/60 py-1.5 pr-2 pl-1.5">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
-                    {user?.initials}
-                  </div>
-                  <div className="hidden min-w-0 sm:block">
-                    <div className="flex min-w-0 items-center gap-2">
-                      {userProfileHref ? (
-                        <Link
-                          href={userProfileHref}
-                          className="block truncate text-sm font-semibold text-foreground underline decoration-muted-foreground/40 underline-offset-2 hover:decoration-foreground"
-                        >
-                          {user?.name}
-                        </Link>
-                      ) : (
-                        <p className="truncate text-sm font-semibold text-foreground">
-                          {user?.name}
-                        </p>
-                      )}
-                      {roleTag ? (
-                        <span className="shrink-0 rounded bg-muted px-1.5 py-px text-[9px] font-medium uppercase leading-none tracking-wide text-muted-foreground">
-                          {roleTag}
-                        </span>
-                      ) : null}
-                    </div>
-                    <p className="truncate text-xs text-muted-foreground">
-                      {user?.subtitle}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    aria-label="Sair"
-                    onClick={() => void logout()}
-                    className={cn(
-                      buttonVariants({ variant: "ghost", size: "icon" }),
-                      "rounded-full shrink-0",
-                    )}
-                  >
-                    <LogOut className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
             </div>
-          </header>
-
-          <div className="min-h-0 flex-1 min-w-0 overflow-y-auto">
-            {children}
           </div>
-        </div>
+        </header>
+
+        <div className="min-h-0 flex-1 min-w-0 overflow-y-auto">{children}</div>
       </div>
+    </div>
     </PanelSidebarContext.Provider>
   );
 }
