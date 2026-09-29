@@ -97,6 +97,11 @@ export type PanelShellBranding = {
   shortLabel: string;
   /** Full brand label shown next to `shortLabel`. */
   fullLabel: string;
+  /**
+   * URL da logo (ex.: "/brand/logo.png"), a mesma do header do site. Quando presente, substitui o
+   * selo `shortLabel` + textos; com o menu recolhido vira um quadrado com a logo contida.
+   */
+  logo?: string;
 };
 
 const topActionClassName = (active: boolean, collapsed: boolean) =>
@@ -264,20 +269,34 @@ export function PanelShellBase({
                 href="/"
                 className={cn('flex min-w-0 items-center gap-3', collapsed && 'lg:justify-center')}
               >
-                <span
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary text-sm font-bold text-primary-foreground"
-                  aria-hidden="true"
-                >
-                  {branding.shortLabel}
-                </span>
-                <span className={cn('min-w-0', collapsed && 'lg:hidden')}>
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-primary">
-                    {branding.kicker}
-                  </p>
-                  <p className="truncate text-base font-bold tracking-tight text-foreground">
-                    {branding.fullLabel}
-                  </p>
-                </span>
+                {branding.logo ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={branding.logo}
+                    alt={branding.fullLabel}
+                    className={cn(
+                      'h-11 w-auto max-w-[11rem] object-contain object-left',
+                      collapsed && 'lg:w-11 lg:object-center'
+                    )}
+                  />
+                ) : (
+                  <>
+                    <span
+                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary text-sm font-bold text-primary-foreground"
+                      aria-hidden="true"
+                    >
+                      {branding.shortLabel}
+                    </span>
+                    <span className={cn('min-w-0', collapsed && 'lg:hidden')}>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-primary">
+                        {branding.kicker}
+                      </p>
+                      <p className="truncate text-base font-bold tracking-tight text-foreground">
+                        {branding.fullLabel}
+                      </p>
+                    </span>
+                  </>
+                )}
               </Link>
 
               <button
@@ -415,15 +434,26 @@ export function PanelShellBase({
               <Menu className="mr-1 h-4 w-4" /> Menu
             </button>
             <Link href="/painel" className="inline-flex items-center gap-3">
-              <span
-                className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-primary text-sm font-bold text-primary-foreground"
-                aria-hidden="true"
-              >
-                {branding.shortLabel}
-              </span>
-              <span className="hidden text-sm font-semibold tracking-[0.2em] text-foreground uppercase sm:inline">
-                {branding.fullLabel}
-              </span>
+              {branding.logo ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={branding.logo}
+                  alt={branding.fullLabel}
+                  className="h-9 w-auto max-w-[9rem] object-contain"
+                />
+              ) : (
+                <>
+                  <span
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-primary text-sm font-bold text-primary-foreground"
+                    aria-hidden="true"
+                  >
+                    {branding.shortLabel}
+                  </span>
+                  <span className="hidden text-sm font-semibold tracking-[0.2em] text-foreground uppercase sm:inline">
+                    {branding.fullLabel}
+                  </span>
+                </>
+              )}
             </Link>
             <div id="wz-header-slot" className="ml-auto flex min-w-0 items-center gap-2">
               {fullBleedHeaderExtra}
