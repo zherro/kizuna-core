@@ -63,37 +63,17 @@ const ACCOUNT_STATUS_LABELS: Record<number, string> = {
 const ACCEPTED_AVATAR_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const MAX_AVATAR_FILE_SIZE_MB = 2;
 
-/**
- * Shape of the two `auth.system_config` keys this form reads (see
- * `src/lib/server/user-data-fields-config.ts`, seeded by `db/extras/system_config_seed.sql`,
- * edited through `/painel/administracao/configuracoes`). `mask` isn't a formatting-library name —
- * this component already knows how to format both cpf and cnpj on its own (applyDocumentMask
- * below) — it's which document type(s) the dropdown offers.
- */
-export type UserDataDocumentFieldConfig = {
-  visible: boolean;
-  required: boolean;
-  mask: 'cpf' | 'cnpj' | 'cpf_cnpj';
-  warning: string | null;
-};
-
-export type UserDataBirthDateFieldConfig = {
-  visible: boolean;
-  required: boolean;
-};
-
-export type UserDataFieldsConfig = {
-  documentField: UserDataDocumentFieldConfig;
-  birthDateField: UserDataBirthDateFieldConfig;
-};
-
-/** Used when `auth.system_config` has no row yet for one of the two keys (fresh install before
- * `db/extras/system_config_seed.sql` runs) — everything visible, nothing required, so the form
- * never breaks waiting on a seed. */
-export const DEFAULT_USER_DATA_FIELDS_CONFIG: UserDataFieldsConfig = {
-  documentField: { visible: true, required: false, mask: 'cpf_cnpj', warning: null },
-  birthDateField: { visible: true, required: false },
-};
+export {
+  DEFAULT_USER_DATA_FIELDS_CONFIG,
+  type UserDataBirthDateFieldConfig,
+  type UserDataDocumentFieldConfig,
+  type UserDataFieldsConfig,
+} from './user-data-fields-config';
+import {
+  DEFAULT_USER_DATA_FIELDS_CONFIG,
+  type UserDataDocumentFieldConfig,
+  type UserDataFieldsConfig,
+} from './user-data-fields-config';
 
 function allowedDocumentTypes(mask: UserDataDocumentFieldConfig['mask']): Array<'cpf' | 'cnpj'> {
   if (mask === 'cpf') return ['cpf'];
