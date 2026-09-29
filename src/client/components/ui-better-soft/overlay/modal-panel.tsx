@@ -1,9 +1,8 @@
 'use client';
-// soft-theme: lê activeTheme (kizuna-core/src/client/lib/ui-theme.ts) — classic/soft via NEXT_PUBLIC_UI_STYLE
+// soft-theme: bottom sheet via var(--ui-*) (globals.css) — classic/soft via data-ui-style
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { X } from 'lucide-react';
-import { activeTheme } from '../../../lib/ui-theme';
 import { cn } from '../../../../lib/utils';
 
 type ModalPanelProps = {
@@ -107,7 +106,7 @@ export function ModalPanel({
         className={
           isBottomSheet
             ? cn(
-                activeTheme.bottomSheet,
+                'w-full max-w-md rounded-[var(--ui-radius-sheet-top,1rem)] border-[length:var(--ui-border-w-card,1px)] border-border bg-[color:var(--ui-card-bg,var(--background))] p-5 shadow-[shadow:var(--ui-shadow-sheet,0_10px_15px_-3px_#0000001a,_0_4px_6px_-4px_#0000001a)]',
                 'transition-transform duration-300 ease-out',
                 entered ? 'translate-y-0' : 'translate-y-full'
               )

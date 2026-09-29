@@ -1,9 +1,8 @@
 'use client';
-// soft-theme: lê activeTheme (kizuna-core/src/client/lib/ui-theme.ts) — classic/soft via NEXT_PUBLIC_UI_STYLE
+// soft-theme: raio via var(--ui-*) (globals.css) — classic/soft via data-ui-style
 
 import { useEffect, useRef, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
-import { activeTheme } from '../../lib/ui-theme';
 import { cn } from '../../../lib/utils';
 
 export type SelectPopoverOption = { value: number; label: string };
@@ -19,8 +18,8 @@ type SelectPopoverProps = {
 /**
  * Substitui o `<select>` nativo — no mobile ele delega a UI pro sistema (roda do iOS, lista
  * fullscreen do Android), fora do alcance de qualquer CSS. Este popover fica no nosso controle;
- * o raio/sombra do gatilho e do painel vêm de `activeTheme`, resolvido por
- * `NEXT_PUBLIC_UI_STYLE`.
+ * o raio do gatilho e do painel vêm dos tokens `--ui-radius-field` e `--ui-radius-popover`, que
+ * trocam por `data-ui-style` (`NEXT_PUBLIC_UI_STYLE`).
  */
 export function SelectPopover({
   value,
@@ -64,7 +63,7 @@ export function SelectPopover({
         aria-expanded={aberto}
         className={cn(
           'flex items-center gap-1 text-base font-normal transition-colors',
-          activeTheme.selectTrigger,
+          'rounded-[var(--ui-radius-field,0.375rem)] border border-border bg-background px-3 py-2',
           className
         )}
       >
@@ -85,7 +84,7 @@ export function SelectPopover({
         inert={!aberto}
         className={cn(
           'absolute top-full left-0 z-20 mt-2 max-h-56 w-max min-w-full overflow-y-auto p-1.5 transition-[opacity,transform] duration-200 ease-out',
-          activeTheme.selectPanel,
+          'rounded-[var(--ui-radius-popover,0.375rem)] border border-border bg-popover shadow-md',
           aberto ? 'translate-y-0 opacity-100' : 'pointer-events-none -translate-y-1 opacity-0'
         )}
       >

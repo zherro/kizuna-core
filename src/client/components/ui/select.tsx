@@ -49,7 +49,7 @@ const SelectTrigger = React.forwardRef<
     <button
       ref={ref}
       onClick={() => onOpenChange(!open)}
-      className={`flex items-center justify-between rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-primary/40 ${className}`}
+      className={`flex items-center justify-between rounded-[var(--ui-radius-select,0.5rem)] border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground shadow-[shadow:var(--ui-shadow-card,0_1px_3px_0_#0000001a,_0_1px_2px_-1px_#0000001a)] transition-colors focus:outline-none focus:ring-2 focus:ring-primary/40 ${className}`}
       {...props}
     >
       {children}
@@ -77,7 +77,7 @@ const SelectContent = ({ children }: { children: React.ReactNode }) => {
   return (
     <>
       <div className="fixed inset-0 z-40" onClick={() => onOpenChange(false)} />
-      <div className="absolute top-full left-0 right-0 z-50 mt-1 rounded-lg border border-border bg-card shadow-lg">
+      <div className="absolute top-full left-0 right-0 z-50 mt-1 rounded-[var(--ui-radius-select,0.5rem)] border border-border bg-card shadow-lg">
         {children}
       </div>
     </>

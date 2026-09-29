@@ -10,7 +10,7 @@
     "logo": null
   },
   "theme": {
-    "_comment": "Cor/tema visual padrão. \"default\" é aplicado enquanto o usuário não escolhe outro (ou sempre, se \"selectable\" for false — aí o seletor de cor some do botão de preferências). Temas disponíveis: blue, green, purple, teal, red, orange, coral, terracotta, bora_cuiaba, metro_orange, laranja_intenso, laranja_medio. \"metaColor\" é a cor da barra do navegador no mobile (meta theme-color).",
+    "_comment": "Cor/tema visual padrão. \"default\" é aplicado enquanto o usuário não escolhe outro (ou sempre, se \"selectable\" for false — aí o seletor de cor some do botão de preferências). Temas disponíveis: blue, green, purple, teal, red, orange, coral, terracotta, bora_cuiaba, metro_orange, laranja_intenso, laranja_medio. \"metaColor\" é a cor da barra do navegador no mobile (meta theme-color). \"displayFont\": fonte dos títulos, uma de quicksand | baloo | bricolage; sem ela vale o padrão do estilo (NEXT_PUBLIC_UI_STYLE: classic = quicksand, soft = baloo). Requer o suporte no layout/globals.css (ver docs/interface/componentes.md).",
     "default": "bora_cuiaba",
     "selectable": true,
     "metaColor": "#2563eb"
@@ -20,8 +20,7 @@
     "variant": "classic"
   },
   "location": {
-    "_comment": "Seletor de local do header (plugin location). \"source\": ibge (padrão — Brasil inteiro, API do IBGE) | db (só as cidades em location_state/location_city, seed do projeto). \"outsideList\" (modo db): cidade detectada por GPS/IP fora da lista → prompt (abre o seletor) | default (seleciona \"defaultCityIbge\", código IBGE de 7 dígitos, que precisa estar no seed). Ver kizuna-core/docs/plugins/location.md.",
-    "source": "ibge",
+    "_comment": "Seletor de local do header (plugin location). Lista só as cidades com location_city.search_city = true (seed do projeto). \"outsideList\": cidade detectada por GPS/IP fora da lista → prompt (abre o seletor) | default (seleciona \"defaultCityIbge\", código IBGE de 7 dígitos, que precisa estar marcada). Ver kizuna-core/docs/plugins/location.md.",
     "outsideList": "prompt"
   },
   "home": {

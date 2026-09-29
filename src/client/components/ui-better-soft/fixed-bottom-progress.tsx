@@ -42,7 +42,7 @@ export function FixedBottomProgress({
       className={cn(
         fixed
           ? 'fixed inset-x-0 bottom-[61px] z-40 border-t border-border bg-background/96 backdrop-blur supports-[backdrop-filter]:bg-background/85'
-          : 'rounded-xl border border-border bg-background',
+          : 'rounded-[var(--ui-radius-card-compact,0.75rem)] border-[length:var(--ui-border-w-card,1px)] border-border bg-[color:var(--ui-card-bg,var(--background))] shadow-[shadow:var(--ui-shadow-item,0_0_#0000)]',
         className
       )}
     >

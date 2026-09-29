@@ -274,7 +274,7 @@ export function MosaicGridExactPreview() {
     groupId: 'ui-better-soft',
     label: 'Page Header',
     description:
-      'Cabecalho de pagina de listagem/gestao: link de voltar opcional (seta + texto) + eyebrow + titulo + descricao a esquerda, acoes (nova acao...) a direita. Empilha no mobile. Tamanho/peso do titulo vem do tema ativo (NEXT_PUBLIC_UI_STYLE), igual PageHeading.',
+      'Cabecalho de pagina de listagem/gestao: link de voltar opcional (seta + texto) + eyebrow + titulo + descricao a esquerda, acoes (nova acao...) a direita. Empilha no mobile. Tamanho/peso do titulo seguem o estilo ativo (NEXT_PUBLIC_UI_STYLE), igual PageHeading.',
     usageCode: `import Link from 'next/link';
 import { Plus } from 'lucide-react';
 import { buttonVariants } from '../ui/button';
@@ -383,7 +383,7 @@ export function LunchBreakField() {
     groupId: 'ui-better-soft',
     label: 'Settings Section',
     description:
-      'Card do kit: com cabecalho (icone + titulo + descricao) no variant="default", ou sem cabecalho para item de lista (variant="compact") ou wrapper maior (variant="flat"). Raio/sombra vem do tema ativo (NEXT_PUBLIC_UI_STYLE).',
+      'Card do kit: com cabecalho (icone + titulo + descricao) no variant="default", ou sem cabecalho para item de lista (variant="compact") ou wrapper maior (variant="flat"). Raio/borda/sombra vem dos tokens --ui-* do estilo ativo (NEXT_PUBLIC_UI_STYLE).',
     usageCode: `import { Bell } from 'lucide-react';
 import { Section } from '../ui-better-soft/section';
 
@@ -1026,7 +1026,7 @@ export function NovoCompromissoFab() {
     groupId: 'ui-better-soft',
     label: 'Page Heading',
     description:
-      'Heading simples de topo de tela (saudação, sem ações): eyebrow, título grande, descrição opcional. Tamanho do título vem do tema ativo (NEXT_PUBLIC_UI_STYLE).',
+      'Heading simples de topo de tela (saudação, sem ações): eyebrow, título grande, descrição opcional. Tamanho do título segue o estilo ativo (NEXT_PUBLIC_UI_STYLE).',
     usageCode: `import { PageHeading } from '../ui-better-soft/headers/page-heading';
 
 export function AgendaGreeting() {

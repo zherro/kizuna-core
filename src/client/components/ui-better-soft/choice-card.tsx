@@ -21,7 +21,7 @@ export function ChoiceCard({
       type="button"
       onClick={onSelect}
       className={cn(
-        'flex flex-col items-start gap-1.5 rounded-2xl border-2 p-4 text-left transition-all',
+        'flex flex-col items-start gap-1.5 rounded-[var(--ui-radius-card,1rem)] border-2 p-4 text-left shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] transition-all',
         selected ? 'border-brand bg-brand-soft' : 'border-border bg-card hover:border-brand/40'
       )}
     >

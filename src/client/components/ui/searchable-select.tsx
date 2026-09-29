@@ -116,7 +116,7 @@ export function SearchableSelect({
         onClick={openDropdown}
         onKeyDown={handleKeyDown}
         className={cn(
-          'flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 text-sm text-foreground outline-none transition-colors',
+          'flex h-10 w-full items-center justify-between rounded-[var(--ui-radius-field,0.375rem)] border border-input bg-background px-3 text-sm text-foreground outline-none transition-colors',
           'focus-visible:ring-2 focus-visible:ring-ring',
           'disabled:cursor-not-allowed disabled:opacity-50',
           open && 'ring-2 ring-ring',
@@ -150,7 +150,7 @@ export function SearchableSelect({
         <div
           role="listbox"
           className={cn(
-            'absolute z-50 mt-1 w-full overflow-hidden rounded-md border border-border bg-background shadow-md',
+            'absolute z-50 mt-1 w-full overflow-hidden rounded-[var(--ui-radius-popover,0.375rem)] border border-border bg-background shadow-md',
             'animate-in fade-in-0 zoom-in-95'
           )}
         >

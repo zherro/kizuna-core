@@ -19,7 +19,7 @@ const TOOLBAR = [
 
 export function QuillEditor({ value, onChange, placeholder }: QuillEditorProps) {
   return (
-    <div className="quill-wrapper rounded-md border border-input bg-background">
+    <div className="quill-wrapper rounded-[var(--ui-radius-field,0.375rem)] border border-input bg-background">
       <ReactQuill
         theme="snow"
         value={value}

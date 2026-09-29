@@ -1,6 +1,5 @@
-// soft-theme: lê activeTheme (kizuna-core/src/client/lib/ui-theme.ts) — classic/soft via NEXT_PUBLIC_UI_STYLE
+// soft-theme: raio via var(--ui-radius-control) (globals.css) — classic/soft via data-ui-style
 import type { ReactNode } from 'react';
-import { activeTheme } from '../../lib/ui-theme';
 import { cn } from '../../../lib/utils';
 
 type ColorChipProps = {
@@ -12,15 +11,14 @@ type ColorChipProps = {
 
 /**
  * Chip circular colorido via `color-mix`, no lugar de um badge com borda — usado por exemplo para
- * o horário de um compromisso. O raio vem de `activeTheme.chip`, resolvido por
- * `NEXT_PUBLIC_UI_STYLE`.
+ * o horário de um compromisso. O raio vem do token `--ui-radius-control`, que troca por
+ * `data-ui-style` (`NEXT_PUBLIC_UI_STYLE`).
  */
 export function ColorChip({ color, children, className }: Readonly<ColorChipProps>) {
   return (
     <div
       className={cn(
-        'grid size-11 shrink-0 place-items-center text-sm font-bold',
-        activeTheme.chip,
+        'grid size-11 shrink-0 place-items-center rounded-[var(--ui-radius-control,0.5rem)] text-sm font-bold',
         className
       )}
       style={{

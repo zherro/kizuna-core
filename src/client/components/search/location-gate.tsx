@@ -45,8 +45,8 @@ const LATIN_AMERICA_COUNTRY_CODES = new Set([
 
 /**
  * Fallback quando o IP é detectado, mas fora da América Latina — melhor que abrir o seletor.
- * Passa pelo `/api/location/resolve` como qualquer detecção: com lista de cidades no banco
- * (`location.source: "db"`), São Paulo fora da lista vira a cidade padrão ou o seletor.
+ * Passa pelo `/api/location/resolve` como qualquer detecção: São Paulo fora da lista de cidades
+ * (`location_city.search_city`) vira a cidade padrão ou o seletor.
  */
 const FOREIGN_IP_FALLBACK = { stateCode: 'SP', cityName: 'São Paulo' };
 
@@ -65,9 +65,11 @@ const FOREIGN_IP_FALLBACK = { stateCode: 'SP', cityName: 'São Paulo' };
  * uma região estrangeira ou abrir o seletor manual.
  *
  * O resultado sempre passa por `/api/location/resolve` (lista de cidades do projeto + regra
- * `location.outsideList` do kizuna.config.json); `null` → seletor manual.
+ * `location.outsideList` do kizuna.config.json); `null` → seletor manual. IP indisponível (dev,
+ * ip-api fora do ar) também passa pelo `resolve`, sem UF: com cidade padrão configurada a busca
+ * abre direto nela em vez de mostrar o seletor.
  */
-async function detectLocationByIpSilently(): Promise<UserLocation | null> {
+async function detectLocationByIp(): Promise<{ stateCode: string; cityName: string } | null> {
   try {
     const res = await fetch('/api/location/ip', {
       signal: AbortSignal.timeout(4000),
@@ -75,26 +77,28 @@ async function detectLocationByIpSilently(): Promise<UserLocation | null> {
     if (!res.ok) return null;
     const data = (await res.json()) as {
       stateCode?: string;
-      stateName?: string;
       cityName?: string;
       countryCode?: string;
     };
-    const detected =
-      !data.countryCode || !LATIN_AMERICA_COUNTRY_CODES.has(data.countryCode)
-        ? FOREIGN_IP_FALLBACK
-        : { stateCode: data.stateCode ?? '', cityName: data.cityName ?? '' };
-    if (!detected.stateCode) return null;
-    const resolved = await resolveLocation(detected.stateCode, detected.cityName);
-    return resolved ? { ...resolved, source: 'ip' } : null;
+    if (!data.countryCode || !LATIN_AMERICA_COUNTRY_CODES.has(data.countryCode)) {
+      return FOREIGN_IP_FALLBACK;
+    }
+    return data.stateCode ? { stateCode: data.stateCode, cityName: data.cityName ?? '' } : null;
   } catch {
     return null;
   }
 }
 
+async function detectLocationByIpSilently(): Promise<UserLocation | null> {
+  const detected = await detectLocationByIp();
+  const resolved = await resolveLocation(detected?.stateCode ?? '', detected?.cityName ?? '');
+  return resolved ? { ...resolved, source: 'ip' } : null;
+}
+
 /**
  * Portão de localização da /busca: a localização (estado + cidade) é obrigatória. Antes de pedir
- * ao usuário, tenta detectar silenciosamente por IP (sem prompt de permissão) — só mostra o
- * seletor manual se essa tentativa falhar ou não retornar um estado.
+ * ao usuário, tenta detectar silenciosamente por IP (sem prompt de permissão) e cai na cidade
+ * padrão do projeto, se houver — só mostra o seletor manual quando nada disso dá um local.
  */
 export function LocationGate({ children }: { children: React.ReactNode }) {
   const { location, setLocation } = useUserLocation();

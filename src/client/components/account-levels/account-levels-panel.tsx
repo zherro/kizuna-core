@@ -109,7 +109,7 @@ export function AccountLevelsPanel({
                         <button
                           type="button"
                           onClick={() => setVerifyingPhone(true)}
-                          className="mt-3 inline-flex h-9 items-center rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:opacity-90"
+                          className="mt-3 inline-flex h-9 items-center rounded-[var(--ui-radius-pill,0.375rem)] bg-primary px-3 text-sm font-medium text-primary-foreground hover:opacity-90"
                         >
                           Verificar meu celular
                         </button>
@@ -118,7 +118,7 @@ export function AccountLevelsPanel({
                   ) : !l.met && l.enabled !== false && l.href && (isNext || highlighted) ? (
                     <Link
                       href={l.href}
-                      className="mt-3 inline-flex h-9 items-center rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:opacity-90"
+                      className="mt-3 inline-flex h-9 items-center rounded-[var(--ui-radius-pill,0.375rem)] bg-primary px-3 text-sm font-medium text-primary-foreground hover:opacity-90"
                     >
                       Completar
                     </Link>

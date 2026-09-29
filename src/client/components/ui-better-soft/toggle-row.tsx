@@ -22,7 +22,7 @@ export function ToggleRow({
   const id = useId();
 
   return (
-    <div className="flex items-start justify-between gap-4 rounded-xl border border-border bg-card px-4 py-3">
+    <div className="flex items-start justify-between gap-4 rounded-[var(--ui-radius-card-compact,0.75rem)] border-[length:var(--ui-border-w-card,1px)] border-border bg-card shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] px-4 py-3">
       <div className="min-w-0 space-y-0.5">
         <Label htmlFor={id} className="text-sm font-medium cursor-pointer">
           {title}

@@ -1,8 +1,14 @@
-// soft-theme: lê activeTheme (kizuna-core/src/client/lib/ui-theme.ts) — classic/soft via NEXT_PUBLIC_UI_STYLE
+// soft-theme: escala do título por ACTIVE_UI_STYLE (kizuna-core/src/client/lib/ui-theme.ts) — classic/soft via NEXT_PUBLIC_UI_STYLE
 import type { ReactNode } from 'react';
 import { Typography } from '../../ui/typography';
-import { activeTheme } from '../../../lib/ui-theme';
+import { ACTIVE_UI_STYLE } from '../../../lib/ui-theme';
 import { cn } from '../../../../lib/utils';
+
+/** Escala fluida do `Typography` por estilo — tipografia não é token CSS, então fica no componente. */
+const HEADING_TITLE = {
+  classic: { size: '2xl', weight: 'bold' },
+  soft: { size: '4xl', weight: 'normal' },
+} as const;
 
 type PageHeadingProps = {
   eyebrow?: string;
@@ -14,7 +20,7 @@ type PageHeadingProps = {
 /**
  * Heading simples de topo de tela (saudação, sem ações) — diferente de `PageHeader`, que é
  * cabeçalho de página de listagem/gestão com ações à direita.
- * Tamanho/peso do título vêm de `activeTheme`, resolvido por `NEXT_PUBLIC_UI_STYLE`.
+ * Tamanho/peso do título seguem `ACTIVE_UI_STYLE` (`NEXT_PUBLIC_UI_STYLE`).
  */
 export function PageHeading({
   eyebrow,
@@ -26,8 +32,8 @@ export function PageHeading({
     <div className={className}>
       {eyebrow ? <p className="text-sm font-semibold text-muted-foreground">{eyebrow}</p> : null}
       <Typography.H1
-        weight={activeTheme.headingTitleWeight}
-        size={activeTheme.headingTitleSize}
+        weight={HEADING_TITLE[ACTIVE_UI_STYLE].weight}
+        size={HEADING_TITLE[ACTIVE_UI_STYLE].size}
         className={cn('leading-[0.95]', eyebrow ? 'mt-1' : undefined)}
       >
         {title}

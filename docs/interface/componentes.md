@@ -175,3 +175,112 @@ Colors are OKLCH CSS variables, theme color toggled via `data-theme-color` on `<
 via a class on `<html>`. Base `ui/` primitives accept `className`; `ui-better-soft/` components
 with a locked-down look deliberately don't. New components → register in `/showcase` (see the
 `criar-componente-core` skill).
+
+### Shape style — `data-ui-style` (`classic` | `soft`)
+
+Radius, border width and shadow of the `ui/` primitives come from `--ui-*` CSS variables, switched
+by `data-ui-style` on `<html>`. It is a separate axis from the color theme: any color theme works
+with either style.
+
+- **Source:** the `NEXT_PUBLIC_UI_STYLE` env var (`classic`, the default, or `soft`; anything else
+  is `classic`). It is inlined at build time, so it is **fixed per deploy**: no runtime toggle, no
+  per-user choice. `resolveUiStyle()` / `ACTIVE_UI_STYLE` live in
+  `src/client/lib/ui-theme.ts`.
+- **Where it is applied:** the consuming project's root layout must render
+  `<html data-ui-style={ACTIVE_UI_STYLE}>`. Being set on the server, there is no flash (unlike
+  `data-theme-color`, which the client provider can change). See
+  [Adopting in an existing project](#adopting-in-an-existing-project).
+- **Where the values live:** the consuming project's `globals.css`, section "FORMA (data-ui-style)":
+  the `:root` block is `classic`, the `soft` block (selector on `data-ui-style`) overrides it.
+  The consumer's own `globals.css` must contain them: `kizuna-starter` ships both blocks, the core
+  template does not yet. Without the blocks the components fall back to `classic` through the `var()` fallback.
+
+| Token | `classic` | `soft` | Read by |
+| ----- | --------- | ------ | ------- |
+| `--ui-radius-pill` | `0.375rem` | `9999px` | `Button`, `Badge` |
+| `--ui-radius-card-compact` | `0.75rem` | `1rem` | `Card` |
+| `--ui-radius-card` | `1rem` | `1.75rem` | none yet (phase 2) |
+| `--ui-radius-sheet-top` | `1rem` | `1.75rem` | `Sheet` |
+| `--ui-radius-field` | `0.375rem` | `1rem` | `Input`, `Textarea`, `CurrencyInput`, `QuillEditor`, `SearchableSelect` (trigger) |
+| `--ui-radius-popover` | `0.375rem` | `1rem` | `DropdownMenu`, `Tooltip`, `SearchableSelect` (panel) |
+| `--ui-radius-select` | `0.5rem` | `1rem` | `Select` |
+| `--ui-border-w-card` | `1px` | `0px` | `Card`, `Sheet` |
+| `--ui-border-w-chip` | `1px` | `1px` | none yet (phase 2) |
+| `--ui-shadow-card` | `shadow-sm` value | `var(--shadow-soft-2)` (soft diffuse shadow; `--shadow-soft-1/2/3` are defined only in the soft block) | `Card`, `Select` (trigger) |
+| `--ui-shadow-sheet` | `shadow-lg` value | same as `classic` (not overridden) | `Sheet` |
+| `--ui-progress-h` | `0.5rem` | `0.375rem` | `Progress` |
+| `--ui-progress-track` | not defined (component fallback) | `var(--muted)` | `Progress` |
+| `--ui-font-display-active` | Quicksand stack | Baloo 2 stack | `--font-display` (`Typography font="display"`) |
+
+Soft is the "app" look: pill buttons and badges, larger radii, cards without border or shadow (the
+separation comes from `bg-card` over `bg-background`).
+
+**Display font.** `--font-display` (Tailwind's `font-display`) points at `--ui-font-display-active`,
+so the style and the `theme.displayFont` key of `kizuna.config.json` change the title font without
+rebuilding CSS. For this to work, the consumer's root layout must set `data-display-font` from that
+key when it is one of `DISPLAY_FONTS` (`src/shared/display-fonts.ts`); the per-font
+`data-display-font` blocks in `globals.css` come after the style blocks and win. Each font needs a
+`next/font` variable in the layout (`--font-quicksand`, `--font-baloo`, `--font-bricolage`). See
+[Configuração](../comecando/configuracao.md#theme).
+
+#### Adopting in an existing project
+
+The core template (`template/src/app/layout.tsx` and `template/src/app/globals.css`) does not include
+the style support yet; `kizuna-starter` does, and is the reference implementation (see its
+`src/app/layout.tsx` and `src/app/globals.css`, section "FORMA (data-ui-style)"). To adopt it:
+
+1. **Layout, style attribute.** In the root layout add `data-ui-style={ACTIVE_UI_STYLE}` to the
+   `<html>` tag, importing `ACTIVE_UI_STYLE` from `@kizuna/core/client/lib/ui-theme`.
+2. **Token block.** Copy the "FORMA" token block (the `:root` block and the
+   `:root[data-ui-style='soft']` block) into the project's `globals.css`. Without it the components
+   stay `classic` through the `var()` fallback.
+3. **Configurable heading font (optional).**
+   - Load each font with `next/font` and put the `.variable` classes on `<html>`, **not** on
+     `<body>`: `--ui-font-display-active` is resolved on `<html>`, so a variable defined on `<body>`
+     is not visible there.
+   - Copy the `:root[data-display-font='quicksand']`, `baloo` and `bricolage` blocks into
+     `globals.css`, after the style blocks.
+   - In `@theme inline`, set `--font-display: var(--ui-font-display-active);`.
+   - In the layout, read `theme.displayFont` from `kizuna.config.json`, validate it with
+     `isDisplayFont` (from `@kizuna/core/shared/display-fonts`) and pass the result as
+     `data-display-font` on `<html>`.
+
+#### Writing a component that follows the style
+
+The token is read with the **classic value as the `var()` fallback**, so a consumer whose
+`globals.css` has no token block stays classic:
+
+```tsx
+'rounded-[var(--ui-radius-pill,0.375rem)] border-[length:var(--ui-border-w-card,1px)]'
+```
+
+Rules:
+
+- **Shadow → labelled form**, `shadow-[shadow:var(--ui-shadow-card,0_1px_3px_0_#0000001a,_0_1px_2px_-1px_#0000001a)]`.
+  Without the `shadow:` label, `tailwind-merge` (inside `cn()`) does not recognise the class as a
+  shadow, so a caller's `className="shadow-none"` would not override it.
+- **"No shadow" is `0 0 #0000`, never `none`.** Tailwind composes `--tw-shadow` in one
+  comma-separated `box-shadow` list together with the ring; a `none` inside a list invalidates the
+  whole declaration.
+- **Border width → `border-[length:var(--ui-border-w-card,1px)]`.** The `length:` label tells
+  Tailwind it is a width, not a color.
+- **Don't define, in `:root`, a token that references a variable a wrapper may override locally**
+  (for example `--primary`). Custom properties resolve where they are declared: on `<html>` the
+  token would ignore a `--primary` overridden in a wrapper. That is why `--ui-progress-track` has no
+  classic value in `:root`: the classic track is a mix of `--primary` and comes from the component's
+  own fallback, which resolves it on the element. A token that references a variable set only on
+  `<html>` is fine: the soft `--ui-progress-track: var(--muted)` works because nothing below
+  `<html>` overrides `--muted`.
+- **Shadow color modifiers from callers no longer apply.** Card, Sheet and the Select trigger take
+  their shadow through `var()`, so a caller class that only changes the shadow color (a
+  `shadow-primary/20`-style class) no longer tints them; override the whole shadow instead
+  (`shadow-none`, or a full shadow utility).
+- Give a new token a classic value in `:root`, a soft value in the `soft` block, and
+  the same classic value as the fallback in the component.
+
+{% hint style="info" %}
+`UI_THEME` / `activeTheme` in `ui-theme.ts` (per-style class strings read by the
+`ui-better-soft/` components) are `@deprecated`; phase 2 moves those components to the `--ui-*`
+tokens and removes them. Tokens for the remaining components and a screen-by-screen pass
+(phase 3) are still pending.
+{% endhint %}

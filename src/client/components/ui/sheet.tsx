@@ -70,10 +70,10 @@ const SheetContent = React.forwardRef<HTMLDivElement, SheetContentProps>(
     const { open, onOpenChange } = useSheet();
 
     const sideClasses = {
-      top: 'top-0 left-0 right-0 rounded-b-2xl',
-      right: 'right-0 top-0 bottom-0 w-full max-w-md rounded-l-2xl',
-      bottom: 'bottom-0 left-0 right-0 rounded-t-2xl',
-      left: 'left-0 top-0 bottom-0 w-full max-w-md rounded-r-2xl',
+      top: 'top-0 left-0 right-0 rounded-b-[var(--ui-radius-sheet-top,1rem)]',
+      right: 'right-0 top-0 bottom-0 w-full max-w-md rounded-l-[var(--ui-radius-sheet-top,1rem)]',
+      bottom: 'bottom-0 left-0 right-0 rounded-t-[var(--ui-radius-sheet-top,1rem)]',
+      left: 'left-0 top-0 bottom-0 w-full max-w-md rounded-r-[var(--ui-radius-sheet-top,1rem)]',
     };
 
     React.useEffect(() => {
@@ -99,7 +99,7 @@ const SheetContent = React.forwardRef<HTMLDivElement, SheetContentProps>(
           aria-modal="true"
           // cn (tailwind-merge): um `w-72` do chamador substitui o `w-full` do lado
           className={cn(
-            'fixed z-[70] border border-border bg-background shadow-lg overflow-y-auto',
+            'fixed z-[70] border-[length:var(--ui-border-w-card,1px)] border-border bg-background shadow-[shadow:var(--ui-shadow-sheet,0_10px_15px_-3px_#0000001a,_0_4px_6px_-4px_#0000001a)] overflow-y-auto',
             sideClasses[side],
             className
           )}

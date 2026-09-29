@@ -78,7 +78,7 @@ export function LevelUpDialog({
         role="dialog"
         aria-modal="true"
         aria-labelledby="level-up-title"
-        className="w-full max-w-md rounded-xl border border-border bg-background p-5 shadow-xl"
+        className="w-full max-w-md rounded-[var(--ui-radius-card-compact,0.75rem)] border-[length:var(--ui-border-w-card,1px)] border-border bg-[color:var(--ui-card-bg,var(--background))] p-5 shadow-xl"
       >
         <div className="mb-3 flex items-start justify-between gap-3">
           <div className="flex items-center gap-2">
@@ -130,7 +130,7 @@ export function LevelUpDialog({
           <Link
             href={can.required ? target : '/login'}
             onClick={onClose}
-            className="flex h-10 w-full items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:opacity-90"
+            className="flex h-10 w-full items-center justify-center rounded-[var(--ui-radius-pill,0.375rem)] bg-primary px-4 text-sm font-medium text-primary-foreground hover:opacity-90"
           >
             {can.required ? 'Evoluir minha conta' : 'Entrar'}
           </Link>

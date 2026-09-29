@@ -107,7 +107,7 @@ function ProviderRow({
   return (
     <div
       className={cn(
-        'flex items-center gap-2 rounded-lg border border-border bg-background/50',
+        'flex items-center gap-2 rounded-[var(--ui-radius-control,0.5rem)] border border-border bg-background/50',
         compact ? 'px-1.5 py-1' : 'px-2 py-1.5'
       )}
     >
@@ -166,7 +166,7 @@ export function ListingResultCard({
       <Link
         href={href}
         className={cn(
-          'group flex w-[260px] shrink-0 flex-col overflow-hidden rounded-xl border border-border bg-card transition hover:-translate-y-0.5 hover:shadow-md',
+          'group flex w-[260px] shrink-0 flex-col overflow-hidden rounded-[var(--ui-radius-card-compact,0.75rem)] border-[length:var(--ui-border-w-card,1px)] border-border bg-card shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] transition hover:-translate-y-0.5 hover:shadow-md',
           className
         )}
       >
@@ -262,7 +262,7 @@ export function ListingResultCard({
             ) : (
               <span />
             )}
-            <span className="ml-auto inline-flex shrink-0 items-center rounded-md bg-brand px-3 py-1.5 text-xs font-semibold text-brand-foreground transition group-hover:bg-brand/90">
+            <span className="ml-auto inline-flex shrink-0 items-center rounded-[var(--ui-radius-pill,0.375rem)] bg-brand px-3 py-1.5 text-xs font-semibold text-brand-foreground transition group-hover:bg-brand/90">
               {ctaLabel}
             </span>
           </>
@@ -273,7 +273,7 @@ export function ListingResultCard({
             )}
             <span
               className={cn(
-                'inline-flex shrink-0 items-center rounded-md bg-brand px-3 py-1.5 text-xs font-semibold text-brand-foreground transition group-hover:bg-brand/90',
+                'inline-flex shrink-0 items-center rounded-[var(--ui-radius-pill,0.375rem)] bg-brand px-3 py-1.5 text-xs font-semibold text-brand-foreground transition group-hover:bg-brand/90',
                 priceLabel == null && 'ml-auto'
               )}
             >

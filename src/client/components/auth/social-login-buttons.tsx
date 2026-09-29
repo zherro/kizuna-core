@@ -109,7 +109,7 @@ export function SocialLoginButtons({
               key={p.id}
               type="button"
               onClick={() => start(p.id)}
-              className="flex h-10 w-full items-center justify-center gap-2 rounded-md border border-border bg-background px-4 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+              className="flex h-10 w-full items-center justify-center gap-2 rounded-[var(--ui-radius-pill,0.375rem)] border border-border bg-background px-4 text-sm font-medium text-foreground transition-colors hover:bg-muted"
             >
               {Icon ? <Icon /> : null}
               Continuar com {p.label}
@@ -120,7 +120,7 @@ export function SocialLoginButtons({
           <button
             type="button"
             onClick={onPhoneLogin}
-            className="flex h-10 w-full items-center justify-center gap-2 rounded-md border border-border bg-background px-4 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+            className="flex h-10 w-full items-center justify-center gap-2 rounded-[var(--ui-radius-pill,0.375rem)] border border-border bg-background px-4 text-sm font-medium text-foreground transition-colors hover:bg-muted"
           >
             <PhoneIcon />
             Entrar com telefone

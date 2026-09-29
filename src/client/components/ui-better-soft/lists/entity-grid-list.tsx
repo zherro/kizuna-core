@@ -68,13 +68,13 @@ export function EntityGridList<T>({
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="inline-flex items-center rounded-lg border border-border bg-muted/40 p-1">
+          <div className="inline-flex items-center rounded-[var(--ui-radius-control,0.5rem)] border border-border bg-muted/40 p-1">
             <button
               type="button"
               onClick={() => selectViewMode('card')}
               aria-label="Visualizar em cards"
               className={cn(
-                'inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition',
+                'inline-flex items-center gap-1.5 rounded-[var(--ui-radius-pill,0.375rem)] px-2.5 py-1.5 text-xs font-medium transition',
                 viewMode === 'card'
                   ? 'bg-background text-foreground shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'
@@ -87,7 +87,7 @@ export function EntityGridList<T>({
               onClick={() => selectViewMode('list')}
               aria-label="Visualizar em lista"
               className={cn(
-                'inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition',
+                'inline-flex items-center gap-1.5 rounded-[var(--ui-radius-pill,0.375rem)] px-2.5 py-1.5 text-xs font-medium transition',
                 viewMode === 'list'
                   ? 'bg-background text-foreground shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'

@@ -51,7 +51,7 @@ export function CurrencyInput({ value, onValueChange, className, ...props }: Cur
         placeholder="0,00"
         onChange={(event) => onValueChange(parseBRL(event.target.value))}
         className={cn(
-          'flex h-10 w-full rounded-md border border-input bg-background py-2 pr-3 pl-9 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50',
+          'flex h-10 w-full rounded-[var(--ui-radius-field,0.375rem)] border border-input bg-background py-2 pr-3 pl-9 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50',
           className
         )}
         {...props}

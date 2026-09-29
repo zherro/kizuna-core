@@ -42,11 +42,9 @@ export {
 export { registerOtpProvider, isPhoneLoginEnabled, logOtpProvider } from './otp/registry';
 export {
   parseLocationConfig,
-  listLocationStates,
   listLocationCities,
   resolveLocation,
   type LocationConfig,
-  type LocationStateItem,
   type LocationCityItem,
   type ResolvedLocation,
 } from './location';

@@ -33,7 +33,7 @@ export function Tooltip({
         <span
           role="tooltip"
           className={cn(
-            'pointer-events-none absolute left-1/2 z-50 w-max max-w-xs -translate-x-1/2 rounded-md border border-border bg-popover px-2 py-1 text-xs text-popover-foreground shadow-md',
+            'pointer-events-none absolute left-1/2 z-50 w-max max-w-xs -translate-x-1/2 rounded-[var(--ui-radius-popover,0.375rem)] border border-border bg-popover px-2 py-1 text-xs text-popover-foreground shadow-md',
             side === 'top' ? 'bottom-full mb-1' : 'top-full mt-1'
           )}
         >

@@ -62,7 +62,7 @@ export function FormField<TValues extends FormikValues>(props: Readonly<FormFiel
     return (
       <div
         className={
-          className ?? 'flex items-center justify-between rounded-xl border border-border p-3'
+          className ?? 'flex items-center justify-between rounded-[var(--ui-radius-card-compact,0.75rem)] border-[length:var(--ui-border-w-card,1px)] border-border shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] p-3'
         }
       >
         <div>

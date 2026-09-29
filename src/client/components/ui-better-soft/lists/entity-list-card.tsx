@@ -14,7 +14,7 @@ export function EntityListCard({ leading, trailing, tone }: Readonly<EntityListC
   return (
     <li
       className={cn(
-        'rounded-2xl border border-l-4 border-border bg-card p-4 shadow-sm',
+        'rounded-[var(--ui-radius-card,1rem)] border-[length:var(--ui-border-w-card,1px)] border-l-4 border-border bg-card p-4 shadow-[shadow:var(--ui-shadow-card-compact,0_1px_3px_0_#0000001a,_0_1px_2px_-1px_#0000001a)]',
         tone ? TONE_BORDER_L[tone] : 'border-l-border'
       )}
     >

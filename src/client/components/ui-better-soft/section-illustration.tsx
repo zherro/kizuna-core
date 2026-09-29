@@ -72,7 +72,7 @@ export function SectionIllustration({
   return (
     <div
       className={cn(
-        'relative mb-6 flex items-stretch gap-4 overflow-hidden rounded-2xl border border-border bg-primary/10 pl-4 pr-2 sm:pl-6',
+        'relative mb-6 flex items-stretch gap-4 overflow-hidden rounded-[var(--ui-radius-card,1rem)] border-[length:var(--ui-border-w-card,1px)] border-border bg-primary/10 shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] pl-4 pr-2 sm:pl-6',
         className
       )}
     >

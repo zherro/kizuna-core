@@ -134,7 +134,7 @@ export function WeatherWidget({ endpoint = '/api/weather', mini = false }: Weath
         onClose={() => setOpen(false)}
         onCancel={() => setOpen(false)}
         onClick={(e) => e.target === dialogRef.current && closeModal()}
-        className="m-auto w-[calc(100%-2rem)] max-w-sm rounded-2xl border border-border bg-card p-0 text-card-foreground shadow-xl backdrop:bg-black/50 backdrop:backdrop-blur-sm"
+        className="m-auto w-[calc(100%-2rem)] max-w-sm rounded-[var(--ui-radius-card,1rem)] border-[length:var(--ui-border-w-card,1px)] border-border bg-card p-0 text-card-foreground shadow-xl backdrop:bg-black/50 backdrop:backdrop-blur-sm"
       >
         <div className="p-5">
           <div className="flex items-center justify-between gap-3">

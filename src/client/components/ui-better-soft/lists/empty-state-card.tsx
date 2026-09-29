@@ -15,7 +15,7 @@ export function EmptyStateCard({
   action,
 }: Readonly<EmptyStateCardProps>) {
   return (
-    <div className="rounded-2xl border border-dashed border-border bg-card p-8 text-center">
+    <div className="rounded-[var(--ui-radius-card,1rem)] border border-dashed border-border bg-card p-8 text-center">
       <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted">
         <Icon className="h-6 w-6 text-muted-foreground" />
       </div>

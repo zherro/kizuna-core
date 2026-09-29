@@ -34,7 +34,7 @@ export function ScheduleRow({
   return (
     <div
       className={cn(
-        'rounded-xl border border-border bg-card p-3 transition-colors',
+        'rounded-[var(--ui-radius-card-compact,0.75rem)] border-[length:var(--ui-border-w-card,1px)] border-border bg-card shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] p-3 transition-colors',
         !enabled && 'opacity-70'
       )}
     >

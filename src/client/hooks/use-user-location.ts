@@ -30,7 +30,7 @@ export function getStoredCityId(): string {
   return cityId && cityId > 0 ? String(cityId) : 'all';
 }
 
-// As chamadas externas (Nominatim, IBGE, ip-api) são proxiadas por rotas server-side do plugin
+// As chamadas externas (Nominatim, ip-api) são proxiadas por rotas server-side do plugin
 // `location` (`/api/location/reverse`, `/api/location/ip`, `/api/location/resolve`) — o
 // navegador nunca fala direto com terceiros e as respostas ficam cacheáveis no servidor.
 

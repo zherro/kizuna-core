@@ -1,7 +1,6 @@
-// soft-theme: lê activeTheme (kizuna-core/src/client/lib/ui-theme.ts) — classic/soft via NEXT_PUBLIC_UI_STYLE
+// soft-theme: tamanho/sombra via var(--ui-fab-size / --ui-shadow-fab) (globals.css) — classic/soft via data-ui-style
 import type { LucideIcon } from 'lucide-react';
 import { Button } from '../ui/button';
-import { activeTheme } from '../../lib/ui-theme';
 import { cn } from '../../../lib/utils';
 
 type FabProps = {
@@ -13,8 +12,8 @@ type FabProps = {
 
 /**
  * Botão circular único, fixo no rodapé — a ação primária de uma tela mobile. Sem pílula, sem
- * slot de ação secundária. Tamanho/sombra vêm de `activeTheme.fab`, resolvido por
- * `NEXT_PUBLIC_UI_STYLE`.
+ * slot de ação secundária. Tamanho/sombra vêm dos tokens `--ui-fab-size` e `--ui-shadow-fab`,
+ * que trocam por `data-ui-style` (`NEXT_PUBLIC_UI_STYLE`).
  */
 export function Fab({ icon: Icon, onClick, ariaLabel, className }: Readonly<FabProps>) {
   return (
@@ -24,7 +23,10 @@ export function Fab({ icon: Icon, onClick, ariaLabel, className }: Readonly<FabP
         size="icon"
         onClick={onClick}
         aria-label={ariaLabel}
-        className={cn(activeTheme.fab, className)}
+        className={cn(
+          'h-[var(--ui-fab-size,3rem)] w-[var(--ui-fab-size,3rem)] rounded-full shadow-[shadow:var(--ui-shadow-fab,0_4px_6px_-1px_#0000001a,_0_2px_4px_-2px_#0000001a)]',
+          className
+        )}
       >
         <Icon className="h-6 w-6" />
       </Button>

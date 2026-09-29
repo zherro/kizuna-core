@@ -389,7 +389,7 @@ export function AddressForm({
       className="
         inline-flex h-9
         items-center gap-2
-        rounded-lg
+        rounded-[var(--ui-radius-control,0.5rem)]
         border border-border
         px-3
         text-xs font-medium
@@ -565,7 +565,7 @@ function CompactAddressForm({
           <button
             type="button"
             onClick={() => setEditOpen(true)}
-            className="flex w-full items-start gap-3 rounded-xl border border-border bg-background px-3.5 py-3 text-left transition-colors hover:bg-muted"
+            className="flex w-full items-start gap-3 rounded-[var(--ui-radius-card-compact,0.75rem)] border-[length:var(--ui-border-w-card,1px)] border-border bg-[color:var(--ui-card-bg,var(--background))] shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] px-3.5 py-3 text-left transition-colors hover:bg-muted"
           >
             <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
             <span className="min-w-0 flex-1">
@@ -595,14 +595,14 @@ function CompactAddressForm({
             role="dialog"
             aria-modal="true"
             aria-label="Editar endereço"
-            className="flex max-h-[min(40rem,90dvh)] w-full max-w-md flex-col overflow-hidden rounded-2xl border border-border bg-background shadow-xl"
+            className="flex max-h-[min(40rem,90dvh)] w-full max-w-md flex-col overflow-hidden rounded-[var(--ui-radius-card,1rem)] border-[length:var(--ui-border-w-card,1px)] border-border bg-[color:var(--ui-card-bg,var(--background))] shadow-xl"
           >
             <header className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
               <p className="text-sm font-semibold text-foreground">Editar endereço</p>
               <button
                 type="button"
                 onClick={() => setEditOpen(false)}
-                className="rounded-lg px-3 py-1.5 text-sm font-medium text-primary hover:bg-muted"
+                className="rounded-[var(--ui-radius-control,0.5rem)] px-3 py-1.5 text-sm font-medium text-primary hover:bg-muted"
               >
                 Concluir
               </button>
@@ -735,7 +735,7 @@ function SearchDrawer({
             className="
               flex h-8 w-8
               items-center justify-center
-              rounded-lg
+              rounded-[var(--ui-radius-control,0.5rem)]
               text-muted-foreground
               hover:bg-muted
               hover:text-foreground
@@ -776,7 +776,7 @@ function SearchDrawer({
                   "
                   className="
                     h-11 w-full
-                    rounded-xl
+                    rounded-[var(--ui-radius-card-compact,0.75rem)]
                     border border-border
                     bg-card
                     pl-10 pr-10
@@ -810,7 +810,7 @@ function SearchDrawer({
                         flex w-full
                         items-start
                         gap-3
-                        rounded-xl
+                        rounded-[var(--ui-radius-card-compact,0.75rem)]
                         p-3
                         text-left
                         transition-colors
@@ -906,7 +906,7 @@ function SearchDrawer({
                 flex w-full
                 items-center
                 gap-3
-                rounded-xl
+                rounded-[var(--ui-radius-card-compact,0.75rem)]
                 border
                 border-dashed
                 border-border
@@ -1092,7 +1092,7 @@ function formatCep(value: string) {
 
 const inputClass = `
   h-10 w-full
-  rounded-lg
+  rounded-[var(--ui-radius-select,0.5rem)]
   border border-border
   bg-background
   px-3

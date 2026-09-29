@@ -54,7 +54,7 @@ export function IconChoiceGrid({
 }: Readonly<IconChoiceGridProps>) {
   if (items.length === 0) {
     return (
-      <p className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">
+      <p className="rounded-[var(--ui-radius-card-compact,0.75rem)] border border-dashed p-6 text-center text-sm text-muted-foreground">
         {emptyMessage}
       </p>
     );
@@ -76,7 +76,7 @@ export function IconChoiceGrid({
             disabled={disabled}
             onClick={() => onChange(item.id)}
             className={cn(
-              'group flex gap-2 rounded-2xl border p-4 text-left transition disabled:cursor-not-allowed disabled:opacity-60',
+              'group flex gap-2 rounded-[var(--ui-radius-card,1rem)] border-[length:var(--ui-border-w-card,1px)] shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] p-4 text-left transition disabled:cursor-not-allowed disabled:opacity-60',
               layout === 'horizontal' ? 'items-start gap-3' : 'flex-col items-start',
               active ? cardTone.active : cardTone.idle
             )}

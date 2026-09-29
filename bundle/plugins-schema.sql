@@ -728,7 +728,7 @@ NOTIFY pgrst, 'reload schema';
 
 
 -- ===================================================================
--- PLUGIN: location  (1 arquivo)
+-- PLUGIN: location  (2 arquivos)
 -- ===================================================================
 
 
@@ -870,6 +870,39 @@ USING (true);
 -- data, no admin-manageable action to gate (see header note 6).
 INSERT INTO auth.plugin_registry (name, version)
 VALUES ('location', '1.0.0')
+ON CONFLICT (name) DO UPDATE SET version = EXCLUDED.version;
+
+NOTIFY pgrst, 'reload schema';
+
+
+-- ===================================================================
+-- 0002_location_search_city.sql
+-- ===================================================================
+
+-- plugins/location/0002_location_search_city.sql
+-- v1.1.0 — `location_city.search_city`: marca as cidades que aparecem no seletor de local do
+-- site (header / /busca) e que a detecção por GPS/IP aceita. É a lista de cidades atendidas pelo
+-- projeto: o seletor lê SÓ `WHERE search_city`, nunca a tabela inteira (um projeto pode ter o
+-- Brasil inteiro semeado como referência e atender poucas cidades).
+--
+-- Default false: nenhuma cidade existente entra no seletor sozinha — o projeto marca as suas
+-- (UPDATE ... SET search_city = true, ou no próprio seed).
+--
+-- Índice parcial em (name) WHERE search_city: é exatamente a consulta do seletor ("cidades
+-- marcadas, por nome") e fica do tamanho da lista curada. Um índice comum no boolean não
+-- ajudaria (2 valores, seletividade baixa).
+--
+-- Idempotente.
+
+ALTER TABLE public.location_city
+  ADD COLUMN IF NOT EXISTS search_city boolean NOT NULL DEFAULT false;
+
+CREATE INDEX IF NOT EXISTS idx_location_city_search_city
+  ON public.location_city (name)
+  WHERE search_city;
+
+INSERT INTO auth.plugin_registry (name, version)
+VALUES ('location', '1.1.0')
 ON CONFLICT (name) DO UPDATE SET version = EXCLUDED.version;
 
 NOTIFY pgrst, 'reload schema';
@@ -1919,7 +1952,7 @@ NOTIFY pgrst, 'reload schema';
 
 
 -- ===================================================================
--- PLUGIN: services  (2 arquivos)
+-- PLUGIN: services  (5 arquivos)
 -- ===================================================================
 
 
@@ -2158,5 +2191,240 @@ GRANT SELECT ON public.vw_category_service_stats TO anon, auth_user;
 INSERT INTO auth.plugin_registry (name, version)
 VALUES ('services', '1.1.0')
 ON CONFLICT (name) DO UPDATE SET version = EXCLUDED.version;
+
+NOTIFY pgrst, 'reload schema';
+
+
+-- ===================================================================
+-- 0003_service_addresses.sql
+-- ===================================================================
+
+-- plugins/services/0003_service_addresses.sql
+-- Endereços do serviço (N por serviço): tabela filha `public.service_addresses`, no mesmo padrão
+-- de `service_categories_sub` (FK ON DELETE CASCADE, tenant_id/created_by com default de JWT,
+-- `active`, GRANTs, NOTIFY pgrst). Idempotente. Consumida por `search`/`swipe` (0002) via um único
+-- EXISTS por (state, city_ibge) — nunca expor rua/número em RPC pública.
+--
+-- Leitura pública SÓ de endereço de serviço ativo e `status = 'active'` (tem rua e número);
+-- o dono e quem tem `services:moderate` enxergam também os próprios/pendentes (espelha `services`).
+
+-- =========================================================================
+-- 1) Tabela + índices
+-- =========================================================================
+CREATE TABLE IF NOT EXISTS public.service_addresses (
+  id            bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  service_id    bigint NOT NULL REFERENCES public.services(id) ON DELETE CASCADE,
+  label         text,
+  zip_code      varchar(10),
+  street        text,
+  number        text,
+  complement    text,
+  neighborhood  text,
+  city          text,
+  state         varchar(2),
+  city_ibge     text,
+  latitude      numeric(9,6),
+  longitude     numeric(9,6),
+  place_id      text,
+  is_primary    boolean NOT NULL DEFAULT false,
+  tenant_id     uuid NOT NULL DEFAULT auth.fun_auth_current_tenant_id(),
+  created_by    uuid NOT NULL DEFAULT auth.fun_auth_user_id(),
+  active        boolean NOT NULL DEFAULT true,
+  created_at    timestamptz NOT NULL DEFAULT now(),
+  updated_at    timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS service_addresses_service
+  ON public.service_addresses (service_id, is_primary DESC) WHERE active;
+CREATE INDEX IF NOT EXISTS service_addresses_state_city
+  ON public.service_addresses (state, city_ibge) WHERE active;
+CREATE INDEX IF NOT EXISTS service_addresses_city
+  ON public.service_addresses (city_ibge) WHERE active AND city_ibge IS NOT NULL;
+-- No máximo 1 endereço principal ativo por serviço.
+CREATE UNIQUE INDEX IF NOT EXISTS service_addresses_one_primary
+  ON public.service_addresses (service_id) WHERE is_primary AND active;
+
+-- =========================================================================
+-- 2) RLS + GRANTs
+-- =========================================================================
+ALTER TABLE public.service_addresses ENABLE ROW LEVEL SECURITY;
+GRANT SELECT, INSERT, UPDATE ON TABLE public.service_addresses TO auth_user;
+GRANT DELETE ON TABLE public.service_addresses TO auth_user;
+GRANT SELECT ON TABLE public.service_addresses TO anon;
+REVOKE INSERT, UPDATE, DELETE ON TABLE public.service_addresses FROM anon;
+
+DROP POLICY IF EXISTS sa_public_read ON public.service_addresses;
+CREATE POLICY sa_public_read ON public.service_addresses FOR SELECT TO anon, auth_user
+  USING (active AND EXISTS (
+    SELECT 1 FROM public.services s
+     WHERE s.id = service_id AND s.active AND s.status = 'active'));
+
+DROP POLICY IF EXISTS sa_owner_write ON public.service_addresses;
+CREATE POLICY sa_owner_write ON public.service_addresses FOR ALL TO auth_user
+  USING (EXISTS (SELECT 1 FROM public.services s WHERE s.id = service_id AND s.created_by = auth.fun_auth_user_id()))
+  WITH CHECK (EXISTS (SELECT 1 FROM public.services s WHERE s.id = service_id AND s.created_by = auth.fun_auth_user_id()));
+
+DROP POLICY IF EXISTS sa_moderator_read ON public.service_addresses;
+CREATE POLICY sa_moderator_read ON public.service_addresses FOR SELECT TO auth_user
+  USING (auth.fun_auth_has_perm('services','moderate'));
+
+-- =========================================================================
+-- 3) Backfill idempotente: 1 endereço principal por serviço ativo que ainda não tem nenhum,
+--    a partir do user_data do prestador. Só se houver cidade ou UF. lat/lng (varchar) só entram
+--    se forem numéricos e dentro da faixa válida.
+-- =========================================================================
+DO $$
+BEGIN
+  IF to_regclass('public.user_data') IS NULL THEN
+    RETURN;
+  END IF;
+
+  INSERT INTO public.service_addresses
+    (service_id, zip_code, city, state, city_ibge, latitude, longitude, is_primary, tenant_id, created_by)
+  SELECT
+    s.id,
+    NULLIF(btrim(prov.zip_code), ''),
+    NULLIF(btrim(prov.city), ''),
+    NULLIF(btrim(prov.state), ''),
+    NULLIF(btrim(prov.city_ibge), ''),
+    CASE WHEN btrim(prov.latitude)  ~ '^-?[0-9]{1,2}(\.[0-9]+)?$' AND abs(btrim(prov.latitude)::numeric)  <= 90
+         THEN round(btrim(prov.latitude)::numeric, 6) END,
+    CASE WHEN btrim(prov.longitude) ~ '^-?[0-9]{1,3}(\.[0-9]+)?$' AND abs(btrim(prov.longitude)::numeric) <= 180
+         THEN round(btrim(prov.longitude)::numeric, 6) END,
+    true,
+    s.tenant_id,
+    s.created_by
+  FROM public.services s
+  CROSS JOIN LATERAL (
+    SELECT ud.city, ud.state, ud.city_ibge, ud.zip_code, ud.latitude, ud.longitude
+      FROM public.user_data ud
+     WHERE ud.tenant_id = s.tenant_id AND ud.active = true
+     ORDER BY ud.created_at
+     LIMIT 1
+  ) prov
+  WHERE s.active = true
+    AND NOT EXISTS (SELECT 1 FROM public.service_addresses a WHERE a.service_id = s.id)
+    AND (NULLIF(btrim(prov.city), '') IS NOT NULL OR NULLIF(btrim(prov.state), '') IS NOT NULL);
+END $$;
+
+-- =========================================================================
+-- 4) Plugin registration
+-- =========================================================================
+INSERT INTO auth.plugin_registry (name, version)
+VALUES ('services', '1.2.0')
+ON CONFLICT (name) DO UPDATE SET version = EXCLUDED.version;
+
+NOTIFY pgrst, 'reload schema';
+
+
+-- ===================================================================
+-- 0004_services_expires_at.sql
+-- ===================================================================
+
+-- plugins/services/0004_services_expires_at.sql
+-- Validade do anúncio: `services.expires_at` (NULL = sem validade). Passado o instante, o anúncio
+-- some da busca/swipe (filtro em fn_search_services, search 0002); `status` continua 'active'.
+-- Idempotente. GRANTs/policies de `services` são por tabela (0001) e cobrem a coluna nova.
+
+ALTER TABLE public.services ADD COLUMN IF NOT EXISTS expires_at timestamptz NULL;
+
+COMMENT ON COLUMN public.services.expires_at IS
+  'Fim da validade do anúncio (timestamptz). NULL = sem validade. Vencido: some da busca/swipe (status segue active).';
+
+CREATE INDEX IF NOT EXISTS services_expires_at
+  ON public.services (expires_at) WHERE active AND expires_at IS NOT NULL;
+
+INSERT INTO auth.plugin_registry (name, version)
+VALUES ('services', '1.3.0')
+ON CONFLICT (name) DO UPDATE SET version = EXCLUDED.version;
+
+NOTIFY pgrst, 'reload schema';
+
+
+-- ===================================================================
+-- 0005_services_public_detail.sql
+-- ===================================================================
+
+-- plugins/services/0005_services_public_detail.sql
+-- Duas RPCs públicas (SECURITY DEFINER) que a tela de detalhe de um anúncio (`/anuncios/[uid]`,
+-- projeto consumidor) precisa e que nenhuma policy de `anon` cobre hoje:
+--
+--  * fn_get_service_provider(uid)              — perfil público do prestador dono do anúncio.
+--  * fn_get_public_service_form_answers(uid)   — respostas dinâmicas por categoria (plugin forms).
+--
+-- Ambas só devolvem dado de um `services` ativo + `status = 'active'` (mesmo portão que a policy
+-- de leitura anônima de `services` já usa) e uma lista fixa de colunas — nunca `tenant_id`,
+-- `created_by`, `submitted_by`/`form_id` nem qualquer coluna privada de `user_data`.
+
+-- fn_get_service_provider — o "prestador" de um anúncio, num app multi-tenant, é o TENANT do
+-- serviço, não `services.created_by` (nullable — seeds, imports e anúncios criados por um admin em
+-- nome de outra pessoa deixam null; e mesmo preenchido, é quem digitou o anúncio, não
+-- necessariamente o dono do perfil). Resolve pelo mesmo LATERAL que `fn_search_services` (plugin
+-- `search`) já usa pro card de busca, então "Quem atende" bate com o card.
+DROP FUNCTION IF EXISTS public.fn_get_service_provider(uuid);
+
+CREATE OR REPLACE FUNCTION public.fn_get_service_provider(p_service_uid uuid)
+ RETURNS TABLE(
+   user_id uuid,
+   full_name character varying,
+   display_name character varying,
+   avatar_url character varying,
+   bio text,
+   city character varying,
+   state character varying
+ )
+ LANGUAGE sql
+ SECURITY DEFINER
+ SET search_path = public
+AS $function$
+  SELECT prov.user_id, prov.full_name, prov.display_name, prov.avatar_url,
+         prov.bio, prov.city, prov.state
+  FROM public.services s
+  JOIN LATERAL (
+    SELECT ud.user_id, ud.full_name, ud.display_name, ud.avatar_url, ud.bio, ud.city, ud.state
+    FROM public.user_data ud
+    WHERE ud.tenant_id = s.tenant_id
+      AND ud.active = true
+    ORDER BY ud.created_at
+    LIMIT 1
+  ) prov ON true
+  WHERE s.uid = p_service_uid
+    AND s.active = true
+    AND s.status = 'active'
+  LIMIT 1;
+$function$;
+
+GRANT EXECUTE ON FUNCTION public.fn_get_service_provider(uuid) TO anon, auth_user;
+
+-- fn_get_public_service_form_answers — leitura pública das respostas dinâmicas por categoria (o
+-- passo "dynamic-form" do wizard de serviços, plugin `forms`). `form_results` é genérica (não sabe
+-- se a entidade que descreve é pública) — a regra "isso pode aparecer pra um visitante anônimo" é
+-- de `services` (o mesmo portão da policy de leitura anônima), por isso a checagem mora aqui, não
+-- em `forms`. `anon` não tem SELECT em `form_results` (plugin forms concede só a `auth_user`) —
+-- esta função é a única fresta, e devolve só `answers` + `schema_snapshot`.
+DROP FUNCTION IF EXISTS public.fn_get_public_service_form_answers(uuid);
+
+CREATE OR REPLACE FUNCTION public.fn_get_public_service_form_answers(p_service_uid uuid)
+ RETURNS TABLE(
+   answers jsonb,
+   schema_snapshot jsonb
+ )
+ LANGUAGE sql
+ SECURITY DEFINER
+ SET search_path = public
+AS $function$
+  SELECT fr.answers, fr.schema_snapshot
+  FROM public.services s
+  JOIN public.form_results fr
+    ON fr.tenant_id = s.tenant_id
+   AND fr.domain = 'service'
+   AND fr.reference_id = s.id::text
+  WHERE s.uid = p_service_uid
+    AND s.active = true
+    AND s.status = 'active'
+  LIMIT 1;
+$function$;
+
+GRANT EXECUTE ON FUNCTION public.fn_get_public_service_form_answers(uuid) TO anon, auth_user;
 
 NOTIFY pgrst, 'reload schema';

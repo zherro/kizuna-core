@@ -952,7 +952,7 @@ export function AccountForm({
                       </Label>
                       <select
                         id="documentType"
-                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                        className="flex h-9 w-full rounded-[var(--ui-radius-field,0.375rem)] border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                         name="documentType"
                         value={formik.values.documentType}
                         onBlur={formik.handleBlur}
@@ -1063,7 +1063,7 @@ export function AccountForm({
                       <div className="mt-2 flex items-center gap-2">
                         <a
                           href="/painel/onboarding/email-verification"
-                          className="inline-flex items-center justify-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+                          className="inline-flex items-center justify-center gap-2 rounded-[var(--ui-radius-pill,0.375rem)] border border-input bg-background px-3 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
                         >
                           Começar verificação
                         </a>
@@ -1133,7 +1133,7 @@ export function AccountForm({
                     </Label>
                     <select
                       id="state"
-                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                      className="flex h-9 w-full rounded-[var(--ui-radius-field,0.375rem)] border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                       {...formik.getFieldProps('state')}
                     >
                       <option value="">Selecione</option>

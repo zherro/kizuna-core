@@ -1,4 +1,4 @@
-// soft-theme: lê activeTheme (kizuna-core/src/client/lib/ui-theme.ts) — classic/soft via NEXT_PUBLIC_UI_STYLE
+// soft-theme: escala do título por ACTIVE_UI_STYLE (kizuna-core/src/client/lib/ui-theme.ts) — classic/soft via NEXT_PUBLIC_UI_STYLE
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
@@ -6,8 +6,14 @@ import { Grid } from '../../ui/grid';
 import { Typography } from '../../ui/typography';
 import { SectionLabel } from '../../ui/label';
 import { buttonVariants } from '../../ui/button';
-import { activeTheme } from '../../../lib/ui-theme';
+import { ACTIVE_UI_STYLE } from '../../../lib/ui-theme';
 import { cn } from '../../../../lib/utils';
+
+/** Escala fluida do `Typography` por estilo — tipografia não é token CSS, então fica no componente. */
+const PAGE_HEADER_TITLE = {
+  classic: { size: 'xl', weight: 'semibold' },
+  soft: { size: '2xl', weight: 'normal' },
+} as const;
 
 type PageHeaderProps = {
   eyebrow?: string;
@@ -60,8 +66,8 @@ export function PageHeader({
         ) : null}
         {eyebrow ? <SectionLabel>{eyebrow}</SectionLabel> : null}
         <Typography.H2
-          size={activeTheme.pageHeaderTitleSize}
-          weight={activeTheme.pageHeaderTitleWeight}
+          size={PAGE_HEADER_TITLE[ACTIVE_UI_STYLE].size}
+          weight={PAGE_HEADER_TITLE[ACTIVE_UI_STYLE].weight}
         >
           {title}
         </Typography.H2>

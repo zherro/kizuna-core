@@ -74,14 +74,26 @@ Esqueceu o `url` em produção? O sitemap e as URLs do Open Graph saem apontando
 | `default`    | string  | `"blue"`    | Tema de cor aplicado enquanto o usuário não escolhe outro. Valor inválido cai em `blue`.   |
 | `selectable` | boolean | `true`      | `false` fixa o `default` para todos e **esconde o seletor de cor** do botão de preferências. |
 | `metaColor`  | string  | `"#2563eb"` | Cor da barra do navegador no mobile (`<meta name="theme-color">`) e `theme_color` do PWA. |
+| `displayFont` | string | padrão do estilo | Fonte dos títulos (`Typography font="display"`). Uma de `quicksand`, `baloo` ou `bricolage` (lista `DISPLAY_FONTS` em `src/shared/display-fonts.ts`). Ausente ou inválido, vale o padrão do projeto, definido no `globals.css` por estilo visual (no `kizuna-starter`: Quicksand no `classic`, Baloo 2 no `soft`). **Só tem efeito com o suporte no `layout.tsx` e no `globals.css`** descrito em [Adopting in an existing project](../interface/componentes.md#adopting-in-an-existing-project); o template do core ainda não o traz. |
 
 Temas disponíveis (lista em `src/shared/theme-colors.ts`): `blue`, `green`, `purple`, `teal`,
 `red`, `orange`, `coral`, `terracotta`, `bora_cuiaba`, `metro_orange`, `laranja_intenso`,
 `laranja_medio`. Um tema novo precisa de código: entrada em `THEME_COLORS` + tokens no CSS.
 
+Fontes de título (`DISPLAY_FONTS`): `quicksand`, `baloo` (Baloo 2), `bricolage`. No projeto que já tem o suporte (referência: `src/app/layout.tsx` do
+`kizuna-starter`), o `layout.tsx` valida o valor com `isDisplayFont` e o grava em
+`<html data-display-font>`; o `globals.css` troca a fonte por CSS (`--ui-font-display-active`), sem rebuild de estilo. Fonte nova precisa de código: nome em
+`DISPLAY_FONTS`, `next/font` no layout e um bloco por fonte no `globals.css` (seletor em `data-display-font`).
+
 ```json
-"theme": { "default": "bora_cuiaba", "selectable": false, "metaColor": "#fbf7f0" }
+"theme": { "default": "bora_cuiaba", "selectable": false, "metaColor": "#fbf7f0", "displayFont": "baloo" }
 ```
+
+{% hint style="info" %}
+O estilo de forma (`classic` ou `soft`: raios, bordas e sombras dos componentes) **não** vem deste
+arquivo: é a env `NEXT_PUBLIC_UI_STYLE`, fixa por deploy. Ver
+[Componentes e hooks](../interface/componentes.md) (seção "Shape style").
+{% endhint %}
 
 ## `header`
 
@@ -188,18 +200,17 @@ mas sem cidades, `/api/weather` responde `404`.
 ## `location`
 
 Seletor de local do cabeçalho (`LocationTrigger`/`LocationModal`) e detecção automática por GPS/IP.
-Requer o plugin `location`. **Sem o bloco**, vale o comportamento antigo: Brasil inteiro, direto do
-IBGE. Detalhes em [Plugin location](../plugins/location.md).
+Requer o plugin `location` 1.1.0. As cidades do seletor **não** vêm daqui: são as linhas de
+`location_city` com `search_city = true`. Este bloco só define o que fazer com uma cidade detectada
+fora dessa lista. Detalhes em [Plugin location](../plugins/location.md).
 
-| Campo             | Tipo                    | Padrão     | Efeito                                                                                                   |
-| ----------------- | ----------------------- | ---------- | -------------------------------------------------------------------------------------------------------- |
-| `source`          | `"ibge"` \| `"db"`      | `"ibge"`   | `db`: o seletor lista só o que estiver em `location_state`/`location_city` (a tabela é a lista).         |
-| `outsideList`     | `"prompt"` \| `"default"` | `"prompt"` | Só no modo `db`: cidade detectada fora da lista abre o seletor (`prompt`) ou vira `defaultCityIbge`.  |
-| `defaultCityIbge` | string (7 dígitos)      | —          | Código IBGE da cidade padrão. Obrigatório com `outsideList: "default"`; precisa estar em `location_city`. |
+| Campo             | Tipo                      | Padrão     | Efeito                                                                                          |
+| ----------------- | ------------------------- | ---------- | ----------------------------------------------------------------------------------------------- |
+| `outsideList`     | `"prompt"` \| `"default"` | `"prompt"` | Cidade detectada (GPS/IP) fora da lista abre o seletor (`prompt`) ou vira `defaultCityIbge`.    |
+| `defaultCityIbge` | string (7 dígitos)        | —          | Código IBGE da cidade padrão. Obrigatório com `outsideList: "default"`; precisa estar marcada.  |
 
 ```json
 "location": {
-  "source": "db",
   "outsideList": "default",
   "defaultCityIbge": "5103403"
 }

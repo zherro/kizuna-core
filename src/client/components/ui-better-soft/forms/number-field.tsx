@@ -46,7 +46,7 @@ export function NumberField({
   const id = `number-field-${label.toLowerCase().replace(/\s+/g, '-')}`;
 
   return (
-    <div className={cn('rounded-xl border border-border bg-card p-4', disabled && 'opacity-70')}>
+    <div className={cn('rounded-[var(--ui-radius-card-compact,0.75rem)] border-[length:var(--ui-border-w-card,1px)] border-border bg-card shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] p-4', disabled && 'opacity-70')}>
       <div className="flex items-center gap-2">
         {Icon ? <Icon className="h-4 w-4 text-muted-foreground" /> : null}
         <Label htmlFor={id} className="text-sm font-semibold">

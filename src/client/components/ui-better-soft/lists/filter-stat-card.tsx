@@ -26,7 +26,7 @@ export function FilterStatCard({
       type="button"
       onClick={onClick}
       className={cn(
-        'rounded-xl border p-3 text-left transition',
+        'rounded-[var(--ui-radius-card-compact,0.75rem)] border-[length:var(--ui-border-w-card,1px)] shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] p-3 text-left transition',
         active
           ? 'border-brand bg-brand-soft ring-1 ring-brand'
           : 'border-border bg-card hover:bg-muted/40'

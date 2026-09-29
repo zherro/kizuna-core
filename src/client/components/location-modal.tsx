@@ -1,48 +1,35 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   MapPin,
   Search,
   X,
-  ChevronRight,
   ChevronDown,
   Loader2,
   LocateFixed,
   Navigation,
 } from 'lucide-react';
-import { type UserLocation, useUserLocation } from '../hooks/use-user-location';
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-interface IBGEState {
-  id: number;
-  sigla: string;
-  nome: string;
-}
-interface IBGECity {
-  id: number;
-  nome: string;
-}
+import { useUserLocation } from '../hooks/use-user-location';
 
 // ─── API ──────────────────────────────────────────────────────────────────────
 
-// Estados e municípios vêm das rotas server-side do plugin `location` (proxy do IBGE com
-// cache) — o navegador não fala direto com o servicodados.ibge.gov.br.
-
-async function fetchStates(): Promise<IBGEState[]> {
-  const res = await fetch('/api/location/states');
-  if (!res.ok) throw new Error();
-  const data = await res.json();
-  return Array.isArray(data.items) ? (data.items as IBGEState[]) : [];
+/** Cidade do seletor — `/api/location/cities` (plugin `location`: `location_city WHERE search_city`). */
+interface CityOption {
+  value: string;
+  label: string;
+  stateCode: string;
+  stateName: string;
 }
 
-async function fetchCities(stateCode: string): Promise<IBGECity[]> {
-  const res = await fetch(`/api/location/cities?uf=${encodeURIComponent(stateCode)}`);
+/** Quantas cidades a lista mostra (sem busca: as primeiras por nome; com busca: os primeiros matches). */
+const MAX_VISIBLE = 10;
+
+async function fetchCities(): Promise<CityOption[]> {
+  const res = await fetch('/api/location/cities');
   if (!res.ok) throw new Error();
   const data = await res.json();
-  const items: { value: string; label: string }[] = Array.isArray(data.items) ? data.items : [];
-  return items.map((c) => ({ id: Number(c.value) || 0, nome: c.label }));
+  return Array.isArray(data.items) ? (data.items as CityOption[]) : [];
 }
 
 // ─── Trigger (parece select) ──────────────────────────────────────────────────
@@ -89,50 +76,41 @@ export function LocationTrigger({ onClick }: { onClick: () => void }) {
 
 // ─── Modal ────────────────────────────────────────────────────────────────────
 
-type Step = 'state' | 'city';
-
 interface LocationModalProps {
   open: boolean;
   onClose: () => void;
 }
+
+const normalize = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 
 export function LocationModal({ open, onClose }: LocationModalProps) {
   const { location, setLocation, detectLocation, status } = useUserLocation();
   const overlayRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
-  const [step, setStep] = useState<Step>('state');
   const [search, setSearch] = useState('');
   const [detecting, setDetecting] = useState(false);
 
-  const [states, setStates] = useState<IBGEState[]>([]);
-  const [statesLoading, setStatesLoading] = useState(false);
-  const [statesError, setStatesError] = useState('');
-
-  const [selectedState, setSelectedState] = useState<IBGEState | null>(null);
-  const [cities, setCities] = useState<IBGECity[]>([]);
+  const [cities, setCities] = useState<CityOption[]>([]);
   const [citiesLoading, setCitiesLoading] = useState(false);
   const [citiesError, setCitiesError] = useState('');
 
-  // Reset + carrega estados ao abrir
+  // Reset + carrega as cidades ao abrir
   useEffect(() => {
     if (!open) return;
-    setStep('state');
     setSearch('');
-    setSelectedState(null);
-    setCities([]);
-    setStatesError('');
-    setStatesLoading(true);
-    fetchStates()
-      .then(setStates)
-      .catch(() => setStatesError('Não foi possível carregar os estados.'))
-      .finally(() => setStatesLoading(false));
+    setCitiesError('');
+    setCitiesLoading(true);
+    fetchCities()
+      .then(setCities)
+      .catch(() => setCitiesError('Não foi possível carregar as cidades.'))
+      .finally(() => setCitiesLoading(false));
   }, [open]);
 
   // Foca busca
   useEffect(() => {
     if (open) setTimeout(() => searchRef.current?.focus(), 60);
-  }, [open, step]);
+  }, [open]);
 
   // Escape fecha
   useEffect(() => {
@@ -158,44 +136,22 @@ export function LocationModal({ open, onClose }: LocationModalProps) {
     // Se não achou (prompt), continua aberto para o usuário escolher
   }
 
-  async function handleSelectState(state: IBGEState) {
-    setSelectedState(state);
-    setStep('city');
-    setSearch('');
-    setCitiesError('');
-    setCitiesLoading(true);
-    try {
-      setCities(await fetchCities(state.sigla));
-    } catch {
-      setCitiesError('Não foi possível carregar as cidades.');
-    } finally {
-      setCitiesLoading(false);
-    }
-  }
-
-  function handleSelectCity(city: IBGECity) {
-    if (!selectedState) return;
+  function handleSelectCity(city: CityOption) {
     setLocation({
-      stateCode: selectedState.sigla,
-      stateName: selectedState.nome,
-      cityId: city.id,
-      cityName: city.nome,
+      stateCode: city.stateCode,
+      stateName: city.stateName,
+      cityId: Number(city.value) || 0,
+      cityName: city.label,
       source: 'manual',
     });
     onClose();
   }
 
-  const normalize = (s: string) =>
-    s
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '');
-
   const q = normalize(search.trim());
-  const filteredStates = q
-    ? states.filter((s) => normalize(s.nome).includes(q) || normalize(s.sigla).includes(q))
-    : states;
-  const filteredCities = q ? cities.filter((c) => normalize(c.nome).includes(q)) : cities;
+  const visibleCities = (q ? cities.filter((c) => normalize(c.label).includes(q)) : cities).slice(
+    0,
+    MAX_VISIBLE
+  );
 
   if (!open) return null;
 
@@ -215,22 +171,8 @@ export function LocationModal({ open, onClose }: LocationModalProps) {
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
           <div className="flex items-center gap-2">
-            {step === 'city' && (
-              <button
-                onClick={() => {
-                  setStep('state');
-                  setSearch('');
-                }}
-                aria-label="Voltar"
-                className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-              >
-                <ChevronRight className="h-4 w-4 rotate-180" />
-              </button>
-            )}
             <MapPin className="h-4 w-4 text-primary" />
-            <span className="text-sm font-semibold">
-              {step === 'state' ? 'Selecione o estado' : `${selectedState?.nome} — cidade`}
-            </span>
+            <span className="text-sm font-semibold">Selecione a cidade</span>
           </div>
           <button
             onClick={onClose}
@@ -241,46 +183,44 @@ export function LocationModal({ open, onClose }: LocationModalProps) {
           </button>
         </div>
 
-        {/* Banner de detecção automática — só no step inicial */}
-        {step === 'state' && (
-          <div className="border-b border-border bg-muted/40 px-4 py-3">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
-                <Navigation className="h-3.5 w-3.5 shrink-0 text-primary" />
-                <span className="text-xs text-muted-foreground">
-                  {location ? (
-                    <>
-                      Atual:{' '}
-                      <strong className="text-foreground">
-                        {location.cityName || location.stateName}
-                        {location.cityName ? `, ${location.stateCode}` : ''}
-                      </strong>
-                      {location.source === 'ip' && ' (aproximado)'}
-                    </>
-                  ) : (
-                    'Detectar localização automaticamente'
-                  )}
-                </span>
-              </div>
-              <button
-                onClick={handleAutoDetect}
-                disabled={detecting}
-                className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-2.5 py-1.5 text-xs text-foreground transition-colors hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {detecting ? (
+        {/* Banner de detecção automática */}
+        <div className="border-b border-border bg-muted/40 px-4 py-3">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Navigation className="h-3.5 w-3.5 shrink-0 text-primary" />
+              <span className="text-xs text-muted-foreground">
+                {location ? (
                   <>
-                    <Loader2 className="h-3 w-3 animate-spin" /> Detectando...
+                    Atual:{' '}
+                    <strong className="text-foreground">
+                      {location.cityName || location.stateName}
+                      {location.cityName ? `, ${location.stateCode}` : ''}
+                    </strong>
+                    {location.source === 'ip' && ' (aproximado)'}
                   </>
                 ) : (
-                  <>
-                    <LocateFixed className="h-3 w-3" />{' '}
-                    {location ? 'Reatualizar' : 'Usar minha localização'}
-                  </>
+                  'Detectar localização automaticamente'
                 )}
-              </button>
+              </span>
             </div>
+            <button
+              onClick={handleAutoDetect}
+              disabled={detecting}
+              className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-2.5 py-1.5 text-xs text-foreground transition-colors hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {detecting ? (
+                <>
+                  <Loader2 className="h-3 w-3 animate-spin" /> Detectando...
+                </>
+              ) : (
+                <>
+                  <LocateFixed className="h-3 w-3" />{' '}
+                  {location ? 'Reatualizar' : 'Usar minha localização'}
+                </>
+              )}
+            </button>
           </div>
-        )}
+        </div>
 
         {/* Busca */}
         <div className="border-b border-border px-3 py-2">
@@ -290,12 +230,13 @@ export function LocationModal({ open, onClose }: LocationModalProps) {
               ref={searchRef}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder={step === 'state' ? 'Buscar estado...' : 'Buscar cidade...'}
+              placeholder="Buscar cidade..."
               className="h-9 flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
             />
             {search && (
               <button
                 onClick={() => setSearch('')}
+                aria-label="Limpar busca"
                 className="text-muted-foreground hover:text-foreground"
               >
                 <X className="h-3.5 w-3.5" />
@@ -306,48 +247,24 @@ export function LocationModal({ open, onClose }: LocationModalProps) {
 
         {/* Lista */}
         <div className="overflow-y-auto">
-          {step === 'state' && (
-            <>
-              {statesLoading && <LoadingRow label="Carregando estados..." />}
-              {statesError && <ErrorRow label={statesError} />}
-              {!statesLoading && !statesError && filteredStates.length === 0 && (
-                <EmptyRow label="Nenhum estado encontrado." />
-              )}
-              {!statesLoading &&
-                !statesError &&
-                filteredStates.map((state) => (
-                  <button
-                    key={state.id}
-                    onClick={() => handleSelectState(state)}
-                    className="flex w-full items-center justify-between px-4 py-2.5 text-sm text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-                  >
-                    <span>{state.nome}</span>
-                    <span className="font-mono text-xs text-muted-foreground">{state.sigla}</span>
-                  </button>
-                ))}
-            </>
+          {citiesLoading && <LoadingRow label="Carregando cidades..." />}
+          {citiesError && <ErrorRow label={citiesError} />}
+          {!citiesLoading && !citiesError && visibleCities.length === 0 && (
+            <EmptyRow label="Nenhuma cidade encontrada." />
           )}
-
-          {step === 'city' && (
-            <>
-              {citiesLoading && <LoadingRow label="Carregando cidades..." />}
-              {citiesError && <ErrorRow label={citiesError} />}
-              {!citiesLoading && !citiesError && filteredCities.length === 0 && (
-                <EmptyRow label="Nenhuma cidade encontrada." />
-              )}
-              {!citiesLoading &&
-                !citiesError &&
-                filteredCities.map((city) => (
-                  <button
-                    key={city.id}
-                    onClick={() => handleSelectCity(city)}
-                    className="flex w-full items-center px-4 py-2.5 text-sm text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-                  >
-                    {city.nome}
-                  </button>
-                ))}
-            </>
-          )}
+          {!citiesLoading &&
+            !citiesError &&
+            visibleCities.map((city) => (
+              <button
+                key={city.value}
+                onClick={() => handleSelectCity(city)}
+                aria-label={`${city.label} – ${city.stateCode}`}
+                className="flex w-full items-center px-4 py-2.5 text-sm text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+              >
+                {city.label}
+                <span className="ml-1 text-muted-foreground">– {city.stateCode}</span>
+              </button>
+            ))}
         </div>
       </div>
     </div>

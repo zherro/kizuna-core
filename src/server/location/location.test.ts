@@ -1,34 +1,19 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
-  __resetLocationCache,
   listLocationCities,
-  listLocationStates,
   parseLocationConfig,
   resolveLocation,
   type LocationConfig,
 } from './index';
 
-const DB: LocationConfig = {
-  source: 'db',
-  outsideList: 'prompt',
-  defaultCityIbge: null,
-};
-const DB_DEFAULT: LocationConfig = {
-  source: 'db',
-  outsideList: 'default',
-  defaultCityIbge: '5103403',
-};
-const IBGE: LocationConfig = {
-  source: 'ibge',
-  outsideList: 'prompt',
-  defaultCityIbge: null,
-};
+const PROMPT: LocationConfig = { outsideList: 'prompt', defaultCityIbge: null };
+const DEFAULT: LocationConfig = { outsideList: 'default', defaultCityIbge: '5103403' };
 
 const MT = { code: 'MT', name: 'Mato Grosso' };
-const DB_CITIES = [
-  { id: 5103403, name: 'Cuiabá', location_state: MT },
-  { id: 5108402, name: 'Várzea Grande', location_state: MT },
-];
+const MS = { code: 'MS', name: 'Mato Grosso do Sul' };
+const CUIABA = { id: 5103403, name: 'Cuiabá', location_state: MT };
+const VG = { id: 5108402, name: 'Várzea Grande', location_state: MT };
+const CG = { id: 5002704, name: 'Campo Grande', location_state: MS };
 
 type Route = (url: string) => unknown;
 
@@ -48,151 +33,93 @@ function stubFetch(routes: Record<string, Route | unknown>) {
   return fn;
 }
 
-beforeEach(() => {
-  __resetLocationCache();
-});
+const urls = (fn: ReturnType<typeof stubFetch>) => fn.mock.calls.map(([u]) => String(u));
 
 afterEach(() => {
   vi.unstubAllGlobals();
 });
 
 describe('parseLocationConfig', () => {
-  it('sem bloco → ibge / prompt (comportamento antigo)', () => {
-    expect(parseLocationConfig(undefined)).toEqual({
-      source: 'ibge',
-      outsideList: 'prompt',
-      defaultCityIbge: null,
-    });
+  it('sem bloco → prompt, sem cidade padrão', () => {
+    expect(parseLocationConfig(undefined)).toEqual(PROMPT);
   });
 
-  it('lê source, outsideList e defaultCityIbge', () => {
-    expect(
-      parseLocationConfig({
-        source: 'db',
-        outsideList: 'default',
-        defaultCityIbge: 5103403,
-      })
-    ).toEqual(DB_DEFAULT);
+  it('lê outsideList e defaultCityIbge', () => {
+    expect(parseLocationConfig({ outsideList: 'default', defaultCityIbge: 5103403 })).toEqual(
+      DEFAULT
+    );
   });
 
   it('valor inválido quebra com erro claro', () => {
-    expect(() => parseLocationConfig({ source: 'mapa' })).toThrow(/location\.source/);
     expect(() => parseLocationConfig({ outsideList: 'x' })).toThrow(/location\.outsideList/);
+    expect(() => parseLocationConfig({ outsideList: 'default', defaultCityIbge: '12' })).toThrow(
+      /7 dígitos/
+    );
   });
 
   it('outsideList default exige defaultCityIbge', () => {
-    expect(() => parseLocationConfig({ source: 'db', outsideList: 'default' })).toThrow(
-      /defaultCityIbge/
-    );
+    expect(() => parseLocationConfig({ outsideList: 'default' })).toThrow(/defaultCityIbge/);
   });
 });
 
-describe('modo db', () => {
-  it('lista estados da tabela location_state', async () => {
-    const fetchMock = stubFetch({
-      '/location_state?': [
-        { id: 50, code: 'MS', name: 'Mato Grosso do Sul' },
-        { id: 51, code: 'MT', name: 'Mato Grosso' },
-      ],
-    });
-    expect(await listLocationStates(DB)).toEqual([
-      { id: 50, sigla: 'MS', nome: 'Mato Grosso do Sul' },
-      { id: 51, sigla: 'MT', nome: 'Mato Grosso' },
+describe('listLocationCities', () => {
+  it('lista só cidades com search_city, com a UF, por nome', async () => {
+    const fetchMock = stubFetch({ '/location_city?': [CG, CUIABA, VG] });
+    expect(await listLocationCities()).toEqual([
+      { value: '5002704', label: 'Campo Grande', stateCode: 'MS', stateName: 'Mato Grosso do Sul' },
+      { value: '5103403', label: 'Cuiabá', stateCode: 'MT', stateName: 'Mato Grosso' },
+      { value: '5108402', label: 'Várzea Grande', stateCode: 'MT', stateName: 'Mato Grosso' },
     ]);
-    expect(String(fetchMock.mock.calls[0]![0])).not.toContain('ibge.gov.br');
+    const [url] = urls(fetchMock);
+    expect(url).toContain('search_city=is.true');
+    expect(url).toContain('order=name');
+    expect(url).not.toContain('ibge.gov.br');
   });
 
-  it('lista cidades da UF pedida', async () => {
-    const fetchMock = stubFetch({ '/location_city?': DB_CITIES });
-    expect(await listLocationCities(DB, 'mt')).toEqual([
-      { value: '5103403', label: 'Cuiabá' },
-      { value: '5108402', label: 'Várzea Grande' },
-    ]);
-    expect(String(fetchMock.mock.calls[0]![0])).toContain('location_state.code=eq.MT');
+  it('com UF filtra pelo estado', async () => {
+    const fetchMock = stubFetch({ '/location_city?': [CUIABA, VG] });
+    await listLocationCities('mt');
+    expect(urls(fetchMock)[0]).toContain('location_state.code=eq.MT');
   });
+});
 
-  it('resolve cidade da lista ignorando acento e caixa', async () => {
-    stubFetch({ '/location_city?': DB_CITIES });
-    expect(await resolveLocation(DB, { uf: 'MT', city: 'cuiaba' })).toEqual({
+describe('resolveLocation', () => {
+  it('cidade marcada, ignorando acento e caixa', async () => {
+    const fetchMock = stubFetch({ '/location_city?': [CUIABA, VG] });
+    expect(await resolveLocation(PROMPT, { uf: 'MT', city: 'cuiaba' })).toEqual({
       stateCode: 'MT',
       stateName: 'Mato Grosso',
       cityId: 5103403,
       cityName: 'Cuiabá',
     });
+    expect(urls(fetchMock)[0]).toContain('search_city=is.true');
   });
 
-  it('cidade fora da lista + prompt → null', async () => {
+  it('fora da lista + prompt → null', async () => {
     stubFetch({ '/location_city?': [] });
-    expect(await resolveLocation(DB, { uf: 'SP', city: 'São Paulo' })).toBeNull();
+    expect(await resolveLocation(PROMPT, { uf: 'SP', city: 'São Paulo' })).toBeNull();
   });
 
-  it('cidade fora da lista + default → cidade padrão', async () => {
-    stubFetch({
-      'id=eq.5103403': [DB_CITIES[0]],
-      '/location_city?': [],
-    });
-    expect(await resolveLocation(DB_DEFAULT, { uf: 'SP', city: 'São Paulo' })).toEqual({
-      stateCode: 'MT',
-      stateName: 'Mato Grosso',
-      cityId: 5103403,
-      cityName: 'Cuiabá',
-    });
+  it('fora da lista + default → cidade padrão (também precisa estar marcada)', async () => {
+    const fetchMock = stubFetch({ 'id=eq.5103403': [CUIABA], '/location_city?': [] });
+    expect((await resolveLocation(DEFAULT, { uf: 'SP', city: 'São Paulo' }))?.cityId).toBe(5103403);
+    const fallbackUrl = urls(fetchMock).find((u) => u.includes('id=eq.5103403'))!;
+    expect(fallbackUrl).toContain('search_city=is.true');
   });
 
-  it('sem UF (ex.: IP estrangeiro) + default → cidade padrão', async () => {
-    stubFetch({ 'id=eq.5103403': [DB_CITIES[0]] });
-    expect((await resolveLocation(DB_DEFAULT, {}))?.cityId).toBe(5103403);
+  it('sem UF (IP indisponível/estrangeiro) + default → cidade padrão', async () => {
+    stubFetch({ 'id=eq.5103403': [CUIABA] });
+    expect((await resolveLocation(DEFAULT, {}))?.cityId).toBe(5103403);
   });
 
-  it('default configurado mas ausente do banco → null', async () => {
+  it('sem UF + prompt → null, sem consultar o banco', async () => {
+    const fetchMock = stubFetch({});
+    expect(await resolveLocation(PROMPT, {})).toBeNull();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('cidade padrão desmarcada/ausente → null', async () => {
     stubFetch({ '/location_city?': [] });
-    expect(await resolveLocation(DB_DEFAULT, { uf: 'SP', city: 'São Paulo' })).toBeNull();
-  });
-});
-
-describe('modo ibge', () => {
-  const IBGE_ROUTES = {
-    '/localidades/estados/MT/municipios': [
-      { id: 5103403, nome: 'Cuiabá' },
-      { id: 5108402, nome: 'Várzea Grande' },
-    ],
-    '/localidades/estados?': [
-      { id: 51, sigla: 'MT', nome: 'Mato Grosso' },
-      { id: 35, sigla: 'SP', nome: 'São Paulo' },
-    ],
-  };
-
-  it('lista estados e cidades do IBGE', async () => {
-    stubFetch(IBGE_ROUTES);
-    expect(await listLocationStates(IBGE)).toEqual([
-      { id: 51, sigla: 'MT', nome: 'Mato Grosso' },
-      { id: 35, sigla: 'SP', nome: 'São Paulo' },
-    ]);
-    expect(await listLocationCities(IBGE, 'MT')).toHaveLength(2);
-  });
-
-  it('resolve acha o código IBGE pelo nome', async () => {
-    stubFetch(IBGE_ROUTES);
-    expect(await resolveLocation(IBGE, { uf: 'MT', city: 'Várzea Grande' })).toEqual({
-      stateCode: 'MT',
-      stateName: 'Mato Grosso',
-      cityId: 5108402,
-      cityName: 'Várzea Grande',
-    });
-  });
-
-  it('cidade não encontrada mantém a detectada com id 0 (sem restrição)', async () => {
-    stubFetch(IBGE_ROUTES);
-    expect(await resolveLocation(IBGE, { uf: 'MT', city: 'Lugar Nenhum' })).toEqual({
-      stateCode: 'MT',
-      stateName: 'Mato Grosso',
-      cityId: 0,
-      cityName: 'Lugar Nenhum',
-    });
-  });
-
-  it('sem UF → null', async () => {
-    stubFetch(IBGE_ROUTES);
-    expect(await resolveLocation(IBGE, {})).toBeNull();
+    expect(await resolveLocation(DEFAULT, { uf: 'SP', city: 'São Paulo' })).toBeNull();
   });
 });

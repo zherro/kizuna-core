@@ -64,7 +64,7 @@ export function ChatBetterSoft({ conversations }: ChatBetterSoftProps) {
                 type="button"
                 onClick={() => setActiveId(conversation.id)}
                 className={cn(
-                  'w-full rounded-xl border px-3 py-3 text-left transition',
+                  'w-full rounded-[var(--ui-radius-card-compact,0.75rem)] border-[length:var(--ui-border-w-card,1px)] px-3 py-3 text-left shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] transition',
                   selected ? 'border-primary bg-primary/10' : 'border-border hover:bg-muted/40'
                 )}
               >

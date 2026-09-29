@@ -142,7 +142,7 @@ export function SystemConfigSection({
                 <Label htmlFor={`${configKey}-${field.key}`}>{field.label}</Label>
                 <select
                   id={`${configKey}-${field.key}`}
-                  className="flex h-9 w-full max-w-xs rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex h-9 w-full max-w-xs rounded-[var(--ui-radius-field,0.375rem)] border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                   value={String(value[field.key] ?? '')}
                   disabled={disabled}
                   onChange={(e) => setField(field.key, e.target.value)}
