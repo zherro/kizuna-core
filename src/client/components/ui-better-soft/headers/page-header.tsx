@@ -5,7 +5,6 @@ import { ArrowLeft } from 'lucide-react';
 import { Grid } from '../../ui/grid';
 import { Typography } from '../../ui/typography';
 import { SectionLabel } from '../../ui/label';
-import { buttonVariants } from '../../ui/button';
 import { ACTIVE_UI_STYLE } from '../../../lib/ui-theme';
 import { cn } from '../../../../lib/utils';
 
@@ -19,7 +18,7 @@ type PageHeaderProps = {
   eyebrow?: string;
   title: string;
   description?: string;
-  /** Compact "voltar" link (arrow + label) above the eyebrow. Omit to render nothing — no implicit default href. */
+  /** Botão "voltar" (invertido, seta + rótulo) na mesma linha do eyebrow. Omita para não renderizar — sem href padrão. */
   backHref?: string;
   backLabel?: string;
   actions?: ReactNode;
@@ -52,19 +51,20 @@ export function PageHeader({
       className={cn('items-end border-b border-border pb-6', className)}
     >
       <Grid xs={12} sm={9} md={9} lg={8}>
-        {backHref ? (
-          <Link
-            href={backHref}
-            className={cn(
-              buttonVariants({ variant: 'ghost', size: 'sm' }),
-              'mb-2 -ml-2 h-8 gap-1 text-muted-foreground'
-            )}
-          >
-            <ArrowLeft className="h-4 w-4" />
-            {backLabel}
-          </Link>
+        {backHref || eyebrow ? (
+          <div className="mb-2 flex flex-wrap items-center gap-3">
+            {backHref ? (
+              <Link
+                href={backHref}
+                className="inline-flex h-8 items-center gap-1.5 rounded-[var(--ui-radius-pill,0.375rem)] bg-foreground px-3 font-display text-xs font-semibold tracking-wide text-background transition-opacity hover:opacity-85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                <ArrowLeft className="h-3.5 w-3.5" />
+                {backLabel}
+              </Link>
+            ) : null}
+            {eyebrow ? <SectionLabel>{eyebrow}</SectionLabel> : null}
+          </div>
         ) : null}
-        {eyebrow ? <SectionLabel>{eyebrow}</SectionLabel> : null}
         <Typography.H2
           size={PAGE_HEADER_TITLE[ACTIVE_UI_STYLE].size}
           weight={PAGE_HEADER_TITLE[ACTIVE_UI_STYLE].weight}
