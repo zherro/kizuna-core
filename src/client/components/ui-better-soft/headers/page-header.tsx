@@ -27,7 +27,8 @@ type PageHeaderProps = {
 /**
  * List/manager page header. Composição enxuta: o "voltar" é um botão redondo só com ícone (no tom
  * escuro da cor primária do tema) alinhado ao bloco de texto — eyebrow, título e descrição numa
- * coluna só —, e as ações ficam à direita no desktop / embaixo no mobile. Fecha com um traço fino
+ * coluna só —, e as ações ficam à direita na mesma linha, também no mobile (lá a ação precisa ser
+ * compacta; ver `PageHeaderBlock.createAction`). Fecha com um traço fino
  * em degradê a partir da primária, em vez de uma borda cheia, para separar do conteúdo sem pesar.
  */
 export function PageHeader({
@@ -41,7 +42,7 @@ export function PageHeader({
 }: Readonly<PageHeaderProps>) {
   return (
     <header className={cn('pb-6', className)}>
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex items-start justify-between gap-3 sm:items-center sm:gap-4">
         <div className="flex min-w-0 items-start gap-4">
           {backHref ? (
             <Link
@@ -70,9 +71,7 @@ export function PageHeader({
           </div>
         </div>
 
-        {actions ? (
-          <div className="flex shrink-0 flex-wrap gap-2 sm:justify-end">{actions}</div>
-        ) : null}
+        {actions ? <div className="flex shrink-0 items-center gap-2">{actions}</div> : null}
       </div>
       <div
         aria-hidden="true"

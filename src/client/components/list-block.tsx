@@ -1,8 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import type { MouseEvent, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { Fragment, useMemo, useState } from 'react';
 import {
   Briefcase,
@@ -10,6 +9,7 @@ import {
   MapPin,
   Pencil,
   Plus,
+  Search,
   Package,
   Sparkles,
   Zap,
@@ -18,6 +18,7 @@ import type { LucideIcon } from 'lucide-react';
 import { Button, buttonVariants } from './ui/button';
 import { Input } from './ui/input';
 import { EmptyStateCard } from './ui-better-soft/lists/empty-state-card';
+import { GatedCreateLink } from './gated-create-link';
 import { useTable } from '../hooks';
 import type { ResourceConfig } from '../../types/resource';
 import { postgrestResources } from '@/lib/server/resources';
@@ -174,121 +175,6 @@ function fieldTone(format: FieldFormat, value: unknown): ThemeTone {
   return format.tones?.[key] ?? 'muted';
 }
 
-/**
- * Checks onboarding completion by calling the existing generic RPC route
- * (`/api/postgrest/rpc`) with the already-registered `fn_is_onboarding_completed`
- * function (see `postgrestRpcs` in `@/lib/server/resources`) — no new API
- * surface, just the same call a server component would make, done from the
- * client. Fails open (returns `true`) on any error so a broken check never
- * traps the user behind a gate that can't be evaluated.
- */
-async function isOnboardingCompleted(): Promise<boolean> {
-  try {
-    const response = await fetch('/api/postgrest/rpc', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        schema: 'public',
-        functionName: 'fn_is_onboarding_completed',
-        params: {},
-      }),
-    });
-
-    if (!response.ok) return true;
-
-    const data = (await response.json().catch(() => null)) as { payload?: unknown } | null;
-    const payload = data?.payload;
-
-    if (typeof payload === 'boolean') return payload;
-    if (Array.isArray(payload)) {
-      const first = payload[0];
-      if (typeof first === 'boolean') return first;
-      if (first && typeof first === 'object') {
-        return Boolean(Object.values(first as Record<string, unknown>)[0]);
-      }
-      return true;
-    }
-    if (payload && typeof payload === 'object') {
-      return Boolean(Object.values(payload as Record<string, unknown>)[0]);
-    }
-
-    return true;
-  } catch {
-    return true;
-  }
-}
-
-/**
- * `href` link that, when `gateUserId` is set, checks onboarding completion on click instead of
- * navigating straight away — plain `Link` when `gateUserId` is undefined (ungated screens pay
- * nothing extra). Incomplete → redirects to the onboarding screen instead of the create flow,
- * never lets the click through. The check runs on demand (not on mount) since it's only needed
- * at the moment of the click.
- */
-/**
- * Nível de conta para `action`: true/false, ou null quando o projeto não expõe a rota de níveis
- * (404) — aí o chamador usa o check de onboarding. Erro de rede/servidor = false (fecha).
- */
-async function isActionAllowed(action: string): Promise<boolean | null> {
-  try {
-    const res = await fetch(`/api/account/level?action=${encodeURIComponent(action)}`, {
-      cache: 'no-store',
-    });
-    if (res.status === 404) return null;
-    if (!res.ok) return false;
-    const data = (await res.json().catch(() => null)) as { can?: { allowed?: boolean } } | null;
-    return data?.can?.allowed === true;
-  } catch {
-    return false;
-  }
-}
-
-function GatedCreateLink({
-  href,
-  gateUserId,
-  gateAction,
-  className,
-  children,
-}: {
-  href: string;
-  gateUserId?: string;
-  gateAction?: string;
-  className?: string;
-  children: ReactNode;
-}) {
-  const router = useRouter();
-  const [checking, setChecking] = useState(false);
-
-  async function handleClick(event: MouseEvent<HTMLAnchorElement>) {
-    if ((!gateUserId && !gateAction) || checking) return;
-    event.preventDefault();
-    setChecking(true);
-    try {
-      if (gateAction) {
-        const allowed = await isActionAllowed(gateAction);
-        if (allowed !== null) {
-          router.push(allowed ? href : `/painel/onboarding?acao=${encodeURIComponent(gateAction)}`);
-          return;
-        }
-      }
-      const completed = await isOnboardingCompleted();
-      router.push(completed ? href : '/painel/onboarding?motivo=novo-servico');
-    } catch {
-      // Check itself failed (network/RPC error) — fail open rather than trap the user behind a
-      // gate that can't be evaluated.
-      router.push(href);
-    } finally {
-      setChecking(false);
-    }
-  }
-
-  return (
-    <Link href={href} onClick={handleClick} className={cn(className, checking && 'opacity-70')}>
-      {children}
-    </Link>
-  );
-}
-
 export function ListBlock({ config }: { config: ListBlockConfig }) {
   const resourceConfig = (postgrestResources as Record<string, ResourceConfig | undefined>)[
     config.resource
@@ -328,59 +214,75 @@ export function ListBlock({ config }: { config: ListBlockConfig }) {
     });
 
   const isUnfiltered = !statusFilter && !search;
+  // Nada cadastrado ainda (sem busca/filtro): a tela vira só o estado vazio — contagem "0 registros"
+  // e barra de busca não ajudam em nada aqui e só poluem, principalmente no mobile.
+  const isPristineEmpty = !loading && total === 0 && isUnfiltered;
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          {config.title ? (
-            <h2 className="text-base font-semibold text-foreground">{config.title}</h2>
-          ) : null}
-          <p className="text-sm text-muted-foreground">
-            {loading
-              ? 'Carregando...'
-              : `${total} registro${total === 1 ? '' : 's'} encontrado${total === 1 ? '' : 's'}.`}
-          </p>
-        </div>
+      {isPristineEmpty ? null : (
+        <>
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              {config.title ? (
+                <h2 className="text-base font-semibold text-foreground">{config.title}</h2>
+              ) : null}
+              <p className="text-sm text-muted-foreground">
+                {loading ? 'Carregando...' : `${total} ${total === 1 ? 'registro' : 'registros'}`}
+              </p>
+            </div>
 
-        {config.createAction ? (
-          <GatedCreateLink
-            href={config.createAction.href}
-            gateUserId={config.createGateUserId}
-            gateAction={config.createGateAction}
-            className={buttonVariants({ size: 'sm' })}
-          >
-            <Plus className="h-3.5 w-3.5" />
-            {config.createAction.label}
-          </GatedCreateLink>
-        ) : null}
-      </div>
-
-      <form
-        onSubmit={(event) => void submitSearch(event)}
-        className="flex flex-col gap-2 sm:flex-row sm:items-center"
-      >
-        <Input
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          placeholder={`Buscar por ${resourceConfig.searchableColumns?.join(' ou ')}`}
-          className="flex-1"
-        />
-        {config.statusFilter ? (
-          <div className="w-full sm:w-56">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setStatusFilter(statusFilter ? '' : 'pending')}
-            >
-              {statusFilter ? 'Filtrar: Pendentes' : 'Sem filtro'}
-            </Button>
+            {config.createAction ? (
+              <GatedCreateLink
+                href={config.createAction.href}
+                gateUserId={config.createGateUserId}
+                gateAction={config.createGateAction}
+                className={cn(buttonVariants({ size: 'sm' }), 'shrink-0')}
+              >
+                <Plus className="h-3.5 w-3.5" />
+                {config.createAction.label}
+              </GatedCreateLink>
+            ) : null}
           </div>
-        ) : null}
-        <Button type="submit" variant="outline">
-          Buscar
-        </Button>
-      </form>
+
+          <form
+            onSubmit={(event) => void submitSearch(event)}
+            className="flex items-center gap-2"
+            role="search"
+          >
+            <div className="relative min-w-0 flex-1">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder={`Buscar ${singularName.toLowerCase()}...`}
+                aria-label={`Buscar ${singularName.toLowerCase()}`}
+                className="pl-9"
+              />
+            </div>
+            {config.statusFilter ? (
+              <Button
+                type="button"
+                variant={statusFilter ? 'default' : 'outline'}
+                aria-pressed={Boolean(statusFilter)}
+                onClick={() => setStatusFilter(statusFilter ? '' : 'pending')}
+                className="shrink-0"
+              >
+                Pendentes
+              </Button>
+            ) : null}
+            <Button
+              type="submit"
+              variant="outline"
+              className="shrink-0 px-3"
+              aria-label="Buscar"
+            >
+              <Search className="h-4 w-4 sm:hidden" />
+              <span className="hidden sm:inline">Buscar</span>
+            </Button>
+          </form>
+        </>
+      )}
 
       {loading ? (
         <p className="py-8 text-center text-sm text-muted-foreground">Carregando...</p>

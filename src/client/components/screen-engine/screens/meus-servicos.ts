@@ -37,12 +37,12 @@ import type { ScreenConfig } from '../../../../types/screen';
 
 const listConfig: ListBlockConfig = {
   resource: 'services',
-  title: 'Seus servicos',
+  title: 'Seus serviços',
   pageSize: 8,
   action: { label: 'Editar', hrefBase: '/painel/meus-servicos', icon: 'edit' },
   statusFilter: {},
   fixedFilters: { tenant_id: '$session.tenantId' },
-  createAction: { href: '/painel/meus-servicos/novo', label: 'Novo servico' },
+  // "Novo serviço" é ação do cabeçalho (page-header.createAction, abaixo), não da lista.
   // Gates "Novo servico"/the empty-state CTA behind onboarding completion — a service's detail
   // page shows the advertiser's own profile data, so there must be a completed profile to show.
   // Resolved from `context.session.userId` (see `app/painel/meus-servicos/page.tsx`) by
@@ -52,9 +52,9 @@ const listConfig: ListBlockConfig = {
   // 'service.create' (mapa de capacidades do projeto) em vez do check de onboarding acima.
   createGateAction: 'service.create',
   emptyState: {
-    message: 'Nenhum servico cadastrado ainda.',
+    message: 'Nenhum serviço cadastrado ainda.',
     ctaHref: '/painel/meus-servicos/novo',
-    ctaLabel: 'Criar primeiro servico',
+    ctaLabel: 'Criar primeiro serviço',
   },
   displayConfig: {
     icon: 'Briefcase',
@@ -114,11 +114,17 @@ export const MEUS_SERVICOS_SCREEN: ScreenConfig = {
     {
       component: 'page-header',
       props: {
-        eyebrow: 'Meus servicos',
-        title: 'Gerenciar servicos',
-        description: 'Crie servicos em etapas e continue a edicao quando precisar.',
+        eyebrow: 'Meus serviços',
+        title: 'Gerenciar serviços',
+        description: 'Crie serviços em etapas e continue a edição quando precisar.',
         backHref: '/painel',
         backLabel: 'Painel',
+        createAction: {
+          href: '/painel/meus-servicos/novo',
+          label: 'Novo serviço',
+          gateUserId: '$session.userId',
+          gateAction: 'service.create',
+        },
       },
     },
     {
