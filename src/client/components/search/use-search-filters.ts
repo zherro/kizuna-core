@@ -57,7 +57,14 @@ export function shouldHideCategoryCarousel(f: SearchFilters): boolean {
  * Fonte única do estado de filtro da /busca, sincronizada com a URL (que é a fonte de verdade —
  * busca compartilhável). Escrita tanto pelo painel de filtro manual quanto pelo resultado da IA.
  */
-export function useSearchFilters(location: Location, basePath = '/busca') {
+export function useSearchFilters(
+  location: Location,
+  basePath = '/busca',
+  /** Slugs de categoria fora do resultado quando a busca não filtra por uma categoria específica
+   * (ver `ServiceDetailConfig.excludeFromMixedCategorySlugs`) — só entra no body quando não há
+   * `categoryId`, então a categoria continua navegável sozinha. */
+  excludeCategorySlugs: string[] = []
+) {
   const router = useRouter();
   const params = useSearchParams();
 
@@ -158,8 +165,10 @@ export function useSearchFilters(location: Location, basePath = '/busca') {
       p_seed: seed,
       p_page: page,
       p_page_size: PAGE_SIZE,
+      p_exclude_category_slugs:
+        !filters.categoryId && excludeCategorySlugs.length ? excludeCategorySlugs : null,
     }),
-    [filters]
+    [filters, excludeCategorySlugs]
   );
 
   return { filters, setFilters, resetFilters, applyAgentFilter, toSearchAdsBody };

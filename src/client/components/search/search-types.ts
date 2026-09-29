@@ -16,6 +16,9 @@ export type ServiceResult = {
   price: number | null;
   price_type: string;
   category: string | null;
+  /** slug da categoria — chave estável pra escolher estilo de card por categoria (ver
+   * `resolveServiceDetailVariant`); ausente em RPCs antigas. */
+  category_slug?: string | null;
   subcategory: string | null;
   sponsored: boolean;
   cover_file_id: string | null;
@@ -91,6 +94,10 @@ export type SearchAdsBody = {
   p_seed: number;
   p_page: number;
   p_page_size: number;
+  /** Slugs de categoria fora do resultado quando a busca NÃO filtra por `p_category_id` (mixed
+   * results) — ver `ServiceDetailConfig.excludeFromMixedCategorySlugs`. Ausente/`null` = nada
+   * excluído (comportamento anterior). */
+  p_exclude_category_slugs?: string[] | null;
 };
 
 export type TaxonomySubcategory = { id: number; name: string };

@@ -32,6 +32,8 @@ export interface OtpProvider {
 export type OtpConfig = {
   /** Ordem = cadeia de fallback. Ex.: ["meta-whatsapp", "zenvia-sms"]. */
   providers?: string[];
+  /** false desliga o login por telefone mesmo com provedor configurado. Padrão true. */
+  enabled?: boolean;
   codeLength?: number;
   ttlSec?: number;
   cooldownSec?: number;

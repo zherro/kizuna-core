@@ -40,6 +40,11 @@ describe('cadeia de provedores', () => {
     expect(resolveOtpChain({ providers: ['log'] }, true)).toEqual([]);
   });
 
+  it('enabled: false desliga mesmo com provedor', () => {
+    expect(resolveOtpChain({ enabled: false, providers: ['log'] }, false)).toEqual([]);
+    expect(resolveOtpChain({ enabled: true, providers: ['log'] }, false)).toHaveLength(1);
+  });
+
   it('sem config = desligado; nome desconhecido é ignorado', () => {
     expect(isPhoneLoginEnabled(undefined)).toBe(false);
     expect(resolveOtpChain({ providers: ['nao-existe'] }, false)).toEqual([]);

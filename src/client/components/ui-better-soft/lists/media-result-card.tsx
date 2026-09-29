@@ -20,6 +20,14 @@ type MediaResultCardProps = {
   footer: ReactNode;
   /** When set, the whole card becomes a link (e.g. to the result's detail page). */
   href?: string;
+  /** `'landscape'` (default, 3:2, `object-cover` full-bleed) or `'poster'` — capa em pé (ex.
+   * cartaz de filme) num tile bem mais baixo (quadrado, ~33% menos alto que um 2:3 full-bleed
+   * teria) com `object-contain`: a capa aparece inteira, sem cortar nem esticar, mesmo que sobre
+   * moldura nas laterais. */
+  imageAspect?: 'landscape' | 'poster';
+  /** Quantas linhas o título pode ocupar antes de truncar. Default 2; `poster` costuma pedir 3
+   * (títulos maiores, menos espaço horizontal por causa da capa em pé). */
+  titleLines?: 2 | 3;
   className?: string;
 };
 
@@ -33,17 +41,28 @@ export function MediaResultCard({
   leading,
   footer,
   href,
+  imageAspect = 'landscape',
+  titleLines = 2,
   className,
 }: Readonly<MediaResultCardProps>) {
+  const isPoster = imageAspect === 'poster';
   const content = (
     <>
-      <div className="relative aspect-[3/2] w-full overflow-hidden bg-gradient-to-br from-brand-soft to-secondary">
+      <div
+        className={cn(
+          'relative w-full overflow-hidden bg-gradient-to-br from-brand-soft to-secondary',
+          isPoster ? 'aspect-square' : 'aspect-[3/2]'
+        )}
+      >
         {image && (
           <img
             src={image}
             alt={imageAlt}
             loading="lazy"
-            className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+            className={cn(
+              'h-full w-full transition duration-500 group-hover:scale-105',
+              isPoster ? 'object-contain p-2' : 'object-cover'
+            )}
           />
         )}
         {badgeTopLeft && <div className="absolute left-3 top-3">{badgeTopLeft}</div>}
@@ -52,7 +71,14 @@ export function MediaResultCard({
 
       <div className="flex flex-1 flex-col gap-3 p-4">
         <div>
-          <h3 className="line-clamp-2 text-base font-bold leading-tight">{title}</h3>
+          <h3
+            className={cn(
+              'text-base font-bold leading-tight',
+              titleLines === 3 ? 'line-clamp-3' : 'line-clamp-2'
+            )}
+          >
+            {title}
+          </h3>
           {subtitle && <p className="mt-0.5 text-xs text-muted-foreground">{subtitle}</p>}
         </div>
 

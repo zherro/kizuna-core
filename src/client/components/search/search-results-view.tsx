@@ -4,6 +4,7 @@ import { MapPin, SearchX } from 'lucide-react';
 import { ListingResultCard } from '../ui-better-soft/lists/listing-result-card';
 import { formatCurrency } from '../../../lib/shared/currency-mask';
 import { PRICE_UNIT_LABEL } from '../services/service-labels';
+import { resolveServiceDetailVariant, type ServiceDetailConfig } from '../services/detail/category-style';
 import type { ServiceResult } from './search-types';
 import { formatLocationLabel } from './format-location-label';
 
@@ -22,6 +23,10 @@ type Props = {
   hasMore?: boolean;
   loadingMore?: boolean;
   onLoadMore?: () => void;
+  /** Config `serviceDetail` do `kizuna.config.json` — mesma que a tela de detalhe usa, aqui só pra
+   * decidir o estilo do CARD (hoje: esconder preço + capa em pé nas categorias em variant
+   * `"cinema"`). Sem ela, todo card usa o estilo padrão (com preço, capa 3:2). */
+  serviceDetailConfig?: ServiceDetailConfig | null;
 };
 
 function priceLabel(r: ServiceResult): string {
@@ -31,11 +36,17 @@ function priceLabel(r: ServiceResult): string {
   return `${formatCurrency(Number(r.price))}${unit ? ` ${unit}` : ''}`;
 }
 
-function toCardProps(r: ServiceResult) {
+function toCardProps(r: ServiceResult, detailConfig?: ServiceDetailConfig | null) {
+  const variant = resolveServiceDetailVariant({ slug: r.category_slug }, detailConfig);
+  // O card de cinema só divulga a sessão (não vende o ingresso) e usa capa de filme em pé —
+  // mesma variant que decide o layout de detalhe, sem config própria pro card.
+  const isCinema = variant === 'cinema';
+
   return {
     href: `/anuncios/${r.uid}`,
     title: r.title,
-    priceLabel: priceLabel(r),
+    priceLabel: isCinema ? null : priceLabel(r),
+    cardStyle: isCinema ? ('cinema' as const) : ('default' as const),
     tagLabel: r.category,
     subtitleLabel: r.subcategory,
     imageUrl: r.cover_file_id ? `/api/public/storage/files/${r.cover_file_id}/content` : null,
@@ -46,7 +57,7 @@ function toCardProps(r: ServiceResult) {
     providerAvatarUrl: r.provider_avatar,
     rating: r.rating,
     reviewCount: r.reviews,
-    ctaLabel: 'Ver serviço',
+    ctaLabel: isCinema ? 'Ver sessões' : 'Ver serviço',
   };
 }
 
@@ -75,6 +86,7 @@ export function SearchResultsView({
   hasMore,
   loadingMore,
   onLoadMore,
+  serviceDetailConfig,
 }: Props) {
   if (loading) {
     return (
@@ -129,7 +141,7 @@ export function SearchResultsView({
     return (
       <div className="flex gap-3 overflow-x-auto pb-2">
         {results.map((r) => (
-          <ListingResultCard key={r.uid} {...toCardProps(r)} variant="strip" />
+          <ListingResultCard key={r.uid} {...toCardProps(r, serviceDetailConfig)} variant="strip" />
         ))}
       </div>
     );
@@ -145,7 +157,7 @@ export function SearchResultsView({
       </div>
       <div className="grid grid-cols-1 gap-4 min-[500px]:grid-cols-2 min-[900px]:grid-cols-3 min-[1400px]:grid-cols-4">
         {results.map((r) => (
-          <ListingResultCard key={r.uid} {...toCardProps(r)} variant="grid" />
+          <ListingResultCard key={r.uid} {...toCardProps(r, serviceDetailConfig)} variant="grid" />
         ))}
       </div>
       {hasMore && onLoadMore && (

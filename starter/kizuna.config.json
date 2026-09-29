@@ -28,6 +28,14 @@
     "inkPicker": true,
     "inkLevel": 6
   },
+  "serviceDetail": {
+    "_comment": "Layout/cor da tela de detalhe do anúncio (/anuncios/[uid], se o projeto tiver essa rota) por categoria. \"variantByCategorySlug\": slug da categoria -> variant (\"service\" é o default, sempre disponível). \"colors\": hue OKLCH (0-360) do acento; \"default\" vale pra categoria sem entrada própria. Sem esta chave, tudo cai no variant/hue default.",
+    "defaultVariant": "service",
+    "variantByCategorySlug": {},
+    "colors": {
+      "default": { "hue": 230 }
+    }
+  },
   "wizards": {
     "servicos": {
       "resource": "services",
@@ -52,7 +60,8 @@
     }
   },
   "otp": {
-    "_comment": "Login por telefone (código de uso único). providers = cadeia de envio em ordem (fallback). \"log\" só imprime o JSON no log do servidor e é ignorado em produção. Vazio = desligado (o botão não aparece). Ver docs/comecando/login-social-telefone.md.",
+    "_comment": "Login por telefone (código de uso único). \"enabled\": false desliga (padrão true) — o botão some e /api/auth/otp/* responde 404. providers = cadeia de envio em ordem (fallback). \"log\" só imprime o JSON no log do servidor e é ignorado em produção. Vazio = desligado (o botão não aparece). Ver docs/comecando/login-social-telefone.md.",
+    "enabled": true,
     "providers": [
       "log"
     ]

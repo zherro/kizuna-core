@@ -27,6 +27,11 @@ export type ServiceRecord = {
     name: string;
     slug?: string;
     icon?: string;
+    /** form_key de um `public.forms` ativo — passthrough cru do PostgREST (snake_case, como todo
+     * `category`/`categoryGroup` aqui). Usado pra escolher o layout de detalhe/card por categoria
+     * (ver `client/components/services/detail/category-style`). */
+    form_key?: string | null;
+    request_form_key?: string | null;
   } | null;
   description: string;
   startingPrice: number;

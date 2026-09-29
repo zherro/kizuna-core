@@ -100,6 +100,7 @@ Bloco `otp` do `kizuna.config.json`:
 
 ```json
 "otp": {
+  "enabled": true,
   "providers": ["log"],
   "codeLength": 6,
   "ttlSec": 300,
@@ -111,6 +112,7 @@ Bloco `otp` do `kizuna.config.json`:
 
 | Campo | Padrão | Efeito |
 | --- | --- | --- |
+| `enabled` | `true` | `false` desliga o login por telefone mesmo com provedor configurado: o botão some e as rotas respondem 404. |
 | `providers` | `[]` (desligado) | Cadeia de envio. A ordem define o fallback: se o 1º falhar, tenta o 2º. |
 | `codeLength` | 6 | Dígitos do código (4–8). |
 | `ttlSec` | 300 | Validade do código (60–1800). |

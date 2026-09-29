@@ -26,6 +26,7 @@ import { LocationGate } from './location-gate';
 import { SearchChat } from './search-chat';
 import { SearchFiltersPanel } from './search-filters-panel';
 import { SearchResultsView, type ResultsScope } from './search-results-view';
+import type { ServiceDetailConfig } from '../services/detail/category-style';
 import {
   CategoryCarousel,
   type CategoryCarouselItem,
@@ -55,6 +56,15 @@ export type SearchPageProps = {
    * `hrefFor` é controlado pela página (mantém os filtros da URL).
    */
   categoryCarousel?: Omit<CategoryCarouselProps, 'hrefFor'>;
+  /**
+   * Slugs de categoria fora dos resultados quando a busca não filtra por uma categoria específica
+   * (ver `ServiceDetailConfig.excludeFromMixedCategorySlugs`, `kizuna.config.json`). A categoria
+   * continua navegável sozinha (filtro direto por ela, ex. pelo carrossel de categorias).
+   */
+  excludeFromMixedCategorySlugs?: string[];
+  /** Config `serviceDetail` do `kizuna.config.json` — repassada pro `SearchResultsView` só pra
+   * escolher o estilo do card (hoje: cinema sem preço, capa em pé). */
+  serviceDetailConfig?: ServiceDetailConfig | null;
   /**
    * Segundo modo da página (ex.: "Pedir um serviço" — criar demanda). Quando informado, aparece um
    * toggle no topo e `?modo=pedir` troca a busca pelo conteúdo de `render`. O plugin `search` não
@@ -92,6 +102,8 @@ function SearchPageInner({
   basePath = '/busca',
   requestMode,
   categoryCarousel,
+  excludeFromMixedCategorySlugs = [],
+  serviceDetailConfig,
 }: SearchPageProps) {
   const stored = getStoredLocation();
   const location = useMemo(
@@ -106,8 +118,11 @@ function SearchPageInner({
     [stored]
   );
 
-  const { filters, setFilters, resetFilters, applyAgentFilter, toSearchAdsBody } =
-    useSearchFilters(location, basePath);
+  const { filters, setFilters, resetFilters, applyAgentFilter, toSearchAdsBody } = useSearchFilters(
+    location,
+    basePath,
+    excludeFromMixedCategorySlugs
+  );
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -633,6 +648,7 @@ function SearchPageInner({
           layout="strip"
           onClearFilters={resetFilters}
           onChangeLocation={() => setLocationOpen(true)}
+          serviceDetailConfig={serviceDetailConfig}
         />
       </section>
 
@@ -674,6 +690,7 @@ function SearchPageInner({
               hasMore={hasMore}
               loadingMore={loadingMore}
               onLoadMore={loadMore}
+              serviceDetailConfig={serviceDetailConfig}
             />
           </div>
         </div>

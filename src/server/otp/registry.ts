@@ -48,6 +48,7 @@ export function resolveOtpChain(
   config: OtpConfig | undefined,
   isProduction = process.env.NODE_ENV === 'production'
 ): OtpProvider[] {
+  if (config?.enabled === false) return [];
   return resolveOtpConfig(config)
     .providers.map((name) => REGISTRY.get(name))
     .filter((p): p is OtpProvider => Boolean(p) && !(isProduction && p!.devOnly));

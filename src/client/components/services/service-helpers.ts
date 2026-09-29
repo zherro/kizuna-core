@@ -16,6 +16,17 @@ export function coverImage(service: Pick<ServiceRecord, 'extras'>): string | nul
   return cover != null && cover !== '' ? fileUrl(cover as string | number) : null;
 }
 
+/** Todas as fotos de um serviço (galeria), na ordem `extras.images`; cai pra `[capa]` quando só
+ * há `coverFileId`, ou `[]` quando não tem nenhuma. Usado pela tela de detalhe (`AdPhotoMosaic`). */
+export function photosFor(service: Pick<ServiceRecord, 'extras'>): string[] {
+  const images = service.extras?.images;
+  const ids = Array.isArray(images) ? images : [];
+  if (ids.length > 0) return ids.map((id) => fileUrl(id as string | number));
+
+  const coverFileId = service.extras?.coverFileId;
+  return coverFileId != null && coverFileId !== '' ? [fileUrl(coverFileId as string | number)] : [];
+}
+
 export function formatServicePrice(startingPrice: number, priceUnit: string) {
   if (priceUnit === 'quote' || !startingPrice) return 'Sob consulta';
 

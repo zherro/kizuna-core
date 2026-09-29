@@ -16,8 +16,16 @@ import { MediaResultCard } from './media-result-card';
 export type ListingResultCardProps = {
   href: string;
   title: string;
-  /** Preço já formatado, ex. "R$ 120/h" ou "Sob consulta". */
-  priceLabel: string;
+  /** Preço já formatado, ex. "R$ 120/h" ou "Sob consulta". `null`/`undefined` omite a linha de
+   * preço inteira (ex. cinema, que só divulga a sessão — quem vende é outro site). */
+  priceLabel?: string | null;
+  /** `'landscape'` (default) ou `'poster'` (capa em pé, ex. cartaz de filme — tile mais baixo,
+   * `object-contain`). Só afeta `variant="grid"`; o `strip` sempre usa 16:9 (largura fixa). Sem
+   * valor, segue `cardStyle` (`'cinema'` já usa `'poster'` por padrão). */
+  imageAspect?: 'landscape' | 'poster';
+  /** `'default'` (padrão) ou `'cinema'`: sem nota/estrela, título em 3 linhas, e o rodapé mostra a
+   * localização em vez do preço (cinema não vende ingresso aqui, só divulga a sessão). */
+  cardStyle?: 'default' | 'cinema';
   /** Badge no topo-direito (ex. categoria). */
   tagLabel?: string | null;
   /** Linha sob o título (ex. subcategoria). */
@@ -134,6 +142,8 @@ export function ListingResultCard({
   href,
   title,
   priceLabel,
+  imageAspect,
+  cardStyle = 'default',
   tagLabel,
   subtitleLabel,
   imageUrl,
@@ -148,6 +158,9 @@ export function ListingResultCard({
   variant = 'grid',
   className,
 }: Readonly<ListingResultCardProps>) {
+  const isCinema = cardStyle === 'cinema';
+  const resolvedImageAspect = imageAspect ?? (isCinema ? 'poster' : 'landscape');
+
   if (variant === 'strip') {
     return (
       <Link
@@ -157,13 +170,21 @@ export function ListingResultCard({
           className
         )}
       >
-        <div className="relative aspect-[16/9] w-full overflow-hidden bg-gradient-to-br from-brand-soft to-secondary">
+        <div
+          className={cn(
+            'relative w-full overflow-hidden bg-gradient-to-br from-brand-soft to-secondary',
+            resolvedImageAspect === 'poster' ? 'aspect-square' : 'aspect-[16/9]'
+          )}
+        >
           {imageUrl && (
             <img
               src={imageUrl}
               alt={title}
               loading="lazy"
-              className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+              className={cn(
+                'h-full w-full transition duration-500 group-hover:scale-105',
+                resolvedImageAspect === 'poster' ? 'object-contain p-2' : 'object-cover'
+              )}
             />
           )}
           {highlighted && (
@@ -173,13 +194,22 @@ export function ListingResultCard({
           )}
         </div>
         <div className="flex flex-1 flex-col gap-1 p-3">
-          <h3 className="line-clamp-1 text-sm font-bold leading-tight">{title}</h3>
+          <h3
+            className={cn(
+              'text-sm font-bold leading-tight',
+              isCinema ? 'line-clamp-3' : 'line-clamp-1'
+            )}
+          >
+            {title}
+          </h3>
           {subtitleLabel && (
             <p className="line-clamp-1 text-[11px] text-muted-foreground">{subtitleLabel}</p>
           )}
-          <RatingChip rating={rating} reviewCount={reviewCount} />
+          {!isCinema && <RatingChip rating={rating} reviewCount={reviewCount} />}
           {locationLabel && <LocationLine label={locationLabel} />}
-          <div className="mt-auto pt-1 text-sm font-black leading-none">{priceLabel}</div>
+          {!isCinema && priceLabel != null && (
+            <div className="mt-auto pt-1 text-sm font-black leading-none">{priceLabel}</div>
+          )}
         </div>
       </Link>
     );
@@ -191,6 +221,8 @@ export function ListingResultCard({
       href={href}
       image={imageUrl}
       imageAlt={title}
+      imageAspect={resolvedImageAspect}
+      titleLines={isCinema ? 3 : 2}
       title={title}
       subtitle={subtitleLabel ?? undefined}
       badgeTopLeft={
@@ -208,19 +240,47 @@ export function ListingResultCard({
         ) : undefined
       }
       leading={
-        <div className="flex flex-col gap-2">
-          <RatingChip rating={rating} reviewCount={reviewCount} />
-          {locationLabel && <LocationLine label={locationLabel} />}
-          <ProviderRow providerName={providerName} providerAvatarUrl={providerAvatarUrl} />
-        </div>
+        isCinema ? undefined : (
+          <div className="flex flex-col gap-2">
+            <RatingChip rating={rating} reviewCount={reviewCount} />
+            {locationLabel && <LocationLine label={locationLabel} />}
+            <ProviderRow providerName={providerName} providerAvatarUrl={providerAvatarUrl} />
+          </div>
+        )
       }
       footer={
-        <>
-          <div className="text-lg font-black leading-none">{priceLabel}</div>
-          <span className="inline-flex shrink-0 items-center rounded-md bg-brand px-3 py-1.5 text-xs font-semibold text-brand-foreground transition group-hover:bg-brand/90">
-            {ctaLabel}
-          </span>
-        </>
+        isCinema ? (
+          <>
+            {locationLabel ? (
+              <span
+                className="inline-flex min-w-0 items-center gap-1 truncate text-xs font-medium text-muted-foreground"
+                title={locationLabel}
+              >
+                <MapPin className="h-3.5 w-3.5 shrink-0" />
+                <span className="truncate">{locationLabel}</span>
+              </span>
+            ) : (
+              <span />
+            )}
+            <span className="ml-auto inline-flex shrink-0 items-center rounded-md bg-brand px-3 py-1.5 text-xs font-semibold text-brand-foreground transition group-hover:bg-brand/90">
+              {ctaLabel}
+            </span>
+          </>
+        ) : (
+          <>
+            {priceLabel != null && (
+              <div className="text-lg font-black leading-none">{priceLabel}</div>
+            )}
+            <span
+              className={cn(
+                'inline-flex shrink-0 items-center rounded-md bg-brand px-3 py-1.5 text-xs font-semibold text-brand-foreground transition group-hover:bg-brand/90',
+                priceLabel == null && 'ml-auto'
+              )}
+            >
+              {ctaLabel}
+            </span>
+          </>
+        )
       }
     />
   );

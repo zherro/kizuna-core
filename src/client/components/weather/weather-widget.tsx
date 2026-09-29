@@ -16,6 +16,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '../../../lib/utils';
+import { useUserLocation } from '../../hooks/use-user-location';
 import { SelectPopover } from '../ui-better-soft/select-popover';
 import type { WeatherResponse } from './types';
 
@@ -42,9 +43,15 @@ function dayLabel(date: string, today: string) {
   return label.charAt(0).toUpperCase() + label.slice(1).replace('-feira', '');
 }
 
+function normalize(name: string) {
+  return name.normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toLowerCase();
+}
+
 export type WeatherWidgetProps = {
   /** Rota da casca do plugin weather. Default: '/api/weather'. */
   endpoint?: string;
+  /** Só ícone + temperatura, sem alternar cidades; fixa na cidade selecionada pelo usuário. */
+  mini?: boolean;
 };
 
 /**
@@ -53,9 +60,10 @@ export type WeatherWidgetProps = {
  * com ontem, hoje (destacado) e os próximos dias, e um select de cidade já
  * posicionado na cidade que estava visível no clique.
  */
-export function WeatherWidget({ endpoint = '/api/weather' }: WeatherWidgetProps = {}) {
+export function WeatherWidget({ endpoint = '/api/weather', mini = false }: WeatherWidgetProps = {}) {
   const [data, setData] = useState<WeatherResponse | null>(null);
-  const [index, setIndex] = useState(0);
+  const [rotatingIndex, setIndex] = useState(0);
+  const { location } = useUserLocation();
   const [selected, setSelected] = useState(0);
   const [open, setOpen] = useState(false);
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -71,12 +79,17 @@ export function WeatherWidget({ endpoint = '/api/weather' }: WeatherWidgetProps 
   const count = data?.cities.length ?? 0;
   const rotateMs = (data?.rotateSeconds ?? 5) * 1000;
   useEffect(() => {
-    if (count < 2 || open) return;
+    if (mini || count < 2 || open) return;
     const id = setInterval(() => setIndex((i) => (i + 1) % count), rotateMs);
     return () => clearInterval(id);
-  }, [count, rotateMs, open]);
+  }, [mini, count, rotateMs, open]);
 
   if (!data || count === 0) return null;
+
+  const userCityIndex = location?.cityName
+    ? data.cities.findIndex((c) => normalize(c.name) === normalize(location.cityName))
+    : -1;
+  const index = mini ? Math.max(userCityIndex, 0) : rotatingIndex;
 
   const city = data.cities[index];
   const now = describe(city.current.code, city.current.isDay);
@@ -108,9 +121,11 @@ export function WeatherWidget({ endpoint = '/api/weather' }: WeatherWidgetProps 
         <span key={index} className="flex items-center gap-1.5 animate-in fade-in duration-500">
           <NowIcon className="h-4 w-4 text-primary" />
           <span className="font-semibold">{city.current.temperature}°</span>
-          <span className="hidden max-w-24 truncate text-xs text-muted-foreground sm:inline">
-            {city.name}
-          </span>
+          {!mini && (
+            <span className="hidden max-w-24 truncate text-xs text-muted-foreground sm:inline">
+              {city.name}
+            </span>
+          )}
         </span>
       </button>
 

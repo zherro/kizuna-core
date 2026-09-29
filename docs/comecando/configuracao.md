@@ -316,6 +316,7 @@ Login por telefone com código de uso único. Guia completo, incluindo como plug
 
 | Campo         | Tipo     | Padrão           | Efeito                                                                  |
 | ------------- | -------- | ---------------- | ----------------------------------------------------------------------- |
+| `enabled`     | boolean  | `true`           | `false` desliga o login por telefone mesmo com provedor configurado. |
 | `providers`   | string[] | `[]` (desligado) | Cadeia de envio, em ordem de fallback. `log` só imprime o código no log do servidor e é ignorado em produção. |
 | `codeLength`  | inteiro  | `6`              | Dígitos do código (4–8).                                                |
 | `ttlSec`      | inteiro  | `300`            | Validade do código, em segundos (60–1800).                              |
