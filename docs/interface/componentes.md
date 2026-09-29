@@ -28,7 +28,8 @@ Grouped by folder:
 - Loose in the folder root: `ExperiencePill`, `FixedBottomProgress`, `MosaicGrid`, `ToggleRow`,
   `ChannelChip`, `ScheduleRow`, `Section`, `ChoiceCard`, `SectionIllustration`, `InlineAlert`,
   `RpcTester` (PostgREST RPC debug tool), `PwaRegister` (no-UI, registers the service worker),
-  `LocationTrigger`/`LocationModal` (state → city picker via IBGE API).
+  `LocationTrigger`/`LocationModal` (state → city picker; Brasil inteiro via IBGE ou só as cidades
+  do banco — ver [Plugin location](../plugins/location.md)).
 
 ## `client/components/screen-engine/*` — screen engine
 

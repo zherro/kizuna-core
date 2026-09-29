@@ -40,6 +40,16 @@ export {
   type OtpVerifyBody,
 } from './otp-handlers';
 export { registerOtpProvider, isPhoneLoginEnabled, logOtpProvider } from './otp/registry';
+export {
+  parseLocationConfig,
+  listLocationStates,
+  listLocationCities,
+  resolveLocation,
+  type LocationConfig,
+  type LocationStateItem,
+  type LocationCityItem,
+  type ResolvedLocation,
+} from './location';
 export type { OtpProvider, OtpPayload, OtpSendResult, OtpConfig, OtpPurpose } from './otp/types';
 export { normalizeBrMobile, maskPhone } from './otp/phone';
 export {

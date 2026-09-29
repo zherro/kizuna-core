@@ -19,6 +19,11 @@
     "_comment": "\"variant\": classic (padrão) | compact — layout do cabeçalho do site.",
     "variant": "classic"
   },
+  "location": {
+    "_comment": "Seletor de local do header (plugin location). \"source\": ibge (padrão — Brasil inteiro, API do IBGE) | db (só as cidades em location_state/location_city, seed do projeto). \"outsideList\" (modo db): cidade detectada por GPS/IP fora da lista → prompt (abre o seletor) | default (seleciona \"defaultCityIbge\", código IBGE de 7 dígitos, que precisa estar no seed). Ver kizuna-core/docs/plugins/location.md.",
+    "source": "ibge",
+    "outsideList": "prompt"
+  },
   "home": {
     "_comment": "\"showHero\": seção hero. \"categoriesVariant\": classic|compact. \"categoriesOnlyWithListings\": true lista só categorias com anúncio publicado (requer plugin services). \"showDiscover\": banner Descobrir no swipe. \"inkPicker\": mostra o seletor de intensidade do fundo escuro dos cards (false esconde). \"inkLevel\": intensidade padrão (1-7); com o seletor ativo, a escolha salva do usuário prevalece.",
     "showHero": true,

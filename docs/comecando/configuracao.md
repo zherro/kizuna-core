@@ -185,6 +185,30 @@ mas sem cidades, `/api/weather` responde `404`.
 }
 ```
 
+## `location`
+
+Seletor de local do cabeçalho (`LocationTrigger`/`LocationModal`) e detecção automática por GPS/IP.
+Requer o plugin `location`. **Sem o bloco**, vale o comportamento antigo: Brasil inteiro, direto do
+IBGE. Detalhes em [Plugin location](../plugins/location.md).
+
+| Campo             | Tipo                    | Padrão     | Efeito                                                                                                   |
+| ----------------- | ----------------------- | ---------- | -------------------------------------------------------------------------------------------------------- |
+| `source`          | `"ibge"` \| `"db"`      | `"ibge"`   | `db`: o seletor lista só o que estiver em `location_state`/`location_city` (a tabela é a lista).         |
+| `outsideList`     | `"prompt"` \| `"default"` | `"prompt"` | Só no modo `db`: cidade detectada fora da lista abre o seletor (`prompt`) ou vira `defaultCityIbge`.  |
+| `defaultCityIbge` | string (7 dígitos)      | —          | Código IBGE da cidade padrão. Obrigatório com `outsideList: "default"`; precisa estar em `location_city`. |
+
+```json
+"location": {
+  "source": "db",
+  "outsideList": "default",
+  "defaultCityIbge": "5103403"
+}
+```
+
+{% hint style="warning" %}
+Valor inválido quebra no carregamento das rotas `/api/location/*` com erro claro (`parseLocationConfig`).
+{% endhint %}
+
 ## `wizards`
 
 Uma entrada por wizard (`wizards.<nome>`), lida com `createWizardFromJson`. O projeto escolhe por

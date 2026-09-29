@@ -5,6 +5,7 @@ import { Loader2, MapPin } from 'lucide-react';
 import { LocationModal } from '../location-modal';
 import {
   getStoredLocation,
+  resolveLocation,
   useUserLocation,
   type UserLocation,
 } from '../../hooks/use-user-location';
@@ -42,14 +43,12 @@ const LATIN_AMERICA_COUNTRY_CODES = new Set([
   'BB', // Caribe
 ]);
 
-/** Fallback quando o IP é detectado, mas fora da América Latina — melhor que abrir o seletor. */
-const DEFAULT_LOCATION: UserLocation = {
-  stateCode: 'SP',
-  stateName: 'São Paulo',
-  cityId: 0,
-  cityName: 'São Paulo',
-  source: 'ip',
-};
+/**
+ * Fallback quando o IP é detectado, mas fora da América Latina — melhor que abrir o seletor.
+ * Passa pelo `/api/location/resolve` como qualquer detecção: com lista de cidades no banco
+ * (`location.source: "db"`), São Paulo fora da lista vira a cidade padrão ou o seletor.
+ */
+const FOREIGN_IP_FALLBACK = { stateCode: 'SP', cityName: 'São Paulo' };
 
 /**
  * Geolocalização por IP — não pede permissão nenhuma (diferente de `navigator.geolocation`, que
@@ -64,10 +63,15 @@ const DEFAULT_LOCATION: UserLocation = {
  * IP fora da América Latina (VPN, acesso de fora, etc.) → o estado/cidade do provedor não fazem
  * sentido pra esse marketplace (só atua no Brasil) — usa São Paulo como default em vez de mostrar
  * uma região estrangeira ou abrir o seletor manual.
+ *
+ * O resultado sempre passa por `/api/location/resolve` (lista de cidades do projeto + regra
+ * `location.outsideList` do kizuna.config.json); `null` → seletor manual.
  */
 async function detectLocationByIpSilently(): Promise<UserLocation | null> {
   try {
-    const res = await fetch('/api/location/ip', { signal: AbortSignal.timeout(4000) });
+    const res = await fetch('/api/location/ip', {
+      signal: AbortSignal.timeout(4000),
+    });
     if (!res.ok) return null;
     const data = (await res.json()) as {
       stateCode?: string;
@@ -75,17 +79,13 @@ async function detectLocationByIpSilently(): Promise<UserLocation | null> {
       cityName?: string;
       countryCode?: string;
     };
-    if (!data.countryCode || !LATIN_AMERICA_COUNTRY_CODES.has(data.countryCode)) {
-      return DEFAULT_LOCATION;
-    }
-    if (!data.stateCode) return null;
-    return {
-      stateCode: data.stateCode,
-      stateName: data.stateName ?? data.stateCode,
-      cityId: 0,
-      cityName: data.cityName ?? '',
-      source: 'ip',
-    };
+    const detected =
+      !data.countryCode || !LATIN_AMERICA_COUNTRY_CODES.has(data.countryCode)
+        ? FOREIGN_IP_FALLBACK
+        : { stateCode: data.stateCode ?? '', cityName: data.cityName ?? '' };
+    if (!detected.stateCode) return null;
+    const resolved = await resolveLocation(detected.stateCode, detected.cityName);
+    return resolved ? { ...resolved, source: 'ip' } : null;
   } catch {
     return null;
   }
