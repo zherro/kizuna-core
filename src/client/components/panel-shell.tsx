@@ -102,6 +102,8 @@ export type PanelShellBranding = {
    * selo `shortLabel` + textos; com o menu recolhido vira um quadrado com a logo contida.
    */
   logo?: string;
+  /** Legenda curta embaixo da logo (ex.: "Painel de controle"). Só aparece junto com `logo`. */
+  caption?: string;
 };
 
 const topActionClassName = (active: boolean, collapsed: boolean) =>
@@ -265,20 +267,38 @@ export function PanelShellBase({
         <div className="flex h-full w-full flex-col">
           <div className="px-4 py-4">
             <div className="flex items-center justify-between gap-3">
+              {/* Espaçador do tamanho do botão de fechar (só no mobile): mantém a logo no centro. */}
+              {branding.logo ? <span className="w-9 shrink-0 lg:hidden" aria-hidden="true" /> : null}
               <Link
                 href="/"
-                className={cn('flex min-w-0 items-center gap-3', collapsed && 'lg:justify-center')}
+                className={cn(
+                  'flex min-w-0 items-center gap-3',
+                  branding.logo && 'flex-1 flex-col justify-center gap-1 text-center',
+                  collapsed && 'lg:justify-center'
+                )}
               >
                 {branding.logo ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={branding.logo}
-                    alt={branding.fullLabel}
-                    className={cn(
-                      'h-11 w-auto max-w-[11rem] object-contain object-left',
-                      collapsed && 'lg:w-11 lg:object-center'
-                    )}
-                  />
+                  <>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={branding.logo}
+                      alt={branding.fullLabel}
+                      className={cn(
+                        'h-12 w-auto max-w-[11rem] object-contain',
+                        collapsed && 'lg:h-11 lg:w-11'
+                      )}
+                    />
+                    {branding.caption ? (
+                      <span
+                        className={cn(
+                          'text-[10px] font-semibold uppercase tracking-[0.24em] text-muted-foreground',
+                          collapsed && 'lg:hidden'
+                        )}
+                      >
+                        {branding.caption}
+                      </span>
+                    ) : null}
+                  </>
                 ) : (
                   <>
                     <span
@@ -311,6 +331,8 @@ export function PanelShellBase({
                 <X className="h-4 w-4" />
               </button>
             </div>
+
+            {branding.logo ? <div className="mt-4 h-px bg-border" /> : null}
 
             {topActions && topActions.length > 0 ? (
               <div className={cn('mt-4 grid grid-cols-3 gap-2', collapsed && 'lg:grid-cols-1')}>
