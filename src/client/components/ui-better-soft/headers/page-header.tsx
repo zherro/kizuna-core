@@ -56,7 +56,7 @@ export function PageHeader({
             {backHref ? (
               <Link
                 href={backHref}
-                className="inline-flex h-8 items-center gap-1.5 rounded-[var(--ui-radius-pill,0.375rem)] bg-foreground px-3 font-display text-xs font-semibold tracking-wide text-background transition-opacity hover:opacity-85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                className="inline-flex h-8 items-center gap-1.5 rounded-[var(--ui-radius-pill,0.375rem)] bg-[color-mix(in_oklab,var(--primary)_75%,black)] px-3 font-display text-xs font-semibold tracking-wide text-primary-foreground transition-colors hover:bg-[color-mix(in_oklab,var(--primary)_65%,black)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
                 <ArrowLeft className="h-3.5 w-3.5" />
                 {backLabel}
