@@ -108,7 +108,7 @@ export function UserAccessPanel({ users, roles, groups, roleGrants, initialOverr
 
   if (users.length === 0) {
     return (
-      <p className="rounded-xl border border-border bg-muted/30 p-6 text-sm text-muted-foreground">
+      <p className="rounded-[var(--ui-radius-card-compact,0.75rem)] border-[length:var(--ui-border-w-card,1px)] border-border shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] bg-muted/30 p-6 text-sm text-muted-foreground">
         Nenhum membro neste tenant.
       </p>
     );
@@ -121,7 +121,7 @@ export function UserAccessPanel({ users, roles, groups, roleGrants, initialOverr
 
   return (
     <div className="grid gap-6 md:grid-cols-[260px_1fr]">
-      <aside className="rounded-xl border border-border">
+      <aside className="rounded-[var(--ui-radius-card-compact,0.75rem)] border-[length:var(--ui-border-w-card,1px)] border-border shadow-[shadow:var(--ui-shadow-item,0_0_#0000)]">
         <ul className="max-h-[70vh] divide-y divide-border overflow-y-auto">
           {users.map((u) => {
             const label = u.display_name || u.full_name || u.email || u.user_id.slice(0, 8);
@@ -155,11 +155,11 @@ export function UserAccessPanel({ users, roles, groups, roleGrants, initialOverr
 
       {selected ? (
         <section className="flex flex-col gap-6">
-          <div className="flex flex-wrap items-end gap-4 rounded-xl border border-border p-4">
+          <div className="flex flex-wrap items-end gap-4 rounded-[var(--ui-radius-card-compact,0.75rem)] border-[length:var(--ui-border-w-card,1px)] border-border shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] p-4">
             <label className="flex flex-col gap-1 text-sm">
               <span className="font-medium">Papel base</span>
               <select
-                className="h-9 rounded-md border border-border bg-background px-2 text-sm"
+                className="h-9 rounded-[var(--ui-radius-field,0.375rem)] border border-border bg-background px-2 text-sm"
                 value={currentRoleId ?? ''}
                 disabled={busy || selected.is_root}
                 onChange={(e) => void changeRole(Number(e.target.value))}
@@ -176,7 +176,7 @@ export function UserAccessPanel({ users, roles, groups, roleGrants, initialOverr
             <label className="flex flex-col gap-1 text-sm">
               <span className="font-medium">Copiar acesso de…</span>
               <select
-                className="h-9 rounded-md border border-border bg-background px-2 text-sm"
+                className="h-9 rounded-[var(--ui-radius-field,0.375rem)] border border-border bg-background px-2 text-sm"
                 defaultValue=""
                 disabled={busy}
                 onChange={(e) => {
@@ -198,7 +198,7 @@ export function UserAccessPanel({ users, roles, groups, roleGrants, initialOverr
 
           <div className="space-y-5">
             {groups.map((group) => (
-              <div key={group.resource} className="rounded-xl border border-border">
+              <div key={group.resource} className="rounded-[var(--ui-radius-card-compact,0.75rem)] border-[length:var(--ui-border-w-card,1px)] border-border shadow-[shadow:var(--ui-shadow-item,0_0_#0000)]">
                 <p className="border-b border-border bg-muted/40 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   {group.resource}
                 </p>
@@ -229,7 +229,7 @@ export function UserAccessPanel({ users, roles, groups, roleGrants, initialOverr
                               type="button"
                               disabled={busy || (opt === 'allow' && !canAllow)}
                               onClick={() => void changeOverride(perm, opt)}
-                              className={`rounded-md border px-2 py-1 text-xs transition disabled:opacity-40 ${
+                              className={`rounded-[var(--ui-radius-pill,0.375rem)] border px-2 py-1 text-xs transition disabled:opacity-40 ${
                                 state === opt
                                   ? 'border-primary bg-primary text-primary-foreground'
                                   : 'border-border hover:bg-accent'

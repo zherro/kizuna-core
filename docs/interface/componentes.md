@@ -195,22 +195,34 @@ with either style.
   The consumer's own `globals.css` must contain them: `kizuna-starter` ships both blocks, the core
   template does not yet. Without the blocks the components fall back to `classic` through the `var()` fallback.
 
-| Token | `classic` | `soft` | Read by |
-| ----- | --------- | ------ | ------- |
-| `--ui-radius-pill` | `0.375rem` | `9999px` | `Button`, `Badge` |
-| `--ui-radius-card-compact` | `0.75rem` | `1rem` | `Card` |
-| `--ui-radius-card` | `1rem` | `1.75rem` | none yet (phase 2) |
-| `--ui-radius-sheet-top` | `1rem` | `1.75rem` | `Sheet` |
-| `--ui-radius-field` | `0.375rem` | `1rem` | `Input`, `Textarea`, `CurrencyInput`, `QuillEditor`, `SearchableSelect` (trigger) |
-| `--ui-radius-popover` | `0.375rem` | `1rem` | `DropdownMenu`, `Tooltip`, `SearchableSelect` (panel) |
-| `--ui-radius-select` | `0.5rem` | `1rem` | `Select` |
-| `--ui-border-w-card` | `1px` | `0px` | `Card`, `Sheet` |
-| `--ui-border-w-chip` | `1px` | `1px` | none yet (phase 2) |
-| `--ui-shadow-card` | `shadow-sm` value | `var(--shadow-soft-2)` (soft diffuse shadow; `--shadow-soft-1/2/3` are defined only in the soft block) | `Card`, `Select` (trigger) |
-| `--ui-shadow-sheet` | `shadow-lg` value | same as `classic` (not overridden) | `Sheet` |
+| Token | `classic` | `soft` | Used for |
+| ----- | --------- | ------ | -------- |
+| `--ui-radius-pill` | `0.375rem` | `9999px` | `Button`, `Badge`, button-like controls |
+| `--ui-radius-control` | `0.5rem` | `9999px` | chips, tags, toggles, `ColorChip` |
+| `--ui-radius-card-sm` | `0.5rem` | `1rem` | small cards / items with border or surface fill |
+| `--ui-radius-card-compact` | `0.75rem` | `1rem` | `Card`, list items, compact cards |
+| `--ui-radius-card` | `1rem` | `1.75rem` | cards with header, sections (`Section`) |
+| `--ui-radius-card-lg` | `1.5rem` | `2rem` | large wrappers |
+| `--ui-radius-sheet-top` | `1rem` | `1.75rem` | `Sheet`, bottom sheet of `ModalPanel` |
+| `--ui-radius-field` | `0.375rem` | `1rem` | `Input`, `Textarea`, `CurrencyInput`, `QuillEditor`, select triggers |
+| `--ui-radius-popover` | `0.375rem` | `1rem` | `DropdownMenu`, `Tooltip`, popover panels |
+| `--ui-radius-select` | `0.5rem` | `1rem` | `Select`, `rounded-lg` fields and floating panels |
+| `--ui-border-w-card` | `1px` | `0px` | border of surfaces (card, item, panel) |
+| `--ui-border-w-chip` | `1px` | `1px` | chips |
+| `--ui-shadow-card` | `shadow-sm` value | `var(--shadow-soft-2)` | card with header, `Select` trigger |
+| `--ui-shadow-card-compact` | `shadow-sm` value | `var(--shadow-soft-1)` | compact card / item that had `shadow-sm` |
+| `--ui-shadow-card-flat` | `shadow-sm` value | `var(--shadow-soft-3)` | large wrapper |
+| `--ui-shadow-item` | `0 0 #0000` (none) | `var(--shadow-soft-1)` | bordered item that had no shadow (soft drops the border, the shadow separates it) |
+| `--ui-shadow-fab` | `shadow-md` value | `shadow-lg` value | `Fab` |
+| `--ui-shadow-sheet` | `shadow-lg` value | same as `classic` | `Sheet`, `ModalPanel` |
+| `--ui-fab-size` | `3rem` | `3.5rem` | `Fab` |
+| `--ui-card-bg` | not defined (fallback `var(--background)`) | `var(--card)` | card background that used `bg-background` |
 | `--ui-progress-h` | `0.5rem` | `0.375rem` | `Progress` |
 | `--ui-progress-track` | not defined (component fallback) | `var(--muted)` | `Progress` |
 | `--ui-font-display-active` | Quicksand stack | Baloo 2 stack | `--font-display` (`Typography font="display"`) |
+
+`--shadow-soft-1/2/3` are defined only in the soft block. The title scale of `PageHeading` /
+`PageHeader` is not a CSS token: each component keeps a local map keyed by `ACTIVE_UI_STYLE`.
 
 Soft is the "app" look: pill buttons and badges, larger radii, cards without border or shadow (the
 separation comes from `bg-card` over `bg-background`).
@@ -278,9 +290,24 @@ Rules:
 - Give a new token a classic value in `:root`, a soft value in the `soft` block, and
   the same classic value as the fallback in the component.
 
-{% hint style="info" %}
-`UI_THEME` / `activeTheme` in `ui-theme.ts` (per-style class strings read by the
-`ui-better-soft/` components) are `@deprecated`; phase 2 moves those components to the `--ui-*`
-tokens and removes them. Tokens for the remaining components and a screen-by-screen pass
-(phase 3) are still pending.
-{% endhint %}
+**Which token for which class.** Pick by the element's role; the classic value of the old class
+must equal the token's `:root` value:
+
+| Element | Old class | Token |
+| ------- | --------- | ----- |
+| Card with header / section | `rounded-2xl` | `--ui-radius-card` |
+| List item / compact card, `rounded-xl` field | `rounded-xl` | `--ui-radius-card-compact` |
+| Large wrapper | `rounded-3xl` | `--ui-radius-card-lg` |
+| Small card / item with border or surface fill | `rounded-lg` | `--ui-radius-card-sm` |
+| Button-like control | `rounded-md` | `--ui-radius-pill` |
+| Chip / tag / toggle | `rounded-lg` | `--ui-radius-control` |
+| Text field / select trigger | `rounded-md` / `rounded-lg` | `--ui-radius-field` / `--ui-radius-select` |
+| Floating panel (popover, menu) | `rounded-md` / `rounded-lg` | `--ui-radius-popover` / `--ui-radius-select` |
+| Surface border | `border` | `--ui-border-w-card` (keep the color class) |
+| Shadow of card / compact card / wrapper | `shadow-sm` | `--ui-shadow-card` / `-card-compact` / `-card-flat` |
+| Bordered item with no base shadow | (none) | add `--ui-shadow-item` |
+| Card background | `bg-background` | `--ui-card-bg` (fallback `var(--background)`) |
+
+Left as is on purpose: `rounded-full`/`-sm`/`-none`, images, avatars, skeletons, icon tiles,
+coloured callouts/alerts, chat bubbles, dividers, tables, state variants (`hover:`, `focus:`,
+`dark:`), project CSS classes (`home-ink`, `wz-*`) and radii outside the table.

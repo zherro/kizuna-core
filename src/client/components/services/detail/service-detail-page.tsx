@@ -186,7 +186,7 @@ export function ServiceDetailPage({
           </div>
 
           <aside>
-            <div className="rounded-3xl bg-card p-6 shadow-xl lg:sticky lg:top-20">
+            <div className="rounded-[var(--ui-radius-card-lg,1.5rem)] bg-card p-6 shadow-xl lg:sticky lg:top-20">
               <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                 {priceUnitLabel ? 'A partir de' : 'Valor'}
               </div>
@@ -206,7 +206,7 @@ export function ServiceDetailPage({
 
               {provider &&
                 (slots?.renderProviderCard?.({ provider }) ?? (
-                  <div className="mt-5 flex items-center gap-3 rounded-2xl bg-muted/60 p-3">
+                  <div className="mt-5 flex items-center gap-3 rounded-[var(--ui-radius-card,1rem)] bg-muted/60 p-3">
                     <ProviderAvatar
                       url={provider.avatar_url}
                       name={providerDisplayName}

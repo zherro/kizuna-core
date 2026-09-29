@@ -32,7 +32,7 @@ export function DynamicField({
 }: Readonly<DynamicFieldProps>) {
   if (field.type === 'switch') {
     return (
-      <div className="flex items-center justify-between rounded-xl border border-border p-3">
+      <div className="flex items-center justify-between rounded-[var(--ui-radius-card-compact,0.75rem)] border-[length:var(--ui-border-w-card,1px)] border-border shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] p-3">
         <div>
           <Label htmlFor={field.name}>{field.label}</Label>
           {error ? <p className="mt-1 text-xs text-red-400">{error}</p> : null}

@@ -91,7 +91,7 @@ export function ScheduleForm({
         </div>
       ) : null}
 
-      <div className="rounded-xl border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
+      <div className="rounded-[var(--ui-radius-card-compact,0.75rem)] border-[length:var(--ui-border-w-card,1px)] border-border shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] bg-muted/40 p-3 text-xs text-muted-foreground">
         <span className="font-medium text-foreground">Resumo: </span>
         {summarizeSchedule(hours)}
       </div>

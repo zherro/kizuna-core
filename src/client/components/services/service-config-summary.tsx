@@ -35,7 +35,7 @@ export function ServiceConfigSummary({
 
   if (compact) {
     return (
-      <div className="rounded-xl bg-muted/50 p-3.5 text-sm">
+      <div className="rounded-[var(--ui-radius-card-compact,0.75rem)] bg-muted/50 p-3.5 text-sm">
         <p className="text-xs font-medium text-muted-foreground">Resumo do anúncio</p>
         <p className="mt-1.5 font-semibold leading-snug text-foreground">
           {title || 'Sem título ainda'}
@@ -65,7 +65,7 @@ export function ServiceConfigSummary({
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-border bg-background">
+    <div className="overflow-hidden rounded-[var(--ui-radius-card-compact,0.75rem)] border-[length:var(--ui-border-w-card,1px)] border-border bg-[color:var(--ui-card-bg,var(--background))] shadow-[shadow:var(--ui-shadow-item,0_0_#0000)]">
       <div className="border-b border-border bg-muted/40 px-4 py-2 text-xs font-medium text-muted-foreground">
         Prévia do anúncio
       </div>
@@ -89,7 +89,7 @@ export function ServiceConfigSummary({
             ))}
           </div>
         ) : (
-          <div className="flex h-16 items-center gap-2 rounded-lg border border-dashed border-border px-3 text-xs text-muted-foreground">
+          <div className="flex h-16 items-center gap-2 rounded-[var(--ui-radius-card-sm,0.5rem)] border border-dashed border-border px-3 text-xs text-muted-foreground">
             <Camera className="h-4 w-4" /> Sem fotos
           </div>
         )}

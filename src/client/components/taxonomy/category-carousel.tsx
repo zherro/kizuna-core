@@ -132,7 +132,7 @@ export function CategoryCarousel({
 
   const maxW = "mx-auto w-full max-w-6xl px-4 sm:px-6";
   const emptyBox = (
-    <div className="mt-4 rounded-2xl border border-dashed border-border bg-muted/30 px-4 py-8 text-center text-sm text-muted-foreground">
+    <div className="mt-4 rounded-[var(--ui-radius-card,1rem)] border border-dashed border-border bg-muted/30 px-4 py-8 text-center text-sm text-muted-foreground">
       {emptyLabel}
     </div>
   );
@@ -166,7 +166,7 @@ export function CategoryCarousel({
                   <Link
                     key={c.id}
                     href={hrefFor(c)}
-                    className="flex aspect-square w-24 shrink-0 flex-col items-center justify-center gap-1 rounded-2xl border border-border bg-card p-1.5 text-center transition-transform active:scale-95"
+                    className="flex aspect-square w-24 shrink-0 flex-col items-center justify-center gap-1 rounded-[var(--ui-radius-card,1rem)] border-[length:var(--ui-border-w-card,1px)] border-border shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] bg-card p-1.5 text-center transition-transform active:scale-95"
                   >
                     <span className="flex h-12 w-12 items-center justify-center rounded-full bg-secondary text-primary [&_svg]:size-6">
                       {iconFor(c)}
@@ -204,7 +204,7 @@ export function CategoryCarousel({
                 <Link
                   key={c.id}
                   href={hrefFor(c)}
-                  className="group flex min-w-[200px] snap-start flex-col gap-4 rounded-2xl border border-border/70 bg-muted/50 p-5 transition-colors hover:border-primary/40 hover:bg-primary/5"
+                  className="group flex min-w-[200px] snap-start flex-col gap-4 rounded-[var(--ui-radius-card,1rem)] border-[length:var(--ui-border-w-card,1px)] border-border/70 shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] bg-muted/50 p-5 transition-colors hover:border-primary/40 hover:bg-primary/5"
                 >
                   <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
                     {iconFor(c)}

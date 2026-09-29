@@ -36,7 +36,7 @@ export function PorQueIsso({
       {open ? (
         <div
           id={panelId}
-          className="relative mt-2 max-w-prose rounded-xl bg-muted px-3.5 py-3 text-sm leading-relaxed text-muted-foreground"
+          className="relative mt-2 max-w-prose rounded-[var(--ui-radius-card-compact,0.75rem)] bg-muted px-3.5 py-3 text-sm leading-relaxed text-muted-foreground"
         >
           <span aria-hidden className="absolute -top-1 left-4 h-2.5 w-2.5 rotate-45 bg-muted" />
           {children}

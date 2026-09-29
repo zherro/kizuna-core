@@ -207,7 +207,7 @@ export function EmailVerificationPage({ userEmail }: EmailVerificationPageProps)
         </CardContent>
       </Card>
 
-      <div className="rounded-lg border border-border/50 bg-muted/20 p-4">
+      <div className="rounded-[var(--ui-radius-card-sm,0.5rem)] border-[length:var(--ui-border-w-card,1px)] border-border/50 shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] bg-muted/20 p-4">
         <p className="text-xs leading-relaxed text-muted-foreground">
           <span className="font-medium">Dica:</span> O código de verificação expira em 10 minutos.
           Se não recebeu, verifique sua pasta de spam ou solicite um novo código.

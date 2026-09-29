@@ -105,7 +105,7 @@ export function PagesAdmin({ reservedSlugs = [] }: { reservedSlugs?: string[] })
 
   return (
     <div className="mx-auto grid max-w-6xl grid-cols-1 gap-4 lg:grid-cols-[280px_1fr]">
-      <div className="rounded-2xl border border-border bg-card">
+      <div className="rounded-[var(--ui-radius-card,1rem)] border-[length:var(--ui-border-w-card,1px)] border-border shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] bg-card">
         <div className="flex items-center justify-between border-b border-border p-3">
           <h2 className="text-sm font-semibold">Páginas ({pages.length})</h2>
           <Button size="sm" onClick={() => setCreating(true)}>
@@ -120,7 +120,7 @@ export function PagesAdmin({ reservedSlugs = [] }: { reservedSlugs?: string[] })
               type="button"
               onClick={() => setSelectedId(p.id)}
               className={cn(
-                'flex w-full flex-col items-start rounded-md px-3 py-2 text-left transition',
+                'flex w-full flex-col items-start rounded-[var(--ui-radius-pill,0.375rem)] px-3 py-2 text-left transition',
                 String(current?.id) === String(p.id)
                   ? 'bg-primary text-primary-foreground'
                   : 'hover:bg-muted'
@@ -167,7 +167,7 @@ export function PagesAdmin({ reservedSlugs = [] }: { reservedSlugs?: string[] })
             }}
           />
         ) : (
-          <div className="rounded-2xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
+          <div className="rounded-[var(--ui-radius-card,1rem)] border-[length:var(--ui-border-w-card,1px)] border-border shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] bg-card p-8 text-center text-sm text-muted-foreground">
             Selecione uma página à esquerda ou crie uma nova.
           </div>
         )}
@@ -202,7 +202,7 @@ function NewPageDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-md rounded-2xl border border-border bg-card p-5 shadow-lg">
+      <div className="w-full max-w-md rounded-[var(--ui-radius-card,1rem)] border-[length:var(--ui-border-w-card,1px)] border-border bg-card p-5 shadow-lg">
         <h3 className="text-base font-semibold">Nova página</h3>
         <p className="mt-1 text-sm text-muted-foreground">
           Dê um título — o endereço é gerado automaticamente.
@@ -333,7 +333,7 @@ function PageEditor({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-2xl border border-border bg-card p-4">
+      <div className="rounded-[var(--ui-radius-card,1rem)] border-[length:var(--ui-border-w-card,1px)] border-border shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] bg-card p-4">
         <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
           <div className="space-y-3">
             <div className="grid gap-1.5">

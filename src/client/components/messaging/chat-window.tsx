@@ -23,7 +23,7 @@ export function ChatWindow({
   );
 
   return (
-    <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card">
+    <div className="flex h-full flex-col overflow-hidden rounded-[var(--ui-radius-card,1rem)] border-[length:var(--ui-border-w-card,1px)] border-border shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] bg-card">
       <div className="flex items-center gap-2 border-b border-border bg-muted/20 px-4 py-3">
         {onBack && (
           <button

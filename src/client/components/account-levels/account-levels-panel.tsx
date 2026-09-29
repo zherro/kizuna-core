@@ -69,7 +69,7 @@ export function AccountLevelsPanel({
             <li
               key={l.key}
               id={l.key}
-              className={`rounded-lg border p-4 ${
+              className={`rounded-[var(--ui-radius-card-sm,0.5rem)] border-[length:var(--ui-border-w-card,1px)] p-4 shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] ${
                 highlighted ? 'border-primary ring-1 ring-primary' : 'border-border'
               } ${l.enabled === false ? 'opacity-70' : ''}`}
             >

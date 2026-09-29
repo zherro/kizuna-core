@@ -102,14 +102,14 @@ export function ReviewList({
       {list.loading ? (
         <Skeleton />
       ) : list.error ? (
-        <div className="flex flex-col items-start gap-2 rounded-2xl border border-border bg-card p-4 text-sm">
+        <div className="flex flex-col items-start gap-2 rounded-[var(--ui-radius-card,1rem)] border-[length:var(--ui-border-w-card,1px)] border-border shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] bg-card p-4 text-sm">
           <p className="text-muted-foreground">{list.error}</p>
           <Button type="button" variant="outline" size="sm" onClick={() => void list.reload()}>
             Tentar de novo
           </Button>
         </div>
       ) : list.items.length === 0 ? (
-        <div className="rounded-2xl border border-border bg-card p-8 text-center">
+        <div className="rounded-[var(--ui-radius-card,1rem)] border-[length:var(--ui-border-w-card,1px)] border-border shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] bg-card p-8 text-center">
           <p className="text-sm font-medium">Ainda não há avaliações</p>
           <p className="mt-1 text-sm text-muted-foreground">Seja o primeiro a avaliar.</p>
         </div>

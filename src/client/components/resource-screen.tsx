@@ -316,7 +316,7 @@ export function ResourceScreen({ config }: { config: ResourceScreenConfig }) {
           {loading ? (
             <p className="text-sm text-muted-foreground">Carregando...</p>
           ) : items.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-border bg-muted/20 p-6 text-center">
+            <div className="rounded-[var(--ui-radius-card-compact,0.75rem)] border border-dashed border-border bg-muted/20 p-6 text-center">
               <Inbox className="mx-auto h-8 w-8 text-muted-foreground" aria-hidden="true" />
               <p className="mt-3 text-sm text-muted-foreground">
                 {config.emptyMessage ?? `Nenhum registro de ${config.entityPlural} ainda.`}
@@ -336,10 +336,10 @@ export function ResourceScreen({ config }: { config: ResourceScreenConfig }) {
                       key={item.id}
                       type="button"
                       onClick={() => selectItem(item)}
-                      className={`w-full rounded-xl border px-4 py-3 text-left transition ${
+                      className={`w-full rounded-[var(--ui-radius-card-compact,0.75rem)] border-[length:var(--ui-border-w-card,1px)] px-4 py-3 text-left transition ${
                         active
-                          ? 'border-primary bg-primary/5 shadow-sm'
-                          : 'border-border bg-background hover:border-primary/40 hover:bg-accent/40'
+                          ? 'border-primary bg-primary/5 shadow-[shadow:var(--ui-shadow-card-compact,0_1px_3px_0_#0000001a,_0_1px_2px_-1px_#0000001a)]'
+                          : 'border-border bg-[color:var(--ui-card-bg,var(--background))] hover:border-primary/40 hover:bg-accent/40'
                       }`}
                     >
                       <div className="flex items-start justify-between gap-3">
@@ -382,7 +382,7 @@ export function ResourceScreen({ config }: { config: ResourceScreenConfig }) {
                 })}
               </div>
 
-              <div className="mt-4 flex items-center justify-between rounded-xl border border-border bg-muted/20 px-3 py-2">
+              <div className="mt-4 flex items-center justify-between rounded-[var(--ui-radius-card-compact,0.75rem)] border-[length:var(--ui-border-w-card,1px)] border-border shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] bg-muted/20 px-3 py-2">
                 <p className="text-xs text-muted-foreground">
                   Pagina {page} de {totalPages || 1}
                 </p>

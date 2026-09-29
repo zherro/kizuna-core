@@ -331,7 +331,7 @@ export function ImageGalleryManager({
             <div className="flex items-center gap-3">
               <label
                 htmlFor="image-gallery-upload"
-                className="inline-flex min-h-16 w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-background px-4 py-4 text-sm font-medium text-foreground transition hover:bg-accent"
+                className="inline-flex min-h-16 w-full cursor-pointer items-center justify-center gap-2 rounded-[var(--ui-radius-card-compact,0.75rem)] border border-dashed border-border bg-background px-4 py-4 text-sm font-medium text-foreground transition hover:bg-accent"
               >
                 <Upload className="h-4 w-4" />
                 {uploading ? 'Enviando...' : 'Selecionar arquivos'}
@@ -357,7 +357,7 @@ export function ImageGalleryManager({
               {[0, 1].map((i) => (
                 <div
                   key={i}
-                  className="flex items-center gap-3 rounded-xl border border-border/60 bg-card p-2 pr-3"
+                  className="flex items-center gap-3 rounded-[var(--ui-radius-card-compact,0.75rem)] border-[length:var(--ui-border-w-card,1px)] border-border/60 shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] bg-card p-2 pr-3"
                 >
                   <div className="h-14 w-14 shrink-0 animate-pulse rounded-lg bg-muted" />
                   <div className="min-w-0 flex-1 space-y-2">
@@ -401,7 +401,7 @@ export function ImageGalleryManager({
                 return (
                   <div
                     key={item.id}
-                    className="flex items-center gap-3 rounded-xl border border-border/60 bg-card p-2 pr-3 transition-colors hover:border-border"
+                    className="flex items-center gap-3 rounded-[var(--ui-radius-card-compact,0.75rem)] border-[length:var(--ui-border-w-card,1px)] border-border/60 shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] bg-card p-2 pr-3 transition-colors hover:border-border"
                   >
                     {isImage ? (
                       <button
@@ -476,7 +476,7 @@ export function ImageGalleryManager({
             <button
               type="button"
               onClick={() => setPreviewItem(null)}
-              className="absolute right-2 top-2 rounded-md bg-black/60 p-2 text-white hover:bg-black/80"
+              className="absolute right-2 top-2 rounded-[var(--ui-radius-pill,0.375rem)] bg-black/60 p-2 text-white hover:bg-black/80"
               aria-label="Fechar visualizacao"
             >
               <X className="h-4 w-4" />

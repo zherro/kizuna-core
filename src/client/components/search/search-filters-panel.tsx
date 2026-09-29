@@ -90,7 +90,7 @@ export function SearchFiltersPanel({ filters, setFilters, resetFilters }: Props)
         <select
           value={filters.sort}
           onChange={(e) => setFilters({ sort: e.target.value as SearchSort })}
-          className="h-10 w-full rounded-md border border-input bg-background px-2.5 text-base sm:h-9 sm:px-2 sm:text-sm"
+          className="h-10 w-full rounded-[var(--ui-radius-field,0.375rem)] border border-input bg-background px-2.5 text-base sm:h-9 sm:px-2 sm:text-sm"
         >
           <option value="relevance">Relevância</option>
           <option value="price">Menor preço</option>
@@ -107,7 +107,7 @@ export function SearchFiltersPanel({ filters, setFilters, resetFilters }: Props)
           placeholder="ex.: DJ pra casamento"
           value={filters.query ?? ''}
           onChange={(e) => setFilters({ query: e.target.value || null })}
-          className="h-10 w-full rounded-md border border-input bg-background px-2.5 text-base sm:h-9 sm:px-2 sm:text-sm"
+          className="h-10 w-full rounded-[var(--ui-radius-field,0.375rem)] border border-input bg-background px-2.5 text-base sm:h-9 sm:px-2 sm:text-sm"
         />
       </div>
 
@@ -196,7 +196,7 @@ export function SearchFiltersPanel({ filters, setFilters, resetFilters }: Props)
             onChange={(e) =>
               setFilters({ priceMin: e.target.value ? Number(e.target.value) : null })
             }
-            className="h-10 w-full rounded-md border border-input bg-background px-2.5 text-base sm:h-9 sm:px-2 sm:text-sm"
+            className="h-10 w-full rounded-[var(--ui-radius-field,0.375rem)] border border-input bg-background px-2.5 text-base sm:h-9 sm:px-2 sm:text-sm"
           />
           <span className="text-base text-muted-foreground sm:text-sm">—</span>
           <input
@@ -207,14 +207,14 @@ export function SearchFiltersPanel({ filters, setFilters, resetFilters }: Props)
             onChange={(e) =>
               setFilters({ priceMax: e.target.value ? Number(e.target.value) : null })
             }
-            className="h-10 w-full rounded-md border border-input bg-background px-2.5 text-base sm:h-9 sm:px-2 sm:text-sm"
+            className="h-10 w-full rounded-[var(--ui-radius-field,0.375rem)] border border-input bg-background px-2.5 text-base sm:h-9 sm:px-2 sm:text-sm"
           />
         </div>
       </div>
 
       <button
         onClick={resetFilters}
-        className="inline-flex items-center justify-center gap-2 rounded-md border border-border px-3 py-3 text-base hover:bg-accent sm:py-2 sm:text-sm"
+        className="inline-flex items-center justify-center gap-2 rounded-[var(--ui-radius-pill,0.375rem)] border border-border px-3 py-3 text-base hover:bg-accent sm:py-2 sm:text-sm"
       >
         <X className="h-5 w-5 sm:h-4 sm:w-4" /> Limpar filtros
       </button>

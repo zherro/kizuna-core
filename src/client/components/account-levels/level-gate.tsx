@@ -93,7 +93,7 @@ export function LevelUpDialog({
             type="button"
             onClick={onClose}
             aria-label="Fechar"
-            className="rounded-md p-1 text-muted-foreground hover:bg-muted"
+            className="rounded-[var(--ui-radius-pill,0.375rem)] p-1 text-muted-foreground hover:bg-muted"
           >
             <X className="h-4 w-4" />
           </button>
@@ -108,7 +108,7 @@ export function LevelUpDialog({
         {can.pending.length ? (
           <ol className="mb-5 space-y-3">
             {can.pending.map((l) => (
-              <li key={l.key} className="rounded-lg border border-border p-3">
+              <li key={l.key} className="rounded-[var(--ui-radius-card-sm,0.5rem)] border-[length:var(--ui-border-w-card,1px)] border-border p-3 shadow-[shadow:var(--ui-shadow-item,0_0_#0000)]">
                 <p className="text-sm font-medium">
                   {l.level}. {l.title}
                 </p>

@@ -42,7 +42,7 @@ export function WrapperSelect<TValues extends FormikValues>({
       <select
         id={id}
         name={field}
-        className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+        className="h-10 w-full rounded-[var(--ui-radius-field,0.375rem)] border border-input bg-background px-3 text-sm"
         value={value}
         onChange={(event) => {
           if (onValueChange) {

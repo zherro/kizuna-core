@@ -121,7 +121,7 @@ function SwipeLikedInner({ discoverHref = '/descobrir' }: Props) {
 
       <div className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
         {items.map((i) => (
-          <div key={i.uid} className="relative overflow-hidden rounded-2xl border border-border bg-card">
+          <div key={i.uid} className="relative overflow-hidden rounded-[var(--ui-radius-card,1rem)] border-[length:var(--ui-border-w-card,1px)] border-border shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] bg-card">
             <Link href={`/anuncios/${i.uid}`}>
               {coverUrl(i.cover_file_id) ? (
                 <img src={coverUrl(i.cover_file_id)!} alt={i.title} className="h-32 w-full object-cover" loading="lazy" />

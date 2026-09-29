@@ -59,7 +59,7 @@ export function ChatShell({
             renderContextBanner={renderContextBanner}
           />
         ) : (
-          <div className="hidden h-full items-center justify-center rounded-2xl border border-border bg-card text-sm text-muted-foreground lg:flex">
+          <div className="hidden h-full items-center justify-center rounded-[var(--ui-radius-card,1rem)] border-[length:var(--ui-border-w-card,1px)] border-border shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] bg-card text-sm text-muted-foreground lg:flex">
             Selecione uma conversa
           </div>
         )}

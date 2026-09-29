@@ -54,7 +54,7 @@ export function ScheduleCard({
           />
           <DropdownMenu>
             <DropdownMenuTrigger
-              className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+              className="rounded-[var(--ui-radius-pill,0.375rem)] p-1.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
               aria-label="Ações do horário"
             >
               <MoreVertical className="h-4 w-4" />

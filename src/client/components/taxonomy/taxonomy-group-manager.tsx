@@ -50,7 +50,7 @@ export function TaxonomyGroupManager({
       {loading ? (
         <p className="text-sm text-muted-foreground">Carregando os grupos...</p>
       ) : sortedGroups.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border bg-muted/20 p-6 text-center">
+        <div className="rounded-[var(--ui-radius-card-compact,0.75rem)] border border-dashed border-border bg-muted/20 p-6 text-center">
           <FolderKanban className="mx-auto h-8 w-8 text-muted-foreground" aria-hidden="true" />
           <p className="mt-3 text-sm text-muted-foreground">Nenhum grupo cadastrado.</p>
         </div>
@@ -63,7 +63,7 @@ export function TaxonomyGroupManager({
             return (
               <div
                 key={groupId}
-                className="flex items-center gap-2 rounded-xl border border-border bg-background px-4 py-3"
+                className="flex items-center gap-2 rounded-[var(--ui-radius-card-compact,0.75rem)] border-[length:var(--ui-border-w-card,1px)] border-border bg-[color:var(--ui-card-bg,var(--background))] shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] px-4 py-3"
               >
                 <div className="flex flex-col">
                   <Button

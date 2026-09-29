@@ -27,7 +27,7 @@ export function PageHeaderWrapper({
   className,
 }: Readonly<PageHeaderWrapperProps>) {
   return (
-    <section className={cn('rounded-2xl border border-border bg-card px-6 py-5', className)}>
+    <section className={cn('rounded-[var(--ui-radius-card,1rem)] border-[length:var(--ui-border-w-card,1px)] border-border shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] bg-card px-6 py-5', className)}>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           {badge ? (

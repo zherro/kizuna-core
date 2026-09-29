@@ -250,7 +250,7 @@ export function FormBuilder({ value: schema, onChange }: Props) {
                 <button
                   key={t}
                   onClick={() => addField(t)}
-                  className="flex items-center gap-2 rounded-md border bg-background px-2 py-1.5 text-left text-xs hover:border-primary hover:bg-primary/5"
+                  className="flex items-center gap-2 rounded-[var(--ui-radius-pill,0.375rem)] border bg-background px-2 py-1.5 text-left text-xs hover:border-primary hover:bg-primary/5"
                 >
                   <Plus className="h-3 w-3 text-muted-foreground" />
                   <span className="truncate">{FIELD_TYPE_LABELS[t]}</span>
@@ -362,7 +362,7 @@ export function FormBuilder({ value: schema, onChange }: Props) {
 
             <TabsContent value="preview" className="m-0">
               <div className="bg-muted/20 p-4">
-                <div className="mx-auto overflow-hidden rounded-lg border bg-background shadow-sm transition-all">
+                <div className="mx-auto overflow-hidden rounded-[var(--ui-radius-card-sm,0.5rem)] border-[length:var(--ui-border-w-card,1px)] bg-[color:var(--ui-card-bg,var(--background))] shadow-[shadow:var(--ui-shadow-card-compact,0_1px_3px_0_#0000001a,_0_1px_2px_-1px_#0000001a)] transition-all">
                   <div
                     style={{ width: `min(100%, ${DEVICE_WIDTH[device]}px)` }}
                     className="mx-auto p-4"
@@ -439,7 +439,7 @@ export function FormBuilder({ value: schema, onChange }: Props) {
                   addField(t);
                   setToolboxOpen(false);
                 }}
-                className="flex items-center gap-2 rounded-md border bg-background px-3 py-2 text-left text-sm hover:border-primary hover:bg-primary/5"
+                className="flex items-center gap-2 rounded-[var(--ui-radius-pill,0.375rem)] border bg-background px-3 py-2 text-left text-sm hover:border-primary hover:bg-primary/5"
               >
                 <Plus className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                 <span className="truncate">{FIELD_TYPE_LABELS[t]}</span>

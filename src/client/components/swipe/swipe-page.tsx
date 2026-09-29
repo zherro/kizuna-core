@@ -185,7 +185,7 @@ function SwipePageInner({ basePath = '/descobrir', likedHref = '/curtidos' }: Pr
         {loading && !current ? <div className="h-full animate-pulse rounded-3xl bg-muted" /> : null}
 
         {!loading && !current && error ? (
-          <div className="flex h-full flex-col items-center justify-center rounded-3xl border border-border bg-card p-6 text-center">
+          <div className="flex h-full flex-col items-center justify-center rounded-[var(--ui-radius-card-lg,1.5rem)] border-[length:var(--ui-border-w-card,1px)] border-border shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] bg-card p-6 text-center">
             <p className="text-sm text-muted-foreground">Não foi possível carregar.</p>
             <button
               type="button"
@@ -198,7 +198,7 @@ function SwipePageInner({ basePath = '/descobrir', likedHref = '/curtidos' }: Pr
         ) : null}
 
         {!loading && !current && !error && exhausted ? (
-          <div className="flex h-full flex-col items-center justify-center rounded-3xl border border-border bg-card p-6 text-center">
+          <div className="flex h-full flex-col items-center justify-center rounded-[var(--ui-radius-card-lg,1.5rem)] border-[length:var(--ui-border-w-card,1px)] border-border shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] bg-card p-6 text-center">
             <Heart className="h-8 w-8 text-primary" />
             <h2 className="mt-3 font-serif text-xl font-bold text-foreground">Acabou por aqui</h2>
             <p className="mt-1 text-sm text-muted-foreground">

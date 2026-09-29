@@ -75,7 +75,7 @@ export function AddressListEditor({
         {addresses.map((address) => (
           <li
             key={address.clientId}
-            className="space-y-3 rounded-xl border bg-background p-3"
+            className="space-y-3 rounded-[var(--ui-radius-card-compact,0.75rem)] border-[length:var(--ui-border-w-card,1px)] bg-[color:var(--ui-card-bg,var(--background))] shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] p-3"
             data-primary={address.isPrimary}
           >
             <div className="flex items-center gap-2">

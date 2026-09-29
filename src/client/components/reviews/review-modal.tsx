@@ -120,7 +120,7 @@ export function ReviewModal({
     >
       {/* mobile = full-height sheet (ModalPanel is already inset-y-0 / w-full below sm) */}
       {unauthorized ? (
-        <div className="rounded-lg border border-border bg-muted/40 p-4 text-sm">
+        <div className="rounded-[var(--ui-radius-card-sm,0.5rem)] border-[length:var(--ui-border-w-card,1px)] border-border shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] bg-muted/40 p-4 text-sm">
           <p className="font-medium">Entre para avaliar</p>
           <p className="mt-1 text-muted-foreground">
             É preciso ter uma conta para deixar uma avaliação.

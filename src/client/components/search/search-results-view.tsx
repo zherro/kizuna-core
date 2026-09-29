@@ -113,7 +113,7 @@ export function SearchResultsView({
 
   if (scope === 'empty' || results.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-border bg-card p-10 text-center">
+      <div className="rounded-[var(--ui-radius-card,1rem)] border border-dashed border-border bg-card p-10 text-center">
         <SearchX className="mx-auto h-8 w-8 text-muted-foreground" />
         <p className="mt-3 text-lg font-semibold">Nenhum resultado</p>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -122,13 +122,13 @@ export function SearchResultsView({
         <div className="mt-4 flex justify-center gap-2">
           <button
             onClick={onClearFilters}
-            className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-accent"
+            className="rounded-[var(--ui-radius-pill,0.375rem)] border border-border px-3 py-1.5 text-sm hover:bg-accent"
           >
             Limpar filtros
           </button>
           <button
             onClick={onChangeLocation}
-            className="inline-flex items-center gap-1 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-accent"
+            className="inline-flex items-center gap-1 rounded-[var(--ui-radius-pill,0.375rem)] border border-border px-3 py-1.5 text-sm hover:bg-accent"
           >
             <MapPin className="h-4 w-4" /> Trocar localização
           </button>

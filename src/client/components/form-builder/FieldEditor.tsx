@@ -257,7 +257,7 @@ export function FieldEditor({
                   <div>
                     <Label className="text-xs">Campo</Label>
                     <select
-                      className="h-9 w-full rounded-md border bg-background px-2 text-sm"
+                      className="h-9 w-full rounded-[var(--ui-radius-field,0.375rem)] border bg-background px-2 text-sm"
                       value={field.visibleWhen.field}
                       onChange={(e) => setVisible({ field: e.target.value })}
                     >
@@ -271,7 +271,7 @@ export function FieldEditor({
                   <div>
                     <Label className="text-xs">Operador</Label>
                     <select
-                      className="h-9 w-full rounded-md border bg-background px-2 text-sm"
+                      className="h-9 w-full rounded-[var(--ui-radius-field,0.375rem)] border bg-background px-2 text-sm"
                       value={field.visibleWhen.op}
                       onChange={(e) => setVisible({ op: e.target.value as VisibleWhen['op'] })}
                     >
@@ -643,7 +643,7 @@ function ListItemsEditor({
               <div>
                 <Label className="text-xs">Tipo</Label>
                 <select
-                  className="h-8 w-full rounded-md border bg-background px-2 text-sm"
+                  className="h-8 w-full rounded-[var(--ui-radius-field,0.375rem)] border bg-background px-2 text-sm"
                   value={sub.type}
                   onChange={(e) => {
                     const type = e.target.value as FieldType;

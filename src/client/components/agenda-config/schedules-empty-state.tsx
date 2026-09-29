@@ -13,7 +13,7 @@ type SchedulesEmptyStateProps = {
  */
 export function SchedulesEmptyState({ onCreate }: Readonly<SchedulesEmptyStateProps>) {
   return (
-    <div className="flex flex-col items-center rounded-2xl border border-dashed border-border bg-card px-6 py-12 text-center">
+    <div className="flex flex-col items-center rounded-[var(--ui-radius-card,1rem)] border border-dashed border-border bg-card px-6 py-12 text-center">
       <div className="relative h-28 w-28">
         <span className="absolute left-1 top-2 text-brand/70 motion-safe:animate-pulse">✦</span>
         <span className="absolute right-0 top-6 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground motion-safe:animate-bounce">

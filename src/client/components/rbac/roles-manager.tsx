@@ -26,7 +26,7 @@ export async function RolesManagerScreen() {
       />
 
       {roles.length === 0 || permissions.length === 0 ? (
-        <p className="rounded-xl border border-border bg-muted/30 p-6 text-sm text-muted-foreground">
+        <p className="rounded-[var(--ui-radius-card-compact,0.75rem)] border-[length:var(--ui-border-w-card,1px)] border-border shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] bg-muted/30 p-6 text-sm text-muted-foreground">
           Nenhum papel ou permissão encontrado. Verifique se as migrations de auth e os plugins
           foram aplicados.
         </p>

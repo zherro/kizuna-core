@@ -12,7 +12,7 @@ import { formatServicePrice } from '../service-helpers';
 /** Uma célula da faixa de facts, abaixo do título. */
 function Fact({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
   return (
-    <div className="rounded-2xl bg-muted/60 p-4">
+    <div className="rounded-[var(--ui-radius-card,1rem)] bg-muted/60 p-4">
       <div className="flex items-center gap-1.5 text-brand">
         {icon}
         <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">

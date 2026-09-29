@@ -244,7 +244,7 @@ export function TopbarCompact({
                 key={item.href}
                 href={item.href}
                 onClick={() => setMenuOpen(false)}
-                className="flex items-center gap-3 rounded-md px-3 py-2 text-base font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                className="flex items-center gap-3 rounded-[var(--ui-radius-pill,0.375rem)] px-3 py-2 text-base font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground"
               >
                 {item.icon}
                 {item.label}
@@ -254,7 +254,7 @@ export function TopbarCompact({
               <Link
                 href="/painel"
                 onClick={() => setMenuOpen(false)}
-                className="flex items-center gap-3 rounded-md px-3 py-2 text-base font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                className="flex items-center gap-3 rounded-[var(--ui-radius-pill,0.375rem)] px-3 py-2 text-base font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground"
               >
                 <LayoutDashboard className="h-4 w-4" />
                 {messages.default.dashboard}
@@ -264,7 +264,7 @@ export function TopbarCompact({
               <Link
                 href={searchHref}
                 onClick={() => setMenuOpen(false)}
-                className="flex items-center gap-3 rounded-md px-3 py-2 text-base font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                className="flex items-center gap-3 rounded-[var(--ui-radius-pill,0.375rem)] px-3 py-2 text-base font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground"
               >
                 <Search className="h-4 w-4" /> Buscar
               </Link>
@@ -275,14 +275,14 @@ export function TopbarCompact({
                 <Link
                   href="/login"
                   onClick={() => setMenuOpen(false)}
-                  className="flex items-center gap-3 rounded-md px-3 py-2 text-base font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                  className="flex items-center gap-3 rounded-[var(--ui-radius-pill,0.375rem)] px-3 py-2 text-base font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                 >
                   <LogIn className="h-4 w-4" /> {messages.nav.login}
                 </Link>
                 <Link
                   href="/registre-se"
                   onClick={() => setMenuOpen(false)}
-                  className="flex items-center gap-3 rounded-md px-3 py-2 text-base font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                  className="flex items-center gap-3 rounded-[var(--ui-radius-pill,0.375rem)] px-3 py-2 text-base font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                 >
                   {messages.nav.signUp}
                 </Link>
@@ -292,7 +292,7 @@ export function TopbarCompact({
                 type="button"
                 onClick={handleLogout}
                 disabled={logoutLoading}
-                className="flex items-center gap-3 rounded-md px-3 py-2 text-base font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                className="flex items-center gap-3 rounded-[var(--ui-radius-pill,0.375rem)] px-3 py-2 text-base font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground"
               >
                 <LogOut className="h-4 w-4" /> {logoutLoading ? 'Saindo...' : 'Sair'}
               </button>

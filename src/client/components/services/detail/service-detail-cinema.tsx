@@ -144,7 +144,7 @@ export const ServiceDetailCinema: ServiceDetailVariantComponent = ({ service, ex
                       .sort((a, b) => (a.horario ?? '').localeCompare(b.horario ?? ''))
                       .map((session) => {
                         const card = (
-                          <div className="flex min-w-[7.5rem] flex-col gap-1 rounded-2xl border border-border bg-card px-3 py-2 text-sm transition hover:border-brand">
+                          <div className="flex min-w-[7.5rem] flex-col gap-1 rounded-[var(--ui-radius-card,1rem)] border-[length:var(--ui-border-w-card,1px)] border-border shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] bg-card px-3 py-2 text-sm transition hover:border-brand">
                             <span className="font-bold">{session.horario ?? '--:--'}</span>
                             {session.sala && (
                               <span className="text-xs text-muted-foreground">{session.sala}</span>

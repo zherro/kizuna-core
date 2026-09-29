@@ -38,11 +38,11 @@ export function StepSubcategory({
       </div>
 
       {!loading && filtered.length === 0 ? (
-        <p className="rounded-xl bg-muted/40 px-3 py-2.5 text-sm text-muted-foreground">
+        <p className="rounded-[var(--ui-radius-card-compact,0.75rem)] bg-muted/40 px-3 py-2.5 text-sm text-muted-foreground">
           {t.subcategory.empty}
         </p>
       ) : (
-        <div className="rounded-xl bg-muted/30 p-3">
+        <div className="rounded-[var(--ui-radius-card-compact,0.75rem)] bg-muted/30 p-3">
           <ChipToggleList
             options={filtered.map((subcategory) => ({
               id: String(subcategory.id),

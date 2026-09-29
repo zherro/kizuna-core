@@ -98,7 +98,7 @@ export function ReviewModerationTable({
         <select
           value={status}
           onChange={(e) => setStatus(e.target.value as '' | ReviewStatus)}
-          className="h-9 rounded-md border border-input bg-background px-2 text-sm"
+          className="h-9 rounded-[var(--ui-radius-field,0.375rem)] border border-input bg-background px-2 text-sm"
         >
           {STATUS_OPTIONS.map((o) => (
             <option key={o.id} value={o.id}>
@@ -109,7 +109,7 @@ export function ReviewModerationTable({
         <select
           value={period}
           onChange={(e) => setPeriod(e.target.value as '' | '7' | '30' | '90')}
-          className="h-9 rounded-md border border-input bg-background px-2 text-sm"
+          className="h-9 rounded-[var(--ui-radius-field,0.375rem)] border border-input bg-background px-2 text-sm"
         >
           {PERIOD_OPTIONS.map((o) => (
             <option key={o.id} value={o.id}>
@@ -121,13 +121,13 @@ export function ReviewModerationTable({
           value={domain}
           onChange={(e) => setDomain(e.target.value)}
           placeholder="Domínio (ex.: service)"
-          className="h-9 rounded-md border border-input bg-background px-2 text-sm"
+          className="h-9 rounded-[var(--ui-radius-field,0.375rem)] border border-input bg-background px-2 text-sm"
         />
         <input
           value={referenceId}
           onChange={(e) => setReferenceId(e.target.value)}
           placeholder="ID de referência"
-          className="h-9 rounded-md border border-input bg-background px-2 text-sm"
+          className="h-9 rounded-[var(--ui-radius-field,0.375rem)] border border-input bg-background px-2 text-sm"
         />
       </div>
 
@@ -135,7 +135,7 @@ export function ReviewModerationTable({
         <input
           {...table.searchInputProps}
           placeholder="Buscar por comentário..."
-          className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+          className="h-9 w-full rounded-[var(--ui-radius-field,0.375rem)] border border-input bg-background px-3 text-sm"
         />
       </form>
 
@@ -146,7 +146,7 @@ export function ReviewModerationTable({
           ))}
         </div>
       ) : table.error ? (
-        <div className="flex items-center gap-2 rounded-lg border border-border bg-card p-4 text-sm">
+        <div className="flex items-center gap-2 rounded-[var(--ui-radius-card-sm,0.5rem)] border-[length:var(--ui-border-w-card,1px)] border-border shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] bg-card p-4 text-sm">
           <span className="text-muted-foreground">{table.error}</span>
           <button
             type="button"
@@ -157,7 +157,7 @@ export function ReviewModerationTable({
           </button>
         </div>
       ) : table.items.length === 0 ? (
-        <div className="rounded-lg border border-border bg-card p-8 text-center text-sm text-muted-foreground">
+        <div className="rounded-[var(--ui-radius-card-sm,0.5rem)] border-[length:var(--ui-border-w-card,1px)] border-border shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] bg-card p-8 text-center text-sm text-muted-foreground">
           Nenhuma avaliação para os filtros atuais.
         </div>
       ) : (
@@ -169,7 +169,7 @@ export function ReviewModerationTable({
             return (
               <li
                 key={id}
-                className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-card p-3"
+                className="flex flex-wrap items-center gap-3 rounded-[var(--ui-radius-card-sm,0.5rem)] border-[length:var(--ui-border-w-card,1px)] border-border shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] bg-card p-3"
               >
                 <RatingDisplay value={Number(str(row, 'rating') || 0)} size="sm" />
                 <Badge variant="secondary" className={cn('shrink-0', STATUS_TONE[rowStatus] ?? '')}>

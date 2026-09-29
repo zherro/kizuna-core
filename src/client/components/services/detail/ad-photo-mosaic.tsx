@@ -17,7 +17,7 @@ export function AdPhotoMosaic({ photos, alt }: { photos: string[]; alt: string }
 
   if (photos.length === 0) {
     return (
-      <div className="flex aspect-[16/10] w-full items-center justify-center rounded-3xl border border-dashed border-border bg-muted/40 text-muted-foreground">
+      <div className="flex aspect-[16/10] w-full items-center justify-center rounded-[var(--ui-radius-card-lg,1.5rem)] border border-dashed border-border bg-muted/40 text-muted-foreground">
         <div className="flex flex-col items-center gap-2 text-sm">
           <ImageIcon className="h-6 w-6" />
           Sem fotos

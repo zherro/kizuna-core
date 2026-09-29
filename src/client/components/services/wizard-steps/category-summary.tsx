@@ -44,7 +44,7 @@ export function CategorySummary({
   );
 
   return (
-    <div className="space-y-3 rounded-xl bg-muted/50 px-4 py-3">
+    <div className="space-y-3 rounded-[var(--ui-radius-card-compact,0.75rem)] bg-muted/50 px-4 py-3">
       {onEditCategory ? (
         <button
           type="button"

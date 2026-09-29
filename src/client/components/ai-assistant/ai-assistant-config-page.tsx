@@ -106,7 +106,7 @@ export function AiAssistantConfigPage({
           value={provider}
           disabled={disabled}
           onChange={(e) => setProvider(e.target.value)}
-          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex h-10 w-full rounded-[var(--ui-radius-field,0.375rem)] border border-input bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
         >
           {PROVIDER_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value} disabled={!opt.enabled}>

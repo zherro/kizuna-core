@@ -245,7 +245,7 @@ export function TaxonomyManager() {
           {hydrating ? (
             <p className="text-sm text-muted-foreground">Carregando a taxonomia completa...</p>
           ) : visibleCategories.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-border bg-muted/20 p-6 text-center">
+            <div className="rounded-[var(--ui-radius-card-compact,0.75rem)] border border-dashed border-border bg-muted/20 p-6 text-center">
               <FolderTree className="mx-auto h-8 w-8 text-muted-foreground" aria-hidden="true" />
               <p className="mt-3 text-sm text-muted-foreground">Nenhum resultado encontrado.</p>
             </div>
@@ -261,7 +261,7 @@ export function TaxonomyManager() {
                     : undefined;
 
                 return (
-                  <div key={catId} className="rounded-xl border border-border bg-background">
+                  <div key={catId} className="rounded-[var(--ui-radius-card-compact,0.75rem)] border-[length:var(--ui-border-w-card,1px)] border-border bg-[color:var(--ui-card-bg,var(--background))] shadow-[shadow:var(--ui-shadow-item,0_0_#0000)]">
                     <div className="flex items-center gap-2 px-4 py-3">
                       <button
                         type="button"
@@ -332,7 +332,7 @@ export function TaxonomyManager() {
                             return (
                               <div
                                 key={subId}
-                                className="rounded-lg border border-border/70 bg-muted/10"
+                                className="rounded-[var(--ui-radius-card-sm,0.5rem)] border-[length:var(--ui-border-w-card,1px)] border-border/70 shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] bg-muted/10"
                               >
                                 <div className="flex items-center gap-2 px-3 py-2">
                                   <button

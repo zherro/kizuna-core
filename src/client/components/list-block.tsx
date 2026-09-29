@@ -417,7 +417,7 @@ export function ListBlock({ config }: { config: ListBlockConfig }) {
             {(items as Record<string, unknown>[]).map((item) => (
               <li
                 key={String(item.id)}
-                className="group rounded-xl border border-border bg-card p-4 transition-all hover:border-brand/30 hover:shadow-sm"
+                className="group rounded-[var(--ui-radius-card-compact,0.75rem)] border-[length:var(--ui-border-w-card,1px)] border-border shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] bg-card p-4 transition-all hover:border-brand/30 hover:shadow-sm"
               >
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start sm:gap-3">
                   <div className="min-w-0">

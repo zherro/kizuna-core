@@ -38,10 +38,10 @@ export interface TopbarProps {
 }
 
 const navLinkClass =
-  'flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[15px] font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground';
+  'flex items-center gap-1.5 rounded-[var(--ui-radius-pill,0.375rem)] px-3 py-1.5 text-[15px] font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground';
 
 const mobileNavLinkClass =
-  'flex items-center gap-3 rounded-md px-3 py-2 text-base font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground';
+  'flex items-center gap-3 rounded-[var(--ui-radius-pill,0.375rem)] px-3 py-2 text-base font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground';
 
 /**
  * Public-site top bar: brand dot + title, home / dashboard / custom links, location trigger,

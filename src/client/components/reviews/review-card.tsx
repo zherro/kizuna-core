@@ -65,7 +65,7 @@ export function ReviewCard({
   const authorName = review.authorName || 'Cliente';
 
   return (
-    <article className={cn('rounded-2xl border border-border bg-card p-4', className)}>
+    <article className={cn('rounded-[var(--ui-radius-card,1rem)] border-[length:var(--ui-border-w-card,1px)] border-border shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] bg-card p-4', className)}>
       <header className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2.5">
           <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-muted text-xs font-semibold text-muted-foreground">

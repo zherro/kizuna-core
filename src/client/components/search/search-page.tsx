@@ -667,7 +667,7 @@ function SearchPageInner({
               chat some com o espaço), vira botão flutuante (ver abaixo) pra não empurrar/disputar
               layout com o chat. */}
           <aside className={`hidden lg:block ${desktopChatOpen ? 'xl:hidden' : ''}`}>
-            <div className="sticky top-4 rounded-2xl border border-border bg-card p-4">
+            <div className="sticky top-4 rounded-[var(--ui-radius-card,1rem)] border-[length:var(--ui-border-w-card,1px)] border-border shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] bg-card p-4">
               <SearchFiltersPanel
                 filters={filters}
                 setFilters={setFilters}

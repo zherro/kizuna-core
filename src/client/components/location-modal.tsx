@@ -43,7 +43,7 @@ export function LocationTrigger({ onClick }: { onClick: () => void }) {
       onClick={onClick}
       disabled={isDetecting}
       aria-label="Selecionar localização"
-      className="inline-flex h-9 items-center gap-1.5 rounded-md border border-input bg-primary/5 px-2.5 text-[15px] font-medium text-primary outline-none transition-colors hover:bg-primary/10 focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
+      className="inline-flex h-9 items-center gap-1.5 rounded-[var(--ui-radius-pill,0.375rem)] border border-input bg-primary/5 px-2.5 text-[15px] font-medium text-primary outline-none transition-colors hover:bg-primary/10 focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
     >
       {isDetecting ? (
         <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-primary" />
@@ -165,7 +165,7 @@ export function LocationModal({ open, onClose }: LocationModalProps) {
         role="dialog"
         aria-modal="true"
         aria-label="Selecionar localização"
-        className="relative flex w-full max-w-md flex-col overflow-hidden rounded-xl border border-border bg-background shadow-xl"
+        className="relative flex w-full max-w-md flex-col overflow-hidden rounded-[var(--ui-radius-card-compact,0.75rem)] border-[length:var(--ui-border-w-card,1px)] border-border bg-[color:var(--ui-card-bg,var(--background))] shadow-xl"
         style={{ maxHeight: '80vh' }}
       >
         {/* Header */}
@@ -177,7 +177,7 @@ export function LocationModal({ open, onClose }: LocationModalProps) {
           <button
             onClick={onClose}
             aria-label="Fechar"
-            className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+            className="rounded-[var(--ui-radius-pill,0.375rem)] p-1 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
           >
             <X className="h-4 w-4" />
           </button>
@@ -206,7 +206,7 @@ export function LocationModal({ open, onClose }: LocationModalProps) {
             <button
               onClick={handleAutoDetect}
               disabled={detecting}
-              className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-2.5 py-1.5 text-xs text-foreground transition-colors hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex items-center gap-1.5 rounded-[var(--ui-radius-pill,0.375rem)] border border-input bg-background px-2.5 py-1.5 text-xs text-foreground transition-colors hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-60"
             >
               {detecting ? (
                 <>
@@ -224,7 +224,7 @@ export function LocationModal({ open, onClose }: LocationModalProps) {
 
         {/* Busca */}
         <div className="border-b border-border px-3 py-2">
-          <div className="flex items-center gap-2 rounded-md border border-input bg-background px-3 focus-within:ring-2 focus-within:ring-ring">
+          <div className="flex items-center gap-2 rounded-[var(--ui-radius-field,0.375rem)] border border-input bg-background px-3 focus-within:ring-2 focus-within:ring-ring">
             <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
             <input
               ref={searchRef}

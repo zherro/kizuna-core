@@ -26,7 +26,7 @@ export function AdExtraFields({ schema, answers }: { schema: FormSchema; answers
   if (fields.length === 0) return null;
 
   return (
-    <div className="grid gap-3 rounded-2xl border border-border bg-card p-5 sm:grid-cols-2">
+    <div className="grid gap-3 rounded-[var(--ui-radius-card,1rem)] border-[length:var(--ui-border-w-card,1px)] border-border shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] bg-card p-5 sm:grid-cols-2">
       {fields.map((field) => {
         const key = fieldKey(field);
         const visible = isFieldVisible(field, answers);

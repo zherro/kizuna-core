@@ -61,7 +61,7 @@ export function StepStart({
           value={title}
           onChange={(event) => handleChange(event.target.value)}
           placeholder={t.start.placeholder}
-          className="h-11 w-full rounded-lg border bg-background px-3.5 text-base leading-relaxed outline-none placeholder:text-muted-foreground/70 focus-visible:ring-2 focus-visible:ring-ring"
+          className="h-11 w-full rounded-[var(--ui-radius-select,0.5rem)] border bg-background px-3.5 text-base leading-relaxed outline-none placeholder:text-muted-foreground/70 focus-visible:ring-2 focus-visible:ring-ring"
         />
 
         {title.trim().length > 0 && title.trim().length < 5 ? (

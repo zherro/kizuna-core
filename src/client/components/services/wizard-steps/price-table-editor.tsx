@@ -82,7 +82,7 @@ export function PriceTableEditor({
 
       <ul className="space-y-3">
         {rows.map((row) => (
-          <li key={row.id} className="space-y-2 rounded-xl border bg-background p-3">
+          <li key={row.id} className="space-y-2 rounded-[var(--ui-radius-card-compact,0.75rem)] border-[length:var(--ui-border-w-card,1px)] bg-[color:var(--ui-card-bg,var(--background))] shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] p-3">
             <div className="flex items-start gap-2">
               <div className="grid min-w-0 flex-1 grid-cols-1 gap-2 sm:grid-cols-[1fr_15rem]">
                 <Input

@@ -32,7 +32,7 @@ export function SwipeCard({ item, dragX = 0, className = '', style, handlers }: 
     <article
       {...handlers}
       style={style}
-      className={`absolute inset-0 overflow-hidden rounded-3xl border border-border bg-card ${className}`}
+      className={`absolute inset-0 overflow-hidden rounded-[var(--ui-radius-card-lg,1.5rem)] border-[length:var(--ui-border-w-card,1px)] border-border shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] bg-card ${className}`}
     >
       {img ? (
         <img src={img} alt={item.title} className="pointer-events-none h-full w-full object-cover" />

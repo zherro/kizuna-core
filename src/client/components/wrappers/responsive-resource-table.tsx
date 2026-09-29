@@ -227,7 +227,7 @@ export function ResponsiveResourceTable<TItem>({
             vertical space vs the old "badge label + bordered box" per field. */}
         <div className="grid grid-cols-1 gap-2.5 md:hidden">
           {!table.loading && table.items.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-border bg-muted/20 px-4 py-6 text-center text-sm text-muted-foreground">
+            <div className="rounded-[var(--ui-radius-card-compact,0.75rem)] border border-dashed border-border bg-muted/20 px-4 py-6 text-center text-sm text-muted-foreground">
               {emptyMessage}
             </div>
           ) : null}

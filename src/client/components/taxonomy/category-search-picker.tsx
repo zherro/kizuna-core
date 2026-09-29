@@ -104,7 +104,7 @@ export function CategorySearchPicker({
             key={item.id}
             type="button"
             onClick={() => onSelect(String(item.id))}
-            className="group flex items-center gap-3 rounded-2xl border border-border/70 bg-muted/50 p-3 text-left transition-colors hover:border-primary/40 hover:bg-primary/5"
+            className="group flex items-center gap-3 rounded-[var(--ui-radius-card,1rem)] border-[length:var(--ui-border-w-card,1px)] border-border/70 shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] bg-muted/50 p-3 text-left transition-colors hover:border-primary/40 hover:bg-primary/5"
           >
             <ColorChip color="var(--color-primary)">
               <TaxonomyIcon icon={item.icon ?? ''} className="h-5 w-5" />

@@ -215,7 +215,7 @@ export function RpcTester({
                   value={formik.values.params}
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
-                  className="min-h-40 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+                  className="min-h-40 w-full rounded-[var(--ui-radius-field,0.375rem)] border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
                   spellCheck={false}
                   placeholder='{"id": 1}'
                 />
