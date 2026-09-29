@@ -114,7 +114,6 @@ export const MEUS_SERVICOS_SCREEN: ScreenConfig = {
     {
       component: 'page-header',
       props: {
-        eyebrow: 'Meus serviços',
         title: 'Gerenciar serviços',
         description: 'Crie serviços em etapas e continue a edição quando precisar.',
         backHref: '/painel',
