@@ -30,7 +30,7 @@ export function RenderScreen({
         // container (this app's page-layout standard) — every screen-engine page shares one
         // spacing rhythm, not a per-screen approximation of it.
         'mx-auto flex w-full flex-1 flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8',
-        config.maxWidth === 'narrow' ? 'max-w-5xl' : 'max-w-6xl'
+        config.maxWidth === 'narrow' ? 'max-w-[1200px]' : 'max-w-6xl'
       )}
     >
       {config.blocks.map((block: ScreenConfig['blocks'][number], index: number) => {
