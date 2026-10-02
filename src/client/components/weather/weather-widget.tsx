@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import { useUserLocation } from '../../hooks/use-user-location';
+import { useViewingCity } from '../viewing-city';
 import { SelectPopover } from '../ui-better-soft/select-popover';
 import type { WeatherResponse } from './types';
 
@@ -50,22 +51,22 @@ function normalize(name: string) {
 export type WeatherWidgetProps = {
   /** Rota da casca do plugin weather. Default: '/api/weather'. */
   endpoint?: string;
-  /** Só ícone + temperatura, sem alternar cidades; fixa na cidade selecionada pelo usuário. */
+  /** Versão mais estreita: o nome da cidade é cortado mais cedo. */
   mini?: boolean;
 };
 
 /**
- * Plugin weather — botão compacto para o header que alterna entre as cidades do
- * kizuna.config.json ("weather.cities"). Ao clicar, abre um modal centralizado
- * com ontem, hoje (destacado) e os próximos dias, e um select de cidade já
- * posicionado na cidade que estava visível no clique.
+ * Plugin weather — botão compacto para o header, sempre na mesma cidade que o topo mostra: a
+ * cidade em exibição da URL (`useViewingCity`) ou, sem ela, a salva do usuário
+ * (`useUserLocation`); cai na primeira de "weather.cities" se ela não estiver na lista. Ao
+ * clicar, abre um modal com ontem, hoje (destacado) e os próximos dias, e um select para
+ * consultar outras cidades — escolha local ao modal, não muda a cidade do header.
  */
 export function WeatherWidget({ endpoint = '/api/weather', mini = false }: WeatherWidgetProps = {}) {
   const [data, setData] = useState<WeatherResponse | null>(null);
-  const [rotatingIndex, setIndex] = useState(0);
   const { location } = useUserLocation();
+  const viewing = useViewingCity();
   const [selected, setSelected] = useState(0);
-  const [open, setOpen] = useState(false);
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -75,21 +76,13 @@ export function WeatherWidget({ endpoint = '/api/weather', mini = false }: Weath
       .catch(() => setData(null));
   }, [endpoint]);
 
-  // Alterna as cidades no botão; pausa enquanto o modal está aberto.
-  const count = data?.cities.length ?? 0;
-  const rotateMs = (data?.rotateSeconds ?? 5) * 1000;
-  useEffect(() => {
-    if (mini || count < 2 || open) return;
-    const id = setInterval(() => setIndex((i) => (i + 1) % count), rotateMs);
-    return () => clearInterval(id);
-  }, [mini, count, rotateMs, open]);
+  if (!data || data.cities.length === 0) return null;
 
-  if (!data || count === 0) return null;
-
-  const userCityIndex = location?.cityName
-    ? data.cities.findIndex((c) => normalize(c.name) === normalize(location.cityName))
+  const headerCityName = viewing?.cityName ?? location?.cityName;
+  const userCityIndex = headerCityName
+    ? data.cities.findIndex((c) => normalize(c.name) === normalize(headerCityName))
     : -1;
-  const index = mini ? Math.max(userCityIndex, 0) : rotatingIndex;
+  const index = Math.max(userCityIndex, 0);
 
   const city = data.cities[index];
   const now = describe(city.current.code, city.current.isDay);
@@ -101,13 +94,11 @@ export function WeatherWidget({ endpoint = '/api/weather', mini = false }: Weath
 
   function openModal() {
     setSelected(index);
-    setOpen(true);
     dialogRef.current?.showModal();
   }
 
   function closeModal() {
     dialogRef.current?.close();
-    setOpen(false);
   }
 
   return (
@@ -116,23 +107,25 @@ export function WeatherWidget({ endpoint = '/api/weather', mini = false }: Weath
         type="button"
         onClick={openModal}
         aria-label={`${city.name}: ${city.current.temperature}°C, ${now.label}. Ver previsão`}
-        className="flex h-9 items-center gap-1.5 rounded-full bg-secondary px-3 text-sm text-secondary-foreground transition-colors hover:bg-secondary/80"
+        className="flex h-9 min-w-0 items-center gap-1.5 rounded-full bg-secondary px-3 text-sm text-secondary-foreground transition-colors hover:bg-secondary/80"
       >
-        <span key={index} className="flex items-center gap-1.5 animate-in fade-in duration-500">
+        <span className="flex min-w-0 items-center gap-1.5">
           <NowIcon className="h-4 w-4 text-primary" />
           <span className="font-semibold">{city.current.temperature}°</span>
-          {!mini && (
-            <span className="hidden max-w-24 truncate text-xs text-muted-foreground sm:inline">
-              {city.name}
-            </span>
-          )}
+          {/* Nome sempre visível (mesmo cortado no mobile): mostra que dá pra trocar de cidade. */}
+          <span
+            className={cn(
+              'truncate text-xs text-muted-foreground',
+              mini ? 'max-w-16 sm:max-w-24' : 'max-w-20 sm:max-w-28'
+            )}
+          >
+            {city.name}
+          </span>
         </span>
       </button>
 
       <dialog
         ref={dialogRef}
-        onClose={() => setOpen(false)}
-        onCancel={() => setOpen(false)}
         onClick={(e) => e.target === dialogRef.current && closeModal()}
         className="m-auto w-[calc(100%-2rem)] max-w-sm rounded-[var(--ui-radius-card,1rem)] border-[length:var(--ui-border-w-card,1px)] border-border bg-card p-0 text-card-foreground shadow-xl backdrop:bg-black/50 backdrop:backdrop-blur-sm"
       >
