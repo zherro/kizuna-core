@@ -1,8 +1,12 @@
 import { serverFetchResource } from '../postgrest-crud';
 import { pgrstRpc } from '../postrest/conn';
+import { runServiceSearch, seedFromKey } from './service-search';
+import { listLocationCities } from '../location';
+import type { RoutableCity } from '../../shared/city-routing/city-slug';
+import { pickServiceCity, type ServiceAddressLike } from './service-city';
 import type { FormSchema, FormValues } from '../../client/components/form-builder';
 import type { ServiceRecord } from '../../client/components/services/service-type';
-import { SEARCH_RPC, type SearchAdsBody, type ServiceResult } from '../../client/components/search/search-types';
+import type { ServiceResult } from '../../client/components/search/search-types';
 
 /**
  * Carrega tudo que a tela de detalhe de um anúncio (`/anuncios/[uid]`, projeto consumidor)
@@ -40,6 +44,8 @@ export type ServiceDetailData = {
   extraFields: ServiceExtraFields;
   related: RelatedResult;
   randomServices: ServiceResult[];
+  /** Cidade canônica do anúncio (URL fixa `/[cidade]/anuncio/[uid]`); `null` = sem cidade resolvível. */
+  city: RoutableCity | null;
 };
 
 async function fetchService(uid: string): Promise<ServiceRecord | null> {
@@ -99,58 +105,23 @@ async function fetchExtraFields(serviceUid: string): Promise<ServiceExtraFields>
   return row ? { schema: row.schema_snapshot, answers: row.answers } : null;
 }
 
-/** Seed determinístico em [-1, 1) pro `setseed()` da RPC, pra lista de relacionados de um mesmo
- * anúncio ficar estável entre renders/ISR em vez de embaralhar a cada hit. */
-function seedFromUid(uid: string): number {
-  let hash = 0;
-  for (let i = 0; i < uid.length; i += 1) {
-    hash = (hash * 31 + uid.charCodeAt(i)) % 2_000_000;
-  }
-  return hash / 1_000_000 - 1;
-}
-
-async function runRelatedSearch(
-  overrides: Partial<SearchAdsBody>,
-  seed: number
-): Promise<ServiceResult[]> {
-  const body: SearchAdsBody = {
-    p_state: null,
-    p_city_id: null,
-    p_city_ibge: null,
-    p_group_category_slug: null,
-    p_category_id: null,
-    p_subcategories: null,
-    p_query: null,
-    p_seed: seed,
-    p_page: 0,
-    p_page_size: 12,
-    ...overrides,
-  };
-  const response = await pgrstRpc(SEARCH_RPC, body, { auth: null, schema: 'public' }).catch(
-    () => null
-  );
-  if (!response?.ok) return [];
-  const rows = (await response.json().catch(() => null)) as ServiceResult[] | null;
-  return Array.isArray(rows) ? rows : [];
-}
-
 /** Outros anúncios ativos pra mostrar abaixo — mesma categoria primeiro, alargando pro grupo só
  * quando a categoria sozinha estiver rala. Reusa a mesma RPC pública da busca (`/busca`), então os
  * cards mostram preço/prestador/imagem reais. */
 async function fetchRelatedServices(service: ServiceRecord): Promise<RelatedResult> {
-  const seed = seedFromUid(service.uid);
+  const seed = seedFromKey(service.uid);
   const exclude = (rows: ServiceResult[]) =>
     rows.filter((row) => row.uid !== service.uid).slice(0, 8);
 
   const categoryId = Number(service.categoryId);
   const byCategory = Number.isFinite(categoryId)
-    ? exclude(await runRelatedSearch({ p_category_id: categoryId }, seed))
+    ? exclude(await runServiceSearch({ p_category_id: categoryId }, seed))
     : [];
   if (byCategory.length >= 4) return { items: byCategory, scope: 'category' };
 
   const groupSlug = service.categoryGroup?.slug;
   if (groupSlug) {
-    const byGroup = exclude(await runRelatedSearch({ p_group_category_slug: groupSlug }, seed));
+    const byGroup = exclude(await runServiceSearch({ p_group_category_slug: groupSlug }, seed));
     if (byGroup.length > byCategory.length) return { items: byGroup, scope: 'group' };
   }
 
@@ -164,9 +135,34 @@ async function fetchRandomServices(
   service: ServiceRecord,
   excludeUids: ReadonlySet<string>
 ): Promise<ServiceResult[]> {
-  const seed = seedFromUid(`${service.uid}:aleatorio`);
-  const rows = await runRelatedSearch({}, seed);
+  const seed = seedFromKey(`${service.uid}:aleatorio`);
+  const rows = await runServiceSearch({}, seed);
   return rows.filter((row) => row.uid !== service.uid && !excludeUids.has(row.uid)).slice(0, 8);
+}
+
+/** Endereços + lista de cidades atendidas → cidade canônica (ver `pickServiceCity`). */
+async function fetchServiceCity(
+  service: ServiceRecord,
+  provider: ProviderProfile | null
+): Promise<RoutableCity | null> {
+  const [addresses, cities] = await Promise.all([
+    serverFetchResource<ServiceAddressLike>(
+      'service_addresses',
+      { service_id: service.id, active: 'true' },
+      { auth: null, limit: 50, orderBy: 'is_primary', orderDirection: 'desc' }
+    ).catch(() => []),
+    listLocationCities(null)
+      .then((items) =>
+        items.map((c) => ({
+          ibge: c.value,
+          name: c.label,
+          state: c.stateCode,
+          stateName: c.stateName,
+        }))
+      )
+      .catch(() => []),
+  ]);
+  return pickServiceCity(addresses, provider, cities);
 }
 
 export async function loadServiceDetail(uid: string): Promise<ServiceDetailData | null> {
@@ -184,5 +180,7 @@ export async function loadServiceDetail(uid: string): Promise<ServiceDetailData 
     new Set(related.items.map((item) => item.uid))
   );
 
-  return { service, subcategoryNames, provider, extraFields, related, randomServices };
+  const city = await fetchServiceCity(service, provider);
+
+  return { service, subcategoryNames, provider, extraFields, related, randomServices, city };
 }

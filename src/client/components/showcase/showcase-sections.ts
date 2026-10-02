@@ -31,6 +31,7 @@ export type ShowcaseSectionId =
   | 'inline-alert'
   | 'rpc-tester'
   | 'pwa-register'
+  | 'mobile-tab-bar'
   | 'location-modal'
   | 'system-config-section'
   | 'form-builder'
@@ -857,6 +858,41 @@ export function StepErrors({ loadError }: { loadError: string | null }) {
 
 export function FuncoesPage() {
   return <RpcTester endpoint="/api/postgrest/rpc" backHref="/painel" />;
+}`,
+  },
+  {
+    id: 'mobile-tab-bar',
+    groupId: 'ui-better-soft',
+    label: 'Mobile Tab Bar',
+    description:
+      'Barra de navegacao inferior do mobile (so abaixo de md) com ate 5 icones e rotulo. Item ativo pela rota, item featured (CTA redondo no centro), requiresAuth manda o visitante para /login?returnTo=, guestItems troca o conjunto para o visitante anonimo, hideOn esconde em rotas com rodape proprio. Publica --mobile-tab-h no <html> para o layout reservar espaco. Itens vem por prop (icon como elemento renderizado, seguro de Server Component).',
+    usageCode: `import { Home, Search, PlusCircle, Briefcase, UserCircle, Compass, LogIn } from 'lucide-react';
+import { MobileTabBar } from '@kizuna/core/client/components/ui-better-soft/mobile-tab-bar';
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <body>
+      <main className="flex-1 pb-[var(--mobile-tab-h,0px)] md:pb-0">{children}</main>
+      <MobileTabBar
+        hideOn={['/painel/meus-servicos/novo']}
+        items={[
+          { href: '/', label: 'Início', icon: <Home /> },
+          { href: '/busca', label: 'Buscar', icon: <Search /> },
+          { href: '/painel/meus-servicos/novo', label: 'Anunciar', icon: <PlusCircle />, featured: true, requiresAuth: true },
+          { href: '/painel/meus-servicos', label: 'Meus anúncios', icon: <Briefcase />, exact: true, requiresAuth: true },
+          { href: '/painel/minha-conta', label: 'Conta', icon: <UserCircle />, requiresAuth: true },
+        ]}
+        // Visitante anônimo (sessão já resolvida): outro conjunto, ex. "Entrar" no lugar de "Conta".
+        guestItems={[
+          { href: '/', label: 'Início', icon: <Home /> },
+          { href: '/busca', label: 'Buscar', icon: <Search /> },
+          { href: '/painel/meus-servicos/novo', label: 'Anunciar', icon: <PlusCircle />, featured: true, requiresAuth: true },
+          { href: '/descobrir', label: 'Descobrir', icon: <Compass /> },
+          { href: '/login', label: 'Entrar', icon: <LogIn />, match: ['/login', '/registre-se'] },
+        ]}
+      />
+    </body>
+  );
 }`,
   },
   {

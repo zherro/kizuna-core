@@ -60,7 +60,7 @@ BEGIN
     AND (
       v_user IS NULL
       OR NOT EXISTS (
-        SELECT 1 FROM public.service_swipes sw
+        SELECT 1 FROM public.service_user_favorites sw
         WHERE sw.user_id = v_user
           AND sw.service_uid = c.uid
           AND (sw.action = 'like' OR sw.updated_at > now() - v_ttl)
@@ -112,7 +112,7 @@ BEGIN
     ad.a_city::text,
     ad.a_state::text,
     COALESCE(ad.cnt, 0)::integer
-  FROM public.service_swipes sw
+  FROM public.service_user_favorites sw
   JOIN public.services s ON s.uid = sw.service_uid
   LEFT JOIN public.categories c ON c.id = s.category_id
   LEFT JOIN LATERAL (

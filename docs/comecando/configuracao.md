@@ -32,6 +32,7 @@ instala. Ele é lido pelo CLI no `install`, não pelo app. Ver [Plugins](../plug
 | [`home`](#home)        | seções da home e formato do carrossel de categorias                | `app/page.tsx`                                  |
 | [`weather`](#weather)  | widget de clima no cabeçalho (plugin `weather`)                    | `app/api/weather/route.ts`, `layout.tsx`, `footer.tsx` |
 | [`wizards`](#wizards)  | passos, layout e perfis dos wizards (ex.: cadastro de serviço)     | páginas do plugin `services`                    |
+| [`vocabulary`](#vocabulary) | como o app chama o item que o usuário cria (Publicação, Serviço…) — preset, termo com gênero, frases | `src/lib/vocabulary.ts`, `components/panel-shell.tsx` |
 | `accountLevels`        | níveis de conta progressivos (título, ordem, requisito) — ver [Níveis de conta](../arquitetura/niveis-de-conta.md) | `src/lib/account-levels.ts` |
 | `otp`                  | login por telefone: provedores de envio, validade, limites — ver [Login com Google e telefone](login-social-telefone.md) | `app/api/auth/otp/*`, `app/api/auth/providers` |
 
@@ -121,9 +122,32 @@ Controla quais seções aparecem na home pública (`/`) e o visual delas.
 | `showDiscover`      | boolean                  | `false`     | Mostra o banner "Descobrir no swipe" (leva a `/descobrir`). Só `true` mostra.              |
 | `inkPicker`         | boolean                  | `true`      | Mostra o seletor de intensidade do fundo escuro ("ink") dos cards de destaque.           |
 | `inkLevel`          | `1`–`7`                  | `6`         | Intensidade padrão do fundo "ink". Com o seletor ativo, a escolha salva do usuário prevalece. |
+| `categoryRails`     | `{ slug, title?, limit? }[]` | `[]` (o starter já traz `cinema`) | **Carrosséis por categoria** na home (ver abaixo), um por item, na ordem do array.        |
 
-Ordem das seções na home: hero → carrossel de categorias → banner "Descobrir" → grade de
-próximos → "como funciona" → chamada final.
+Ordem das seções na home: hero → carrossel de categorias → banner "Descobrir" → carrosséis por
+categoria → grade de próximos → "como funciona" → chamada final.
+
+### Carrosséis por categoria
+
+Cada item de `home.categoryRails` vira uma trilha horizontal de anúncios daquela categoria:
+
+```json
+"categoryRails": [
+  { "slug": "cinema", "title": "Em cartaz", "limit": 10 }
+]
+```
+
+| Campo   | Tipo   | Padrão               | Efeito                                                                  |
+| ------- | ------ | -------------------- | ----------------------------------------------------------------------- |
+| `slug`  | string | — (obrigatório)      | `categories.slug` da categoria.                                         |
+| `title` | string | nome da categoria    | Título da trilha.                                                       |
+| `limit` | number | `10`                 | Máximo de cards. Se vierem **todos**, a trilha termina com um card **"Ver mais"** que leva a `/busca?categoryId=<id>`. |
+
+* Os cards reusam o carrossel do detalhe do anúncio (`ServiceCarouselSection`), então já seguem o
+  estilo por categoria de `serviceDetail` (ex.: cinema sem preço, cor de acento).
+* Categoria inexistente, inativa ou **sem anúncios publicados** não renderiza nada.
+* Os dados vêm de `loadCategoryRail(slug, { limit })` (`@kizuna/core/server`), montados no servidor
+  pelo componente `CategoryRails` do projeto (`components/home/category-rails.tsx`).
 
 ### Carrossel de categorias
 
@@ -300,6 +324,28 @@ por categoria/grupo. Como o perfil escolhido substitui o anterior por inteiro, r
 
 Detalhes (modos, fuso, edição) em [Wizard](../interface/wizard.md). A validade fica em
 `services.expires_at`; a busca e o swipe omitem anúncios vencidos.
+
+## `vocabulary`
+
+Como o app chama o **item** que o usuário cria e gerencia (menu do painel, telas *Meus serviços* e
+*Aprovações*). É só texto: rotas e banco não mudam. Sem o bloco vale o preset `publicacao`.
+
+```json
+"vocabulary": {
+  "context": "publicacao",
+  "terms": { "item": { "singular": "Anúncio", "plural": "Anúncios", "gender": "m" } },
+  "phrases": { "new": "Anunciar" }
+}
+```
+
+| Chave | Padrão | O que faz |
+| ----- | ------ | --------- |
+| `context` | `publicacao` | Preset: `publicacao` (Publicação, feminino) ou `servico` (Serviço, masculino). |
+| `terms.item` | do preset | Troca o termo. Ao trocar, `gender` (`"m"` \| `"f"`) é obrigatório. |
+| `phrases` | derivadas do termo | Sobrescreve uma frase pronta (`new`, `manage`, `mine`…). |
+
+Lista completa de frases e uso no código em [Vocabulário](../interface/vocabulario.md). Config
+inválida quebra o boot com erro claro.
 
 ## `accountLevels`
 

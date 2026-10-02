@@ -61,7 +61,7 @@ export function Footer() {
 
   return (
     <footer className="border-t border-border/70 bg-background/90">
-      <div className="mx-auto w-full max-w-6xl px-4 py-10">
+      <div className="mx-auto w-full max-w-[1600px] px-4 py-10">
         {/* 3-column grid: 1 col mobile → 2 cols sm → 3 cols md */}
         <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 md:grid-cols-3">
           {/* Col 1 — Brand + Preferences */}

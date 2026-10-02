@@ -33,11 +33,16 @@ import type { ScreenConfig } from '../../../../types/screen';
  * keys and per-field formatting is a `FieldFormat` (see `list-block.tsx`), not a function.
  *
  * Hardcodes the `services` resource (plugin `services`) and its status/location enums.
+ *
+ * Todo texto que nomeia o item ("Novo serviço", "Nenhum serviço cadastrado"...) vem do vocabulário
+ * do projeto via `"$vocab.<frase>"` (`shared/vocabulary`, resolvido em `screen-engine/context.ts`),
+ * para o app chamar o item de "Publicação", "Serviço", "Anúncio"... sem mexer aqui. O vocabulário
+ * também dita o gênero (Nova/Novo). Rotas e recursos continuam `meus-servicos`/`services`.
  */
 
 const listConfig: ListBlockConfig = {
   resource: 'services',
-  title: 'Seus serviços',
+  title: '$vocab.yours',
   pageSize: 8,
   action: { label: 'Editar', hrefBase: '/painel/meus-servicos', icon: 'edit' },
   statusFilter: {},
@@ -52,13 +57,15 @@ const listConfig: ListBlockConfig = {
   // 'service.create' (mapa de capacidades do projeto) em vez do check de onboarding acima.
   createGateAction: 'service.create',
   emptyState: {
-    message: 'Nenhum serviço cadastrado ainda.',
+    message: '$vocab.noneRegistered',
+    description: '$vocab.registerFirstHint',
     ctaHref: '/painel/meus-servicos/novo',
-    ctaLabel: 'Criar primeiro serviço',
+    ctaLabel: '$vocab.createFirst',
   },
   displayConfig: {
     icon: 'Briefcase',
-    singularName: 'Serviço',
+    singularName: '$vocab.singular',
+    notFoundMessage: '$vocab.noneFound',
     fields: {
       categoryGroup: {
         label: 'Grupo de Categoria',
@@ -114,13 +121,13 @@ export const MEUS_SERVICOS_SCREEN: ScreenConfig = {
     {
       component: 'page-header',
       props: {
-        title: 'Gerenciar serviços',
-        description: 'Crie serviços em etapas e continue a edição quando precisar.',
+        title: '$vocab.manage',
+        description: '$vocab.manageDescription',
         backHref: '/painel',
         backLabel: 'Painel',
         createAction: {
           href: '/painel/meus-servicos/novo',
-          label: 'Novo serviço',
+          label: '$vocab.new',
           gateUserId: '$session.userId',
           gateAction: 'service.create',
         },

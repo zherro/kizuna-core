@@ -13,6 +13,10 @@ export function ServiceCarouselSection({
   services,
   hue,
   detailConfig,
+  className = 'mt-12 border-t border-border pt-8',
+  moreHref,
+  moreLabel,
+  showCity,
 }: {
   title: string;
   subtitleLabel?: string;
@@ -20,11 +24,19 @@ export function ServiceCarouselSection({
   /** Hue de acento da categoria do anúncio acima, pro marcador do título combinar. */
   hue?: number;
   detailConfig?: ServiceDetailConfig | null;
+  /** Classes da `<section>`. Default = espaçamento/divisória da tela de detalhe; em outras telas
+   * (ex. carrossel por categoria na home) passe o seu. */
+  className?: string;
+  /** Com `moreHref`, a trilha termina num card "Ver mais" que leva pra lá. */
+  moreHref?: string;
+  moreLabel?: string;
+  /** Mostra a cidade nos cards (listas globais). Default: esconde. */
+  showCity?: boolean;
 }) {
   if (services.length === 0) return null;
 
   return (
-    <section className="mt-12 border-t border-border pt-8">
+    <section className={className}>
       <div className="mb-5 flex items-center gap-3">
         <span
           className="h-5 w-1 shrink-0 rounded-full"
@@ -36,7 +48,13 @@ export function ServiceCarouselSection({
         </div>
       </div>
 
-      <ServiceCarousel services={services} detailConfig={detailConfig} />
+      <ServiceCarousel
+        services={services}
+        detailConfig={detailConfig}
+        moreHref={moreHref}
+        moreLabel={moreLabel}
+        showCity={showCity}
+      />
     </section>
   );
 }

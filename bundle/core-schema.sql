@@ -3,7 +3,7 @@
 -- Aplicar em base LIMPA:  psql "$DB_URL" -v ON_ERROR_STOP=1 -f bundle/core-schema.sql
 -- (nem todo .sql de origem é idempotente — re-rodar numa base já provisionada dá erro;
 --  pra atualização incremental use `node kizuna-core/cli db migrate`)
--- Arquivos: 29
+-- Arquivos: 31
 
 
 -- ===================================================================
@@ -3080,5 +3080,65 @@ $$;
 
 REVOKE ALL ON FUNCTION auth.fun_auth__account_facts() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION auth.fun_auth__account_facts() TO auth_user;
+
+NOTIFY pgrst, 'reload schema';
+
+
+-- ===================================================================
+-- 0116_default_panel_permission.sql
+-- ===================================================================
+
+-- 0116_default_panel_permission.sql
+-- `default/view` é a permissão de entrada do painel: os itens base do menu (Painel, Minha conta,
+-- Meu conteúdo) exigem `permResource: 'default'`, e o PanelShell manda pra notFound() quando a rota
+-- não bate com nenhum item acessível. Até aqui ela só existia se o banco trouxesse dados legados em
+-- auth.role_permissions (backfill do 0103) — num banco novo ninguém além do root entrava no /painel.
+
+INSERT INTO auth.permissions (resource, action, name)
+VALUES ('default', 'view', 'Acessar o painel')
+ON CONFLICT (resource, action) DO NOTHING;
+
+-- ADMIN (role_id=2): papel com que todo usuário nasce (fun_auth__signup_bootstrap). USER (3)
+-- continua sem role_grants por desenho (0103).
+INSERT INTO auth.role_grants (role_id, permission_id)
+SELECT 2, id FROM auth.permissions WHERE resource = 'default' AND action = 'view'
+ON CONFLICT DO NOTHING;
+
+
+-- ===================================================================
+-- 0117_service_role_and_account_deletion.sql
+-- ===================================================================
+
+-- 0117_service_role_and_account_deletion.sql
+-- 1) `service_role`: papel do servidor para operações privilegiadas feitas em TypeScript (excluir
+--    conta, abrir ticket do sistema, checar revogação de sessão). BYPASSRLS + GRANTs mínimos —
+--    nenhuma função nova. O JWT `{ "role": "service_role" }` (`kizuna token service`) fica só no
+--    servidor, em POSTGREST_SERVICE_TOKEN. GRANTs em tabelas de plugins ficam nos próprios
+--    plugins (o core não assume que eles existem).
+-- 2) `auth.users.deleted_login`: e-mail original de uma conta excluída. O `login` vira
+--    `deleted:<uid>:<email>` (libera o UNIQUE para recriar a conta); o cadastro acha a conta
+--    antiga por igualdade exata neste campo.
+-- Idempotente.
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'service_role') THEN
+    CREATE ROLE service_role NOLOGIN BYPASSRLS;
+  END IF;
+END
+$$;
+
+GRANT service_role TO authenticator;
+GRANT USAGE ON SCHEMA auth, public TO service_role;
+
+GRANT SELECT, UPDATE ON TABLE auth.users TO service_role;
+GRANT SELECT, DELETE ON TABLE auth.user_identities TO service_role;
+GRANT SELECT ON TABLE auth.tenants TO service_role;
+
+ALTER TABLE auth.users ADD COLUMN IF NOT EXISTS deleted_login text;
+
+CREATE INDEX IF NOT EXISTS users_deleted_login_idx
+  ON auth.users (deleted_login)
+  WHERE deleted_at IS NOT NULL;
 
 NOTIFY pgrst, 'reload schema';

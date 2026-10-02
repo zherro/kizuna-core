@@ -8,6 +8,7 @@ import { buttonVariants } from './ui/button';
 import { useAuth } from '../providers/auth-provider';
 import { cn } from '../../lib/utils';
 import { PanelSidebarContext, type PanelSidebarControl } from './panel-sidebar-context';
+import { activeNavHref } from './panel-shell-active';
 
 export type PanelNavIcon = ComponentType<{ className?: string }>;
 
@@ -223,6 +224,12 @@ export function PanelShellBase({
     }))
     .filter((group) => group.items.length > 0);
 
+  // Um único item ativo: o mais específico que casa com a rota (ver activeNavHref).
+  const activeHref = activeNavHref(
+    pathname ?? '',
+    visibleNavigationGroups.flatMap((group) => group.items.map((item) => item.href))
+  );
+
   const checkPagePermission = (path: string = pathname) => {
     // O item que decide é o de href mais específico que casa com a rota (por segmento). Sem isso,
     // um item genérico como "/painel" liberava qualquer subrota, inclusive as rootOnly.
@@ -400,10 +407,7 @@ export function PanelShellBase({
                 <div className="space-y-1">
                   {group.items.map((item) => {
                     const Icon = item.icon;
-                    const active =
-                      item.href === '/painel'
-                        ? pathname === item.href
-                        : pathname === item.href || pathname.startsWith(`${item.href}/`);
+                    const active = item.href === activeHref;
 
                     return (
                       <Link

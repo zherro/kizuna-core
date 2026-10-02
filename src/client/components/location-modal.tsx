@@ -10,7 +10,8 @@ import {
   LocateFixed,
   Navigation,
 } from 'lucide-react';
-import { useUserLocation } from '../hooks/use-user-location';
+import { useUserLocation, type UserLocation } from '../hooks/use-user-location';
+import { useViewingCity, useViewingCityConfirm } from './viewing-city';
 
 // ─── API ──────────────────────────────────────────────────────────────────────
 
@@ -36,7 +37,16 @@ async function fetchCities(): Promise<CityOption[]> {
 
 export function LocationTrigger({ onClick }: { onClick: () => void }) {
   const { location, status } = useUserLocation();
-  const isDetecting = status === 'detecting';
+  const viewing = useViewingCity();
+  const isDetecting = status === 'detecting' && !viewing;
+  const shown = viewing
+    ? {
+        cityName: viewing.cityName,
+        stateName: viewing.stateName,
+        stateCode: viewing.stateCode,
+        source: 'manual' as const,
+      }
+    : location;
 
   return (
     <button
@@ -54,13 +64,13 @@ export function LocationTrigger({ onClick }: { onClick: () => void }) {
       <span className="max-w-[150px] truncate">
         {isDetecting ? (
           <span className="text-muted-foreground">Detectando...</span>
-        ) : location ? (
+        ) : shown ? (
           <>
-            <span className="font-medium">{location.cityName || location.stateName}</span>
-            {location.cityName && (
-              <span className="text-muted-foreground">, {location.stateCode}</span>
+            <span className="font-medium">{shown.cityName || shown.stateName}</span>
+            {shown.cityName && (
+              <span className="text-muted-foreground">, {shown.stateCode}</span>
             )}
-            {location.source === 'ip' && (
+            {shown.source === 'ip' && (
               <span className="ml-1 text-[10px] text-muted-foreground/70">~</span>
             )}
           </>
@@ -85,6 +95,21 @@ const normalize = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-�
 
 export function LocationModal({ open, onClose }: LocationModalProps) {
   const { location, setLocation, detectLocation, status } = useUserLocation();
+  const viewing = useViewingCity();
+  const onViewingConfirm = useViewingCityConfirm();
+  // Modo de confirmação: o usuário vê uma cidade (URL) diferente da salva — escolher só seleciona.
+  const confirmMode = viewing !== null && location?.cityId !== viewing.cityId;
+  const [picked, setPicked] = useState<CityOption | null>(null);
+
+  const savedOption: CityOption | null = location?.cityId
+    ? {
+        value: String(location.cityId),
+        label: location.cityName,
+        stateCode: location.stateCode,
+        stateName: location.stateName,
+      }
+    : null;
+  const selected = confirmMode ? (picked ?? savedOption) : null;
   const overlayRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -99,6 +124,7 @@ export function LocationModal({ open, onClose }: LocationModalProps) {
   useEffect(() => {
     if (!open) return;
     setSearch('');
+    setPicked(null);
     setCitiesError('');
     setCitiesLoading(true);
     fetchCities()
@@ -136,15 +162,22 @@ export function LocationModal({ open, onClose }: LocationModalProps) {
     // Se não achou (prompt), continua aberto para o usuário escolher
   }
 
-  function handleSelectCity(city: CityOption) {
-    setLocation({
+  function commit(city: CityOption) {
+    const next: UserLocation = {
       stateCode: city.stateCode,
       stateName: city.stateName,
       cityId: Number(city.value) || 0,
       cityName: city.label,
       source: 'manual',
-    });
+    };
+    setLocation(next);
+    onViewingConfirm?.(next);
     onClose();
+  }
+
+  function handleSelectCity(city: CityOption) {
+    if (confirmMode) setPicked(city);
+    else commit(city);
   }
 
   const q = normalize(search.trim());
@@ -222,6 +255,27 @@ export function LocationModal({ open, onClose }: LocationModalProps) {
           </div>
         </div>
 
+        {confirmMode && viewing ? (
+          <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
+            <span className="text-xs text-muted-foreground">
+              Você está vendo <strong className="text-foreground">{viewing.cityName}</strong>
+            </span>
+            <button
+              onClick={() =>
+                commit({
+                  value: String(viewing.cityId),
+                  label: viewing.cityName,
+                  stateCode: viewing.stateCode,
+                  stateName: viewing.stateName,
+                })
+              }
+              className="inline-flex items-center gap-1.5 rounded-[var(--ui-radius-pill,0.375rem)] border border-input bg-background px-2.5 py-1.5 text-xs text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+            >
+              Ficar em {viewing.cityName}
+            </button>
+          </div>
+        ) : null}
+
         {/* Busca */}
         <div className="border-b border-border px-3 py-2">
           <div className="flex items-center gap-2 rounded-[var(--ui-radius-field,0.375rem)] border border-input bg-background px-3 focus-within:ring-2 focus-within:ring-ring">
@@ -259,13 +313,28 @@ export function LocationModal({ open, onClose }: LocationModalProps) {
                 key={city.value}
                 onClick={() => handleSelectCity(city)}
                 aria-label={`${city.label} – ${city.stateCode}`}
-                className="flex w-full items-center px-4 py-2.5 text-sm text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                aria-pressed={selected ? selected.value === city.value : undefined}
+                className={`flex w-full items-center px-4 py-2.5 text-sm text-foreground transition-colors hover:bg-accent hover:text-accent-foreground ${
+                  selected?.value === city.value ? 'bg-accent font-semibold' : ''
+                }`}
               >
                 {city.label}
                 <span className="ml-1 text-muted-foreground">– {city.stateCode}</span>
               </button>
             ))}
         </div>
+
+        {confirmMode ? (
+          <div className="border-t border-border px-4 py-3">
+            <button
+              disabled={!selected}
+              onClick={() => selected && commit(selected)}
+              className="w-full rounded-[var(--ui-radius-pill,0.375rem)] bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground transition-opacity disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Confirmar{selected ? ` ${selected.label}` : ''}
+            </button>
+          </div>
+        ) : null}
       </div>
     </div>
   );

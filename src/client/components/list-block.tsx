@@ -127,11 +127,23 @@ export type ListBlockConfig = {
    */
   fixedFilters?: Record<string, string>;
   createAction?: { href: string; label: string };
-  emptyState?: { message?: string; ctaHref?: string; ctaLabel?: string };
+  /**
+   * `message`/`description` cobrem "nada cadastrado ainda"; sem eles o texto é montado com
+   * `singularName` no masculino. Telas que precisam de gênero/termo próprio passam a frase pronta
+   * (ver `shared/vocabulary`, `"$vocab.noneRegistered"`).
+   */
+  emptyState?: {
+    message?: string;
+    description?: string;
+    ctaHref?: string;
+    ctaLabel?: string;
+  };
   displayConfig?: {
     /** Key into `ICON_MAP`. */
     icon?: string;
     singularName?: string;
+    /** Título do estado "busca/filtro sem resultado". Padrão: `Nenhum {singularName} encontrado`. */
+    notFoundMessage?: string;
     fields?: Record<string, FieldDisplayConfig>;
     /** Rendered as small soft-filled pills in the meta row (status/sponsored/urgent...). */
     badgeFields?: string[];
@@ -173,6 +185,65 @@ function fieldTone(format: FieldFormat, value: unknown): ThemeTone {
   if (format.type !== 'enum') return 'muted';
   const key = value == null ? '' : String(value);
   return format.tones?.[key] ?? 'muted';
+}
+
+const CARD_CLASS =
+  'rounded-[var(--ui-radius-card-compact,0.75rem)] border-[length:var(--ui-border-w-card,1px)] border-border shadow-[shadow:var(--ui-shadow-card,0_1px_3px_0_#0000001a,_0_1px_2px_-1px_#0000001a)] bg-card p-4';
+
+// Mesma geometria do card real (título + badges + meta / preço à direita / botão) para a lista não
+// "pular" quando os dados chegam. Larguras fixas (sem random) para não trocar entre renders.
+const SKELETON_TITLE_WIDTHS = ['w-2/5', 'w-1/2', 'w-1/3'];
+
+// Primeira carga: ainda não se sabe se vem lista ou estado vazio, então nada de cabeçalho, busca
+// ou linhas de card — só uma superfície neutra que serve aos dois desfechos.
+function InitialSkeleton() {
+  return (
+    <div role="status" aria-busy="true" aria-live="polite">
+      <span className="sr-only">Carregando...</span>
+      <div className={cn(CARD_CLASS, 'space-y-3 py-6')} aria-hidden="true">
+        <div className="h-4 w-1/3 animate-pulse rounded-full bg-muted" />
+        <div className="h-3 w-2/3 animate-pulse rounded-full bg-muted" />
+        <div className="h-3 w-1/2 animate-pulse rounded-full bg-muted" />
+      </div>
+    </div>
+  );
+}
+
+// Busca/troca de página: já se sabe que é lista, então imita as linhas de card.
+function ListSkeleton({ rows }: { rows: number }) {
+  return (
+    <div role="status" aria-busy="true" aria-live="polite">
+      <span className="sr-only">Carregando...</span>
+      <ul className="grid gap-2.5">
+        {Array.from({ length: rows }, (_, i) => (
+          <li key={i} className={CARD_CLASS} aria-hidden="true">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start sm:gap-3">
+              <div className="min-w-0 space-y-2.5">
+                <div
+                  className={cn(
+                    'h-4 animate-pulse rounded-full bg-muted',
+                    SKELETON_TITLE_WIDTHS[i % SKELETON_TITLE_WIDTHS.length]
+                  )}
+                />
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="h-4 w-16 animate-pulse rounded-full bg-muted" />
+                  <div className="h-3 w-24 animate-pulse rounded-full bg-muted" />
+                  <div className="h-3 w-20 animate-pulse rounded-full bg-muted" />
+                </div>
+              </div>
+              <div className="space-y-1.5 sm:flex sm:flex-col sm:items-end">
+                <div className="h-5 w-20 animate-pulse rounded-full bg-muted" />
+                <div className="h-2.5 w-14 animate-pulse rounded-full bg-muted" />
+              </div>
+            </div>
+            <div className="mt-3 flex sm:justify-end">
+              <div className="h-8 w-full animate-pulse rounded-[var(--ui-radius-pill,0.375rem)] bg-muted sm:w-20" />
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
 }
 
 export function ListBlock({ config }: { config: ListBlockConfig }) {
@@ -217,19 +288,28 @@ export function ListBlock({ config }: { config: ListBlockConfig }) {
   // Nada cadastrado ainda (sem busca/filtro): a tela vira só o estado vazio — contagem "0 registros"
   // e barra de busca não ajudam em nada aqui e só poluem, principalmente no mobile.
   const isPristineEmpty = !loading && total === 0 && isUnfiltered;
+  // Primeira carga (nada na tela ainda, sem busca/filtro): o resultado — lista ou vazio — é desconhecido.
+  const isInitialLoad = loading && items.length === 0 && isUnfiltered;
 
   return (
     <div className="space-y-4">
-      {isPristineEmpty ? null : (
+      {isPristineEmpty || isInitialLoad ? null : (
         <>
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
               {config.title ? (
                 <h2 className="text-base font-semibold text-foreground">{config.title}</h2>
               ) : null}
-              <p className="text-sm text-muted-foreground">
-                {loading ? 'Carregando...' : `${total} ${total === 1 ? 'registro' : 'registros'}`}
-              </p>
+              {loading ? (
+                <div
+                  className="mt-1 h-3.5 w-20 animate-pulse rounded-full bg-muted"
+                  aria-hidden="true"
+                />
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  {`${total} ${total === 1 ? 'registro' : 'registros'}`}
+                </p>
+              )}
             </div>
 
             {config.createAction ? (
@@ -285,18 +365,23 @@ export function ListBlock({ config }: { config: ListBlockConfig }) {
       )}
 
       {loading ? (
-        <p className="py-8 text-center text-sm text-muted-foreground">Carregando...</p>
+        isInitialLoad ? (
+          <InitialSkeleton />
+        ) : (
+          <ListSkeleton rows={Math.min(items.length || 3, 3)} />
+        )
       ) : items.length === 0 ? (
         <EmptyStateCard
           icon={Icon}
           title={
             config.emptyState && isUnfiltered
               ? (config.emptyState.message ?? `Nenhum ${singularName} cadastrado ainda.`)
-              : `Nenhum ${singularName} encontrado`
+              : (displayConfig?.notFoundMessage ?? `Nenhum ${singularName} encontrado`)
           }
           description={
             config.emptyState && isUnfiltered
-              ? `Cadastre seu primeiro ${singularName.toLowerCase()} para começar.`
+              ? (config.emptyState.description ??
+                `Cadastre seu primeiro ${singularName.toLowerCase()} para começar.`)
               : 'Ajuste a busca ou filtros.'
           }
           action={
@@ -319,7 +404,7 @@ export function ListBlock({ config }: { config: ListBlockConfig }) {
             {(items as Record<string, unknown>[]).map((item) => (
               <li
                 key={String(item.id)}
-                className="group rounded-[var(--ui-radius-card-compact,0.75rem)] border-[length:var(--ui-border-w-card,1px)] border-border shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] bg-card p-4 transition-all hover:border-brand/30 hover:shadow-sm"
+                className="group rounded-[var(--ui-radius-card-compact,0.75rem)] border-[length:var(--ui-border-w-card,1px)] border-border shadow-[shadow:var(--ui-shadow-card,0_1px_3px_0_#0000001a,_0_1px_2px_-1px_#0000001a)] bg-card p-4 transition-shadow duration-300 hover:border-brand/30 hover:shadow-[shadow:var(--ui-shadow-card-flat,0_1px_3px_0_#0000001a,_0_1px_2px_-1px_#0000001a)]"
               >
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start sm:gap-3">
                   <div className="min-w-0">
@@ -386,7 +471,7 @@ export function ListBlock({ config }: { config: ListBlockConfig }) {
                     href={`${config.action.hrefBase}/${item.id}`}
                     className={cn(
                       buttonVariants({ size: 'sm' }),
-                      'h-8 w-full justify-center bg-brand text-xs text-brand-foreground hover:bg-brand/90 sm:w-auto'
+                      'h-8 w-full justify-center bg-brand text-xs text-brand-foreground shadow-md shadow-brand/25 transition-[background-color,box-shadow] duration-300 hover:bg-brand/90 hover:shadow-lg hover:shadow-brand/30 sm:w-auto'
                     )}
                   >
                     {ActionIcon ? <ActionIcon className="h-3.5 w-3.5" /> : null}

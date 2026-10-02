@@ -39,5 +39,37 @@ Side-effect import — polyfills `globalThis.Temporal`. Import once at the app r
   (`text-ellipsis overflow-hidden` / `line-clamp`), not JS.
 - `lib/feature-flags` → `isShowcaseEnabled` (also re-exported from `lib/utils`).
 
+## `lib/helper/local-storage.helper`
+
+localStorage que nunca lança: sem `window` (SSR), storage bloqueado (aba anônima, cookies
+desligados), quota cheia ou JSON corrompido viram `null` na leitura e `false` na escrita. Valores
+são gravados como JSON. Use para conveniência do visitante (preferência, card dispensado), nunca
+para dado que precisa persistir ou ser compartilhado.
+
+| Função          | Assinatura                                              | Retorno                                        |
+| --------------- | ------------------------------------------------------- | ---------------------------------------------- |
+| `readStorage`   | `readStorage<T>(key: string)`                           | valor parseado ou `null`                       |
+| `writeStorage`  | `writeStorage(key: string, value: unknown)`             | `true` se gravou                               |
+| `removeStorage` | `removeStorage(key: string)`                            | —                                              |
+| `snooze`        | `snooze(key: string, days: number, now?: number)`       | grava `{ until }`; `true` se gravou            |
+| `isSnoozed`     | `isSnoozed(key: string, now?: number)`                  | `true` enquanto o prazo não venceu             |
+
+`isSnoozed` apaga a chave quando o prazo vence. Exemplo (card que some por 15 dias ao fechar):
+
+```tsx
+const [hidden, setHidden] = useState(true);
+useEffect(() => setHidden(isSnoozed('meu-card')), []);
+
+function fechar() {
+  snooze('meu-card', 15);
+  setHidden(true);
+}
+```
+
+{% hint style="warning" %}
+Leia o storage num `useEffect`, não no render. No servidor ele não existe, e ler durante o render
+gera HTML diferente do cliente (erro de hidratação). Por isso o exemplo começa com `hidden = true`.
+{% endhint %}
+
 A consuming project keeps its own country/document-specific helpers (CPF/CNPJ validators, a
 query-builder, locale date formatters) in its own `src/lib/` — those are not core.

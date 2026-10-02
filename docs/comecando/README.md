@@ -24,6 +24,7 @@ cp .env.example .env                            # preencher PGRST_JWT_SECRET + P
 node kizuna-core/cli db install --db-url "postgresql://user:pass@host:5432/db"
 #   Windows:  --psql "C:\Program Files\PostgreSQL\17\bin\psql.exe"
 #   Docker:   --psql "docker exec -i <container> psql"
+node kizuna-core/cli token service              # → POSTGREST_SERVICE_TOKEN no .env (só servidor)
 
 npm run dev                                     # /registre-se → 1º usuário vira root
 node kizuna-core/cli db install --db-url "..."  # re-rodar: seeds que dependem de tenant

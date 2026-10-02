@@ -27,6 +27,7 @@
   * [Screen Engine](interface/screen-engine.md)
   * [Wizard](interface/wizard.md)
   * [Formulários dinâmicos](interface/formularios-dinamicos.md)
+  * [Vocabulário](interface/vocabulario.md)
 
 ## Serviços
 
@@ -41,6 +42,7 @@
   * [Plugin services](plugins/services.md)
   * [Plugin search](plugins/search.md)
   * [Plugin location](plugins/location.md)
+  * [Plugin tickets](plugins/tickets.md)
 
 ## Manutenção
 

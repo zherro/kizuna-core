@@ -23,6 +23,7 @@ import {
 } from './auth';
 import { verifyCaptcha } from './captcha';
 import { checkLockout, recordLoginFailure, clearLoginFailures } from './login-lockout';
+import { safeReportAccountRecreation } from './account/report-recreation';
 
 export type LoginRequestBody = {
   email?: string;
@@ -438,6 +439,9 @@ export function createRegisterHandler(pgrstRpc: PgrstRpc) {
           { status: 500 }
         );
       }
+
+      // Mesmo e-mail de uma conta excluída → ticket para o root (nunca falha o cadastro).
+      await safeReportAccountRecreation({ login: email, newUserId: userId });
 
       const displayName = getDisplayName(name, email);
       const token = signSession({

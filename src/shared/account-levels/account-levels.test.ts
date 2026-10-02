@@ -4,6 +4,7 @@ import {
   computeAccountStatus,
   defineCapabilities,
   parseAccountLevelsConfig,
+  unlocksByLevel,
   type AccountFacts,
 } from './index';
 
@@ -46,6 +47,7 @@ function facts(patch: Partial<AccountFacts> = {}): AccountFacts {
     phoneVerified: false,
     identityVerified: false,
     documentRequired: true,
+    listings: { published: 0, pending: 0 },
     profile: {},
     ...patch,
   };
@@ -102,9 +104,21 @@ describe('computeAccountStatus', () => {
     expect(s.next?.key).toBe('contato');
   });
 
-  it('email OU telefone verificado = 2', () => {
-    expect(computeAccountStatus(config, facts({ phoneVerified: true })).level).toBe(2);
-    expect(computeAccountStatus(config, facts({ emailVerified: true })).level).toBe(2);
+  it('contato exige email E celular', () => {
+    const soEmail = computeAccountStatus(config, facts({ emailVerified: true }));
+    expect(soEmail.level).toBe(1);
+    expect(soEmail.levels[1]!.missing).toEqual(['Verificar celular']);
+
+    const soCelular = computeAccountStatus(config, facts({ phoneVerified: true }));
+    expect(soCelular.level).toBe(1);
+    expect(soCelular.levels[1]!.missing).toEqual(['Verificar email']);
+
+    const nenhum = computeAccountStatus(config, facts());
+    expect(nenhum.levels[1]!.missing).toEqual(['Verificar email', 'Verificar celular']);
+
+    expect(
+      computeAccountStatus(config, facts({ emailVerified: true, phoneVerified: true })).level
+    ).toBe(2);
   });
 
   it('é sequencial: perfil completo sem contato verificado continua 1', () => {
@@ -116,7 +130,7 @@ describe('computeAccountStatus', () => {
   it('perfil completo + contato = 3; nível desabilitado nunca é alcançado', () => {
     const s = computeAccountStatus(
       config,
-      facts({ emailVerified: true, identityVerified: true, profile: fullProfile })
+      facts({ emailVerified: true, phoneVerified: true, identityVerified: true, profile: fullProfile })
     );
     expect(s.level).toBe(3);
     expect(s.next).toBeNull();
@@ -127,6 +141,7 @@ describe('computeAccountStatus', () => {
       config,
       facts({
         emailVerified: true,
+        phoneVerified: true,
         profile: { ...fullProfile, documentNumber: '111.111.111-11', avatarUrl: '' },
       })
     );
@@ -141,6 +156,7 @@ describe('computeAccountStatus', () => {
       config,
       facts({
         emailVerified: true,
+        phoneVerified: true,
         documentRequired: false,
         profile: { ...fullProfile, documentNumber: null },
       })
@@ -164,7 +180,7 @@ describe('canDo', () => {
   });
 
   it('nível desabilitado bloqueia sempre', () => {
-    const topo = computeAccountStatus(config, facts({ emailVerified: true, profile: fullProfile }));
+    const topo = computeAccountStatus(config, facts({ emailVerified: true, phoneVerified: true, profile: fullProfile }));
     expect(canDo(topo, caps, 'sell').allowed).toBe(false);
   });
 
@@ -172,5 +188,72 @@ describe('canDo', () => {
     expect(canDo(nivel1, caps, 'qualquer').allowed).toBe(true);
     const anon = computeAccountStatus(config, facts({ authenticated: false }));
     expect(canDo(anon, caps, 'qualquer').allowed).toBe(false);
+  });
+});
+
+describe('listing_published', () => {
+  const cfg5 = parseAccountLevelsConfig({
+    levels: [
+      { key: 'conta', level: 1, title: 'Conta', requirement: 'authenticated' },
+      { key: 'contato', level: 2, title: 'Contato', requirement: 'contact_verified' },
+      { key: 'perfil', level: 3, title: 'Perfil', requirement: 'profile_complete' },
+      { key: 'anunciante', level: 4, title: 'Anunciante', requirement: 'listing_published' },
+      {
+        key: 'identidade',
+        level: 5,
+        title: 'Identidade',
+        requirement: 'identity_verified',
+        enabled: false,
+      },
+    ],
+  });
+  const pronto = { emailVerified: true, phoneVerified: true, profile: fullProfile };
+
+  it('sem anúncio: falta publicar', () => {
+    const s = computeAccountStatus(cfg5, facts(pronto));
+    expect(s.level).toBe(3);
+    expect(s.next?.key).toBe('anunciante');
+    expect(s.next?.missing).toEqual(['Publicar seu primeiro anuncio']);
+  });
+
+  it('só pendente: em análise', () => {
+    const s = computeAccountStatus(
+      cfg5,
+      facts({ ...pronto, listings: { published: 0, pending: 1 } })
+    );
+    expect(s.level).toBe(3);
+    expect(s.next?.missing).toEqual(['Anuncio em analise']);
+  });
+
+  it('publicado: nível 4, e o 5 desligado nunca é alcançado', () => {
+    const s = computeAccountStatus(
+      cfg5,
+      facts({ ...pronto, listings: { published: 1, pending: 0 } })
+    );
+    expect(s.level).toBe(4);
+    expect(s.levelKey).toBe('anunciante');
+    expect(s.next).toBeNull();
+  });
+
+  it('canDo service.create no nível 2 lista só o perfil como pendente', () => {
+    const caps5 = defineCapabilities(cfg5, { 'service.create': 'perfil' });
+    const s = computeAccountStatus(cfg5, facts({ emailVerified: true, phoneVerified: true }));
+    const r = canDo(s, caps5, 'service.create');
+    expect(r.allowed).toBe(false);
+    expect(r.pending.map((l) => l.key)).toEqual(['perfil']);
+  });
+});
+
+describe('unlocksByLevel', () => {
+  it('agrupa rótulos por nível, ignora ação sem rótulo e não repete', () => {
+    const out = unlocksByLevel(
+      { like: 'conta', save: 'conta', review: 'contato', 'service.create': 'perfil', x: 'perfil' },
+      { like: 'Curtir', save: 'Curtir', review: 'Avaliar', 'service.create': 'Publicar anuncios' }
+    );
+    expect(out).toEqual({
+      conta: ['Curtir'],
+      contato: ['Avaliar'],
+      perfil: ['Publicar anuncios'],
+    });
   });
 });

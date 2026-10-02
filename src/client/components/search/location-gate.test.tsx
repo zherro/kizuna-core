@@ -2,6 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 import { LocationGate } from './location-gate';
+import { __resetLocationInit } from '../../hooks/use-user-location';
 
 vi.mock('../location-modal', () => ({
   LocationModal: () => <div data-testid="location-modal" />,
@@ -27,6 +28,7 @@ function stubIpDown(resolved: unknown) {
 
 beforeEach(() => {
   localStorage.clear();
+  __resetLocationInit();
 });
 
 afterEach(() => {

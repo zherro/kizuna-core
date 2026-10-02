@@ -5,8 +5,11 @@ import { ListingResultCard } from '../ui-better-soft/lists/listing-result-card';
 import { formatCurrency } from '../../../lib/shared/currency-mask';
 import { PRICE_UNIT_LABEL } from '../services/service-labels';
 import { resolveServiceDetailVariant, type ServiceDetailConfig } from '../services/detail/category-style';
+import { TrackView } from '../../analytics/track-view';
+import type { EventRule } from '../../../shared/analytics';
 import type { ServiceResult } from './search-types';
 import { formatLocationLabel } from './format-location-label';
+import { serviceHref } from '../../../shared/city-routing/city-slug';
 
 export type ResultsScope = 'city' | 'state' | 'related' | 'empty';
 
@@ -27,6 +30,8 @@ type Props = {
    * decidir o estilo do CARD (hoje: esconder preço + capa em pé nas categorias em variant
    * `"cinema"`). Sem ela, todo card usa o estilo padrão (com preço, capa 3:2). */
   serviceDetailConfig?: ServiceDetailConfig | null;
+  /** Plugin analytics: regra da impressão (`resolveEventRule`); cada card conta ao ficar visível. */
+  impressionRule?: EventRule | null;
 };
 
 function priceLabel(r: ServiceResult): string {
@@ -43,7 +48,7 @@ function toCardProps(r: ServiceResult, detailConfig?: ServiceDetailConfig | null
   const isCinema = variant === 'cinema';
 
   return {
-    href: `/anuncios/${r.uid}`,
+    href: serviceHref(r),
     title: r.title,
     priceLabel: isCinema ? null : priceLabel(r),
     cardStyle: isCinema ? ('cinema' as const) : ('default' as const),
@@ -87,7 +92,26 @@ export function SearchResultsView({
   loadingMore,
   onLoadMore,
   serviceDetailConfig,
+  impressionRule = null,
 }: Props) {
+  const card = (r: ServiceResult, variant: 'strip' | 'grid') => {
+    const item = <ListingResultCard key={r.uid} {...toCardProps(r, serviceDetailConfig)} variant={variant} />;
+    if (!impressionRule) return item;
+    return (
+      <TrackView
+        key={r.uid}
+        entityType="service"
+        entityId={r.uid}
+        event="impression"
+        rule={impressionRule}
+        source="search"
+        className={variant === 'strip' ? 'shrink-0' : 'h-full'}
+      >
+        {item}
+      </TrackView>
+    );
+  };
+
   if (loading) {
     return (
       <div
@@ -140,9 +164,7 @@ export function SearchResultsView({
   if (layout === 'strip') {
     return (
       <div className="flex gap-3 overflow-x-auto pb-2">
-        {results.map((r) => (
-          <ListingResultCard key={r.uid} {...toCardProps(r, serviceDetailConfig)} variant="strip" />
-        ))}
+        {results.map((r) => card(r, 'strip'))}
       </div>
     );
   }
@@ -156,9 +178,7 @@ export function SearchResultsView({
         <span className="text-xs text-muted-foreground">{results.length} resultado(s)</span>
       </div>
       <div className="grid grid-cols-1 gap-4 min-[500px]:grid-cols-2 min-[900px]:grid-cols-3 min-[1400px]:grid-cols-4">
-        {results.map((r) => (
-          <ListingResultCard key={r.uid} {...toCardProps(r, serviceDetailConfig)} variant="grid" />
-        ))}
+        {results.map((r) => card(r, 'grid'))}
       </div>
       {hasMore && onLoadMore && (
         <div className="mt-6 flex justify-center">

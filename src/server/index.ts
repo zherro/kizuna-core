@@ -41,6 +41,19 @@ export {
 } from './otp-handlers';
 export { registerOtpProvider, isPhoneLoginEnabled, logOtpProvider } from './otp/registry';
 export {
+  hasServiceAccess,
+  serviceTable,
+  serviceRpc,
+  serviceDb,
+  ServiceUnavailableError,
+  type ServiceDb,
+} from './service-db';
+export { deleteAccount } from './account/delete-account';
+export {
+  createDeleteAccountHandler,
+  RECENT_LOGIN_MAX_AGE_SEC,
+} from './account/delete-account-handler';
+export {
   parseLocationConfig,
   listLocationCities,
   resolveLocation,
@@ -55,8 +68,10 @@ export {
   getAccountStatus,
   canDoServer,
   createAccountLevelHandler,
+  usesListings,
   type AccountLevelsSetup,
 } from './account-levels';
+export { RequireLevel } from './require-level';
 
 export {
   listResource,
@@ -113,3 +128,8 @@ export {
   type ServiceExtraFields,
   type RelatedResult,
 } from './services/service-detail-data';
+export {
+  loadCategoryRail,
+  DEFAULT_CATEGORY_RAIL_LIMIT,
+  type CategoryRailData,
+} from './services/category-rail-data';

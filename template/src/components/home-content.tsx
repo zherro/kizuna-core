@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useAppPreferences } from '@kizuna/core/client/providers/app-preferences-provider';
 import { DiscoverCta } from '@kizuna/core/client/components/home/discover-cta';
 import { HomeHero } from './home/home-hero';
@@ -31,6 +31,8 @@ type HomeContentProps = {
   inkPicker?: boolean;
   /** nível padrão do fundo "ink" (1-7) — vem de home.inkLevel */
   inkLevel?: HomeInkLevel;
+  /** carrosséis por categoria (Server Components montados na page) — vem de home.categoryRails */
+  categoryRails?: ReactNode;
 };
 
 export function HomeContent({
@@ -40,6 +42,7 @@ export function HomeContent({
   showDiscover = false,
   inkPicker = HOME_INK_TONE_PICKER_ENABLED,
   inkLevel: defaultInkLevel = HOME_INK_FIXED_LEVEL,
+  categoryRails,
 }: HomeContentProps = {}) {
   const { messages } = useAppPreferences();
   const t = messages.home;
@@ -84,6 +87,7 @@ export function HomeContent({
           <DiscoverCta />
         </div>
       ) : null}
+      {categoryRails}
       <NearbyGrid t={t} />
       <HowItWorks t={t} />
       <JoinCta t={t} />

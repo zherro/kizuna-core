@@ -11,6 +11,7 @@ DECLARE
   v_deck uuid[];
   v_a uuid; v_b uuid; v_c uuid;
   v_pmin numeric; v_pmax numeric;
+  v_cnt integer;
 BEGIN
   SELECT array_agg(uid) INTO v_all
     FROM public.fn_swipe_deck(NULL, NULL, NULL, NULL, NULL, NULL, 0.5, 50, NULL, NULL);
@@ -30,7 +31,7 @@ BEGIN
   RAISE NOTICE 'deck exclusions OK';
 
   -- passado antigo volta (o RLS permite ao dono atualizar a própria linha)
-  UPDATE public.service_swipes SET updated_at = now() - interval '30 days' WHERE service_uid = v_b;
+  UPDATE public.service_user_favorites SET updated_at = now() - interval '30 days' WHERE service_uid = v_b;
   SELECT array_agg(uid) INTO v_deck
     FROM public.fn_swipe_deck(NULL, NULL, NULL, NULL, NULL, NULL, 0.5, 50, NULL, NULL);
   ASSERT v_b = ANY(v_deck), 'passado apos TTL volta';
@@ -41,14 +42,31 @@ BEGIN
   ASSERT (SELECT count(*) FROM public.fn_swipe_liked(NULL, 20) WHERE uid = v_a) = 1, 'liked lista A';
   -- skip nunca rebaixa um like (ex.: passados do anônimo migrados no login)
   PERFORM public.fn_swipe_record(ARRAY[v_a], 'skip');
-  ASSERT (SELECT action FROM public.service_swipes WHERE service_uid = v_a) = 'like', 'skip apos like mantem like';
+  ASSERT (SELECT action FROM public.service_user_favorites WHERE service_uid = v_a) = 'like', 'skip apos like mantem like';
   ASSERT (SELECT count(*) FROM public.fn_swipe_liked(NULL, 20) WHERE uid = v_a) = 1, 'skip nao descurte';
   RAISE NOTICE 'skip keeps like OK';
   -- descurtir = unlike (grava skip)
   ASSERT public.fn_swipe_record(ARRAY[v_a], 'unlike') = 1, 'record unlike';
-  ASSERT (SELECT action FROM public.service_swipes WHERE service_uid = v_a) = 'skip', 'unlike grava skip';
+  ASSERT (SELECT action FROM public.service_user_favorites WHERE service_uid = v_a) = 'skip', 'unlike grava skip';
   ASSERT (SELECT count(*) FROM public.fn_swipe_liked(NULL, 20) WHERE uid = v_a) = 0, 'descurtir';
   RAISE NOTICE 'liked OK';
+
+  -- favorito + like_count (trigger)
+  SELECT like_count INTO v_cnt FROM public.services WHERE uid = v_a;
+  PERFORM public.fn_swipe_record(ARRAY[v_a], 'like');
+  ASSERT (SELECT like_count FROM public.services WHERE uid = v_a) = v_cnt + 1, 'like incrementa like_count';
+  UPDATE public.service_user_favorites SET favorite = true WHERE service_uid = v_a;
+  ASSERT (SELECT favorite FROM public.service_user_favorites WHERE service_uid = v_a), 'favoritar um like';
+  PERFORM public.fn_swipe_record(ARRAY[v_a], 'like');
+  ASSERT (SELECT favorite FROM public.service_user_favorites WHERE service_uid = v_a), 'like preserva favorite';
+  PERFORM public.fn_swipe_record(ARRAY[v_a], 'unlike');
+  ASSERT NOT (SELECT favorite FROM public.service_user_favorites WHERE service_uid = v_a), 'unlike zera favorite';
+  ASSERT (SELECT like_count FROM public.services WHERE uid = v_a) = v_cnt, 'skip decrementa like_count';
+  BEGIN
+    UPDATE public.service_user_favorites SET favorite = true WHERE service_uid = v_a; -- action = 'skip'
+    RAISE EXCEPTION 'esperava violacao do CHECK fav_implies_like';
+  EXCEPTION WHEN check_violation THEN RAISE NOTICE 'favorite/like_count OK';
+  END;
 
   -- faixa de preço: mesma semântica do /busca (sem preço / <= 0 = "Sob consulta" passa sempre)
   SELECT min(price), max(price) INTO v_pmin, v_pmax
@@ -82,7 +100,7 @@ END $$;
 -- RLS: outro usuário não vê as linhas
 SET LOCAL request.jwt.claims TO '{"role":"auth_user","sub":"7a19ff79-cf27-4b61-8197-9f7985fb3c76","user_id":"7a19ff79-cf27-4b61-8197-9f7985fb3c76","tenant_id":"da1035c7-9e0c-44ee-a092-38c3cf07793d"}';
 DO $$ BEGIN
-  ASSERT (SELECT count(*) FROM public.service_swipes WHERE user_id = 'c0e7f2e2-955c-4d90-9f61-e998fa082553') = 0, 'rls';
+  ASSERT (SELECT count(*) FROM public.service_user_favorites WHERE user_id = 'c0e7f2e2-955c-4d90-9f61-e998fa082553') = 0, 'rls';
   RAISE NOTICE 'rls OK';
 END $$;
 

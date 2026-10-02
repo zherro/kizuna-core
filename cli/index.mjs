@@ -7,7 +7,7 @@ import { resolve, dirname } from 'node:path';
 import { resolvePaths } from './lib/paths.mjs';
 import { makePrompt } from './lib/prompt.mjs';
 
-const COMMANDS = ['install', 'update', 'sync', 'check', 'lock', 'adopt', 'db', 'plugin'];
+const COMMANDS = ['install', 'update', 'sync', 'check', 'lock', 'adopt', 'db', 'plugin', 'token'];
 
 // Flags globais que consomem o próximo token como valor.
 const VALUE_FLAGS = new Set(['--project', '--db-url', '--plugin', '--psql', '--reseed']);
@@ -51,6 +51,7 @@ comandos:
   adopt              gera kizuna.lock de um projeto que já tem a casca
   db <install|migrate>   roda a instalação / migrations incrementais
   plugin <list|add <nome>>
+  token service      imprime o JWT de serviço (POSTGREST_SERVICE_TOKEN, só servidor)
 
 opções globais:
   --project <dir>    raiz do projeto (padrão: cwd)

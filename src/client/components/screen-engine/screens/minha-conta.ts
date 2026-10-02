@@ -32,5 +32,10 @@ export const MINHA_CONTA_SCREEN: ScreenConfig = {
       component: 'account-form',
       props: {},
     },
+    // Zona de perigo: "Excluir minha conta" (POST /api/account/delete).
+    {
+      component: 'delete-account',
+      props: {},
+    },
   ],
 };

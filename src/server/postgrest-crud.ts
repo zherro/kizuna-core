@@ -119,12 +119,14 @@ export async function listResource(resource: string, request: Request) {
   if (!config) {
     return NextResponse.json({ message: 'Recurso nao suportado.' }, { status: 404 });
   }
+  const t0 = performance.now();
   let authHeader: string | null = null;
   if (config.listRequiresAuth ?? true) {
     const authState = await ensureAuthenticated();
     if (authState.error) return authState.error;
     authHeader = authState.authHeader;
   }
+  const tAuth = performance.now();
 
   const { searchParams } = new URL(request.url);
   const page = parsePositiveInt(searchParams.get('page'), 1);
@@ -183,6 +185,7 @@ export async function listResource(resource: string, request: Request) {
     },
     { auth: authHeader }
   );
+  const tPgrst = performance.now();
 
   const payload = (await response.json().catch(() => null)) as unknown;
 
@@ -198,13 +201,22 @@ export async function listResource(resource: string, request: Request) {
   const total = parseTotalFromContentRange(response.headers.get('content-range'));
   const totalPages = total > 0 ? Math.ceil(total / pageSize) : 0;
 
-  return NextResponse.json({
+  const result = NextResponse.json({
     items,
     page,
     pageSize,
     total,
     totalPages,
   });
+  // Só em dev: aparece na aba Network > Timing do navegador (separa sessão × PostgREST × resto).
+  if (process.env.NODE_ENV !== 'production') {
+    const ms = (n: number) => n.toFixed(1);
+    result.headers.set(
+      'Server-Timing',
+      `auth;dur=${ms(tAuth - t0)}, pgrst;dur=${ms(tPgrst - tAuth)}, total;dur=${ms(performance.now() - t0)}`
+    );
+  }
+  return result;
 }
 
 export async function createResource(resource: string, request: Request) {

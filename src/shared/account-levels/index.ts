@@ -18,6 +18,7 @@ export const REQUIREMENT_IDS = [
   'authenticated',
   'contact_verified',
   'profile_complete',
+  'listing_published',
   'identity_verified',
 ] as const;
 export type RequirementId = (typeof REQUIREMENT_IDS)[number];
@@ -45,6 +46,8 @@ export type AccountFacts = {
   phoneVerified: boolean;
   identityVerified: boolean;
   documentRequired: boolean;
+  /** Anúncios do usuário (plugin services). Sem o plugin: zeros. */
+  listings: { published: number; pending: number };
   profile: {
     fullName?: string | null;
     avatarUrl?: string | null;
@@ -56,14 +59,20 @@ export type AccountFacts = {
   };
 };
 
+export const NO_LISTINGS: AccountFacts['listings'] = { published: 0, pending: 0 };
+
 const filled = (v: string | null | undefined) => typeof v === 'string' && v.trim().length > 0;
 
 /** Requisitos: cada um devolve a lista do que falta (vazia = cumprido). */
 export const REQUIREMENTS: Record<RequirementId, (facts: AccountFacts) => string[]> = {
   authenticated: (f) => (f.authenticated ? [] : ['Entrar na conta']),
 
-  contact_verified: (f) =>
-    f.emailVerified || f.phoneVerified ? [] : ['Verificar email ou celular'],
+  contact_verified: (f) => {
+    const missing: string[] = [];
+    if (!f.emailVerified) missing.push('Verificar email');
+    if (!f.phoneVerified) missing.push('Verificar celular');
+    return missing;
+  },
 
   // Mesma regra do passo "Completar perfil" de user-data-form.tsx.
   profile_complete: (f) => {
@@ -80,6 +89,11 @@ export const REQUIREMENTS: Record<RequirementId, (facts: AccountFacts) => string
     if (!filled(p.zipCode) || !filled(p.state) || !filled(p.city))
       missing.push('Endereco (CEP, estado e cidade)');
     return missing;
+  },
+
+  listing_published: (f) => {
+    if (f.listings.published > 0) return [];
+    return f.listings.pending > 0 ? ['Anuncio em analise'] : ['Publicar seu primeiro anuncio'];
   },
 
   // Porta para verificação de identidade (documento + selfie com IA). Sem implementação na v1.
@@ -147,6 +161,21 @@ export function defineCapabilities<T extends Record<string, string>>(
     }
   }
   return capabilities;
+}
+
+/** Rótulos das ações agrupados pelo nível que as libera — "o que você libera" no card. */
+export function unlocksByLevel(
+  capabilities: Record<string, string>,
+  labels: Record<string, string> = {}
+): Record<string, string[]> {
+  const out: Record<string, string[]> = {};
+  for (const [action, levelKey] of Object.entries(capabilities)) {
+    const label = labels[action];
+    if (!label) continue;
+    const list = (out[levelKey] ??= []);
+    if (!list.includes(label)) list.push(label);
+  }
+  return out;
 }
 
 export type LevelStatus = AccountLevelDef & {

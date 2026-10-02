@@ -79,8 +79,8 @@ export function TopbarCompact({
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur-md">
-      {/* mesmo container do Topbar classic (max-w-6xl) */}
-      <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
+      {/* mesmo container do Topbar classic (max-w-[1600px]) */}
+      <div className="mx-auto flex h-14 w-full max-w-[1600px] items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
         {brandLogo ? (
           <Link href="/" className="flex shrink-0 items-center">
             {/* eslint-disable-next-line @next/next/no-img-element */}

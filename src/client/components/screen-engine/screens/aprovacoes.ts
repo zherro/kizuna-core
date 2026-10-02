@@ -36,7 +36,8 @@ const listConfig: ListBlockConfig = {
   statusFilter: { defaultValue: 'pending' },
   displayConfig: {
     icon: 'Briefcase',
-    singularName: 'Serviço',
+    singularName: '$vocab.singular',
+    notFoundMessage: '$vocab.noneFound',
     fields: {
       categoryGroup: {
         label: 'Grupo de Categoria',
@@ -93,9 +94,8 @@ export const APROVACOES_SCREEN: ScreenConfig = {
       component: 'page-header',
       props: {
         eyebrow: 'Painel administrativo',
-        title: 'Revisao de servicos',
-        description:
-          'Acompanhe os servicos publicados e inicie uma revisao para aprovar, pausar ou arquivar.',
+        title: '$vocab.reviewTitle',
+        description: '$vocab.reviewDescription',
         backHref: '/painel',
         backLabel: 'Painel',
       },

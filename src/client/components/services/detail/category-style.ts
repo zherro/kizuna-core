@@ -14,6 +14,13 @@ export type CategoryHueConfig = {
   hue: number;
 };
 
+export type ReactionButtonConfig = {
+  /** Nome de ícone lucide-react (ex. "Heart"); inválido cai no ícone padrão do botão. */
+  icon?: string;
+  label?: string;
+  labelActive?: string;
+};
+
 export type ServiceDetailConfig = {
   _comment?: string;
   /** Variant default quando a categoria não está em `variantByCategorySlug`. */
@@ -26,6 +33,8 @@ export type ServiceDetailConfig = {
    * de outra categoria) — a categoria continua navegável sozinha (filtro direto por ela). Passe
    * pra `fn_search_services` como `p_exclude_category_slugs` só quando não há `p_category_id`. */
   excludeFromMixedCategorySlugs?: string[];
+  /** Botões Gostei/Favoritar do detalhe (plugin swipe); remova um bloco para esconder o botão. */
+  reactions?: { like?: ReactionButtonConfig; favorite?: ReactionButtonConfig };
 };
 
 const FALLBACK_VARIANT = 'service';

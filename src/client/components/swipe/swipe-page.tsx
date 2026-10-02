@@ -13,6 +13,7 @@ import type { ServiceResult } from '../search/search-types';
 import { RequireAuthProvider, consumePendingAuthAction, useRequireAuth } from '../auth/require-auth';
 import { SwipeCard, coverUrl } from './swipe-card';
 import { useSwipeDeck } from './use-swipe-deck';
+import { trackEvent } from '../../analytics/analytics-api';
 import { recordSwipe } from './swipe-api';
 
 type Props = { basePath?: string; likedHref?: string };
@@ -104,6 +105,7 @@ function SwipePageInner({ basePath = '/descobrir', likedHref = '/curtidos' }: Pr
     if (pending?.startsWith('like:')) {
       const uid = pending.slice('like:'.length);
       recordSwipe([uid], 'like').catch((err) => console.warn('[swipe] falha ao gravar curtida pendente', err));
+      trackEvent({ entityType: 'service', entityId: uid, event: 'favorite' });
       const card = drop(uid);
       if (card) setLiked((prev) => [...prev, card]);
     }

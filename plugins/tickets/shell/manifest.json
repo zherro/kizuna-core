@@ -1,0 +1,9 @@
+{
+  "owner": "tickets",
+  "_comment": "Páginas do plugin tickets. Requer os recursos tickets/ticket_comments em src/lib/server/resources.ts (resourceTickets).",
+  "files": {
+    "src/app/painel/chamados/page.tsx": "managed",
+    "src/app/painel/chamados/novo/page.tsx": "managed",
+    "src/app/painel/chamados/[id]/page.tsx": "managed"
+  }
+}

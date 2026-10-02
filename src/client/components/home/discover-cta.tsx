@@ -9,7 +9,7 @@ export type DiscoverCtaProps = {
   title?: string;
   subtitle?: string;
   icon?: ReactNode;
-  /** aplica o container da home (max-w-6xl). Default true. */
+  /** aplica o container da home (max-w-[1600px]). Default true. */
   contained?: boolean;
   className?: string;
 };
@@ -48,5 +48,5 @@ export function DiscoverCta({
   );
 
   if (!contained) return link;
-  return <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">{link}</div>;
+  return <div className="mx-auto w-full max-w-[1600px] px-4 sm:px-6">{link}</div>;
 }

@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import type { ServiceRecord } from '../service-type';
 import type { ServiceExtraFields, ProviderProfile } from '../../../../server/services/service-detail-data';
 
-export type { CategoryStyleInput, ServiceDetailConfig, ServiceDetailVariant } from './category-style';
+export type { CategoryStyleInput, ReactionButtonConfig, ServiceDetailConfig, ServiceDetailVariant } from './category-style';
 
 /** O que uma variant de conteúdo (`service`, `cinema`, ...) recebe — só o essencial pra desenhar o
  * "miolo" da página (facts strip + seções); hero, título, sidebar e carrosséis são comuns e ficam

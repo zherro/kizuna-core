@@ -62,24 +62,110 @@ export async function resolveLocation(
   }
 }
 
-/**
- * Local salvo no navegador pode ser de antes da lista de cidades (ex.: "São Paulo" detectado por
- * IP numa visita antiga). Revalida uma vez por carga de página — todas as instâncias do hook
- * compartilham a mesma promessa.
- */
-let storedRevalidation: Promise<void> | null = null;
+/** Países da América Latina e Caribe (ISO 3166-1 alpha-2) — IP fora daqui não é usado. */
+const LATIN_AMERICA_COUNTRY_CODES = new Set([
+  'AR',
+  'BO',
+  'BR',
+  'CL',
+  'CO',
+  'CR',
+  'CU',
+  'DO',
+  'EC',
+  'SV',
+  'GT',
+  'HN',
+  'MX',
+  'NI',
+  'PA',
+  'PY',
+  'PE',
+  'PR',
+  'UY',
+  'VE', // América Latina "central"
+  'BZ',
+  'GY',
+  'SR',
+  'GF', // vizinhos geográficos da região (Belize, Guianas)
+  'HT',
+  'JM',
+  'TT',
+  'BS',
+  'BB', // Caribe
+]);
 
-function revalidateStoredLocationOnce(apply: (loc: UserLocation | null) => void) {
-  if (storedRevalidation) return;
-  const stored = getStoredLocation();
-  if (!stored?.stateCode) return;
-  storedRevalidation = resolveLocation(stored.stateCode, stored.cityName).then((resolved) => {
-    if (resolved === undefined) return;
-    if (resolved === null) return apply(null);
-    if (resolved.cityId !== stored.cityId || resolved.stateCode !== stored.stateCode) {
-      apply({ ...resolved, source: stored.source });
+/**
+ * IP fora da América Latina (VPN, acesso de fora): a região do provedor não faz sentido pra um
+ * marketplace brasileiro — detecta como São Paulo, que o `resolve` troca pela cidade padrão
+ * (ou por nada, com `outsideList: "prompt"`) se não estiver na lista.
+ */
+const FOREIGN_IP_FALLBACK = { stateCode: 'SP', cityName: 'São Paulo' };
+
+/**
+ * Geolocalização por IP — sem prompt de permissão (diferente de `navigator.geolocation`).
+ * Aproximada (cidade/UF do provedor), via `/api/location/ip` (proxy server-side do ip-api.com;
+ * o IP do visitante é lido no servidor). Depois passa pelo `resolve`, SEMPRE — inclusive quando
+ * o IP não dá nada (dev, ip-api fora do ar): aí vai sem UF e o `resolve` devolve a cidade padrão
+ * do projeto, se houver. `null` = nenhum local (o usuário escolhe no seletor).
+ */
+async function detectByIP(): Promise<UserLocation | null> {
+  let detected: { stateCode: string; cityName: string } | null = null;
+  try {
+    const res = await fetch('/api/location/ip', { signal: AbortSignal.timeout(4000) });
+    if (res.ok) {
+      const data = (await res.json()) as {
+        stateCode?: string;
+        cityName?: string;
+        countryCode?: string;
+      };
+      if (!data.countryCode || !LATIN_AMERICA_COUNTRY_CODES.has(data.countryCode)) {
+        detected = FOREIGN_IP_FALLBACK;
+      } else if (data.stateCode) {
+        detected = { stateCode: data.stateCode, cityName: data.cityName ?? '' };
+      }
     }
+  } catch {
+    // IP indisponível — segue para o resolve sem UF
+  }
+  const resolved = await resolveLocation(detected?.stateCode ?? '', detected?.cityName ?? '');
+  return resolved ? { ...resolved, source: 'ip' } : null;
+}
+
+/**
+ * Inicialização do local — uma vez por carga de página, a MESMA em qualquer tela (header da home,
+ * /busca, ...); todas as instâncias do hook compartilham a promessa:
+ *  - com local salvo: revalida contra a lista de cidades (pode ser de antes dela — ex.: "São
+ *    Paulo" de uma visita antiga); fora dela vira a cidade padrão ou é apagado;
+ *  - sem local salvo: detecta por IP (+ cidade padrão como fallback), sem pedir permissão.
+ */
+let initialization: Promise<void> | null = null;
+let initialized = false;
+
+function initializeLocationOnce(apply: (loc: UserLocation | null) => void): Promise<void> {
+  if (initialization) return initialization;
+  const stored = getStoredLocation();
+  const run = stored?.stateCode
+    ? resolveLocation(stored.stateCode, stored.cityName).then((resolved) => {
+        if (resolved === undefined) return;
+        if (resolved === null) return apply(null);
+        if (resolved.cityId !== stored.cityId || resolved.stateCode !== stored.stateCode) {
+          apply({ ...resolved, source: stored.source });
+        }
+      })
+    : detectByIP().then((loc) => {
+        if (loc) apply(loc);
+      });
+  initialization = run.finally(() => {
+    initialized = true;
   });
+  return initialization;
+}
+
+/** Só para testes. */
+export function __resetLocationInit() {
+  initialization = null;
+  initialized = false;
 }
 
 async function reverseGeocode(lat: number, lon: number): Promise<ReverseGeocode | null> {
@@ -96,22 +182,11 @@ async function reverseGeocode(lat: number, lon: number): Promise<ReverseGeocode 
   }
 }
 
-async function detectByIP(): Promise<UserLocation | null> {
-  try {
-    const res = await fetch('/api/location/ip');
-    if (!res.ok) return null;
-    const data = await res.json();
-    if (!data.stateCode || !data.cityName) return null;
-    const resolved = await resolveLocation(data.stateCode, data.cityName);
-    return resolved ? { ...resolved, source: 'ip' } : null;
-  } catch {
-    return null;
-  }
-}
-
 export function useUserLocation() {
   const [location, setLocationState] = useState<UserLocation | null>(null);
   const [status, setStatus] = useState<DetectionStatus>('idle');
+  /** true depois da inicialização (revalidação ou detecção por IP) — `location` já é o final. */
+  const [ready, setReady] = useState(initialized);
 
   useEffect(() => {
     try {
@@ -153,7 +228,13 @@ export function useUserLocation() {
   }, []);
 
   useEffect(() => {
-    revalidateStoredLocationOnce((loc) => (loc ? setLocation(loc) : clearLocation()));
+    let active = true;
+    initializeLocationOnce((loc) => (loc ? setLocation(loc) : clearLocation())).then(() => {
+      if (active) setReady(true);
+    });
+    return () => {
+      active = false;
+    };
   }, [setLocation, clearLocation]);
 
   const detectLocation = useCallback(async () => {
@@ -194,5 +275,5 @@ export function useUserLocation() {
     setStatus('prompt');
   }, [setLocation]);
 
-  return { location, setLocation, clearLocation, detectLocation, status };
+  return { location, setLocation, clearLocation, detectLocation, status, ready };
 }

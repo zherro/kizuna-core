@@ -13,12 +13,12 @@ a materializa num projeto e mantém projeto ↔ core alinhados. Ver **`docs/come
 - `VERSION` — string semver única (hoje `0.5.0`); sinal do version-gate. Bumpa só em mudança
   relevante pro consumidor (`template/`, shell de plugin, migration nova, API pública). `git log`
   é o changelog — sem `CHANGELOG`.
-- `cli/` — `index.mjs` (dispatcher) + `commands/{install,update,sync,lock,check,adopt,plugin,db}.mjs`
+- `cli/` — `index.mjs` (dispatcher) + `commands/{install,update,sync,lock,check,adopt,plugin,db,token}.mjs`
   - `lib/*.mjs`. Zero deps, ESM, Node ≥ 20. Testes: `npx vitest run cli/`.
 - `template/` — `kizuna.manifest.json` (21 paths: `managed` / `seed` / `merge`) + os arquivos da
   casca base.
 - `plugins/<n>/shell/` — fragmento de casca por plugin (rotas limpas + registry): hoje
-  `storage`, `location`, `pages`, `onboarding`, `agenda`.
+  `storage`, `location`, `pages`, `onboarding`, `agenda`, `tickets`.
 - `kizuna.lock` (no projeto consumidor, não aqui) — hashes + versões do que foi instalado.
 
 ## Docs
@@ -60,6 +60,8 @@ a materializa num projeto e mantém projeto ↔ core alinhados. Ver **`docs/come
     `resources/services` (`resourceServices` — `services` / `service_categories_sub` /
     `service_moderations`; the `services` plugin owns them, writes to `service_moderations` go
     through the `fn_service_moderate` RPC).
+    `resources/analytics` (`resourceAnalytics` — `analytics_events`, read-only; `rpcAnalytics` —
+    `fn_analytics_track`, public write with optional session; the `analytics` plugin owns them).
     `resources/agenda-config` (`resourceAgendaConfig` — `agenda_schedule` / `agenda_schedule_hours` /
     `agenda_booking_preferences` / `agenda_notification_preferences`; the `agenda` plugin v1.1.0 owns
     them, a consuming project spreads `resourceAgendaConfig` into its `postgrestResources`).

@@ -2,63 +2,19 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import * as Yup from 'yup';
-import { CheckCircle2, ExternalLink, ShieldCheck, Upload, User } from 'lucide-react';
-import { Button } from '@kizuna/core/client/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@kizuna/core/client/components/ui/card';
-import { Input } from '@kizuna/core/client/components/ui/input';
-import { Label } from '@kizuna/core/client/components/ui/label';
-import { QuillEditor } from '@kizuna/core/client/components/ui/quill-editor';
-import { SearchableSelect } from '@kizuna/core/client/components/ui/searchable-select';
 import { useAuth } from '@kizuna/core/client/providers/auth-provider';
 import { useForm } from '@kizuna/core/client';
 import { validateDocument } from '../../../lib/validate-doc';
 import { stripHtml } from '../../../lib/helper/text.helper';
-
-const STATES_BR = [
-  'AC',
-  'AL',
-  'AP',
-  'AM',
-  'BA',
-  'CE',
-  'DF',
-  'ES',
-  'GO',
-  'MA',
-  'MT',
-  'MS',
-  'MG',
-  'PA',
-  'PB',
-  'PR',
-  'PE',
-  'PI',
-  'RJ',
-  'RN',
-  'RS',
-  'RO',
-  'RR',
-  'SC',
-  'SP',
-  'SE',
-  'TO',
-];
-
-const ACCOUNT_STATUS_LABELS: Record<number, string> = {
-  1: 'Pendente',
-  2: 'Em verificacao',
-  3: 'Aprovado',
-  4: 'Em analise',
-  5: 'Reprovado',
-  6: 'Bloqueado',
-  9: 'Fraude',
-};
+import { useToast } from '../../hooks/use-toast';
+import { useAccountLevel } from '../account-levels/use-account-level';
+import { AddressSection } from './account-form/address-section';
+import { ContactSection } from './account-form/contact-section';
+import { PersonalSection } from './account-form/personal-section';
+import { ProfileHeader } from './account-form/profile-header';
+import { PublicProfileSection } from './account-form/public-profile-section';
+import { SaveBar } from './account-form/save-bar';
+import type { AccountFormValues } from './account-form/types';
 
 const ACCEPTED_AVATAR_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const MAX_AVATAR_FILE_SIZE_MB = 2;
@@ -80,24 +36,6 @@ function allowedDocumentTypes(mask: UserDataDocumentFieldConfig['mask']): Array<
   if (mask === 'cnpj') return ['cnpj'];
   return ['cpf', 'cnpj'];
 }
-
-type AccountFormValues = {
-  fullName: string;
-  displayName: string;
-  phone: string;
-  email: string;
-  documentType: 'cpf' | 'cnpj';
-  documentNumber: string;
-  birthDate: string;
-  zipCode: string;
-  state: string;
-  city: string;
-  /** IBGE municipality code for `city` (7 digits). Empty when the row predates the picker's
-   *  id capture or the user typed a city the picker didn't resolve. */
-  cityIbge: string;
-  bio: string;
-  avatarUrl: string;
-};
 
 function buildInitialValues(config: UserDataFieldsConfig): AccountFormValues {
   return {
@@ -286,10 +224,9 @@ export function AccountForm({
   const docTypes = allowedDocumentTypes(documentField.mask);
   const [resolvedStepId, setResolvedStepId] = useState<string | null>(null);
   const [existingId, setExistingId] = useState<string | null | undefined>(undefined);
-  const [emailVerified, setEmailVerified] = useState(false);
-  const [phoneVerified, setPhoneVerified] = useState(false);
-  const [accountStatus, setAccountStatus] = useState<number | null>(null);
-  const [stepDone, setStepDone] = useState(false);
+  const [legacyEmailVerified, setLegacyEmailVerified] = useState(false);
+  const toast = useToast();
+  const { status: levelStatus, refresh: refreshLevel } = useAccountLevel();
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
@@ -350,10 +287,7 @@ export function AccountForm({
         setExistingId(record?.id != null ? String(record.id) : null);
         if (record) {
           setExistingRecord(record);
-          setEmailVerified(Boolean(record.emailVerified));
-          setPhoneVerified(Boolean(record.phoneVerified));
-          const statusValue = Number(record.status);
-          setAccountStatus(Number.isFinite(statusValue) ? statusValue : null);
+          setLegacyEmailVerified(Boolean(record.emailVerified));
         }
       } catch {
         if (active) setExistingId(null);
@@ -411,11 +345,7 @@ export function AccountForm({
         body: JSON.stringify({ step_id: resolvedStepId, status: 'completed' }),
       });
 
-      if (progressRes.ok) {
-        setStepDone(true);
-        return true;
-      }
-      return false;
+      return progressRes.ok;
     },
     [fieldsConfig, resolvedStepId]
   );
@@ -463,21 +393,13 @@ export function AccountForm({
       connectionErrorMessage: 'Não foi possível conectar ao servidor.',
       onSuccess: async (result, { setSuccess }) => {
         const item = result.item as Record<string, unknown> | undefined;
-        const completed = await afterUserDataSaved(item, form.formik.values);
-
-        if (completed) {
-          setSuccess('Dados salvos e etapa concluída! ✓');
-          return;
-        }
-
-        if (isStepComplete(form.formik.values, fieldsConfig) && !resolvedStepId) {
-          setSuccess(
-            'Dados salvos, mas não foi possível identificar a etapa de onboarding para concluir.'
-          );
-          return;
-        }
-
-        setSuccess('Dados salvos com sucesso!');
+        const saved = form.formik.values;
+        await afterUserDataSaved(item, saved);
+        form.formik.resetForm({ values: saved });
+        void refreshLevel();
+        setSuccess(
+          isStepComplete(saved, fieldsConfig) ? 'Perfil completo e salvo!' : 'Dados salvos.'
+        );
       },
     },
   });
@@ -490,19 +412,25 @@ export function AccountForm({
   // exposes no `resourceLoading`. Prefill is reimplemented locally here off the same
   // `existingRecord` `loadExisting` already fetches, instead of leaving the form blank on repeat
   // visits.
+  // resetForm (não setValues): os valores do banco viram o "estado salvo", então `dirty` só liga
+  // quando o usuário mexe — é o que mostra/esconde a barra de salvar.
   useEffect(() => {
     if (!existingRecord) return;
-    void formik.setValues({
+    const docType = (
+      docTypes.includes(existingRecord.documentType as 'cpf' | 'cnpj')
+        ? existingRecord.documentType
+        : docTypes[0]
+    ) as 'cpf' | 'cnpj';
+    formik.resetForm({
+      values: {
       fullName: String(existingRecord.fullName ?? ''),
       displayName: String(existingRecord.displayName ?? ''),
       phone: String(existingRecord.phone ?? ''),
       // `user_data.email` is often blank on older rows — the account's real e-mail is the login
       // itself (`user.login`), so fall back to it instead of showing an empty, "not loaded" field.
       email: String(existingRecord.email || user?.login || ''),
-      documentType: (docTypes.includes(existingRecord.documentType as 'cpf' | 'cnpj')
-        ? existingRecord.documentType
-        : docTypes[0]) as 'cpf' | 'cnpj',
-      documentNumber: String(existingRecord.documentNumber ?? ''),
+      documentType: docType,
+      documentNumber: applyDocumentMask(docType, String(existingRecord.documentNumber ?? '')),
       birthDate: existingRecord.birthDate ? String(existingRecord.birthDate).slice(0, 10) : '',
       zipCode: String(existingRecord.zipCode ?? ''),
       state: String(existingRecord.state ?? ''),
@@ -510,6 +438,7 @@ export function AccountForm({
       cityIbge: String(existingRecord.cityIbge ?? ''),
       bio: String(existingRecord.bio ?? ''),
       avatarUrl: String(existingRecord.avatarUrl ?? ''),
+      },
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [existingRecord]);
@@ -519,7 +448,7 @@ export function AccountForm({
   useEffect(() => {
     if (existingRecord || existingId !== null) return;
     if (!user?.login || formik.values.email) return;
-    void formik.setFieldValue('email', user.login);
+    formik.resetForm({ values: { ...formik.values, email: user.login } });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [existingRecord, existingId, user?.login]);
 
@@ -528,6 +457,8 @@ export function AccountForm({
   useEffect(() => {
     const digits = formik.values.zipCode.replace(/\D/g, '');
     if (digits.length !== 8) return;
+    // CEP já salvo: não reconsulta (sobrescreveria cidade escolhida à mão e sujaria o form).
+    if (digits === formik.initialValues.zipCode.replace(/\D/g, '')) return;
 
     let active = true;
     setCepLookupLoading(true);
@@ -597,7 +528,9 @@ export function AccountForm({
     const match = cityOptions.find(
       (o) => o.label.trim().toLowerCase() === formik.values.city.trim().toLowerCase()
     );
-    if (match) void formik.setFieldValue('cityIbge', match.value);
+    if (!match) return;
+    if (formik.dirty) void formik.setFieldValue('cityIbge', match.value);
+    else formik.resetForm({ values: { ...formik.values, cityIbge: match.value } });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cityOptions, formik.values.city, formik.values.cityIbge]);
 
@@ -612,14 +545,24 @@ export function AccountForm({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formik.values.documentNumber, formik.values.documentType]);
-  const errorTextClass = 'text-xs text-red-600';
-  const accountStatusLabel = accountStatus
-    ? (ACCOUNT_STATUS_LABELS[accountStatus] ?? `Status ${accountStatus}`)
-    : 'Nao informado';
-  const isAccountApproved = accountStatus === 3;
 
-  function handleDocumentTypeChange(e: React.ChangeEvent<HTMLSelectElement>) {
-    const nextType = e.target.value as 'cpf' | 'cnpj';
+  // Avisos do useForm viram toast — a barra de salvar fica no rodapé, longe de um aviso no topo.
+  useEffect(() => {
+    if (error) toast.error(error);
+  }, [error, toast]);
+  useEffect(() => {
+    if (success) toast.success(success);
+  }, [success, toast]);
+
+  // Verificação vem do nível da conta (auth.users + user_data, ver 0115) — a mesma fonte que
+  // libera as ações. `user_data.phone_verified` nunca é preenchido por fluxo verificado.
+  const contactLevel = levelStatus?.levels.find((l) => l.requirement === 'contact_verified');
+  const emailVerified = contactLevel
+    ? !contactLevel.missing.includes('Verificar email')
+    : legacyEmailVerified;
+  const phoneVerified = contactLevel ? !contactLevel.missing.includes('Verificar celular') : false;
+
+  function handleDocumentTypeChange(nextType: 'cpf' | 'cnpj') {
     void formik.setFieldValue('documentType', nextType);
     void formik.setFieldValue(
       'documentNumber',
@@ -636,17 +579,6 @@ export function AccountForm({
       'documentNumber',
       applyDocumentMask(formik.values.documentType, e.target.value)
     );
-  }
-
-  // Shown with an "@" prefix like a handle — doubles as the public profile slug
-  // (/prestador/<displayName>), so only letters, numbers, "_" and "-" are allowed. Spaces become
-  // "_" instead of being rejected outright (friendlier mid-typing); anything else is just dropped.
-  function handleDisplayNameChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const next = e.target.value
-      .replace(/\s/g, '_')
-      .replace(/[^a-zA-Z0-9_-]/g, '')
-      .slice(0, 20);
-    void formik.setFieldValue('displayName', next);
   }
 
   async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -685,17 +617,23 @@ export function AccountForm({
       }
 
       const avatarUrl = `/api/public/storage/files/${uploadedFile.id}/content`;
-      await formik.setFieldValue('avatarUrl', avatarUrl);
+      const next = { ...formik.values, avatarUrl };
 
       // Persist immediately, bypassing Yup validation (saveUserData, not formik.submitForm) —
       // otherwise the URL only lived in local formik state: the avatar vanished on F5 (nothing
       // persisted), and it could never save at all if a required field like fullName/state/city
       // was still empty (those requirements are UI-only, see buildValidationSchema; the DB doesn't
       // enforce them, so a required-field gate here would silently drop the upload).
-      const result = await saveUserData({ ...formik.values, avatarUrl });
+      const result = await saveUserData(next);
       if (!result.ok) {
+        await formik.setFieldValue('avatarUrl', avatarUrl);
         setAvatarError(result.message ?? 'Foto enviada, mas não foi possível salvar o perfil.');
+        return;
       }
+      // saveUserData grava o formulário inteiro, então tudo que estava na tela agora está salvo.
+      formik.resetForm({ values: next });
+      void refreshLevel();
+      toast.success('Foto atualizada.');
     } catch {
       setAvatarError('Não foi possível enviar a foto.');
     } finally {
@@ -703,503 +641,64 @@ export function AccountForm({
     }
   }
 
-  // Completion checklist (live feedback). The document check only shows up when the field is
-  // both visible and actually required by config — an optional or hidden field shouldn't block
-  // (or even mention) profile completion.
-  const checks = [
-    { label: 'Nome completo', ok: formik.values.fullName.trim().length > 0 },
-    ...(documentField.visible && documentField.required
-      ? [
-          {
-            label: 'Documento válido (CPF/CNPJ)',
-            ok: validateDocument(formik.values.documentType, formik.values.documentNumber),
-          },
-        ]
-      : []),
-    { label: 'Foto de perfil', ok: formik.values.avatarUrl.trim().length > 0 },
-    {
-      label: 'Endereço (CEP, estado, cidade)',
-      ok:
-        formik.values.zipCode.trim().length > 0 &&
-        formik.values.state.trim().length > 0 &&
-        formik.values.city.trim().length > 0,
-    },
-  ];
-  const completedChecks = checks.filter((c) => c.ok).length;
+  if (!loaded) {
+    return (
+      <div className="space-y-5" aria-busy="true">
+        {[0, 1, 2].map((i) => (
+          <div
+            key={i}
+            className="h-40 animate-pulse rounded-[var(--ui-radius-card-lg,1.5rem)] bg-muted/50"
+          />
+        ))}
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      {/* Completion checklist */}
-      <Card className="border-muted/50 bg-muted/20">
-        <CardContent className="pt-4">
-          <div className="mb-4 flex flex-wrap items-center gap-3 rounded-md border border-border/50 bg-background/70 px-3 py-2">
-            <div className="flex items-center gap-1.5 text-sm">
-              <CheckCircle2
-                className={
-                  isAccountApproved
-                    ? 'h-4 w-4 text-emerald-500'
-                    : 'h-4 w-4 text-muted-foreground/40'
-                }
-              />
-              <span className="text-muted-foreground">Status da conta:</span>
-              <span
-                className={
-                  isAccountApproved ? 'font-medium text-emerald-600' : 'font-medium text-foreground'
-                }
-              >
-                {accountStatusLabel}
-              </span>
-            </div>
-          </div>
-          <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-            Para concluir esta etapa ({completedChecks}/{checks.length})
-          </p>
-          <ul className="space-y-1.5">
-            {checks.map((c) => (
-              <li key={c.label} className="flex items-center gap-2 text-sm">
-                <CheckCircle2
-                  className={c.ok ? 'h-4 w-4 text-emerald-500' : 'h-4 w-4 text-muted-foreground/40'}
-                />
-                <span className={c.ok ? 'text-foreground' : 'text-muted-foreground'}>
-                  {c.label}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </CardContent>
-      </Card>
+    <form onSubmit={form.handleSubmit} noValidate className="space-y-5">
+      <ProfileHeader
+        fullName={formik.values.fullName}
+        displayName={formik.values.displayName}
+        avatarUrl={formik.values.avatarUrl}
+        avatarUploading={avatarUploading}
+        avatarError={avatarError}
+        avatarInputRef={avatarInputRef}
+        onAvatarChange={(e) => void handleAvatarChange(e)}
+        publicProfileAvailable={Boolean(existingId)}
+        levelStatus={levelStatus}
+      />
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className="rounded-lg bg-primary/10 p-2.5 text-primary">
-              <User className="h-5 w-5" />
-            </div>
-            <div>
-              <CardTitle>Dados pessoais</CardTitle>
-              <CardDescription>Preencha suas informações para continuar.</CardDescription>
-            </div>
-          </div>
-        </CardHeader>
+      <PublicProfileSection formik={formik} />
 
-        <CardContent>
-          {!loaded ? (
-            <div className="py-8 text-center text-sm text-muted-foreground">Carregando...</div>
-          ) : (
-            <form onSubmit={form.handleSubmit} noValidate className="space-y-6">
-              {/* Feedback */}
-              {error && (
-                <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-                  {error}
-                </div>
-              )}
-              {success && (
-                <div className="rounded-lg border border-emerald-300/40 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
-                  {success}
-                </div>
-              )}
+      <PersonalSection
+        formik={formik}
+        documentField={documentField}
+        birthDateField={birthDateField}
+        docTypes={docTypes}
+        onDocumentTypeChange={handleDocumentTypeChange}
+        onDocumentNumberChange={handleDocumentNumberChange}
+      />
 
-              {/* Identificação */}
-              <fieldset className="space-y-4">
-                <legend className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                  Identificação
-                </legend>
+      <ContactSection
+        formik={formik}
+        emailVerified={emailVerified}
+        phoneVerified={phoneVerified}
+        onVerified={() => void refreshLevel()}
+      />
 
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="fullName">
-                      Nome completo <span className="text-destructive">*</span>
-                    </Label>
-                    <Input
-                      id="fullName"
-                      placeholder="Seu nome completo"
-                      {...formik.getFieldProps('fullName')}
-                    />
-                    {formik.touched.fullName && formik.errors.fullName && (
-                      <p className={errorTextClass}>{formik.errors.fullName}</p>
-                    )}
-                  </div>
+      <AddressSection
+        formik={formik}
+        cepLoading={cepLookupLoading}
+        cityOptions={cityOptions}
+        cityOptionsLoading={cityOptionsLoading}
+      />
 
-                  <div className="space-y-1.5">
-                    <Label htmlFor="displayName">
-                      Nome de exibição <span className="text-destructive">*</span>
-                    </Label>
-                    <div className="relative">
-                      <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-sm text-muted-foreground">
-                        @
-                      </span>
-                      <Input
-                        id="displayName"
-                        placeholder="seu_usuario"
-                        className="pl-7"
-                        name="displayName"
-                        maxLength={20}
-                        value={formik.values.displayName}
-                        onBlur={formik.handleBlur}
-                        onChange={handleDisplayNameChange}
-                      />
-                    </div>
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="text-xs text-muted-foreground">
-                        Sem espaços — use &quot;_&quot; para separar palavras.
-                      </p>
-                      <p className="shrink-0 text-xs text-muted-foreground">
-                        {formik.values.displayName.length}/20
-                      </p>
-                    </div>
-                    {/* Only once user_data has actually been saved (has an id) — before that,
-                        /prestador/<displayName> 404s since the RPC finds no row to show. */}
-                    {existingId && formik.values.displayName && (
-                      <a
-                        href={`/prestador/${formik.values.displayName}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-xs font-medium text-primary underline underline-offset-2 hover:no-underline"
-                      >
-                        <ExternalLink className="h-3 w-3" />
-                        Ver seu perfil público
-                      </a>
-                    )}
-                    {formik.touched.displayName && formik.errors.displayName && (
-                      <p className={errorTextClass}>{formik.errors.displayName}</p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label>Foto de perfil</Label>
-                  <div className="flex items-center gap-4">
-                    <button
-                      type="button"
-                      onClick={() => avatarInputRef.current?.click()}
-                      disabled={avatarUploading}
-                      className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-dashed border-border bg-muted transition-colors hover:border-primary hover:bg-muted/70 disabled:opacity-60"
-                      title="Clique para escolher uma foto"
-                    >
-                      {formik.values.avatarUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={formik.values.avatarUrl}
-                          alt="Foto de perfil"
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <Upload className="h-5 w-5 text-muted-foreground" />
-                      )}
-                    </button>
-                    <div>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        disabled={avatarUploading}
-                        onClick={() => avatarInputRef.current?.click()}
-                      >
-                        {avatarUploading
-                          ? 'Enviando...'
-                          : formik.values.avatarUrl
-                            ? 'Alterar foto'
-                            : 'Escolher foto'}
-                      </Button>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        JPG, PNG ou WebP · máx. 2 MB
-                      </p>
-                    </div>
-                  </div>
-                  <input
-                    ref={avatarInputRef}
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    className="hidden"
-                    onChange={(e) => void handleAvatarChange(e)}
-                  />
-                  {avatarError && <p className={errorTextClass}>{avatarError}</p>}
-                </div>
-              </fieldset>
-
-              {/* Documento — visibilidade/obrigatoriedade/tipos aceitos vêm de
-                  auth.system_config (user_data.document_field), ver AccountFormProps. */}
-              {documentField.visible && (
-                <fieldset className="space-y-4">
-                  <legend className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                    Documento
-                  </legend>
-
-                  <div className="grid gap-4 sm:grid-cols-[auto_1fr]">
-                    <div className="space-y-1.5">
-                      <Label htmlFor="documentType">
-                        Tipo {documentField.required && <span className="text-destructive">*</span>}
-                      </Label>
-                      <select
-                        id="documentType"
-                        className="flex h-9 w-full rounded-[var(--ui-radius-field,0.375rem)] border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                        name="documentType"
-                        value={formik.values.documentType}
-                        onBlur={formik.handleBlur}
-                        onChange={handleDocumentTypeChange}
-                      >
-                        {docTypes.includes('cpf') && <option value="cpf">CPF</option>}
-                        {docTypes.includes('cnpj') && <option value="cnpj">CNPJ</option>}
-                      </select>
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <Label htmlFor="documentNumber">
-                        Número{' '}
-                        {documentField.required && <span className="text-destructive">*</span>}
-                      </Label>
-                      <Input
-                        id="documentNumber"
-                        placeholder={
-                          formik.values.documentType === 'cpf'
-                            ? '000.000.000-00'
-                            : '00.000.000/0000-00'
-                        }
-                        name="documentNumber"
-                        value={formik.values.documentNumber}
-                        onBlur={formik.handleBlur}
-                        onChange={handleDocumentNumberChange}
-                      />
-                      {formik.touched.documentNumber && formik.errors.documentNumber && (
-                        <p className={errorTextClass}>{formik.errors.documentNumber}</p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Birth date only applies to CPF — a CNPJ is a company (no birth date) and is
-                      public record already. Its own visibility comes from
-                      user_data.birth_date_field. */}
-                  {birthDateField.visible && formik.values.documentType === 'cpf' && (
-                    <div className="max-w-xs space-y-1.5">
-                      <Label htmlFor="birthDate">
-                        Data de nascimento{' '}
-                        {birthDateField.required && <span className="text-destructive">*</span>}
-                      </Label>
-                      <Input
-                        id="birthDate"
-                        type="date"
-                        max={new Date().toISOString().slice(0, 10)}
-                        {...formik.getFieldProps('birthDate')}
-                      />
-                      {formik.touched.birthDate && formik.errors.birthDate && (
-                        <p className={errorTextClass}>{formik.errors.birthDate}</p>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Warning text is fully configurable (or turned off entirely) via
-                      user_data.document_field.warning — no hardcoded copy here anymore. */}
-                  {documentField.warning && (
-                    <div className="flex items-start gap-2 rounded-lg border border-border/60 bg-muted/30 px-3 py-2.5 text-xs text-muted-foreground">
-                      <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
-                      <p>{documentField.warning}</p>
-                    </div>
-                  )}
-                </fieldset>
-              )}
-
-              {/* Contato */}
-              <fieldset className="space-y-4">
-                <legend className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                  Contato
-                </legend>
-
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="email">E-mail</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="seu@email.com"
-                      readOnly
-                      aria-readonly="true"
-                      className="cursor-not-allowed opacity-70"
-                      {...formik.getFieldProps('email')}
-                    />
-                    <p
-                      className={
-                        emailVerified
-                          ? 'flex items-center gap-1 text-xs text-emerald-600'
-                          : 'flex items-center gap-1 text-xs text-amber-600'
-                      }
-                    >
-                      <CheckCircle2
-                        className={
-                          emailVerified
-                            ? 'h-3.5 w-3.5 text-emerald-500'
-                            : 'h-3.5 w-3.5 text-amber-500'
-                        }
-                      />
-                      {emailVerified ? 'E-mail verificado' : 'E-mail pendente de verificacao'}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      O e-mail nao pode ser alterado aqui.
-                    </p>
-                    {formik.touched.email && formik.errors.email && (
-                      <p className={errorTextClass}>{formik.errors.email}</p>
-                    )}
-
-                    {!emailVerified && (
-                      <div className="mt-2 flex items-center gap-2">
-                        <a
-                          href="/painel/onboarding/email-verification"
-                          className="inline-flex items-center justify-center gap-2 rounded-[var(--ui-radius-pill,0.375rem)] border border-input bg-background px-3 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
-                        >
-                          Começar verificação
-                        </a>
-                        <span className="text-xs text-muted-foreground">
-                          Clique para ir à página de verificação
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <Label htmlFor="phone">Telefone</Label>
-                    <Input
-                      id="phone"
-                      type="tel"
-                      placeholder="(11) 99999-9999"
-                      {...formik.getFieldProps('phone')}
-                    />
-                    <p
-                      className={
-                        phoneVerified
-                          ? 'flex items-center gap-1 text-xs text-emerald-600'
-                          : 'flex items-center gap-1 text-xs text-amber-600'
-                      }
-                    >
-                      <CheckCircle2
-                        className={
-                          phoneVerified
-                            ? 'h-3.5 w-3.5 text-emerald-500'
-                            : 'h-3.5 w-3.5 text-amber-500'
-                        }
-                      />
-                      {phoneVerified ? 'Telefone verificado' : 'Telefone pendente de verificacao'}
-                    </p>
-                  </div>
-                </div>
-              </fieldset>
-
-              {/* Localização */}
-              <fieldset className="space-y-4">
-                <legend className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                  Localização
-                </legend>
-
-                <div className="grid gap-4 sm:grid-cols-3">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="zipCode">
-                      CEP{' '}
-                      {cepLookupLoading && (
-                        <span className="text-muted-foreground">(buscando...)</span>
-                      )}
-                    </Label>
-                    <Input
-                      id="zipCode"
-                      placeholder="00000-000"
-                      maxLength={9}
-                      {...formik.getFieldProps('zipCode')}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Informe o CEP para preencher estado e cidade automaticamente.
-                    </p>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <Label htmlFor="state">
-                      Estado <span className="text-destructive">*</span>
-                    </Label>
-                    <select
-                      id="state"
-                      className="flex h-9 w-full rounded-[var(--ui-radius-field,0.375rem)] border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                      {...formik.getFieldProps('state')}
-                    >
-                      <option value="">Selecione</option>
-                      {STATES_BR.map((s) => (
-                        <option key={s} value={s}>
-                          {s}
-                        </option>
-                      ))}
-                    </select>
-                    {formik.touched.state && formik.errors.state && (
-                      <p className={errorTextClass}>{formik.errors.state}</p>
-                    )}
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <Label htmlFor="city">
-                      Cidade <span className="text-destructive">*</span>
-                    </Label>
-                    <SearchableSelect
-                      id="city"
-                      value={formik.values.cityIbge}
-                      onChange={(value) => {
-                        void formik.setFieldValue('cityIbge', value);
-                        void formik.setFieldValue(
-                          'city',
-                          cityOptions.find((o) => o.value === value)?.label ?? ''
-                        );
-                      }}
-                      onBlur={() => formik.setFieldTouched('city', true)}
-                      options={cityOptions}
-                      disabled={!formik.values.state}
-                      placeholder={
-                        !formik.values.state
-                          ? 'Selecione o estado primeiro'
-                          : cityOptionsLoading
-                            ? 'Carregando cidades...'
-                            : 'Selecione'
-                      }
-                    />
-                    {formik.touched.city && formik.errors.city && (
-                      <p className={errorTextClass}>{formik.errors.city}</p>
-                    )}
-                  </div>
-                </div>
-              </fieldset>
-
-              {/* Bio — same rich text editor as the service description (StepDescriptionForm),
-                  so bio is HTML; the 500-char limit counts visible text (stripHtml), not markup. */}
-              <div className="space-y-1.5">
-                <Label htmlFor="bio">Sobre você</Label>
-                <QuillEditor
-                  value={formik.values.bio}
-                  onChange={(value) => formik.setFieldValue('bio', value)}
-                  placeholder="Conte um pouco sobre você..."
-                />
-                <p className="text-right text-xs text-muted-foreground">
-                  {stripHtml(formik.values.bio).length}/500
-                </p>
-                {formik.touched.bio && formik.errors.bio && (
-                  <p className={errorTextClass}>{formik.errors.bio}</p>
-                )}
-              </div>
-
-              {formik.submitCount > 0 && !formik.isValid && (
-                <div className="rounded-lg border border-amber-300/50 bg-amber-50 px-4 py-3 text-sm text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
-                  Revise os campos destacados antes de salvar — alguns ainda precisam ser
-                  preenchidos ou corrigidos.
-                </div>
-              )}
-
-              <div className="flex items-center justify-between gap-4">
-                {stepDone && (
-                  <p className="flex items-center gap-1.5 text-sm font-medium text-emerald-600">
-                    <CheckCircle2 className="h-4 w-4" /> Etapa concluída
-                  </p>
-                )}
-                <div className="ml-auto">
-                  <Button type="submit" disabled={submitting || formik.isSubmitting}>
-                    {submitting ? 'Salvando...' : 'Salvar e continuar'}
-                  </Button>
-                </div>
-              </div>
-            </form>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+      <SaveBar
+        dirty={formik.dirty}
+        saving={submitting || formik.isSubmitting}
+        invalid={formik.submitCount > 0 && !formik.isValid}
+        onDiscard={() => formik.resetForm()}
+      />
+    </form>
   );
 }

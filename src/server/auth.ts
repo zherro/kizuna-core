@@ -14,6 +14,8 @@ export type SessionPayload = {
   login?: string;
   display_name?: string;
   is_root?: boolean;
+  /** Emissão do JWT (segundos) — gravado pelo jsonwebtoken; usado para "login recente". */
+  iat?: number;
 };
 
 function getJwtSecret(): string {

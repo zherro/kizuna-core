@@ -130,7 +130,7 @@ export function CategoryCarousel({
   const empty = !loading && items.length === 0;
   if (empty && hideWhenEmpty) return null;
 
-  const maxW = "mx-auto w-full max-w-6xl px-4 sm:px-6";
+  const maxW = "mx-auto w-full max-w-[1600px] px-4 sm:px-6";
   const emptyBox = (
     <div className="mt-4 rounded-[var(--ui-radius-card,1rem)] border border-dashed border-border bg-muted/30 px-4 py-8 text-center text-sm text-muted-foreground">
       {emptyLabel}

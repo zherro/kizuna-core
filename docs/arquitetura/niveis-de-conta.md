@@ -40,7 +40,7 @@ pessoa verifica o celular ou completa o perfil, sem precisar relogar.
 | `title`, `description` | Texto mostrado na escada e no modal "Evolua sua conta". |
 | `onboardingOrder` | Ordem na tela `/painel/onboarding`. |
 | `profileOrder` | Ordem no resumo da conta: `<AccountLevelsPanel order="profile" />`. |
-| `requirement` | `authenticated`, `contact_verified` (email **ou** celular verificado), `profile_complete` (nome, foto, documento válido se exigido, CEP, estado e cidade) ou `identity_verified`. |
+| `requirement` | `authenticated`, `contact_verified` (email **e** celular verificados), `profile_complete` (nome, foto, documento válido se exigido, CEP, estado e cidade), `listing_published` (ao menos um anúncio ativo) ou `identity_verified`. |
 | `enabled: false` | Nível "em breve": aparece na escada, mas ninguém alcança. |
 | `href` | Para onde o botão "Completar" leva. |
 
@@ -67,19 +67,65 @@ Uma ação que **não** está no mapa exige só estar logado (nível ≥ 1).
 
 ## Usando
 
-**Servidor.** Esta é a barreira real:
+**Servidor.** Esta é a barreira real. Em páginas, use o componente de servidor `RequireLevel`, que
+renderiza o conteúdo só se o nível libera a ação e, caso contrário, mostra a tela de bloqueio
+(`LevelBlockedScreen`) em vez de redirecionar. Exemplo real, a página de edição de serviço, que
+só barra a criação (`novo`):
 
-```ts
-import { canDoServer } from '@kizuna/core/server';
+```tsx
+import { RequireLevel, isPhoneLoginEnabled, type OtpConfig } from '@kizuna/core/server';
+import cfg from '@/../kizuna.config.json';
 import { accountLevelsSetup } from '@/lib/server/account-levels';
 
-if (!(await canDoServer(accountLevelsSetup, 'service.create')).allowed) {
-  redirect('/painel/onboarding?acao=service.create');
-}
+return (
+  <RequireLevel
+    setup={accountLevelsSetup}
+    action="service.create"
+    returnTo="/painel/meus-servicos/novo"
+    phoneEnabled={isPhoneLoginEnabled((cfg as { otp?: OtpConfig }).otp)}
+  >
+    {wizard}
+  </RequireLevel>
+);
 ```
 
-Se não conseguir ler os fatos (sem sessão, erro no banco), trata a pessoa como visitante e
-**nega**.
+Em rotas de API, use `canDoServer(accountLevelsSetup, 'ação')`. Exemplo real: o `POST` de
+`src/app/api/resources/[resource]/route.ts` barra `service.create` para o recurso `services` e
+responde `403` com `{ error: 'level_required', can }`. Sem essa checagem, quem chama a API
+direto contornaria a barreira da página. Se não conseguir ler
+os fatos (sem sessão, erro no banco), trata a pessoa como visitante e **nega**.
+
+## Rótulos e o que cada nível libera
+
+`AccountLevelsSetup.labels` mapeia a ação para um texto humano (por exemplo, "Publicar anuncios"), usado na tela de bloqueio e no aviso do onboarding. `unlocksByLevel` lista, por key de
+nível, o que ele libera. `GET /api/account/level` devolve também o campo `unlocks` com essa lista.
+
+## Card no painel
+
+`AccountLevelCard` mostra o nível atual ("Nivel N de M"), a barra de progresso com um segmento por
+nível e o próximo passo. Quando o projeto usa `listing_published`, um anúncio em análise mostra
+"Seu anuncio esta em analise".
+
+| Prop            | Padrão                                 | O que faz                                                                 |
+| --------------- | -------------------------------------- | ------------------------------------------------------------------------- |
+| `phoneEnabled`  | —                                      | Oferece "Verificar meu celular" inline (login por telefone ligado).       |
+| `initial`       | `null`                                 | Status já lido no servidor. Sem ele, o card busca no browser.             |
+| `allLevelsHref` | `/painel/onboarding`                   | Link "Ver todos os niveis".                                               |
+| `snoozeDays`    | `15`                                   | Dias que o card fica escondido depois que o usuário fecha.                |
+| `snoozeKey`     | `kizuna:account-level-card:snoozed`    | Chave no localStorage (troque para ter dois cards independentes).         |
+
+Comportamento:
+
+- **Só aparece com conta incompleta.** Sem próximo nível alcançável (`status.next === null`), não
+  renderiza nada.
+- **Pode ser fechado.** O X grava o prazo com `snooze` (ver [Utils](utils.md)) e o card volta
+  depois de `snoozeDays`. É por navegador: outro aparelho mostra de novo.
+- **Não segura a página.** Sem `initial`, a consulta roda no browser e o card entra deslizando de
+  cima para baixo quando os dados chegam. É o uso recomendado no painel:
+
+```tsx
+{session ? <AccountLevelCard phoneEnabled={isPhoneLoginEnabled(cfg.otp)} /> : null}
+```
 
 **Cliente.** Serve só para a experiência do usuário:
 
@@ -115,11 +161,21 @@ Por exemplo, a verificação de identidade com IA:
    `identity_verified` sempre retorna `false`: é só a porta.
 3. Aponte o nível na config (`"requirement": "identity_verified"`) e tire o `enabled: false`.
 
+## Requisito `listing_published`
+
+Usa o fato `listings`, lido pela função `public.fun_services__my_listing_counts` (migração
+`plugins/services/0006_services_account_facts.sql`). Ela só é consultada quando algum nível
+habilitado usa esse requisito, então projetos sem ele não pagam a consulta.
+
 ## Pendências conhecidas
 
+- **Sem SMS real, ninguém passa do nível 1.** Com `otp.enabled: false` não há como verificar o
+  celular, e `contact_verified` exige email e celular.
+- **Verificação de email por senha** depende do plano 2 (ainda não implementado).
 - **Verificação de email por código.** O fluxo antigo do plugin `user_data` (a rota
   `request-code` e a tela `email-verification`) está incompleto. Hoje o email conta como
   verificado quando a pessoa entra pelo Google, ou quando `user_data.email_verified` é true.
   Quem entrou com email e senha sobe para o nível 2 verificando o celular.
 - **Checagem por RLS.** O nível ainda não é verificado no Postgres. As barreiras são
-  `canDoServer` nas páginas e rotas.
+  `RequireLevel` nas páginas (por exemplo, `src/app/painel/meus-servicos/[serviceId]/page.tsx`) e
+  `canDoServer` nas rotas de API (por exemplo, o `POST` de `src/app/api/resources/[resource]/route.ts`).

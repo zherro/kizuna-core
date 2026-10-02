@@ -1,6 +1,11 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import jwt from 'jsonwebtoken';
 import { checkKizunaEnv, type MissingEnv } from '../lib/env-guard';
+import { hasServiceAccess } from './service-db';
+import {
+  createSessionRevocationChecker,
+  fetchUserStatusViaService,
+} from './account/session-revocation';
 
 /**
  * Options for {@link createKizunaProxy}. Every field has a sensible default — a
@@ -54,14 +59,45 @@ ${envLines}</pre>
 </main></body></html>`;
 }
 
-function hasValidSession(token: string | undefined): boolean {
-  if (!token) return false;
+/** Cópia dos headers sem o cookie `name` (a página segue como deslogada nesta requisição). */
+function withoutCookie(headers: Headers, name: string): Headers {
+  const copy = new Headers(headers);
+  const kept = (headers.get('cookie') ?? '')
+    .split(';')
+    .map((part) => part.trim())
+    .filter((part) => part && !part.startsWith(`${name}=`));
+  if (kept.length > 0) copy.set('cookie', kept.join('; '));
+  else copy.delete('cookie');
+  return copy;
+}
+
+type DecodedSession = { user_id: string; iat: number };
+
+function decodeSession(token: string | undefined): DecodedSession | null {
+  if (!token) return null;
   try {
-    jwt.verify(token, getSecret());
-    return true;
+    const payload = jwt.verify(token, getSecret()) as Partial<DecodedSession>;
+    return payload.user_id ? { user_id: payload.user_id, iat: payload.iat ?? 0 } : null;
   } catch {
-    return false;
+    return null;
   }
+}
+
+// Conta excluída/bloqueada derruba sessões já emitidas (JWT de 7 dias) — ver
+// account/session-revocation.ts. Sem token de serviço o check fica desligado.
+const revocation = createSessionRevocationChecker({ fetchStatus: fetchUserStatusViaService });
+let warnedNoServiceAccess = false;
+
+async function isSessionActive(session: DecodedSession | null): Promise<boolean> {
+  if (!session) return false;
+  if (!hasServiceAccess()) {
+    if (!warnedNoServiceAccess) {
+      console.warn('[proxy] POSTGREST_SERVICE_TOKEN ausente — revogação de sessão desligada.');
+      warnedNoServiceAccess = true;
+    }
+    return true;
+  }
+  return !(await revocation.isRevoked(session.user_id, session.iat));
 }
 
 /**
@@ -80,7 +116,7 @@ export function createKizunaProxy(options: KizunaProxyOptions = {}) {
   const panelPath = options.panelPath ?? '/painel';
   const sessionCookie = options.sessionCookie ?? 'session';
 
-  return function proxy(request: NextRequest) {
+  return async function proxy(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
     // TRAVA DE AMBIENTE — sem PostgREST + segredo de JWT nada roda.
@@ -99,19 +135,40 @@ export function createKizunaProxy(options: KizunaProxyOptions = {}) {
     }
 
     const token = request.cookies.get(sessionCookie)?.value;
-    const authenticated = hasValidSession(token);
+    const authenticated = await isSessionActive(decodeSession(token));
+
+    // Cookie presente mas sessão inválida/revogada: tira da requisição (esta página já renderiza
+    // deslogada) e apaga no navegador.
+    const staleSession = Boolean(token) && !authenticated;
+
+    const finish = (response: NextResponse) => {
+      if (staleSession) {
+        response.cookies.set({ name: sessionCookie, value: '', path: '/', maxAge: 0 });
+      }
+      return response;
+    };
+    // Só reescreve os headers da requisição quando tirou o cookie; repassar sempre os headers
+    // originais quebra o roteamento das rotas de API no Next 16 (404 em todo /api/*).
+    const next = () =>
+      finish(
+        staleSession
+          ? NextResponse.next({
+              request: { headers: withoutCookie(request.headers, sessionCookie) },
+            })
+          : NextResponse.next()
+      );
 
     if (authPages.some((p) => pathname.startsWith(p))) {
       if (authenticated) {
         return NextResponse.redirect(new URL(panelPath, request.url));
       }
-      return NextResponse.next();
+      return next();
     }
 
     if (protectedPrefixes.some((p) => pathname.startsWith(p)) && !authenticated) {
-      return NextResponse.redirect(new URL(loginPath, request.url));
+      return finish(NextResponse.redirect(new URL(loginPath, request.url)));
     }
 
-    return NextResponse.next();
+    return next();
   };
 }

@@ -50,8 +50,13 @@ caixa) procura entre todas as marcadas e também mostra no máximo 10.
 
 ## Cidade detectada fora da lista
 
+A inicialização do local é **uma só, igual em toda tela** (header da home, `/busca`, ...): fica no
+hook `useUserLocation` e roda uma vez por carga de página. Sem local salvo, detecta por IP (sem
+pedir permissão); com local salvo, revalida. O hook expõe `ready` quando termina; o `LocationGate`
+da `/busca` só espera por ele e abre o seletor se terminar sem local.
+
 GPS (Nominatim) e IP (ip-api) só devolvem UF + nome da cidade. Toda detecção — e a localização já
-salva no navegador, revalidada uma vez por carga de página — passa por `/api/location/resolve`:
+salva no navegador — passa por `/api/location/resolve`:
 
 | Cidade detectada          | Resultado                                                                        |
 | ------------------------- | -------------------------------------------------------------------------------- |
@@ -60,8 +65,9 @@ salva no navegador, revalidada uma vez por carga de página — passa por `/api/
 
 Comparação de nome ignora acento e caixa. Falha de rede no `resolve` não apaga o local salvo.
 
-Na `/busca` (`LocationGate`), IP indisponível (dev, ip-api fora do ar) também passa pelo `resolve`,
-sem UF: com `outsideList: "default"` a busca abre direto na cidade padrão; sem ela, abre o seletor.
+IP indisponível (dev, ip-api fora do ar) também passa pelo `resolve`, sem UF: com
+`outsideList: "default"` qualquer tela já abre na cidade padrão; sem ela, fica sem local (a `/busca`
+abre o seletor). IP fora da América Latina é tratado como São Paulo e segue a mesma regra.
 
 {% hint style="warning" %}
 Com `outsideList: "default"`, a cidade de `defaultCityIbge` precisa estar marcada

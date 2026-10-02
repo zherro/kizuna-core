@@ -1,6 +1,7 @@
 import type { ScreenContext } from '../../../types/screen';
+import { resolveVocabRef } from '../../../shared/vocabulary';
 
-const CONTEXT_REF = /^\$(params|searchParams|session)\.(.+)$/;
+const CONTEXT_REF = /^\$(params|searchParams|session|vocab)\.(.+)$/;
 
 /**
  * Resolves `"$params.xxx"` / `"$searchParams.xxx"` / `"$session.xxx"` string
@@ -13,13 +14,19 @@ const CONTEXT_REF = /^\$(params|searchParams|session)\.(.+)$/;
  * (the prop is simply not set), never throws: a screen with an optional
  * `?status=` filter — or a `$session.xxx` ref on a page that didn't pass a
  * `session` context — shouldn't 500 just because nobody passed it.
+ *
+ * `"$vocab.xxx"` resolves a phrase from the project's vocabulary (`shared/vocabulary`) and needs
+ * no request context, so it also works when `context` is omitted; the other refs are then left
+ * untouched.
  */
-export function resolveContextRefs<T>(value: T, context: ScreenContext): T {
+export function resolveContextRefs<T>(value: T, context?: ScreenContext): T {
   if (typeof value === 'string') {
     const match = CONTEXT_REF.exec(value);
     if (!match) return value;
 
     const [, bucket, key] = match;
+    if (bucket === 'vocab') return resolveVocabRef(key) as T;
+    if (!context) return value;
     const source =
       bucket === 'params'
         ? context.params

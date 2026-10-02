@@ -87,7 +87,7 @@ export function Topbar({
   return (
     <>
       <header className="sticky top-0 z-40 border-b border-border/70 bg-background/90 backdrop-blur-sm">
-        <div className="mx-auto w-full max-w-6xl">
+        <div className="mx-auto w-full max-w-[1600px]">
           <div className="mx-auto flex items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
             <Link href="/" className="flex items-center gap-2.5">
               {brandLogo ? (

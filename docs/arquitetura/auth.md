@@ -127,8 +127,8 @@ project wires them into two routes it owns (e.g. `/painel/root/papeis`,
 ## Route protection (proxy)
 
 Next.js 16 renamed `middleware.ts` → `proxy.ts` (exported function named `proxy`). The consuming
-project owns this file. It should verify the JWT **inline** (`jsonwebtoken` directly, not
-`@kizuna/core/server`, to avoid `next/headers` bundling in the edge context) and:
+project owns this file (normally just `createKizunaProxy(...)` from `@kizuna/core/server/proxy`)
+and:
 
 - request to a protected prefix (`/painel/*`) with no valid session → redirect to `/login`
 - request to an auth page (`/login`, `/registre-se`) with a valid session → redirect to `/painel`
@@ -136,6 +136,48 @@ project owns this file. It should verify the JWT **inline** (`jsonwebtoken` dire
 A `createKizunaProxy({ protectedPrefixes, authPages })` helper is a Fase A promotion target — see
 `STATUS.md` for whether it has landed. The proxy is a fast cookie/signature gate only; the real
 boundary is still RLS + `fun_auth_has_perm`, and the panel layout re-verifies expiry.
+
+### Revogação de sessão
+
+A sessão é um JWT de 7 dias: sozinho, ele não "sabe" que a conta foi excluída ou bloqueada. Com
+`POSTGREST_SERVICE_TOKEN` configurado, o `createKizunaProxy` confere `auth.users.is_active` e
+`sessions_revoked_at` contra o `iat` do token (`src/server/account/session-revocation.ts`), com
+cache de 60 s por usuário — no máximo uma consulta por chave primária por usuário por minuto, por
+instância. Sessão revogada: o cookie é apagado e a requisição segue como deslogada. Falha ao
+consultar o banco não derruba ninguém (fail-open). Sem o token, o check fica desligado (aviso único
+no log). O proxy roda no runtime Node do Next 16, então importar o core aqui é seguro.
+
+## Token de serviço (`service_role`)
+
+`sql/0117_service_role_and_account_deletion.sql` cria o papel `service_role` (`BYPASSRLS`, só
+GRANTs mínimos — nenhuma função). O servidor usa o JWT `{ "role": "service_role" }` para o que a
+sessão do usuário não pode fazer: excluir conta, abrir ticket do sistema, checar revogação.
+
+```bash
+node kizuna-core/cli token service
+```
+
+Cole o resultado em `POSTGREST_SERVICE_TOKEN` no `.env`. **Só servidor** — nunca numa variável
+`NEXT_PUBLIC_*`. No código: `serviceTable` / `serviceRpc` / `serviceDb` de `@kizuna/core/server`
+(lançam `ServiceUnavailableError` sem o token). Plugins concedem as próprias tabelas ao papel
+(ex.: `plugins/services/0007_*`, `plugins/notifications/0003_*`, `plugins/tickets/0001_*`).
+
+## Excluir conta
+
+`POST /api/account/delete` `{ email }` (`createDeleteAccountHandler`; o projeto liga em
+`src/app/api/account/delete/route.ts`) e o bloco `delete-account` em Minha conta. Regras:
+
+- confirma digitando o próprio e-mail; exige login com no máximo 15 min (`reauth_required`
+  senão — vale também para quem só entra com Google, sem senha); root não se exclui por aqui;
+- passos, na ordem: desativa os anúncios (`services.active = false`), apaga os vínculos de login
+  social (`auth.user_identities`) e, por último, marca a conta: `deleted_login = e-mail`,
+  `login = deleted:<uid>:<e-mail>`, `is_active = false`, `deleted_at`, `phone = null`,
+  `sessions_revoked_at`. O e-mail fica livre para um cadastro novo, que começa do zero;
+- perfil, avaliações e o resto ficam guardados, sem acesso.
+
+**Conta recriada:** um cadastro (senha ou OAuth) com o e-mail de uma conta excluída abre um ticket
+`account_recreated` para o root (plugin [tickets](../plugins/tickets.md)) e grava um aviso em
+`notifications` para cada root. Falhar nisso nunca falha o cadastro.
 
 ## Enforcement: UI-only vs real
 

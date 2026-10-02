@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ServiceResult } from '../search/search-types';
+import { trackEvent } from '../../analytics/analytics-api';
 import { fetchDeck, recordSwipe } from './swipe-api';
 import { SWIPE_BATCH, SWIPE_PREFETCH_AT, type SwipeDecision, type SwipeDeckBody } from './swipe-types';
 
@@ -102,6 +103,7 @@ export function useSwipeDeck({ baseBody, filterKey, loggedIn }: Opts) {
       recordSwipe([current.uid], action).catch((err) =>
         console.warn('[swipe] falha ao gravar swipe', err)
       );
+      if (action === 'like') trackEvent({ entityType: 'service', entityId: current.uid, event: 'favorite' });
     }
     setCards(rest);
   }, []);

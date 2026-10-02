@@ -75,7 +75,7 @@ export function PageHeader({
       </div>
       <div
         aria-hidden="true"
-        className="mt-6 h-px bg-gradient-to-r from-primary/50 via-border to-transparent"
+        className="mt-6 h-px bg-gradient-to-r from-primary/25 via-border/50 to-transparent"
       />
     </header>
   );

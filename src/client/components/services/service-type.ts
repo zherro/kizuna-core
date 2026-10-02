@@ -40,6 +40,8 @@ export type ServiceRecord = {
   extras: Record<string, unknown>;
   status: string;
   sponsored: boolean;
+  /** Total de "gostei" (mantido por trigger em `services.like_count`). */
+  likeCount: number;
   serviceLocation: string | null;
   active: boolean;
   /** Fim da validade do anúncio (ISO UTC) ou null = sem validade. */

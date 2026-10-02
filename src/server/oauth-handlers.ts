@@ -17,6 +17,7 @@ import type { OAuthProfile } from './oauth/types';
 import { isPhoneLoginEnabled } from './otp/registry';
 import type { OtpConfig } from './otp/types';
 import { issueSessionFromLoginResult, purposeAuthHeader } from './session-issue';
+import { safeReportAccountRecreation } from './account/report-recreation';
 
 type PgrstRpc = (name: string, payload: any, opts?: any) => Promise<Response>;
 type PgrstTable = (
@@ -238,6 +239,9 @@ export function createOAuthCallbackHandler(
 
       if (data?.created === true) {
         await seedProfile(options.pgrstTable, token, userId, profile);
+        if (profile.email) {
+          await safeReportAccountRecreation({ login: profile.email, newUserId: userId });
+        }
       }
 
       console.info('[auth.oauth] success', {

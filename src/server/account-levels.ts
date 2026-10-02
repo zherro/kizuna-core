@@ -12,6 +12,8 @@ import { NextResponse } from 'next/server';
 import {
   canDo,
   computeAccountStatus,
+  NO_LISTINGS,
+  unlocksByLevel,
   type AccountFacts,
   type AccountLevelsConfig,
   type AccountStatus,
@@ -25,6 +27,8 @@ export type AccountLevelsSetup = {
   capabilities: Record<string, string>;
   /** Documento (CPF/CNPJ) é obrigatório para "perfil completo"? Padrão: true. */
   documentRequired?: () => Promise<boolean> | boolean;
+  /** Ação → rótulo humano ("Publicar anuncios"). Usado no card e na tela de bloqueio. */
+  labels?: Record<string, string>;
 };
 
 const ANONYMOUS: AccountFacts = {
@@ -34,10 +38,32 @@ const ANONYMOUS: AccountFacts = {
   identityVerified: false,
   documentRequired: true,
   profile: {},
+  listings: NO_LISTINGS,
 };
 
+export function usesListings(config: AccountLevelsConfig): boolean {
+  return config.levels.some((l) => l.enabled !== false && l.requirement === 'listing_published');
+}
+
+async function getListingCounts(auth: string): Promise<AccountFacts['listings']> {
+  try {
+    const res = await pgrstRpc('fun_services__my_listing_counts', {}, { auth });
+    if (!res.ok) {
+      console.warn('[account-levels] listings_failed', { status: res.status });
+      return NO_LISTINGS;
+    }
+    const d = (await res.json().catch(() => null)) as { published?: unknown; pending?: unknown } | null;
+    return { published: Number(d?.published) || 0, pending: Number(d?.pending) || 0 };
+  } catch {
+    return NO_LISTINGS;
+  }
+}
+
 /** Lê os fatos da conta da sessão atual. Sem sessão ou com erro → visitante (fecha, não abre). */
-export async function getAccountFacts(documentRequired = true): Promise<AccountFacts> {
+export async function getAccountFacts(
+  documentRequired = true,
+  withListings = false
+): Promise<AccountFacts> {
   const auth = await getAuthHeaderFromCookies();
   if (!auth) return { ...ANONYMOUS, documentRequired };
 
@@ -50,12 +76,14 @@ export async function getAccountFacts(documentRequired = true): Promise<AccountF
     const data = (await res.json().catch(() => null)) as Record<string, any> | null;
     if (!data?.authenticated) return { ...ANONYMOUS, documentRequired };
     const p = (data.profile ?? {}) as Record<string, string | null>;
+    const listings = withListings ? await getListingCounts(auth) : NO_LISTINGS;
     return {
       authenticated: true,
       emailVerified: data.email_verified === true,
       phoneVerified: data.phone_verified === true,
       identityVerified: data.identity_verified === true,
       documentRequired,
+      listings,
       profile: {
         fullName: p.full_name,
         avatarUrl: p.avatar_url,
@@ -76,7 +104,8 @@ export async function getAccountFacts(documentRequired = true): Promise<AccountF
 
 export async function getAccountStatus(setup: AccountLevelsSetup): Promise<AccountStatus> {
   const documentRequired = setup.documentRequired ? await setup.documentRequired() : true;
-  return computeAccountStatus(setup.config, await getAccountFacts(documentRequired));
+  const facts = await getAccountFacts(documentRequired, usesListings(setup.config));
+  return computeAccountStatus(setup.config, facts);
 }
 
 /** Checagem de servidor — é esta que vale como barreira (o client só melhora a UX). */
@@ -97,7 +126,12 @@ export function createAccountLevelHandler(setup: AccountLevelsSetup) {
     const action = new URL(request.url).searchParams.get('action');
     const can = action ? canDo(status, setup.capabilities, action) : undefined;
     return NextResponse.json(
-      { status, allowed, ...(can ? { can } : {}) },
+      {
+        status,
+        allowed,
+        unlocks: unlocksByLevel(setup.capabilities, setup.labels),
+        ...(can ? { can } : {}),
+      },
       { headers: { 'Cache-Control': 'no-store' } }
     );
   };

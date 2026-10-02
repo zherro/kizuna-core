@@ -104,7 +104,7 @@ export function PagesAdmin({ reservedSlugs = [] }: { reservedSlugs?: string[] })
   }
 
   return (
-    <div className="mx-auto grid max-w-6xl grid-cols-1 gap-4 lg:grid-cols-[280px_1fr]">
+    <div className="mx-auto grid max-w-[1600px] grid-cols-1 gap-4 lg:grid-cols-[280px_1fr]">
       <div className="rounded-[var(--ui-radius-card,1rem)] border-[length:var(--ui-border-w-card,1px)] border-border shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] bg-card">
         <div className="flex items-center justify-between border-b border-border p-3">
           <h2 className="text-sm font-semibold">Páginas ({pages.length})</h2>

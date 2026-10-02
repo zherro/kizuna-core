@@ -27,6 +27,7 @@ import { SearchChat } from './search-chat';
 import { SearchFiltersPanel } from './search-filters-panel';
 import { SearchResultsView, type ResultsScope } from './search-results-view';
 import type { ServiceDetailConfig } from '../services/detail/category-style';
+import type { EventRule } from '../../../shared/analytics';
 import {
   CategoryCarousel,
   type CategoryCarouselItem,
@@ -65,6 +66,8 @@ export type SearchPageProps = {
   /** Config `serviceDetail` do `kizuna.config.json` — repassada pro `SearchResultsView` só pra
    * escolher o estilo do card (hoje: cinema sem preço, capa em pé). */
   serviceDetailConfig?: ServiceDetailConfig | null;
+  /** Plugin analytics: regra da impressão dos cards (`resolveEventRule`, calculada no servidor). */
+  impressionRule?: EventRule | null;
   /**
    * Segundo modo da página (ex.: "Pedir um serviço" — criar demanda). Quando informado, aparece um
    * toggle no topo e `?modo=pedir` troca a busca pelo conteúdo de `render`. O plugin `search` não
@@ -104,6 +107,7 @@ function SearchPageInner({
   categoryCarousel,
   excludeFromMixedCategorySlugs = [],
   serviceDetailConfig,
+  impressionRule,
 }: SearchPageProps) {
   const stored = getStoredLocation();
   const location = useMemo(
@@ -649,6 +653,7 @@ function SearchPageInner({
           onClearFilters={resetFilters}
           onChangeLocation={() => setLocationOpen(true)}
           serviceDetailConfig={serviceDetailConfig}
+          impressionRule={impressionRule}
         />
       </section>
 
@@ -691,6 +696,7 @@ function SearchPageInner({
               loadingMore={loadingMore}
               onLoadMore={loadMore}
               serviceDetailConfig={serviceDetailConfig}
+              impressionRule={impressionRule}
             />
           </div>
         </div>

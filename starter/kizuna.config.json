@@ -15,6 +15,10 @@
     "selectable": true,
     "metaColor": "#2563eb"
   },
+  "vocabulary": {
+    "_comment": "Como o app chama o item que o usuário cria e gerencia (menu, telas do painel). Só texto: rotas e banco não mudam. \"context\": preset — publicacao (padrão: Publicação/Publicações, feminino) | servico (Serviço/Serviços, masculino). \"terms.item\": troca o termo — singular, plural e gender (\"m\" | \"f\"; obrigatório ao trocar o termo, as frases Novo/Nova, Nenhum/Nenhuma dependem dele). \"phrases\": sobrescreve uma frase pronta (singular, plural, new, manage, manageDescription, yours, mine, createFirst, noneRegistered, registerFirstHint, noneFound, reviewTitle, reviewDescription). Exemplo: { \"terms\": { \"item\": { \"singular\": \"Anúncio\", \"plural\": \"Anúncios\", \"gender\": \"m\" } }, \"phrases\": { \"new\": \"Anunciar\" } }. Ver kizuna-core/docs/interface/vocabulario.md.",
+    "context": "publicacao"
+  },
   "header": {
     "_comment": "\"variant\": classic (padrão) | compact — layout do cabeçalho do site.",
     "variant": "classic"
@@ -30,14 +34,25 @@
     "categoriesOnlyWithListings": false,
     "showDiscover": false,
     "inkPicker": true,
-    "inkLevel": 6
+    "inkLevel": 6,
+    "_comment_categoryRails": "Carrosséis por categoria na home (um por item, na ordem). slug = categories.slug; title opcional (default = nome da categoria); limit opcional (default 10) — se vierem todos, a trilha termina com o card \"Ver mais\". O estilo dos cards vem de serviceDetail. Categoria sem anúncios não aparece.",
+    "categoryRails": [
+      { "slug": "cinema", "title": "Em cartaz", "limit": 10 }
+    ]
   },
   "serviceDetail": {
-    "_comment": "Layout/cor da tela de detalhe do anúncio (/anuncios/[uid], se o projeto tiver essa rota) por categoria. \"variantByCategorySlug\": slug da categoria -> variant (\"service\" é o default, sempre disponível). \"colors\": hue OKLCH (0-360) do acento; \"default\" vale pra categoria sem entrada própria. Sem esta chave, tudo cai no variant/hue default.",
+    "_comment": "Layout/cor da tela de detalhe do anúncio (/anuncios/[uid], se o projeto tiver essa rota) por categoria. \"variantByCategorySlug\": slug da categoria -> variant (\"service\" é o default, sempre disponível). \"colors\": hue OKLCH (0-360) do acento; \"default\" vale pra categoria sem entrada própria. Sem esta chave, tudo cai no variant/hue default. \"reactions\": botões Gostei/Favoritar do detalhe (plugin swipe) — icon (nome lucide-react), label, labelActive; remova um bloco para esconder o botão.",
     "defaultVariant": "service",
-    "variantByCategorySlug": {},
+    "variantByCategorySlug": {
+      "cinema": "cinema"
+    },
     "colors": {
-      "default": { "hue": 230 }
+      "default": { "hue": 230 },
+      "cinema": { "hue": 268 }
+    },
+    "reactions": {
+      "like": { "icon": "ThumbsUp", "label": "Gostei", "labelActive": "Gostei" },
+      "favorite": { "icon": "Heart", "label": "Favoritar", "labelActive": "Favoritado" }
     }
   },
   "wizards": {
@@ -91,7 +106,27 @@
         "title": "Perfil completo",
         "requirement": "profile_complete",
         "href": "/painel/minha-conta"
+      },
+      {
+        "key": "anunciante",
+        "level": 4,
+        "title": "Anunciante",
+        "description": "Publique seu primeiro anuncio e ganhe o selo de anunciante.",
+        "requirement": "listing_published",
+        "href": "/painel/meus-servicos/novo"
       }
     ]
+  },
+  "analytics": {
+    "_comment": "Plugin analytics (métricas do anunciante). events = só os listados ligam. minVisibleMs = tempo contínuo em tela, em milissegundos, antes de contar (piso: view 500, impression 200; teto 60000). minVisibleRatio = fração do elemento visível (0..1). oncePerSession = conta no máximo 1x por sessão do navegador. 0 ms = conta na hora (cliques de ação). entities.<tipo>.events sobrescreve por tipo de entidade. enabled:false desliga; remova o bloco para usar os defaults.",
+    "enabled": true,
+    "events": {
+      "impression": { "minVisibleMs": 500, "minVisibleRatio": 0.6, "oncePerSession": true },
+      "view": { "minVisibleMs": 1500, "minVisibleRatio": 0.5, "oncePerSession": true },
+      "contact_click": { "minVisibleMs": 0 },
+      "favorite": { "minVisibleMs": 0 },
+      "share": { "minVisibleMs": 0 }
+    },
+    "entities": {}
   }
 }

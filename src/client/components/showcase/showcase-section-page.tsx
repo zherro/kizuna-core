@@ -4,16 +4,21 @@ import { useState } from 'react';
 import Link from 'next/link';
 import {
   Bell,
+  Briefcase,
   CalendarOff,
   Check,
   Copy,
+  Home,
   MapPin,
   Palmtree,
   Pencil,
   Plus,
+  PlusCircle,
   Save,
+  Search,
   Sparkles,
   Trash2,
+  UserCircle,
   Utensils,
 } from 'lucide-react';
 import { Badge } from '../ui/badge';
@@ -52,6 +57,7 @@ import {
   type SystemConfigFieldSpec,
 } from '../ui-better-soft/system-config-section';
 import { RpcTester } from '../rpc-tester';
+import { MobileTabBar } from '../ui-better-soft/mobile-tab-bar';
 import { LocationTrigger, LocationModal } from '../location-modal';
 import { FormBuilderShowcaseDemo } from '../form-builder/showcase-demo';
 import { FormsShowcaseDemo } from '../forms/showcase-demo';
@@ -850,6 +856,24 @@ function RpcTesterDemo() {
   );
 }
 
+function MobileTabBarDemo() {
+  // A barra real é `fixed` e some em md+; aqui forçamos estática e visível só para o preview.
+  return (
+    <div className="mx-auto max-w-sm overflow-hidden rounded-xl border border-border pt-6">
+      <MobileTabBar
+        className="static! block! md:block!"
+        items={[
+          { href: '/showcase/mobile-tab-bar', label: 'Início', icon: <Home /> },
+          { href: '/busca', label: 'Buscar', icon: <Search /> },
+          { href: '/painel/meus-servicos/novo', label: 'Anunciar', icon: <PlusCircle />, featured: true },
+          { href: '/painel/meus-servicos', label: 'Meus anúncios', icon: <Briefcase />, exact: true },
+          { href: '/painel/minha-conta', label: 'Conta', icon: <UserCircle /> },
+        ]}
+      />
+    </div>
+  );
+}
+
 function PwaRegisterDemo() {
   // Sem preview ao vivo de proposito: montar <PwaRegister /> registraria um service worker
   // de verdade nesta pagina do showcase, que nao e o app que o consome.
@@ -980,6 +1004,7 @@ function SectionDemo({ sectionId }: { sectionId: ShowcaseSectionId }) {
   if (sectionId === 'inline-alert') return <InlineAlertDemo />;
   if (sectionId === 'rpc-tester') return <RpcTesterDemo />;
   if (sectionId === 'pwa-register') return <PwaRegisterDemo />;
+  if (sectionId === 'mobile-tab-bar') return <MobileTabBarDemo />;
   if (sectionId === 'location-modal') return <LocationModalDemo />;
   if (sectionId === 'system-config-section') return <SystemConfigSectionDemo />;
   if (sectionId === 'form-builder') return <FormBuilderShowcaseDemo />;

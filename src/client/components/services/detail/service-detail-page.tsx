@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { ArrowRight, ChevronRight, Sparkles, Tag, User, Zap } from 'lucide-react';
 import { Typography } from '../../ui/typography';
@@ -8,15 +9,41 @@ import type { ServiceDetailData } from '../../../../server/services/service-deta
 import { hueGradient, resolveCategoryHue, resolveServiceDetailVariant } from './category-style';
 import type { ServiceDetailConfig, ServiceDetailSlots, ServiceDetailVariantComponent } from './service-detail-types';
 import { ServiceDetailDefault } from './service-detail-default';
-import { ServiceDetailCinema } from './service-detail-cinema';
+import { ServiceDetailCinema, ServiceDetailCinemaSidebar, cinemaHeaderTags } from './service-detail-cinema';
 import { AdPhotoMosaic } from './ad-photo-mosaic';
 import { AdShareButton } from './ad-share-button';
+import { ServiceReactionButtons } from './service-reaction-buttons';
 import { ServiceCarouselSection } from './service-carousel-section';
+import { TrackView } from '../../../analytics/track-view';
+import type { EventRule } from '../../../../shared/analytics';
 
 const BUILT_IN_VARIANTS: Record<string, ServiceDetailVariantComponent> = {
   service: ServiceDetailDefault,
   cinema: ServiceDetailCinema,
 };
+
+/** Conteúdo que substitui a caixa de preço da sidebar, por variant — variant sem entrada aqui
+ * mantém a caixa de preço padrão (comportamento da `service`). */
+const BUILT_IN_SIDEBARS: Record<string, ServiceDetailVariantComponent> = {
+  cinema: ServiceDetailCinemaSidebar,
+};
+
+function ViewTracker({
+  uid,
+  rule,
+  children,
+}: {
+  uid: string;
+  rule: EventRule | null;
+  children: ReactNode;
+}) {
+  if (!rule) return <>{children}</>;
+  return (
+    <TrackView entityType="service" entityId={uid} event="view" rule={rule}>
+      {children}
+    </TrackView>
+  );
+}
 
 function ProviderAvatar({ url, name, className }: { url: string | null; name: string; className: string }) {
   const initials = name.trim().slice(0, 2).toUpperCase();
@@ -57,10 +84,15 @@ export type ServiceDetailPageProps = {
   /** `variantByCategorySlug`/`defaultVariant` escolhem só entre este mapa; `cinema` e `service`
    * (default) já vêm prontos — passe aqui só pra adicionar/sobrescrever outra variant. */
   variants?: Record<string, ServiceDetailVariantComponent>;
+  /** Substitui a caixa de preço da sidebar, por variant (`cinema` já vem pronto: título + gênero +
+   * sinopse, só em telas lg+). Passe aqui só pra adicionar/sobrescrever outra variant. */
+  sidebars?: Record<string, ServiceDetailVariantComponent>;
   slots?: ServiceDetailSlots;
   /** `/anuncios/[uid]` do projeto consumidor — usado pro breadcrumb, compartilhar e JSON-LD. */
   path: string;
   searchHref?: string;
+  /** Plugin analytics: regra da visualização (`resolveEventRule`, calculada no servidor). Sem isso, nada é contado. */
+  analytics?: { viewRule: EventRule | null };
 };
 
 /**
@@ -73,9 +105,11 @@ export function ServiceDetailPage({
   data,
   detailConfig,
   variants,
+  sidebars,
   slots,
   path,
   searchHref = '/busca',
+  analytics,
 }: ServiceDetailPageProps) {
   const { service, subcategoryNames, provider, extraFields, related, randomServices } = data;
 
@@ -83,6 +117,8 @@ export function ServiceDetailPage({
   const variantId = resolveServiceDetailVariant({ slug: categorySlug }, detailConfig);
   const hue = resolveCategoryHue({ slug: categorySlug }, detailConfig);
   const VariantContent = { ...BUILT_IN_VARIANTS, ...variants }[variantId] ?? ServiceDetailDefault;
+  const headerTags = variantId === 'cinema' ? cinemaHeaderTags(extraFields) : [];
+  const SidebarContent = { ...BUILT_IN_SIDEBARS, ...sidebars }[variantId];
 
   const photos = photosFor(service);
   const priceFull = formatServicePrice(service.startingPrice, service.priceUnit);
@@ -108,7 +144,7 @@ export function ServiceDetailPage({
           backgroundImage: `linear-gradient(to bottom, oklch(0.97 0.028 ${hue}), var(--background))`,
         }}
       />
-      <div className="relative mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+      <div className="relative mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8">
         <nav className="flex items-center gap-1 py-5 text-xs text-muted-foreground">
           <Link href="/" className="hover:text-foreground">
             Início
@@ -123,6 +159,8 @@ export function ServiceDetailPage({
 
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_340px] lg:gap-[38px]">
           <div className="min-w-0">
+            {/* Só hero + título: a regra de visibilidade (fração do bloco) precisa caber numa tela. */}
+            <ViewTracker uid={service.uid} rule={analytics?.viewRule ?? null}>
             <div className="relative">
               {photos.length > 0 ? (
                 <AdPhotoMosaic photos={photos} alt={service.title} />
@@ -163,7 +201,7 @@ export function ServiceDetailPage({
                 <ReviewSummary domain="service" referenceId={String(service.id)} variant="compact" />
               </div>
 
-              {subcategoryNames.length > 0 && (
+              {(subcategoryNames.length > 0 || headerTags.length > 0) && (
                 <div className="mt-4 flex flex-wrap gap-1.5">
                   {subcategoryNames.map((name) => (
                     <span
@@ -173,9 +211,18 @@ export function ServiceDetailPage({
                       <Tag className="h-3 w-3" /> {name}
                     </span>
                   ))}
+                  {headerTags.map((name) => (
+                    <span
+                      key={name}
+                      className="inline-flex items-center rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground"
+                    >
+                      {name}
+                    </span>
+                  ))}
                 </div>
               )}
             </div>
+            </ViewTracker>
 
             <VariantContent
               service={service}
@@ -187,21 +234,44 @@ export function ServiceDetailPage({
 
           <aside>
             <div className="rounded-[var(--ui-radius-card-lg,1.5rem)] bg-card p-6 shadow-xl lg:sticky lg:top-20">
-              <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                {priceUnitLabel ? 'A partir de' : 'Valor'}
-              </div>
-              <div className="mt-1 text-3xl font-black leading-none tracking-tight text-brand">
-                {priceAmount}
-              </div>
-              {priceUnitLabel && (
-                <div className="mt-1 text-sm font-medium text-muted-foreground">
-                  · {priceUnitLabel}
+              {SidebarContent ? (
+                <div className="hidden lg:block">
+                  <SidebarContent
+                    service={service}
+                    extraFields={extraFields}
+                    subcategoryNames={subcategoryNames}
+                    hue={hue}
+                  />
                 </div>
+              ) : (
+                <>
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                    {priceUnitLabel ? 'A partir de' : 'Valor'}
+                  </div>
+                  <div className="mt-1 text-3xl font-black leading-none tracking-tight text-brand">
+                    {priceAmount}
+                  </div>
+                  {priceUnitLabel && (
+                    <div className="mt-1 text-sm font-medium text-muted-foreground">
+                      · {priceUnitLabel}
+                    </div>
+                  )}
+                </>
               )}
 
               <div className="mt-5 space-y-2">
                 {slots?.renderCTA?.({ service, provider })}
-                <AdShareButton title={service.title} path={path} />
+                <ServiceReactionButtons
+                  serviceUid={service.uid}
+                  likeCount={service.likeCount ?? 0}
+                  config={detailConfig?.reactions}
+                  trackUid={analytics ? service.uid : undefined}
+                />
+                <AdShareButton
+                  title={service.title}
+                  path={path}
+                  trackUid={analytics ? service.uid : undefined}
+                />
               </div>
 
               {provider &&

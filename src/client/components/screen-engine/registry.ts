@@ -25,6 +25,9 @@ const AccountForm = dynamic(() =>
 const ReviewModerationTable = dynamic(() =>
   import('../reviews').then((m) => m.ReviewModerationTable)
 );
+const DeleteAccountSection = dynamic(() =>
+  import('../account/delete-account-section').then((m) => m.DeleteAccountSection)
+);
 
 /**
  * Every component a screen config can reference by name. Adding a screen
@@ -46,4 +49,5 @@ export const SCREEN_COMPONENT_REGISTRY: Record<string, RegistryEntry> = {
   list: { component: ListBlock, serverSafe: false },
   'account-form': { component: AccountForm, serverSafe: false },
   'review-moderation': { component: ReviewModerationTable, serverSafe: false },
+  'delete-account': { component: DeleteAccountSection, serverSafe: false },
 };

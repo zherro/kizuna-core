@@ -1,6 +1,6 @@
 export { ServiceDetailPage, type ServiceDetailPageProps } from './service-detail-page';
 export { ServiceDetailDefault } from './service-detail-default';
-export { ServiceDetailCinema } from './service-detail-cinema';
+export { ServiceDetailCinema, ServiceDetailCinemaSidebar } from './service-detail-cinema';
 export {
   resolveServiceDetailVariant,
   resolveCategoryHue,

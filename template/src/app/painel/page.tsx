@@ -63,7 +63,7 @@ export default async function PainelPage() {
   const visibleCards = cards.filter((card) => !card.adminOnly || canManageCatalog);
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-8 md:px-6">
+    <div className="mx-auto flex w-full max-w-[1600px] flex-1 flex-col gap-6 px-4 py-8 md:px-6">
       {/* Onboarding Banner for USER type */}
       {isUserType && session?.user_id && (
         <PainelWrapper userId={session.user_id} role="advertiser" />

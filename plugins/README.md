@@ -19,6 +19,10 @@ follow-ups (`0002_*.sql`, …) for data seeds or later migrations; the installer
   opt-ins, whatever a project needs, without a schema change per setting.
 - `notifications/` — in-app notification feed. Rows are inserted by trusted backend code only,
   never by the recipient (no INSERT grant to `auth_user`).
+- `tickets/` — chamados (`tickets`, `ticket_comments` do usuário, `ticket_replies` da equipe). O usuário abre/comenta os seus; a equipe
+  (`tickets.manage`, root sempre) vê todos e muda status; o servidor (`service_role`) abre tickets
+  do sistema (`account_recreated`). Só RLS + GRANT de coluna, sem funções. Registra
+  `tickets.manage` porque ver todos/mudar status é ação administrável. Ver `docs/plugins/tickets.md`.
 - `agenda/` — a user's own calendar events (`agenda_events`) plus one view-preferences row per
   (user, tenant) (`agenda_settings`). Both strictly self-service, same shape as
   `account_preferences`. `0002_agenda_config.sql` (v1.1.0) adds the tenant's _schedule
@@ -74,7 +78,7 @@ follow-ups (`0002_*.sql`, …) for data seeds or later migrations; the installer
   `SearchPage`'s `requestMode` prop — the plugin knows nothing about demandas. No
   `auth.permissions` (public, read-only).
 - `swipe/` — página pública `/descobrir` (deslizar itens da busca: curtir/passar) e `/curtidos`.
-  `service_swipes` (1 linha por usuário+item, upsert, sem DELETE — descurtir é
+  `service_user_favorites` (1 linha por usuário+item, upsert, sem DELETE — descurtir é
   `fn_swipe_record(..., 'unlike')`, que grava `skip`; um `skip` comum nunca rebaixa um `like`).
   `fn_swipe_deck` embrulha `fn_search_services`, aplica `p_price_min`/`p_price_max` e exclui
   curtidos, passados há menos de `swipe.skip_ttl_days` (system_config, padrão 7) e `p_exclude`. Registre `rpcSwipe`
@@ -92,6 +96,11 @@ follow-ups (`0002_*.sql`, …) for data seeds or later migrations; the installer
   Writes gated by `pages.manage`. Ships `0002_pages_seed.sql` — project-neutral default pages
   (`sobre`, `quem-somos`, `termos-de-uso`, published) seeded under the first root user's tenant,
   a silent no-op on a DB with no root user yet. A project can layer its own content on top.
+- `analytics/` — per-entity business metrics (`entity_type` + `entity_id`, no FK), first-party,
+  cookieless. One table `analytics_events` (CHECK on event/source/visible time, UNIQUE dedupe per
+  visitor/day/event, RLS: owner tenant reads its own). Anonymous writes go through
+  `fn_analytics_track` (INSERT ... ON CONFLICT DO NOTHING, column-level INSERT grant; SECURITY INVOKER, RLS applies; the owner viewing their own entity is rejected by the INSERT policy). Read via the
+  `analytics_events` resource; aggregation is client-side. Retention via inline `pg_cron`.
 - `reviews/` — generic ratings/reviews infrastructure, scoped by `domain` + `reference_id` (no
   FK to the reviewed entity — same decoupling as `forms`). Tables: `reviews` (rating 1–5 +
   comment + status `pending`/`published`/`hidden`/`rejected` + soft delete), `review_tags`

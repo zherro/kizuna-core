@@ -3,6 +3,7 @@
 import { Share2 } from 'lucide-react';
 import { Button } from '../../ui/button';
 import { useToast } from '../../../hooks/use-toast';
+import { trackEvent } from '../../../analytics/analytics-api';
 
 /**
  * Usa a Web Share API quando o browser expõe uma (mobile e a maioria dos desktops hoje); cai pra
@@ -10,11 +11,21 @@ import { useToast } from '../../../hooks/use-toast';
  * — resolvido contra `window.location.origin` aqui, já que quem renderiza isso normalmente é um
  * Server Component sem origin de request próprio pra passar adiante.
  */
-export function AdShareButton({ title, path }: { title: string; path: string }) {
+export function AdShareButton({
+  title,
+  path,
+  trackUid,
+}: {
+  title: string;
+  path: string;
+  /** uid do anúncio: quando informado, conta o evento `share` (plugin analytics). */
+  trackUid?: string;
+}) {
   const toast = useToast();
 
   async function handleShare() {
     const url = `${window.location.origin}${path}`;
+    if (trackUid) trackEvent({ entityType: 'service', entityId: trackUid, event: 'share' });
 
     if (typeof navigator !== 'undefined' && navigator.share) {
       try {

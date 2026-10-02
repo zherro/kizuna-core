@@ -17,7 +17,7 @@ export type ScreenBlock = {
 export type ScreenConfig = {
   id: string;
   /**
-   * Outer container width. `'default'` (max-w-6xl, most screens) or `'narrow'` (max-w-4xl, the
+   * Outer container width. `'default'` (max-w-[1600px], most screens) or `'narrow'` (max-w-4xl, the
    * single-column /painel/agenda/feriados layout). Optional — omit for `'default'`.
    */
   maxWidth?: 'default' | 'narrow';

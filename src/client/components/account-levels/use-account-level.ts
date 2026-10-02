@@ -8,6 +8,7 @@ export const ACCOUNT_LEVEL_ENDPOINT = '/api/account/level';
 export type AccountLevelResponse = {
   status: AccountStatus;
   allowed: Record<string, boolean>;
+  unlocks?: Record<string, string[]>;
   can?: CanResult;
 };
 
@@ -52,6 +53,7 @@ export function useAccountLevel(
   return {
     status: data?.status ?? null,
     allowed: data?.allowed ?? {},
+    unlocks: data?.unlocks ?? {},
     loading,
     refresh,
   };

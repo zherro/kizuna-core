@@ -44,7 +44,7 @@ export function PreferencesFab() {
   } = useAppPreferences();
 
   return (
-    <div className="fixed right-4 bottom-4 z-50">
+    <div className="fixed right-4 bottom-[calc(var(--mobile-tab-h,0px)+1rem)] z-50 md:bottom-4">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="outline" size="icon" aria-label="Preferences">
