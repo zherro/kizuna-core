@@ -7,6 +7,7 @@ import { AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { TurnstileWidget } from '../captcha';
 import { useAuth, type PublicSession } from '../../providers/auth-provider';
 import { useForm } from '../../hooks/use-form';
+import { cn } from '../../../lib/utils';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Input } from '../ui/input';
@@ -25,6 +26,11 @@ type RegisterFormProps = {
   onSwitchToLogin?: () => void;
   /** Link to the terms-of-use page shown next to the accept checkbox. */
   termsHref?: string;
+  /** Título/descrição do cartão. Padrão: "Registre-se" / "Crie sua conta para comecar.". */
+  title?: string;
+  description?: string;
+  /** Cartão "soft" (ver `LoginForm`): sem borda, cantos grandes, sombra difusa e textos maiores. */
+  soft?: boolean;
 };
 
 export function RegisterForm({
@@ -33,6 +39,9 @@ export function RegisterForm({
   loginHref = '/login',
   onSwitchToLogin,
   termsHref = '/termos',
+  title = 'Registre-se',
+  description = 'Crie sua conta para comecar.',
+  soft = false,
 }: RegisterFormProps) {
   const { setUser } = useAuth();
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
@@ -93,17 +102,23 @@ export function RegisterForm({
   const { formik } = form;
 
   return (
-    <Card className="w-full max-w-md">
+    <Card
+      className={cn(
+        'w-full max-w-md',
+        soft &&
+          'rounded-3xl border-0 bg-card/90 p-2 shadow-[0_28px_70px_-24px_color-mix(in_oklch,var(--primary)_55%,transparent)] backdrop-blur-sm sm:p-4',
+      )}
+    >
       <CardHeader>
-        <CardTitle>Registre-se</CardTitle>
-        <CardDescription>Crie sua conta para comecar.</CardDescription>
+        <CardTitle className={soft ? 'font-display text-2xl' : undefined}>{title}</CardTitle>
+        <CardDescription className={soft ? 'text-base' : undefined}>{description}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {usePhone ? (
           <PhoneLoginForm onSuccess={onSuccess} onBack={() => setUsePhone(false)} />
         ) : (
           <>
-            <SocialLoginButtons onPhoneLogin={() => setUsePhone(true)} />
+            <SocialLoginButtons large={soft} onPhoneLogin={() => setUsePhone(true)} />
             <form onSubmit={form.handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Nome</Label>
@@ -132,7 +147,7 @@ export function RegisterForm({
                   value={formik.values.email}
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
-                  placeholder="voce@empresa.com"
+                  placeholder="seuemail@exemplo.com"
                 />
                 {formik.touched.email && formik.errors.email ? (
                   <p className="text-xs text-red-600 dark:text-red-300">{formik.errors.email}</p>

@@ -11,6 +11,8 @@ type SocialLoginButtonsProps = {
   providersEndpoint?: string;
   /** Quando informado e o servidor tiver OTP configurado, mostra "Entrar com telefone". */
   onPhoneLogin?: () => void;
+  /** Separador "ou" maior (texto base, semibold) — para casar com uma legenda em `text-base`. */
+  large?: boolean;
 };
 
 const AUTH_PAGES = new Set(['/login', '/registre-se']);
@@ -72,6 +74,7 @@ export function SocialLoginButtons({
   returnTo,
   providersEndpoint = '/api/auth/providers',
   onPhoneLogin,
+  large = false,
 }: SocialLoginButtonsProps) {
   const [providers, setProviders] = useState<Provider[]>([]);
   const [phoneEnabled, setPhoneEnabled] = useState(false);
@@ -127,7 +130,13 @@ export function SocialLoginButtons({
           </button>
         ) : null}
       </div>
-      <div className="flex items-center gap-3 text-xs uppercase text-muted-foreground">
+      <div
+        className={
+          large
+            ? 'flex items-center gap-3 text-base font-semibold uppercase text-muted-foreground'
+            : 'flex items-center gap-3 text-xs uppercase text-muted-foreground'
+        }
+      >
         <span className="h-px flex-1 bg-border" />
         ou
         <span className="h-px flex-1 bg-border" />

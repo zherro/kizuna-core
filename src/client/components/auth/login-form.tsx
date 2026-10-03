@@ -6,7 +6,8 @@ import * as Yup from 'yup';
 import { useAuth, type PublicSession } from '../../providers/auth-provider';
 import { TurnstileWidget } from '../captcha';
 import { useForm } from '../../hooks/use-form';
-import { Button } from '../ui/button';
+import { cn } from '../../../lib/utils';
+import { Button, buttonVariants } from '../ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
@@ -14,6 +15,10 @@ import { SocialLoginButtons } from './social-login-buttons';
 import { PhoneLoginForm } from './phone-login-form';
 
 type LoginResponse = { message: string; user?: PublicSession };
+
+/** Botão "Criar conta" em destaque: contorno e texto na cor primária, mais alto que o "Entrar". */
+const CREATE_ACCOUNT_CLASS =
+  'h-11 w-full border-2 border-primary bg-background text-base font-semibold text-primary hover:bg-primary/10 hover:text-primary';
 
 type LoginFormProps = {
   onSuccess?: (user: PublicSession) => void;
@@ -24,6 +29,19 @@ type LoginFormProps = {
   /** Rodapé "Ainda não tem conta?": href navega; onSwitchToRegister troca aba (modal). */
   registerHref?: string | null;
   onSwitchToRegister?: () => void;
+  /** Título/descrição do cartão. Padrão: "Login" / "Entre para acessar a plataforma.". */
+  title?: string;
+  description?: string;
+  /**
+   * `link` (padrão): linha discreta "Ainda não tem conta? Registre-se".
+   * `button`: chamada em destaque, um botão "Criar conta" de largura total no fim do cartão.
+   */
+  registerAs?: 'link' | 'button';
+  /**
+   * Cartão "soft": cantos bem arredondados, sem borda, sombra larga e difusa na cor do tema e
+   * levemente translúcido — para flutuar sobre um fundo decorativo (ex.: círculo do tema).
+   */
+  soft?: boolean;
 };
 
 export function LoginForm({
@@ -32,6 +50,10 @@ export function LoginForm({
   forgotPasswordHref = '/esqueci-senha',
   registerHref = '/registre-se',
   onSwitchToRegister,
+  title = 'Login',
+  description = 'Entre para acessar a plataforma.',
+  registerAs = 'link',
+  soft = false,
 }: LoginFormProps) {
   const { setUser } = useAuth();
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
@@ -75,17 +97,23 @@ export function LoginForm({
   const { formik } = form;
 
   return (
-    <Card className="w-full max-w-md">
+    <Card
+      className={cn(
+        'w-full max-w-md',
+        soft &&
+          'rounded-3xl border-0 bg-card/90 p-2 shadow-[0_28px_70px_-24px_color-mix(in_oklch,var(--primary)_55%,transparent)] backdrop-blur-sm sm:p-4',
+      )}
+    >
       <CardHeader>
-        <CardTitle>Login</CardTitle>
-        <CardDescription>Entre para acessar a plataforma.</CardDescription>
+        <CardTitle className={soft ? 'font-display text-2xl' : undefined}>{title}</CardTitle>
+        <CardDescription className={soft ? 'text-base' : undefined}>{description}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {usePhone ? (
           <PhoneLoginForm onSuccess={onSuccess} onBack={() => setUsePhone(false)} />
         ) : (
           <>
-            <SocialLoginButtons onPhoneLogin={() => setUsePhone(true)} />
+            <SocialLoginButtons large={soft} onPhoneLogin={() => setUsePhone(true)} />
             <form onSubmit={form.handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
@@ -97,7 +125,7 @@ export function LoginForm({
                   value={formik.values.email}
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
-                  placeholder="voce@empresa.com"
+                  placeholder="seuemail@exemplo.com"
                 />
                 {formik.touched.email && formik.errors.email ? (
                   <p className="text-xs text-red-600 dark:text-red-300">{formik.errors.email}</p>
@@ -154,7 +182,33 @@ export function LoginForm({
                 {form.submitting ? 'Entrando...' : 'Entrar'}
               </Button>
 
-              {onSwitchToRegister ? (
+              {registerAs === 'button' && (onSwitchToRegister || registerHref) ? (
+                <div className="space-y-2 border-t border-border pt-4 text-center">
+                  <p className="text-sm text-muted-foreground">Ainda não tem conta?</p>
+                  {onSwitchToRegister ? (
+                    <button
+                      type="button"
+                      onClick={onSwitchToRegister}
+                      className={cn(
+                        buttonVariants({ variant: 'outline', size: 'lg' }),
+                        CREATE_ACCOUNT_CLASS,
+                      )}
+                    >
+                      Criar conta
+                    </button>
+                  ) : (
+                    <Link
+                      href={registerHref as string}
+                      className={cn(
+                        buttonVariants({ variant: 'outline', size: 'lg' }),
+                        CREATE_ACCOUNT_CLASS,
+                      )}
+                    >
+                      Criar conta
+                    </Link>
+                  )}
+                </div>
+              ) : onSwitchToRegister ? (
                 <p className="text-center text-sm text-muted-foreground">
                   Ainda nao tem conta?{' '}
                   <button

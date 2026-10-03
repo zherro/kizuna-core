@@ -91,7 +91,7 @@ describe('TicketThread', () => {
         '/api/resources/ticket_replies',
         expect.objectContaining({
           method: 'POST',
-          body: JSON.stringify({ ticketId: '9', body: 'Oi', kind: 'reply' }),
+          body: JSON.stringify({ ticketId: '9', body: 'Oi', kind: 'reply', imageIds: [] }),
         }),
       ])
     );
@@ -108,7 +108,7 @@ describe('TicketThread', () => {
     await waitFor(() =>
       expect(writesOf(fetchMock)[0]).toEqual([
         '/api/resources/ticket_comments',
-        expect.objectContaining({ body: JSON.stringify({ ticketId: '9', body: 'Mais info' }) }),
+        expect.objectContaining({ body: JSON.stringify({ ticketId: '9', body: 'Mais info', imageIds: [] }) }),
       ])
     );
   });

@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Button } from '../ui/button';
 import { Textarea } from '../ui/textarea';
+import { TicketAttachments } from './ticket-attachments';
+import { TicketImagePicker } from './ticket-image-picker';
 import { buildThread, canEditReply, canModifyComment } from './comment-rules';
 import type { ThreadEntry, TicketComment, TicketReply, Viewer } from './types';
 
@@ -46,6 +48,8 @@ export function TicketThread({ ticketId, viewer, refreshKey = 0 }: Props) {
   const [comments, setComments] = useState<TicketComment[]>([]);
   const [replies, setReplies] = useState<TicketReply[]>([]);
   const [draft, setDraft] = useState('');
+  const [draftImageIds, setDraftImageIds] = useState<string[]>([]);
+  const [pickerKey, setPickerKey] = useState(0);
   const [editing, setEditing] = useState<Editing | null>(null);
   const [error, setError] = useState('');
 
@@ -79,9 +83,13 @@ export function TicketThread({ ticketId, viewer, refreshKey = 0 }: Props) {
     if (!body) return;
     // A equipe responde em ticket_replies; o usuário comenta em ticket_comments.
     const saved = viewer.isStaff
-      ? await write(REPLIES, 'POST', { ticketId, body, kind: 'reply' })
-      : await write(COMMENTS, 'POST', { ticketId, body });
-    if (saved) setDraft('');
+      ? await write(REPLIES, 'POST', { ticketId, body, kind: 'reply', imageIds: draftImageIds })
+      : await write(COMMENTS, 'POST', { ticketId, body, imageIds: draftImageIds });
+    if (saved) {
+      setDraft('');
+      setDraftImageIds([]);
+      setPickerKey((key) => key + 1);
+    }
   }
 
   async function saveEdit() {
@@ -152,6 +160,8 @@ export function TicketThread({ ticketId, viewer, refreshKey = 0 }: Props) {
                 </p>
               )}
 
+              {deletedAt ? null : <TicketAttachments imageIds={item.imageIds} />}
+
               {canEdit && !isEditing ? (
                 <div className="mt-2 flex gap-2">
                   <Button
@@ -183,6 +193,7 @@ export function TicketThread({ ticketId, viewer, refreshKey = 0 }: Props) {
           onChange={(e) => setDraft(e.target.value)}
           placeholder={viewer.isStaff ? 'Responder como equipe...' : 'Escreva um comentário...'}
         />
+        <TicketImagePicker key={pickerKey} onChange={setDraftImageIds} />
         {error ? <p className="text-sm text-destructive">{error}</p> : null}
         <Button onClick={send} disabled={!draft.trim()}>
           {viewer.isStaff ? 'Responder' : 'Comentar'}

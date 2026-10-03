@@ -18,6 +18,7 @@ import {
 import { cn } from '../../../lib/utils';
 import { useUserLocation } from '../../hooks/use-user-location';
 import { useViewingCity } from '../viewing-city';
+import { LocationModal } from '../location-modal';
 import { SelectPopover } from '../ui-better-soft/select-popover';
 import type { WeatherResponse } from './types';
 
@@ -60,13 +61,15 @@ export type WeatherWidgetProps = {
  * cidade em exibição da URL (`useViewingCity`) ou, sem ela, a salva do usuário
  * (`useUserLocation`); cai na primeira de "weather.cities" se ela não estiver na lista. Ao
  * clicar, abre um modal com ontem, hoje (destacado) e os próximos dias, e um select para
- * consultar outras cidades — escolha local ao modal, não muda a cidade do header.
+ * consultar outras cidades — escolha local ao modal, não muda a cidade do header. No mobile o
+ * toque abre direto o seletor de cidade do topo (`LocationModal`), atalho pra trocar de cidade.
  */
 export function WeatherWidget({ endpoint = '/api/weather', mini = false }: WeatherWidgetProps = {}) {
   const [data, setData] = useState<WeatherResponse | null>(null);
   const { location } = useUserLocation();
   const viewing = useViewingCity();
   const [selected, setSelected] = useState(0);
+  const [locationOpen, setLocationOpen] = useState(false);
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -93,6 +96,11 @@ export function WeatherWidget({ endpoint = '/api/weather', mini = false }: Weath
   const ModalIcon = modalNow.icon;
 
   function openModal() {
+    // Mobile (abaixo do breakpoint `sm`): o toque vira atalho pra trocar de cidade.
+    if (window.matchMedia('(max-width: 639px)').matches) {
+      setLocationOpen(true);
+      return;
+    }
     setSelected(index);
     dialogRef.current?.showModal();
   }
@@ -106,7 +114,7 @@ export function WeatherWidget({ endpoint = '/api/weather', mini = false }: Weath
       <button
         type="button"
         onClick={openModal}
-        aria-label={`${city.name}: ${city.current.temperature}°C, ${now.label}. Ver previsão`}
+        aria-label={`${city.name}: ${city.current.temperature}°C, ${now.label}. Ver previsão ou trocar de cidade`}
         className="flex h-9 min-w-0 items-center gap-1.5 rounded-full bg-secondary px-3 text-sm text-secondary-foreground transition-colors hover:bg-secondary/80"
       >
         <span className="flex min-w-0 items-center gap-1.5">
@@ -123,6 +131,8 @@ export function WeatherWidget({ endpoint = '/api/weather', mini = false }: Weath
           </span>
         </span>
       </button>
+
+      <LocationModal open={locationOpen} onClose={() => setLocationOpen(false)} />
 
       <dialog
         ref={dialogRef}

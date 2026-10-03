@@ -8,10 +8,19 @@ export type Ticket = {
   title: string;
   description: string;
   status: TicketStatus;
+  /** E-mail (login) de quem abriu — a chave que liga o chamado ao usuário dono. */
+  ownerEmail: string | null;
+  /** Só no contato público (type 'contact'): nome e telefone informados pelo visitante. */
+  contactName: string | null;
+  contactPhone: string | null;
   createdBy: string | null;
   subjectUserId: string | null;
   relatedUserId: string | null;
   payload: Record<string, unknown>;
+  /** Até 3 imagens anexadas (ids de public.files). */
+  imageIds: string[];
+  /** Prazo da primeira resposta (dias úteis; ver ticket-sla.ts). */
+  slaDueAt: string | null;
   createdAt: string;
   updatedAt: string;
   resolvedAt: string | null;
@@ -23,6 +32,7 @@ export type TicketComment = {
   id: string;
   ticketId: string;
   authorId: string | null;
+  imageIds: string[];
   body: string;
   createdAt: string;
   updatedAt: string;
@@ -35,6 +45,7 @@ export type TicketReply = {
   ticketId: string;
   authorId: string | null;
   kind: 'reply' | 'status_change' | string;
+  imageIds: string[];
   body: string;
   createdAt: string;
   updatedAt: string;
@@ -56,4 +67,5 @@ export const TICKET_STATUS_LABEL: Record<TicketStatus, string> = {
 export const TICKET_TYPE_LABEL: Record<string, string> = {
   support: 'Suporte',
   account_recreated: 'Conta recriada',
+  contact: 'Contato',
 };

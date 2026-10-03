@@ -20,6 +20,10 @@ interface RegisterPageProps {
   loginHref?: string | null;
   /** Link to the terms-of-use page shown next to the accept checkbox. */
   termsHref?: string;
+  /** Textos do cartão e visual "soft" — repassados ao `RegisterForm`. */
+  title?: string;
+  description?: string;
+  soft?: boolean;
 }
 
 export function RegisterPageContent({

@@ -1,4 +1,5 @@
 import type { ResourceConfig } from '../types/resource-config';
+import { slaDueAt } from '../../tickets/ticket-sla';
 
 /**
  * `ResourceConfig`s do plugin `tickets` (plugins/tickets/0001_tickets.sql). A RLS decide quem vê e
@@ -14,21 +15,37 @@ const REPLY_KINDS = ['reply', 'status_change'];
 const nowIso = () => new Date().toISOString();
 const text = (value: unknown) => String(value ?? '').trim();
 
+const MAX_IMAGES = 3;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Ids de anexo (public.files) válidos, sem repetição, no máximo 3 — o banco também limita. */
+function imageIdsInput(value: unknown): string[] {
+  const ids = Array.isArray(value) ? value.map((item) => text(item)) : [];
+  return ids.filter((id, index) => UUID_RE.test(id) && ids.indexOf(id) === index).slice(0, MAX_IMAGES);
+}
+
+const imageIdsOutput = (value: unknown): string[] =>
+  Array.isArray(value) ? value.map((item) => String(item)) : [];
+
 const TICKETS: ResourceConfig = {
   schema: 'public',
   table: 'tickets',
   listRequiresAuth: true,
   returnRepresentation: true,
   select:
-    'id,uid,type,title,description,status,created_by,subject_user_id,related_user_id,payload,created_at,updated_at,resolved_at',
+    'id,uid,type,title,description,status,owner_email,contact_name,contact_phone,created_by,subject_user_id,related_user_id,payload,image_ids,sla_due_at,created_at,updated_at,resolved_at',
   primaryKey: 'id',
   defaultOrder: 'created_at',
   searchableColumns: ['title', 'description'],
   // POST: title/description (o resto é default da tabela + RLS). PATCH: status (só staff, RLS).
   mapInput: (input) => {
     const out: RecordValue = {};
-    if (input.title !== undefined) out.title = text(input.title);
+    if (input.title !== undefined) {
+      out.title = text(input.title);
+      out.sla_due_at = slaDueAt(out.title as string); // só a criação manda título
+    }
     if (input.description !== undefined) out.description = text(input.description) || null;
+    if (input.imageIds !== undefined) out.image_ids = imageIdsInput(input.imageIds);
     if (input.status !== undefined && STATUSES.includes(text(input.status))) {
       out.status = text(input.status);
       out.resolved_at = out.status === 'resolved' ? nowIso() : null;
@@ -43,14 +60,20 @@ const TICKETS: ResourceConfig = {
     title: String(record.title ?? ''),
     description: String(record.description ?? ''),
     status: String(record.status ?? 'open'),
+    ownerEmail: record.owner_email ?? null,
+    contactName: record.contact_name ?? null,
+    contactPhone: record.contact_phone ?? null,
     createdBy: record.created_by ?? null,
     subjectUserId: record.subject_user_id ?? null,
     relatedUserId: record.related_user_id ?? null,
     payload: (record.payload as RecordValue | null) ?? {},
+    imageIds: imageIdsOutput(record.image_ids),
+    slaDueAt: record.sla_due_at ?? null,
     createdAt: record.created_at,
     updatedAt: record.updated_at,
     resolvedAt: record.resolved_at ?? null,
-    isSystem: record.created_by == null,
+    // Aberto pelo sistema (ex.: conta recriada). O contato público também tem created_by NULL.
+    isSystem: record.created_by == null && record.type !== 'contact',
   }),
 };
 
@@ -62,7 +85,10 @@ const TICKETS: ResourceConfig = {
 function mapMessageInput(input: RecordValue): RecordValue {
   const out: RecordValue = {};
   const creating = input.ticketId !== undefined;
-  if (creating) out.ticket_id = Number(input.ticketId);
+  if (creating) {
+    out.ticket_id = Number(input.ticketId);
+    if (input.imageIds !== undefined) out.image_ids = imageIdsInput(input.imageIds);
+  }
   if (input.body !== undefined) {
     out.body = text(input.body);
     if (!creating) out.updated_at = nowIso();
@@ -74,6 +100,7 @@ const mapMessageOutput = (record: RecordValue) => ({
   id: String(record.id ?? ''),
   ticketId: String(record.ticket_id ?? ''),
   authorId: record.author_id ?? null,
+  imageIds: imageIdsOutput(record.image_ids),
   body: String(record.body ?? ''),
   createdAt: record.created_at,
   updatedAt: record.updated_at,
@@ -85,7 +112,7 @@ const TICKET_COMMENTS: ResourceConfig = {
   table: 'ticket_comments',
   listRequiresAuth: true,
   returnRepresentation: true,
-  select: 'id,ticket_id,author_id,body,created_at,updated_at,deleted_at',
+  select: 'id,ticket_id,author_id,body,image_ids,created_at,updated_at,deleted_at',
   primaryKey: 'id',
   defaultOrder: 'created_at',
   searchableColumns: [],
@@ -104,7 +131,7 @@ const TICKET_REPLIES: ResourceConfig = {
   table: 'ticket_replies',
   listRequiresAuth: true,
   returnRepresentation: true,
-  select: 'id,ticket_id,author_id,kind,body,created_at,updated_at',
+  select: 'id,ticket_id,author_id,kind,body,image_ids,created_at,updated_at',
   primaryKey: 'id',
   defaultOrder: 'created_at',
   searchableColumns: [],

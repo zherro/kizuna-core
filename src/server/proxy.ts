@@ -166,7 +166,11 @@ export function createKizunaProxy(options: KizunaProxyOptions = {}) {
     }
 
     if (protectedPrefixes.some((p) => pathname.startsWith(p)) && !authenticated) {
-      return finish(NextResponse.redirect(new URL(loginPath, request.url)));
+      // Guarda o destino: depois do login a tela volta para a rota pedida (ex.: link de chamado).
+      const loginUrl = new URL(loginPath, request.url);
+      const destination = `${pathname}${request.nextUrl.search}`;
+      if (destination !== '/') loginUrl.searchParams.set('returnTo', destination);
+      return finish(NextResponse.redirect(loginUrl));
     }
 
     return next();

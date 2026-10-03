@@ -1,6 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { CopyButton } from './copy-button';
+import { TicketAttachments } from './ticket-attachments';
+import { formatTicketNumber, ticketPath } from './ticket-number';
+import { formatSlaDate } from './ticket-sla';
 import { TicketThread } from './ticket-thread';
 import {
   TICKET_STATUS_LABEL,
@@ -69,12 +73,34 @@ export function TicketDetail({ ticketId, viewer }: { ticketId: string; viewer: V
   return (
     <div className="space-y-6">
       <header className="space-y-3">
-        <h1 className="text-xl font-bold">{ticket.title}</h1>
+        <div className="flex items-center justify-between gap-3">
+          <h1 className="text-xl font-bold">
+            <span className="mr-2 font-mono text-muted-foreground">{formatTicketNumber(ticket.id)}</span>
+            {ticket.title}
+          </h1>
+          <CopyButton
+            value={`${window.location.origin}${ticketPath(ticket.id)}`}
+            label="Copiar link do chamado"
+          />
+        </div>
         <p className="text-sm text-muted-foreground">
           {TICKET_TYPE_LABEL[ticket.type] ?? ticket.type} ·{' '}
-          {ticket.isSystem ? 'aberto pelo sistema' : 'aberto por usuário'} ·{' '}
+          {ticket.isSystem
+            ? 'aberto pelo sistema'
+            : `aberto por ${ticket.ownerEmail ?? 'usuário'}`}{' '}
+          ·{' '}
           {new Date(ticket.createdAt).toLocaleString('pt-BR')}
         </p>
+
+        {ticket.slaDueAt ? (
+          <p className="text-sm">
+            <span className="font-medium">Prazo da primeira resposta:</span>{' '}
+            {formatSlaDate(ticket.slaDueAt)}
+            {ticket.status !== 'resolved' && Date.parse(ticket.slaDueAt) < Date.now() ? (
+              <span className="ml-2 font-medium text-destructive">vencido</span>
+            ) : null}
+          </p>
+        ) : null}
 
         {viewer.isStaff ? (
           <label className="flex items-center gap-2 text-sm">
@@ -99,6 +125,18 @@ export function TicketDetail({ ticketId, viewer }: { ticketId: string; viewer: V
 
         {ticket.description ? (
           <p className="whitespace-pre-wrap text-sm">{ticket.description}</p>
+        ) : null}
+        <TicketAttachments imageIds={ticket.imageIds} />
+
+        {viewer.isStaff && ticket.type === 'contact' ? (
+          <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 rounded-xl border border-border p-3 text-xs">
+            <dt className="text-muted-foreground">Nome</dt>
+            <dd>{ticket.contactName ?? '—'}</dd>
+            <dt className="text-muted-foreground">E-mail</dt>
+            <dd>{ticket.ownerEmail ?? '—'}</dd>
+            <dt className="text-muted-foreground">Telefone</dt>
+            <dd>{ticket.contactPhone ?? '—'}</dd>
+          </dl>
         ) : null}
 
         {viewer.isStaff && ticket.type === 'account_recreated' ? (

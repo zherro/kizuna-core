@@ -16,15 +16,19 @@ const tickets = resourceTickets.tickets;
 const comments = resourceTickets.ticket_comments;
 
 describe('resourceTickets', () => {
-  it('ticket: POST leva só título e descrição — tipo e autor vêm de default + RLS', () => {
-    expect(
-      tickets.mapInput!({
-        title: ' Ajuda ',
-        description: '  ',
-        type: 'account_recreated',
-        createdBy: 'outro',
-      })
-    ).toEqual({ title: 'Ajuda', description: null });
+  it('ticket: POST leva título, descrição e SLA — tipo e autor vêm de default + RLS', () => {
+    const out = tickets.mapInput!({
+    title: ' Ajuda ',
+    description: '  ',
+    type: 'account_recreated',
+    createdBy: 'outro',
+    });
+    expect(out).toEqual({
+      title: 'Ajuda',
+      description: null,
+      sla_due_at: expect.any(String),
+    });
+    expect(Date.parse(String(out.sla_due_at))).toBeGreaterThan(Date.now());
   });
 
   it('ticket: PATCH de status carimba resolved_at e updated_at; status inválido é ignorado', () => {
@@ -73,5 +77,35 @@ describe('resourceTickets', () => {
       ticketId: '7',
       kind: 'reply',
     });
+  });
+
+  it('anexos: no máximo 3 ids válidos e sem repetição', () => {
+    const ids = [
+      '11111111-1111-4111-8111-111111111111',
+      '22222222-2222-4222-8222-222222222222',
+      '33333333-3333-4333-8333-333333333333',
+      '44444444-4444-4444-8444-444444444444',
+    ];
+    expect(
+      resourceTickets.tickets.mapInput!({ title: 'Oi!', imageIds: [ids[0], ids[0], 'x', ...ids] })
+    ).toMatchObject({ image_ids: [ids[0], ids[1], ids[2]] });
+    expect(
+      resourceTickets.ticket_comments.mapInput!({ ticketId: '7', body: 'oi', imageIds: ids })
+    ).toMatchObject({ image_ids: [ids[0], ids[1], ids[2]] });
+  });
+
+  it('ticket: e-mail dono e contato na saída; contato público não é "do sistema"', () => {
+    const base = { id: 1, title: 'x', owner_email: 'maria@example.com', image_ids: ['a'] };
+    expect(
+      resourceTickets.tickets.mapOutput!({ ...base, type: 'contact', created_by: null, contact_name: 'Maria' })
+    ).toMatchObject({
+      ownerEmail: 'maria@example.com',
+      contactName: 'Maria',
+      imageIds: ['a'],
+      isSystem: false,
+    });
+    expect(
+      resourceTickets.tickets.mapOutput!({ ...base, type: 'account_recreated', created_by: null })
+    ).toMatchObject({ isSystem: true });
   });
 });

@@ -133,3 +133,9 @@ export {
   DEFAULT_CATEGORY_RAIL_LIMIT,
   type CategoryRailData,
 } from './services/category-rail-data';
+export { createContactHandler } from './tickets/contact-handler';
+export {
+  createContactTicket,
+  validateContactInput,
+  type ContactInput,
+} from './tickets/contact-ticket';
