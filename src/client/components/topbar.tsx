@@ -125,8 +125,10 @@ export function Topbar({
             <div className="flex items-center gap-2">
               {actions}
 
+              {/* Seletor de cidade visível também no mobile (antes só no desktop/menu). */}
+              <LocationTrigger onClick={() => setLocationOpen(true)} />
+
               <div className="hidden items-center gap-2 md:flex">
-                <LocationTrigger onClick={() => setLocationOpen(true)} />
 
                 {showThemeToggle && (
                   <Button

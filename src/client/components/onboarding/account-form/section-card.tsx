@@ -2,16 +2,22 @@ import type { ReactNode } from 'react';
 import { Label } from '../../ui/label';
 
 export function SectionCard({
+  id,
   title,
   description,
   children,
 }: {
+  /** Âncora (`#id`) — os links de pendência de nível apontam para cá. */
+  id?: string;
   title: string;
   description?: string;
   children: ReactNode;
 }) {
   return (
-    <section className="rounded-[var(--ui-radius-card-lg,1.5rem)] border border-border/60 bg-card p-5 md:p-6">
+    <section
+      id={id}
+      className="scroll-mt-24 rounded-[var(--ui-radius-card-lg,1.5rem)] border border-border/60 bg-card p-5 md:p-6"
+    >
       <header className="mb-5">
         <h2 className="text-base font-semibold">{title}</h2>
         {description ? <p className="mt-0.5 text-sm text-muted-foreground">{description}</p> : null}

@@ -11,6 +11,8 @@ export type WeatherConfig = {
   rotateSeconds?: number;
   pastDays?: number;
   forecastDays?: number;
+  /** Modal de previsão ao clicar na temperatura do header. Default: true. */
+  forecastModal?: boolean;
 };
 
 export type WeatherDay = { date: string; code: number; max: number; min: number; rain: number };

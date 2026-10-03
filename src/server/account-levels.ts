@@ -108,6 +108,29 @@ export async function getAccountStatus(setup: AccountLevelsSetup): Promise<Accou
   return computeAccountStatus(setup.config, facts);
 }
 
+export type AccountLevelView = {
+  status: AccountStatus;
+  allowed: Record<string, boolean>;
+  /** Resultado da ação pedida (`?acao=` / ação da página), quando houver. */
+  blocked: CanResult | null;
+  /** Rótulo humano dessa ação. */
+  actionLabel: string | null;
+};
+
+/** Tudo que a tela de onboarding (`AccountLevelsOnboarding`) precisa, calculado no servidor. */
+export async function getAccountLevelView(
+  setup: AccountLevelsSetup,
+  action?: string | null
+): Promise<AccountLevelView> {
+  const status = await getAccountStatus(setup);
+  const allowed = Object.fromEntries(
+    Object.keys(setup.capabilities).map((a) => [a, canDo(status, setup.capabilities, a).allowed])
+  );
+  const blocked = action ? canDo(status, setup.capabilities, action) : null;
+  const actionLabel = action ? (setup.labels?.[action] ?? 'continuar') : null;
+  return { status, allowed, blocked, actionLabel };
+}
+
 /** Checagem de servidor — é esta que vale como barreira (o client só melhora a UX). */
 export async function canDoServer(setup: AccountLevelsSetup, action: string): Promise<CanResult> {
   return canDo(await getAccountStatus(setup), setup.capabilities, action);

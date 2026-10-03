@@ -22,7 +22,7 @@ export function AddressSection({ formik, cepLoading, cityOptions, cityOptionsLoa
   const hasState = Boolean(formik.values.state);
 
   return (
-    <SectionCard title="Endereço" description="Comece pelo CEP que a gente preenche o resto.">
+    <SectionCard id="endereco" title="Endereço" description="Comece pelo CEP que a gente preenche o resto.">
       <div className="max-w-[12rem]">
         <Field label="CEP" htmlFor="zipCode" error={fieldError(formik, 'zipCode')}>
           <div className="relative">

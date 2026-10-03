@@ -197,7 +197,7 @@ export function ListingResultCard({
           <h3
             className={cn(
               'text-sm font-bold leading-tight',
-              isCinema ? 'line-clamp-3' : 'line-clamp-1'
+              isCinema ? 'line-clamp-2' : 'line-clamp-1'
             )}
           >
             {title}
@@ -222,7 +222,7 @@ export function ListingResultCard({
       image={imageUrl}
       imageAlt={title}
       imageAspect={resolvedImageAspect}
-      titleLines={isCinema ? 3 : 2}
+      titleLines={2}
       title={title}
       subtitle={subtitleLabel ?? undefined}
       badgeTopLeft={

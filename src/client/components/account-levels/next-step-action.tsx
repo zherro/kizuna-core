@@ -23,7 +23,7 @@ export function NextStepAction({
   if (level.enabled === false || level.met) return null;
 
   if (level.requirement === 'contact_verified') {
-    if (!level.missing.includes('Verificar celular') || !phoneEnabled) return null;
+    if (!level.missing.some((m) => m.key === 'phone') || !phoneEnabled) return null;
     if (verifyingPhone) {
       return (
         <div className="mt-3 max-w-sm">
@@ -44,7 +44,7 @@ export function NextStepAction({
     );
   }
 
-  if (level.requirement === 'listing_published' && level.missing.includes('Anuncio em analise')) {
+  if (level.requirement === 'listing_published' && level.missing.some((m) => m.key === 'listingPending')) {
     return (
       <p className="mt-3 text-sm text-muted-foreground">
         Seu anuncio esta em analise. Voce vira Anunciante quando ele for aprovado.

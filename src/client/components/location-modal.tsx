@@ -61,7 +61,7 @@ export function LocationTrigger({ onClick }: { onClick: () => void }) {
         <MapPin className="h-3.5 w-3.5 shrink-0 text-primary" />
       )}
 
-      <span className="max-w-[150px] truncate">
+      <span className="max-w-[96px] truncate sm:max-w-[150px]">
         {isDetecting ? (
           <span className="text-muted-foreground">Detectando...</span>
         ) : shown ? (

@@ -90,6 +90,7 @@
     ]
   },
   "accountLevels": {
+    "contactVerification": { "email": true, "phone": false },
     "_comment": "Níveis de conta progressivos: título/ordem/requisito aqui; o que cada nível libera fica no código do projeto (defineCapabilities). Ver docs/arquitetura/niveis-de-conta.md.",
     "levels": [
       {

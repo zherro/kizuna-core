@@ -8,6 +8,8 @@ import {
   type AccountFacts,
 } from './index';
 
+const keys = (items: { key: string }[]) => items.map((m) => m.key);
+
 const config = parseAccountLevelsConfig({
   levels: [
     { key: 'conta', level: 1, title: 'Conta', requirement: 'authenticated' },
@@ -107,14 +109,14 @@ describe('computeAccountStatus', () => {
   it('contato exige email E celular', () => {
     const soEmail = computeAccountStatus(config, facts({ emailVerified: true }));
     expect(soEmail.level).toBe(1);
-    expect(soEmail.levels[1]!.missing).toEqual(['Verificar celular']);
+    expect(keys(soEmail.levels[1]!.missing)).toEqual(['phone']);
 
     const soCelular = computeAccountStatus(config, facts({ phoneVerified: true }));
     expect(soCelular.level).toBe(1);
-    expect(soCelular.levels[1]!.missing).toEqual(['Verificar email']);
+    expect(keys(soCelular.levels[1]!.missing)).toEqual(['email']);
 
     const nenhum = computeAccountStatus(config, facts());
-    expect(nenhum.levels[1]!.missing).toEqual(['Verificar email', 'Verificar celular']);
+    expect(keys(nenhum.levels[1]!.missing)).toEqual(['email', 'phone']);
 
     expect(
       computeAccountStatus(config, facts({ emailVerified: true, phoneVerified: true })).level
@@ -146,9 +148,36 @@ describe('computeAccountStatus', () => {
       })
     );
     expect(s.levels.find((l) => l.key === 'perfil')?.missing).toEqual([
-      'Foto de perfil',
-      'CPF ou CNPJ valido',
+      { key: 'avatar', label: 'Foto de perfil', href: '/painel/minha-conta#foto' },
+      { key: 'document', label: 'CPF ou CNPJ valido', href: '/painel/minha-conta#dados-pessoais' },
     ]);
+  });
+
+  it('contactVerification desliga o celular (só email)', () => {
+    const soEmailCfg = parseAccountLevelsConfig({
+      levels: config.levels,
+      contactVerification: { email: true, phone: false },
+    });
+    const s = computeAccountStatus(soEmailCfg, facts({ emailVerified: true }));
+    expect(s.level).toBe(2);
+    expect(keys(computeAccountStatus(soEmailCfg, facts()).levels[1]!.missing)).toEqual(['email']);
+  });
+
+  it('missingLinks sobrescreve só a chave informada', () => {
+    const c = parseAccountLevelsConfig({
+      levels: config.levels,
+      missingLinks: { email: '/verificar' },
+    });
+    expect(c.missingLinks.email).toBe('/verificar');
+    expect(c.missingLinks.avatar).toBe('/painel/minha-conta#foto');
+    expect(() =>
+      parseAccountLevelsConfig({ levels: config.levels, missingLinks: { email: 1 } })
+    ).toThrow('missingLinks.email');
+  });
+
+  it('status expõe os contatos verificados de fato', () => {
+    const s = computeAccountStatus(config, facts({ emailVerified: true }));
+    expect(s.contact).toEqual({ emailVerified: true, phoneVerified: false });
   });
 
   it('documento não exigido não bloqueia', () => {
@@ -213,7 +242,7 @@ describe('listing_published', () => {
     const s = computeAccountStatus(cfg5, facts(pronto));
     expect(s.level).toBe(3);
     expect(s.next?.key).toBe('anunciante');
-    expect(s.next?.missing).toEqual(['Publicar seu primeiro anuncio']);
+    expect(keys(s.next!.missing)).toEqual(['listing']);
   });
 
   it('só pendente: em análise', () => {
@@ -222,7 +251,7 @@ describe('listing_published', () => {
       facts({ ...pronto, listings: { published: 0, pending: 1 } })
     );
     expect(s.level).toBe(3);
-    expect(s.next?.missing).toEqual(['Anuncio em analise']);
+    expect(keys(s.next!.missing)).toEqual(['listingPending']);
   });
 
   it('publicado: nível 4, e o 5 desligado nunca é alcançado', () => {

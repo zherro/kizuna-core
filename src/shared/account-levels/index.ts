@@ -37,7 +37,47 @@ export type AccountLevelDef = {
   href?: string;
 };
 
-export type AccountLevelsConfig = { levels: AccountLevelDef[] };
+/** Quais contatos o nível `contact_verified` exige. Padrão: os dois. */
+export type ContactVerificationConfig = { email: boolean; phone: boolean };
+
+/** Identificador estável de cada pendência — a UI e os links usam isto, nunca o texto. */
+export type MissingKey =
+  | 'login'
+  | 'email'
+  | 'phone'
+  | 'fullName'
+  | 'avatar'
+  | 'document'
+  | 'address'
+  | 'listing'
+  | 'listingPending'
+  | 'identity'
+  | 'comingSoon';
+
+/** Uma pendência de nível: rótulo humano + para onde levar o usuário para resolvê-la. */
+export type MissingItem = { key: MissingKey; label: string; href?: string };
+
+/**
+ * Para onde cada pendência leva (seções de /painel/minha-conta). O projeto sobrescreve por
+ * `accountLevels.missingLinks` no kizuna.config.json. Sem link: a pendência aparece só como texto.
+ */
+export const DEFAULT_MISSING_LINKS: Partial<Record<MissingKey, string>> = {
+  login: '/login',
+  email: '/painel/minha-conta#contato',
+  phone: '/painel/minha-conta#contato',
+  fullName: '/painel/minha-conta#dados-pessoais',
+  avatar: '/painel/minha-conta#foto',
+  document: '/painel/minha-conta#dados-pessoais',
+  address: '/painel/minha-conta#endereco',
+  listing: '/painel/meus-servicos/novo',
+  listingPending: '/painel/meus-servicos',
+};
+
+export type AccountLevelsConfig = {
+  levels: AccountLevelDef[];
+  contactVerification: ContactVerificationConfig;
+  missingLinks: Partial<Record<MissingKey, string>>;
+};
 
 /** Fatos sobre a conta, lidos do banco (auth.fun_auth__account_facts) + config do projeto. */
 export type AccountFacts = {
@@ -63,41 +103,50 @@ export const NO_LISTINGS: AccountFacts['listings'] = { published: 0, pending: 0 
 
 const filled = (v: string | null | undefined) => typeof v === 'string' && v.trim().length > 0;
 
-/** Requisitos: cada um devolve a lista do que falta (vazia = cumprido). */
-export const REQUIREMENTS: Record<RequirementId, (facts: AccountFacts) => string[]> = {
-  authenticated: (f) => (f.authenticated ? [] : ['Entrar na conta']),
+type Pending = Omit<MissingItem, 'href'>;
+const item = (key: MissingKey, label: string): Pending => ({ key, label });
 
-  contact_verified: (f) => {
-    const missing: string[] = [];
-    if (!f.emailVerified) missing.push('Verificar email');
-    if (!f.phoneVerified) missing.push('Verificar celular');
+/** Requisitos: cada um devolve a lista do que falta (vazia = cumprido). */
+export const REQUIREMENTS: Record<
+  RequirementId,
+  (facts: AccountFacts, config: Pick<AccountLevelsConfig, 'contactVerification'>) => Pending[]
+> = {
+  authenticated: (f) => (f.authenticated ? [] : [item('login', 'Entrar na conta')]),
+
+  contact_verified: (f, { contactVerification }) => {
+    const missing: Pending[] = [];
+    if (contactVerification.email && !f.emailVerified) missing.push(item('email', 'Verificar email'));
+    if (contactVerification.phone && !f.phoneVerified)
+      missing.push(item('phone', 'Verificar celular'));
     return missing;
   },
 
   // Mesma regra do passo "Completar perfil" de user-data-form.tsx.
   profile_complete: (f) => {
     const p = f.profile;
-    const missing: string[] = [];
-    if (!filled(p.fullName)) missing.push('Nome completo');
-    if (!filled(p.avatarUrl)) missing.push('Foto de perfil');
+    const missing: Pending[] = [];
+    if (!filled(p.fullName)) missing.push(item('fullName', 'Nome completo'));
+    if (!filled(p.avatarUrl)) missing.push(item('avatar', 'Foto de perfil'));
     if (f.documentRequired) {
       const type = p.documentType === 'cnpj' ? 'cnpj' : 'cpf';
       if (!filled(p.documentNumber) || !validateDocument(type, p.documentNumber ?? '')) {
-        missing.push('CPF ou CNPJ valido');
+        missing.push(item('document', 'CPF ou CNPJ valido'));
       }
     }
     if (!filled(p.zipCode) || !filled(p.state) || !filled(p.city))
-      missing.push('Endereco (CEP, estado e cidade)');
+      missing.push(item('address', 'Endereco (CEP, estado e cidade)'));
     return missing;
   },
 
   listing_published: (f) => {
     if (f.listings.published > 0) return [];
-    return f.listings.pending > 0 ? ['Anuncio em analise'] : ['Publicar seu primeiro anuncio'];
+    return f.listings.pending > 0
+      ? [item('listingPending', 'Anuncio em analise')]
+      : [item('listing', 'Publicar seu primeiro anuncio')];
   },
 
   // Porta para verificação de identidade (documento + selfie com IA). Sem implementação na v1.
-  identity_verified: (f) => (f.identityVerified ? [] : ['Verificar identidade']),
+  identity_verified: (f) => (f.identityVerified ? [] : [item('identity', 'Verificar identidade')]),
 };
 
 /** Valida e normaliza o bloco `accountLevels`. Lança erro claro — config quebrada não pode passar calada. */
@@ -141,7 +190,24 @@ export function parseAccountLevelsConfig(raw: unknown): AccountLevelsConfig {
     };
   });
   out.sort((a, b) => a.level - b.level);
-  return { levels: out };
+
+  const cv = (raw as { contactVerification?: Partial<ContactVerificationConfig> })
+    ?.contactVerification;
+  const contactVerification = { email: cv?.email !== false, phone: cv?.phone !== false };
+
+  const rawLinks = (raw as { missingLinks?: unknown })?.missingLinks;
+  const missingLinks: Partial<Record<MissingKey, string>> = { ...DEFAULT_MISSING_LINKS };
+  if (rawLinks && typeof rawLinks === 'object') {
+    for (const [key, href] of Object.entries(rawLinks as Record<string, unknown>)) {
+      if (key.startsWith('_')) continue;
+      if (typeof href !== 'string') {
+        throw new Error(`accountLevels.missingLinks.${key} precisa ser texto (URL).`);
+      }
+      missingLinks[key as MissingKey] = href;
+    }
+  }
+
+  return { levels: out, contactVerification, missingLinks };
 }
 
 /**
@@ -183,7 +249,7 @@ export type LevelStatus = AccountLevelDef & {
   met: boolean;
   /** Alcançado: este e todos os anteriores cumpridos. */
   reached: boolean;
-  missing: string[];
+  missing: MissingItem[];
 };
 
 export type AccountStatus = {
@@ -192,6 +258,8 @@ export type AccountStatus = {
   levels: LevelStatus[];
   /** Próximo nível a conquistar (o primeiro não alcançado e habilitado), ou null. */
   next: LevelStatus | null;
+  /** Contatos verificados de fato (independe de o nível exigir cada um). */
+  contact: { emailVerified: boolean; phoneVerified: boolean };
 };
 
 export function computeAccountStatus(
@@ -204,7 +272,14 @@ export function computeAccountStatus(
   let chainIntact = facts.authenticated;
 
   const levels = config.levels.map((def): LevelStatus => {
-    const missing = def.enabled === false ? ['Em breve'] : REQUIREMENTS[def.requirement](facts);
+    const pending =
+      def.enabled === false
+        ? [item('comingSoon', 'Em breve')]
+        : REQUIREMENTS[def.requirement](facts, config);
+    const missing = pending.map((m): MissingItem => {
+      const href = config.missingLinks[m.key];
+      return href ? { ...m, href } : m;
+    });
     const met = def.enabled !== false && missing.length === 0;
     const reached = chainIntact && met;
     if (reached) {
@@ -217,7 +292,13 @@ export function computeAccountStatus(
   });
 
   const next = levels.find((l) => !l.reached && l.enabled !== false) ?? null;
-  return { level, levelKey, levels, next };
+  return {
+    level,
+    levelKey,
+    levels,
+    next,
+    contact: { emailVerified: facts.emailVerified, phoneVerified: facts.phoneVerified },
+  };
 }
 
 export type CanResult = {

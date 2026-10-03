@@ -556,11 +556,8 @@ export function AccountForm({
 
   // Verificação vem do nível da conta (auth.users + user_data, ver 0115) — a mesma fonte que
   // libera as ações. `user_data.phone_verified` nunca é preenchido por fluxo verificado.
-  const contactLevel = levelStatus?.levels.find((l) => l.requirement === 'contact_verified');
-  const emailVerified = contactLevel
-    ? !contactLevel.missing.includes('Verificar email')
-    : legacyEmailVerified;
-  const phoneVerified = contactLevel ? !contactLevel.missing.includes('Verificar celular') : false;
+  const emailVerified = levelStatus ? levelStatus.contact.emailVerified : legacyEmailVerified;
+  const phoneVerified = levelStatus?.contact.phoneVerified ?? false;
 
   function handleDocumentTypeChange(nextType: 'cpf' | 'cnpj') {
     void formik.setFieldValue('documentType', nextType);

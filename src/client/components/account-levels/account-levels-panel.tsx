@@ -1,10 +1,9 @@
 'use client';
 
-import Link from 'next/link';
-import { useState } from 'react';
 import { CheckCircle2, Circle, Lock } from 'lucide-react';
 import type { LevelStatus } from '../../../shared/account-levels';
-import { PhoneLoginForm } from '../auth/phone-login-form';
+import { MissingList } from './missing-list';
+import { NextStepAction } from './next-step-action';
 import { useAccountLevel, type AccountLevelResponse } from './use-account-level';
 
 type Props = {
@@ -18,6 +17,8 @@ type Props = {
   inlinePhoneVerification?: boolean;
   /** Login por telefone configurado no servidor (sem isso, não oferece verificar celular). */
   phoneEnabled?: boolean;
+  /** Chamado depois que um passo inline (ex.: celular) é concluído e o status recarregado. */
+  onStepDone?: () => void;
 };
 
 function StateIcon({ level }: { level: LevelStatus }) {
@@ -33,9 +34,9 @@ export function AccountLevelsPanel({
   highlightLevelKey = null,
   inlinePhoneVerification = true,
   phoneEnabled = false,
+  onStepDone,
 }: Props) {
   const { status, loading, refresh } = useAccountLevel({ initial });
-  const [verifyingPhone, setVerifyingPhone] = useState(false);
 
   if (!status) {
     return (
@@ -87,41 +88,18 @@ export function AccountLevelsPanel({
                   {l.description ? (
                     <p className="mt-0.5 text-sm text-muted-foreground">{l.description}</p>
                   ) : null}
-                  {!l.reached && l.enabled !== false && l.missing.length ? (
-                    <p className="mt-2 text-xs text-muted-foreground">
-                      Falta: {l.missing.join(', ')}
-                    </p>
-                  ) : null}
+                  {!l.reached && l.enabled !== false ? <MissingList items={l.missing} /> : null}
 
-                  {!l.met && l.enabled !== false && l.requirement === 'contact_verified' ? (
-                    inlinePhoneVerification && phoneEnabled ? (
-                      verifyingPhone ? (
-                        <div className="mt-3 max-w-sm">
-                          <PhoneLoginForm
-                            purpose="verify_phone"
-                            onVerified={() => {
-                              setVerifyingPhone(false);
-                              void refresh();
-                            }}
-                          />
-                        </div>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => setVerifyingPhone(true)}
-                          className="mt-3 inline-flex h-9 items-center rounded-[var(--ui-radius-pill,0.375rem)] bg-primary px-3 text-sm font-medium text-primary-foreground hover:opacity-90"
-                        >
-                          Verificar meu celular
-                        </button>
-                      )
-                    ) : null
-                  ) : !l.met && l.enabled !== false && l.href && (isNext || highlighted) ? (
-                    <Link
-                      href={l.href}
-                      className="mt-3 inline-flex h-9 items-center rounded-[var(--ui-radius-pill,0.375rem)] bg-primary px-3 text-sm font-medium text-primary-foreground hover:opacity-90"
-                    >
-                      Completar
-                    </Link>
+                  {isNext ||
+                  highlighted ||
+                  (l.requirement === 'contact_verified' && inlinePhoneVerification) ? (
+                    <NextStepAction
+                      level={l}
+                      phoneEnabled={phoneEnabled && inlinePhoneVerification}
+                      onDone={() => {
+                        void refresh().then(() => onStepDone?.());
+                      }}
+                    />
                   ) : null}
                 </div>
               </div>

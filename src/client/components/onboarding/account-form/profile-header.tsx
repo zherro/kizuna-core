@@ -35,7 +35,10 @@ export function ProfileHeader({
   const current = levelStatus?.levels.find((l) => l.key === levelStatus.levelKey);
 
   return (
-    <section className="rounded-[var(--ui-radius-card-lg,1.5rem)] border border-border/60 bg-card p-5 md:p-6">
+    <section
+      id="foto"
+      className="scroll-mt-24 rounded-[var(--ui-radius-card-lg,1.5rem)] border border-border/60 bg-card p-5 md:p-6"
+    >
       <div className="flex flex-col items-center gap-4 text-center sm:flex-row sm:items-center sm:text-left">
         <button
           type="button"

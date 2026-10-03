@@ -29,7 +29,9 @@ pessoa verifica o celular ou completa o perfil, sem precisar relogar.
     { "key": "contato",    "level": 2, "title": "Contato verificado",    "requirement": "contact_verified", "href": "/painel/onboarding#contato" },
     { "key": "perfil",     "level": 3, "title": "Perfil completo",       "requirement": "profile_complete", "href": "/painel/minha-conta" },
     { "key": "identidade", "level": 4, "title": "Identidade verificada", "requirement": "identity_verified", "enabled": false }
-  ]
+  ],
+  "contactVerification": { "email": true, "phone": false },
+  "missingLinks": { "avatar": "/painel/minha-conta#foto" }
 }
 ```
 
@@ -40,9 +42,23 @@ pessoa verifica o celular ou completa o perfil, sem precisar relogar.
 | `title`, `description` | Texto mostrado na escada e no modal "Evolua sua conta". |
 | `onboardingOrder` | Ordem na tela `/painel/onboarding`. |
 | `profileOrder` | Ordem no resumo da conta: `<AccountLevelsPanel order="profile" />`. |
-| `requirement` | `authenticated`, `contact_verified` (email **e** celular verificados), `profile_complete` (nome, foto, documento válido se exigido, CEP, estado e cidade), `listing_published` (ao menos um anúncio ativo) ou `identity_verified`. |
+| `requirement` | `authenticated`, `contact_verified` (os contatos ligados em `contactVerification`), `profile_complete` (nome, foto, documento válido se exigido, CEP, estado e cidade), `listing_published` (ao menos um anúncio ativo) ou `identity_verified`. |
 | `enabled: false` | Nível "em breve": aparece na escada, mas ninguém alcança. |
 | `href` | Para onde o botão "Completar" leva. |
+
+Campos no nível de `accountLevels` (fora de `levels`):
+
+| Campo | Padrão | Efeito |
+| --- | --- | --- |
+| `contactVerification` | `{ "email": true, "phone": true }` | Quais contatos o requisito `contact_verified` exige. `false` tira a verificação da lista do que falta (o starter vem só com email). |
+| `missingLinks` | ver abaixo | Para onde cada pendência leva. Sobrescreve só as chaves informadas. |
+
+Cada pendência ("Falta: …") é um link para onde ela se resolve. Chaves e links padrão
+(`DEFAULT_MISSING_LINKS`): `login` → `/login`; `email`, `phone` → `/painel/minha-conta#contato`;
+`fullName`, `document` → `/painel/minha-conta#dados-pessoais`; `avatar` →
+`/painel/minha-conta#foto`; `address` → `/painel/minha-conta#endereco`; `listing` →
+`/painel/meus-servicos/novo`; `listingPending` → `/painel/meus-servicos`. `identity` e `comingSoon`
+não têm link (aparecem como texto).
 
 Uma config inválida (key repetida, requisito desconhecido etc.) **quebra o boot** com mensagem
 clara (`parseAccountLevelsConfig`). Uma capacidade apontando para uma key que não existe também
@@ -68,8 +84,10 @@ Uma ação que **não** está no mapa exige só estar logado (nível ≥ 1).
 ## Usando
 
 **Servidor.** Esta é a barreira real. Em páginas, use o componente de servidor `RequireLevel`, que
-renderiza o conteúdo só se o nível libera a ação e, caso contrário, mostra a tela de bloqueio
-(`LevelBlockedScreen`) em vez de redirecionar. Exemplo real, a página de edição de serviço, que
+renderiza o conteúdo só se o nível libera a ação e, caso contrário, mostra na mesma URL a **mesma
+tela de `/painel/onboarding`** (`AccountLevelsOnboarding`), com o nível exigido destacado, em vez
+de redirecionar. `/painel/onboarding` usa o mesmo componente, com os dados de
+`getAccountLevelView(setup, acao)`. Exemplo real, a página de edição de serviço, que
 só barra a criação (`novo`):
 
 ```tsx

@@ -5,6 +5,7 @@ import { createContext, useCallback, useContext, useEffect, useState } from 'rea
 import { Lock, X } from 'lucide-react';
 import type { CanResult } from '../../../shared/account-levels';
 import { fetchAccountLevel } from './use-account-level';
+import { MissingList } from './missing-list';
 
 type LevelGate = (action: string, run: () => void) => Promise<void>;
 const Ctx = createContext<LevelGate | null>(null);
@@ -112,11 +113,7 @@ export function LevelUpDialog({
                 <p className="text-sm font-medium">
                   {l.level}. {l.title}
                 </p>
-                {l.missing.length ? (
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Falta: {l.missing.join(', ')}
-                  </p>
-                ) : null}
+                <MissingList items={l.missing} className="mt-1" />
               </li>
             ))}
           </ol>

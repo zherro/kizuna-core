@@ -49,6 +49,7 @@ export function ContactSection({ formik, emailVerified, phoneVerified, onVerifie
 
   return (
     <SectionCard
+      id="contato"
       title="Contato e verificação"
       description="Contato verificado deixa você avaliar, comentar e anunciar."
     >

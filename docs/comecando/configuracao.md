@@ -197,7 +197,8 @@ ao projeto.
 
 ## `weather`
 
-Widget de clima no cabeçalho, depois da busca, com modal de previsão. Requer o plugin `weather`
+Widget de clima no cabeçalho, depois da busca: ícone + temperatura da cidade do topo (o nome da
+cidade fica no seletor de local, ao lado), com modal de previsão opcional. Requer o plugin `weather`
 ativo. Integração com o [Open-Meteo](https://open-meteo.com): grátis e **sem chave de API**. Uma
 única chamada traz todas as cidades.
 
@@ -213,6 +214,7 @@ mas sem cidades, `/api/weather` responde `404`.
 | `rotateSeconds` | number   | `5`                                        | Intervalo de troca de cidade no botão do cabeçalho.             |
 | `pastDays`      | number   | `1`                                        | Dias antes de hoje exibidos no modal.                           |
 | `forecastDays`  | number   | `7`                                        | Dias de previsão exibidos no modal.                             |
+| `forecastModal` | boolean  | `true`                                     | `false` desativa o modal: a temperatura vira só informação, sem clique. O starter vem com `false`. |
 
 ```json
 "weather": {
@@ -221,6 +223,7 @@ mas sem cidades, `/api/weather` responde `404`.
   "rotateSeconds": 5,
   "pastDays": 1,
   "forecastDays": 7,
+  "forecastModal": false,
   "cities": [
     { "name": "Cuiabá", "latitude": -15.6014, "longitude": -56.0979 },
     { "name": "Várzea Grande", "latitude": -15.6467, "longitude": -56.1325 }

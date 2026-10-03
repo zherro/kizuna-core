@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import { isSnoozed, snooze } from '../../../lib/helper/local-storage.helper';
+import { MissingList } from './missing-list';
 import { NextStepAction } from './next-step-action';
 import { useAccountLevel, type AccountLevelResponse } from './use-account-level';
 
@@ -113,13 +114,7 @@ export function AccountLevelCard({
 
       <div className="mt-4">
         <p className="font-medium">Proximo: {next.title}</p>
-        {next.missing.length ? (
-          <ul className="mt-1 space-y-0.5 text-sm text-muted-foreground">
-            {next.missing.map((m) => (
-              <li key={m}>• {m}</li>
-            ))}
-          </ul>
-        ) : null}
+        <MissingList items={next.missing} className="text-sm" />
         {nextUnlocks.length ? (
           <p className="mt-2 text-sm">
             Libera: <span className="text-muted-foreground">{nextUnlocks.join(', ')}</span>

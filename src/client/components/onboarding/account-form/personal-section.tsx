@@ -34,6 +34,7 @@ export function PersonalSection({
 
   return (
     <SectionCard
+      id="dados-pessoais"
       title="Dados pessoais"
       description="Usados para confirmar quem você é. Não aparecem no seu perfil."
     >
