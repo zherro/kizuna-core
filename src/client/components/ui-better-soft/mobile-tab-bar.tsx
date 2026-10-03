@@ -20,6 +20,10 @@ export type MobileTabItem = {
   requiresAuth?: boolean;
   /** Botão redondo elevado no meio da barra — o CTA principal. */
   featured?: boolean;
+  /** Prefixos de rota onde o item aparece; fora deles some. Ex.: "Meus anúncios" só no painel. */
+  onlyOn?: string[];
+  /** Prefixos de rota onde o item some. Ex.: "Meu painel" fora do painel. */
+  exceptOn?: string[];
 };
 
 export interface MobileTabBarProps {
@@ -44,6 +48,15 @@ function matchesPrefix(prefix: string, pathname: string) {
   return pathname === prefix || pathname.startsWith(`${prefix}/`);
 }
 
+export function isTabVisible(
+  item: Pick<MobileTabItem, 'onlyOn' | 'exceptOn'>,
+  pathname: string
+): boolean {
+  if (item.onlyOn && !item.onlyOn.some((prefix) => matchesPrefix(prefix, pathname))) return false;
+  if (item.exceptOn?.some((prefix) => matchesPrefix(prefix, pathname))) return false;
+  return true;
+}
+
 export function isTabActive(
   item: Pick<MobileTabItem, 'href' | 'match' | 'exact'>,
   pathname: string
@@ -63,7 +76,9 @@ export function MobileTabBar({ items, guestItems, hideOn = [], className }: Mobi
   const pathname = usePathname() ?? '';
   const { user, loading } = useAuth();
   const isGuest = !user && !loading;
-  const visibleItems = isGuest && guestItems ? guestItems : items;
+  const visibleItems = (isGuest && guestItems ? guestItems : items).filter((item) =>
+    isTabVisible(item, pathname)
+  );
   const hidden = hideOn.some((prefix) => matchesPrefix(prefix, pathname));
 
   useEffect(() => {

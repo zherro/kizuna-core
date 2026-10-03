@@ -13,7 +13,7 @@ vi.mock('../../providers/auth-provider', () => ({
   useAuth: () => mockUseAuth(),
 }));
 
-import { MobileTabBar, isTabActive, type MobileTabItem } from './mobile-tab-bar';
+import { MobileTabBar, isTabActive, isTabVisible, type MobileTabItem } from './mobile-tab-bar';
 
 const items: MobileTabItem[] = [
   { href: '/', label: 'Início', icon: <Home /> },
@@ -146,5 +146,21 @@ describe('MobileTabBar', () => {
     expect(document.documentElement.style.getPropertyValue('--mobile-tab-h')).not.toBe('');
     unmount();
     expect(document.documentElement.style.getPropertyValue('--mobile-tab-h')).toBe('');
+  });
+});
+
+describe('isTabVisible', () => {
+  it('onlyOn mostra o item só dentro dos prefixos', () => {
+    expect(isTabVisible({ onlyOn: ['/painel'] }, '/painel/meus-servicos')).toBe(true);
+    expect(isTabVisible({ onlyOn: ['/painel'] }, '/busca')).toBe(false);
+  });
+
+  it('exceptOn esconde o item dentro dos prefixos', () => {
+    expect(isTabVisible({ exceptOn: ['/painel'] }, '/painel')).toBe(false);
+    expect(isTabVisible({ exceptOn: ['/painel'] }, '/')).toBe(true);
+  });
+
+  it('sem regras o item sempre aparece', () => {
+    expect(isTabVisible({}, '/qualquer')).toBe(true);
   });
 });

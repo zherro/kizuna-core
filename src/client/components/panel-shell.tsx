@@ -3,10 +3,11 @@
 import Link from 'next/link';
 import { notFound, usePathname } from 'next/navigation';
 import { useMemo, useRef, useState, type ComponentType, type ReactNode } from 'react';
-import { LogOut, Menu, X } from 'lucide-react';
+import { LogOut, X } from 'lucide-react';
 import { buttonVariants } from './ui/button';
 import { useAuth } from '../providers/auth-provider';
 import { cn } from '../../lib/utils';
+import { MobileMenuButton } from './mobile-menu-button';
 import { PanelSidebarContext, type PanelSidebarControl } from './panel-sidebar-context';
 import { activeNavHref } from './panel-shell-active';
 
@@ -451,14 +452,7 @@ export function PanelShellBase({
         {renderDrawer(true)}
         <header className="sticky top-0 z-30 shrink-0 bg-background/95 shadow-sm backdrop-blur">
           <div className="flex h-16 items-center gap-3 px-4 md:px-6">
-            <button
-              type="button"
-              onClick={() => setMobileOpen(true)}
-              className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'rounded-full')}
-              aria-label="Abrir menu"
-            >
-              <Menu className="mr-1 h-4 w-4" /> Menu
-            </button>
+            <MobileMenuButton onClick={() => setMobileOpen(true)} aria-label="Abrir menu" />
             <Link href="/painel" className="inline-flex items-center gap-3">
               {branding.logo ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -511,10 +505,8 @@ export function PanelShellBase({
         <header className="sticky top-0 z-30 bg-background/95 px-4 py-3 shadow-sm backdrop-blur md:px-6">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-2">
-              <button
-                type="button"
+              <MobileMenuButton
                 aria-label={collapsed ? 'Expandir menu lateral' : 'Abrir ou retrair menu lateral'}
-                className={cn(buttonVariants({ variant: 'ghost', size: 'icon' }), 'rounded-full')}
                 onClick={() => {
                   const isDesktop =
                     typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches;
@@ -525,9 +517,7 @@ export function PanelShellBase({
                     setMobileOpen(true);
                   }
                 }}
-              >
-                <Menu className="h-4 w-4" />
-              </button>
+              />
             </div>
 
             <div className="ml-auto flex items-center gap-3">

@@ -3,11 +3,12 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, type ReactNode } from 'react';
-import { Home, LayoutDashboard, LogIn, LogOut, Menu, Moon, Sun, X } from 'lucide-react';
+import { Home, LayoutDashboard, LogIn, LogOut, Moon, Sun, X } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useAppPreferences } from '../providers/app-preferences-provider';
 import { useAuth } from '../providers/auth-provider';
 import { Button, buttonVariants } from './ui/button';
+import { MobileMenuButton } from './mobile-menu-button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from './ui/sheet';
 import { LocationModal, LocationTrigger } from './location-modal';
 
@@ -182,15 +183,11 @@ export function Topbar({
                 )}
               </div>
 
-              <Button
-                variant="outline"
-                size="icon"
+              <MobileMenuButton
                 className="md:hidden"
                 aria-label={messages.nav.openMenu}
                 onClick={() => setMenuOpen(true)}
-              >
-                <Menu className="h-4 w-4" />
-              </Button>
+              />
             </div>
           </div>
         </div>
