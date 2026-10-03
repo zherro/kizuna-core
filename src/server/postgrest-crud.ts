@@ -68,7 +68,8 @@ function getSchemaHeaders(config: ResourceConfig, method: 'GET' | 'POST' | 'PATC
     headers['Content-Profile'] = config.schema;
   }
 
-  if (config.returnRepresentation && !config?.returnCountPreferDisabled) {
+  // Só em escrita: no GET este Prefer sobrescreveria o `count=exact` da listagem (total: 0).
+  if (method !== 'GET' && config.returnRepresentation && !config?.returnCountPreferDisabled) {
     headers['Prefer'] = 'return=representation';
   }
 
@@ -144,7 +145,15 @@ export async function listResource(resource: string, request: Request) {
     select: config.select,
     limit: String(pageSize),
     ...(orderBy
-      ? { offset: String(offset), order: `${orderBy}.${orderDirection}` }
+      ? {
+          offset: String(offset),
+          // Desempate pela PK: com empate na coluna de ordenação (ex.: created_at igual de um
+          // import em lote) a ordem varia entre requisições e as páginas repetem/pulam linhas.
+          order:
+            orderBy === config.primaryKey
+              ? `${orderBy}.${orderDirection}`
+              : `${orderBy}.${orderDirection},${config.primaryKey}.${orderDirection}`,
+        }
       : { offset: String(offset) }),
   });
 
