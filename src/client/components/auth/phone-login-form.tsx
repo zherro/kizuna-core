@@ -56,6 +56,9 @@ export function PhoneLoginForm({
   const [maskedPhone, setMaskedPhone] = useState('');
   const [resendIn, setResendIn] = useState(0);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  // Token do Turnstile é de uso único: após cada tentativa, `captchaKey` recria o widget para
+  // gerar outro — sem isso o botão ficava travado depois de um erro (ex.: senha errada).
+  const [captchaKey, setCaptchaKey] = useState(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const captchaRequired = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
@@ -79,6 +82,7 @@ export function PhoneLoginForm({
       if (!res.ok) {
         setError(data.message || 'Nao foi possivel enviar o codigo.');
         setCaptchaToken(null);
+        setCaptchaKey((k) => k + 1);
         return;
       }
       setMaskedPhone(data.phone ?? phone);
@@ -88,6 +92,8 @@ export function PhoneLoginForm({
       setStep('code');
     } catch {
       setError('Erro de conexao com o servidor.');
+      setCaptchaToken(null);
+      setCaptchaKey((k) => k + 1);
     } finally {
       setBusy(false);
     }
@@ -154,7 +160,7 @@ export function PhoneLoginForm({
                 ? 'Vamos enviar um codigo para confirmar o numero.'
                 : 'Vamos enviar um codigo de acesso.'}</p>
           </div>
-          <TurnstileWidget onToken={setCaptchaToken} />
+          <TurnstileWidget key={captchaKey} onToken={setCaptchaToken} />
           <Button
             type="submit"
             className="w-full"
@@ -207,6 +213,7 @@ export function PhoneLoginForm({
                 // Token do Turnstile é de uso único: com captcha ligado, volta ao passo do número.
                 if (captchaRequired) {
                   setCaptchaToken(null);
+                  setCaptchaKey((k) => k + 1);
                   setStep('phone');
                   return;
                 }

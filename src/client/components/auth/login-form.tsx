@@ -57,6 +57,9 @@ export function LoginForm({
 }: LoginFormProps) {
   const { setUser } = useAuth();
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  // Token do Turnstile é de uso único: após cada tentativa, `captchaKey` recria o widget para
+  // gerar outro — sem isso o botão ficava travado depois de um erro (ex.: senha errada).
+  const [captchaKey, setCaptchaKey] = useState(0);
   const [usePhone, setUsePhone] = useState(false);
   const captchaRequired = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
 
@@ -81,6 +84,7 @@ export function LoginForm({
         if (!response.ok) {
           setError(data.message || 'Nao foi possivel autenticar.');
           setCaptchaToken(null);
+          setCaptchaKey((k) => k + 1);
           return;
         }
 
@@ -91,6 +95,8 @@ export function LoginForm({
         setSuccess(data.message || 'Login realizado com sucesso.');
       } catch {
         setError('Erro de conexao com o servidor.');
+        setCaptchaToken(null);
+        setCaptchaKey((k) => k + 1);
       }
     },
   });
@@ -172,7 +178,7 @@ export function LoginForm({
                 </p>
               ) : null}
 
-              <TurnstileWidget onToken={setCaptchaToken} />
+              <TurnstileWidget key={captchaKey} onToken={setCaptchaToken} />
 
               <Button
                 type="submit"
