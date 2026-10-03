@@ -32,6 +32,9 @@ export type TenantUserRow = {
   is_root: boolean;
 };
 
+/** Linha de `auth.fn_rbac__role_overview()`: usuários por papel e tipo de tenant (role_id null = root). */
+export type RoleOverviewRow = { role_id: number | null; tenant_type: string; users: number };
+
 export type UserOverrideRow = {
   user_id: string;
   permission_id: number;
@@ -68,6 +71,12 @@ export async function getTenantUsers(): Promise<TenantUserRow[]> {
   const res = await pgrstRpc('fn_rbac__tenant_users', {}, { schema: 'auth' });
   if (!res.ok) return [];
   return (await res.json()) as TenantUserRow[];
+}
+
+export async function getRoleOverview(): Promise<RoleOverviewRow[]> {
+  const res = await pgrstRpc('fn_rbac__role_overview', {}, { schema: 'auth' });
+  if (!res.ok) return [];
+  return ((await res.json()) as RoleOverviewRow[]).map((r) => ({ ...r, users: Number(r.users) }));
 }
 
 export async function getUserOverrides(): Promise<UserOverrideRow[]> {
