@@ -15,6 +15,10 @@ devolvem as mesmas colunas de local.
 `p_query`, `p_seed`, `p_page`, `p_page_size` e **`p_city_ibge`** (texto). O filtro de cidade usa
 `p_city_ibge`; `p_city_id` continua na assinatura por compatibilidade.
 
+## Busca com IA (liga/desliga)
+
+`search.ai` no `kizuna.config.json` (padrão `true`). Com `false`, a `/busca` não mostra o assistente Naví (botões, chat, balão) nem o título "Buscar com IA": fica só a busca por texto + filtros. A página repassa o valor via `aiEnabled` do `SearchPage`.
+
 ## Filtro de local
 
 Sem `p_state` nem `p_city_ibge`, o filtro de local não tem custo. Com eles, o serviço passa se:

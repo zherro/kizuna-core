@@ -132,6 +132,7 @@ export {
   loadCategoryRail,
   DEFAULT_CATEGORY_RAIL_LIMIT,
   type CategoryRailData,
+  type CategoryRailTarget,
 } from './services/category-rail-data';
 export { createContactHandler } from './tickets/contact-handler';
 export {

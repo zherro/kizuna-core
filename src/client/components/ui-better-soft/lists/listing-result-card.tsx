@@ -173,7 +173,7 @@ export function ListingResultCard({
         <div
           className={cn(
             'relative w-full overflow-hidden bg-gradient-to-br from-brand-soft to-secondary',
-            resolvedImageAspect === 'poster' ? 'aspect-square' : 'aspect-[16/9]'
+            resolvedImageAspect === 'poster' ? 'aspect-[1/0.85]' : 'aspect-[16/7.65]'
           )}
         >
           {imageUrl && (

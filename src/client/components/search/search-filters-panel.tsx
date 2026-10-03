@@ -85,49 +85,6 @@ export function SearchFiltersPanel({ filters, setFilters, resetFilters }: Props)
 
       <div>
         <p className="mb-2 text-sm font-bold uppercase tracking-wide text-muted-foreground sm:text-xs">
-          Ordenar por
-        </p>
-        <select
-          value={filters.sort}
-          onChange={(e) => setFilters({ sort: e.target.value as SearchSort })}
-          className="h-10 w-full rounded-[var(--ui-radius-field,0.375rem)] border border-input bg-background px-2.5 text-base sm:h-9 sm:px-2 sm:text-sm"
-        >
-          <option value="relevance">Relevância</option>
-          <option value="price">Menor preço</option>
-          <option value="rating">Melhor avaliação</option>
-        </select>
-      </div>
-
-      <div>
-        <p className="mb-2 text-sm font-bold uppercase tracking-wide text-muted-foreground sm:text-xs">
-          Busca por texto
-        </p>
-        <input
-          type="text"
-          placeholder="ex.: DJ pra casamento"
-          value={filters.query ?? ''}
-          onChange={(e) => setFilters({ query: e.target.value || null })}
-          className="h-10 w-full rounded-[var(--ui-radius-field,0.375rem)] border border-input bg-background px-2.5 text-base sm:h-9 sm:px-2 sm:text-sm"
-        />
-      </div>
-
-      {filters.groupSlug && (
-        <div>
-          <p className="mb-2 text-sm font-bold uppercase tracking-wide text-muted-foreground sm:text-xs">
-            Grupo
-          </p>
-          <button
-            onClick={() => setFilters({ groupSlug: null })}
-            className="inline-flex items-center gap-1.5 rounded-full border border-primary bg-primary/10 px-4 py-2 text-sm text-primary sm:px-2.5 sm:py-1 sm:text-xs"
-          >
-            {filters.groupSlug.replace(/-/g, ' ')}
-            <X className="h-4 w-4 sm:h-3 sm:w-3" />
-          </button>
-        </div>
-      )}
-
-      <div>
-        <p className="mb-2 text-sm font-bold uppercase tracking-wide text-muted-foreground sm:text-xs">
           Categoria
         </p>
         <div className="flex flex-col gap-1">
@@ -180,6 +137,49 @@ export function SearchFiltersPanel({ filters, setFilters, resetFilters }: Props)
               );
             })}
           </div>
+        </div>
+      )}
+
+      <div>
+        <p className="mb-2 text-sm font-bold uppercase tracking-wide text-muted-foreground sm:text-xs">
+          Ordenar por
+        </p>
+        <select
+          value={filters.sort}
+          onChange={(e) => setFilters({ sort: e.target.value as SearchSort })}
+          className="h-10 w-full rounded-[var(--ui-radius-field,0.375rem)] border border-input bg-background px-2.5 text-base sm:h-9 sm:px-2 sm:text-sm"
+        >
+          <option value="relevance">Relevância</option>
+          <option value="price">Menor preço</option>
+          <option value="rating">Melhor avaliação</option>
+        </select>
+      </div>
+
+      <div>
+        <p className="mb-2 text-sm font-bold uppercase tracking-wide text-muted-foreground sm:text-xs">
+          Busca por texto
+        </p>
+        <input
+          type="text"
+          placeholder="ex.: DJ pra casamento"
+          value={filters.query ?? ''}
+          onChange={(e) => setFilters({ query: e.target.value || null })}
+          className="h-10 w-full rounded-[var(--ui-radius-field,0.375rem)] border border-input bg-background px-2.5 text-base sm:h-9 sm:px-2 sm:text-sm"
+        />
+      </div>
+
+      {filters.groupSlug && (
+        <div>
+          <p className="mb-2 text-sm font-bold uppercase tracking-wide text-muted-foreground sm:text-xs">
+            Grupo
+          </p>
+          <button
+            onClick={() => setFilters({ groupSlug: null })}
+            className="inline-flex items-center gap-1.5 rounded-full border border-primary bg-primary/10 px-4 py-2 text-sm text-primary sm:px-2.5 sm:py-1 sm:text-xs"
+          >
+            {filters.groupSlug.replace(/-/g, ' ')}
+            <X className="h-4 w-4 sm:h-3 sm:w-3" />
+          </button>
         </div>
       )}
 

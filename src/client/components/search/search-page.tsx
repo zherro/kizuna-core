@@ -78,6 +78,11 @@ export type SearchPageProps = {
     requestLabel?: string;
     render: (ctx: { categoryId: number | null }) => ReactNode;
   };
+  /**
+   * Busca com IA (assistente Naví). `false` (`search.ai` no `kizuna.config.json`) esconde o
+   * assistente e deixa só a busca por texto + filtros. Padrão `true`.
+   */
+  aiEnabled?: boolean;
 };
 
 export function SearchPage(props: SearchPageProps) {
@@ -108,6 +113,7 @@ function SearchPageInner({
   excludeFromMixedCategorySlugs = [],
   serviceDetailConfig,
   impressionRule,
+  aiEnabled = true,
 }: SearchPageProps) {
   const stored = getStoredLocation();
   const location = useMemo(
@@ -203,10 +209,10 @@ function SearchPageInner({
   // Balão de saudação do assistente (desktop) — chama atenção uma vez, some assim que o chat
   // abre ou o usuário fecha o balão, e não volta a aparecer depois disso.
   useEffect(() => {
-    if (desktopChatOpen || greetingDismissed) return;
+    if (!aiEnabled || desktopChatOpen || greetingDismissed) return;
     const t = setTimeout(() => setShowGreeting(true), 1500);
     return () => clearTimeout(t);
-  }, [desktopChatOpen, greetingDismissed]);
+  }, [aiEnabled, desktopChatOpen, greetingDismissed]);
 
   useEffect(() => {
     if (desktopChatOpen) {
@@ -481,14 +487,18 @@ function SearchPageInner({
           ) : (
             <>
               <Typography.H4 font="display" className="text-muted-foreground">
-                Buscar com IA
+                {aiEnabled ? 'Buscar com IA' : 'Buscar'}
               </Typography.H4>
               <form
                 className="mt-3 flex items-center gap-2 rounded-full border-2 border-primary/40 bg-background p-2 shadow-md transition focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/15"
                 onSubmit={(e) => {
                   e.preventDefault();
-                  openChat(heroInput);
-                  setHeroInput('');
+                  if (aiEnabled) {
+                    openChat(heroInput);
+                    setHeroInput('');
+                  } else {
+                    setFilters({ query: heroInput.trim() || null });
+                  }
                 }}
               >
                 <button
@@ -504,17 +514,19 @@ function SearchPageInner({
                 <input
                   value={heroInput}
                   onChange={(e) => setHeroInput(e.target.value)}
-                  placeholder="Descreva o que você precisa…"
+                  placeholder={aiEnabled ? 'Descreva o que você precisa…' : 'O que você procura?'}
                   className="h-12 min-w-0 flex-1 bg-transparent px-3 text-base outline-none placeholder:text-muted-foreground/70"
                 />
-                <button
-                  type="button"
-                  onClick={() => openChat(heroInput)}
-                  aria-label="Falar com o assistente"
-                  className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary transition hover:bg-primary/20"
-                >
-                  <AssistantIcon className="h-[30px] w-[30px]" />
-                </button>
+                {aiEnabled && (
+                  <button
+                    type="button"
+                    onClick={() => openChat(heroInput)}
+                    aria-label="Falar com o assistente"
+                    className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary transition hover:bg-primary/20"
+                  >
+                    <AssistantIcon className="h-[30px] w-[30px]" />
+                  </button>
+                )}
                 <button
                   type="submit"
                   aria-label="Buscar"
@@ -601,7 +613,11 @@ function SearchPageInner({
             >
               <Filter className="h-4 w-4" /> Filtros
               {activeFilterCount > 0 && (
-                <span className="rounded-full bg-primary/10 px-1.5 text-xs text-primary">
+                <span
+                  role="status"
+                  aria-label={`${activeFilterCount} filtro${activeFilterCount > 1 ? 's' : ''} aplicado${activeFilterCount > 1 ? 's' : ''}`}
+                  className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[11px] font-bold leading-none text-primary-foreground"
+                >
                   {activeFilterCount}
                 </span>
               )}
@@ -630,14 +646,16 @@ function SearchPageInner({
           </SheetContent>
         </Sheet>
 
-        <button
-          type="button"
-          onClick={toggleMobileChat}
-          aria-label="Falar com o assistente"
-          className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-md"
-        >
-          <AssistantIcon className="h-5 w-5" /> Assistente
-        </button>
+        {aiEnabled && (
+          <button
+            type="button"
+            onClick={toggleMobileChat}
+            aria-label="Falar com o assistente"
+            className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-md"
+          >
+            <AssistantIcon className="h-5 w-5" /> Assistente
+          </button>
+        )}
       </div>
 
       {/* Carrossel de anúncios (mobile) — prévia horizontal logo abaixo da busca; a listagem
@@ -702,6 +720,8 @@ function SearchPageInner({
         </div>
       </section>
 
+      {aiEnabled && (
+        <>
       {/* Assistente — painel fixo do desktop (xl+): não ocupa coluna do grid, só desliza por
           cima quando aberto, então abrir/fechar nunca rola nem redimensiona a página. */}
       <div
@@ -769,6 +789,8 @@ function SearchPageInner({
           </button>
         </>
       )}
+        </>
+      )}
 
       {/* Filtro flutuante (desktop, só quando o chat está aberto — substitui a coluna fixa, que
           some pra não disputar espaço/posição com o painel do chat). */}
@@ -782,7 +804,7 @@ function SearchPageInner({
             >
               <Filter className="h-4 w-4" /> Filtros
               {activeFilterCount > 0 && (
-                <span className="rounded-full bg-primary-foreground/20 px-1.5 text-xs">
+                <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary-foreground px-1 text-[11px] font-bold leading-none text-primary">
                   {activeFilterCount}
                 </span>
               )}
@@ -815,7 +837,7 @@ function SearchPageInner({
       {/* Fundo do chat inferior (mobile) — o painel tem espaço próprio: em vez de sobrepor os
           anúncios por baixo, escurece o resto da página, então fica claro que é uma camada acima,
           não um card cortado ao meio. Clicar fora fecha, igual ao overlay do Sheet de filtros. */}
-      {!chatCollapsed && (
+      {aiEnabled && !chatCollapsed && (
         <div
           className="fixed inset-0 z-20 bg-black/30 xl:hidden"
           onClick={() => setChatCollapsed(true)}
@@ -825,7 +847,7 @@ function SearchPageInner({
       {/* Chat inferior (abaixo de xl) — só monta quando aberto (o gatilho fica na barra de ações
           acima da busca). Ocupa a maior parte da tela pra dar uma visão única da conversa; o filtro
           continua aplicado por baixo. */}
-      {!chatCollapsed && (
+      {aiEnabled && !chatCollapsed && (
         <div className="fixed inset-x-0 bottom-0 z-30 mx-auto w-full max-w-[500px] xl:hidden">
           <SearchChat
             variant="sheet"

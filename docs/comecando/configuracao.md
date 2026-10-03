@@ -122,31 +122,38 @@ Controla quais seções aparecem na home pública (`/`) e o visual delas.
 | `showDiscover`      | boolean                  | `false`     | Mostra o banner "Descobrir no swipe" (leva a `/descobrir`). Só `true` mostra.              |
 | `inkPicker`         | boolean                  | `true`      | Mostra o seletor de intensidade do fundo escuro ("ink") dos cards de destaque.           |
 | `inkLevel`          | `1`–`7`                  | `6`         | Intensidade padrão do fundo "ink". Com o seletor ativo, a escolha salva do usuário prevalece. |
-| `categoryRails`     | `{ slug, title?, limit? }[]` | `[]` (o starter já traz `cinema`) | **Carrosséis por categoria** na home (ver abaixo), um por item, na ordem do array.        |
+| `categoryRails`     | `{ slug? \| group?, title?, limit? }[]` | `[]` (o starter já traz `cinema`) | **Carrosséis por categoria** na home (ver abaixo), um por item, na ordem do array.        |
 
 Ordem das seções na home: hero → carrossel de categorias → banner "Descobrir" → carrosséis por
 categoria → grade de próximos → "como funciona" → chamada final.
 
 ### Carrosséis por categoria
 
-Cada item de `home.categoryRails` vira uma trilha horizontal de anúncios daquela categoria:
+Cada item de `home.categoryRails` vira uma trilha horizontal de anúncios de uma categoria (`slug`)
+ou de um grupo de categoria (`group`):
 
 ```json
 "categoryRails": [
-  { "slug": "cinema", "title": "Em cartaz", "limit": 10 }
+  { "slug": "cinema", "title": "Em cartaz", "limit": 10 },
+  { "group": "eventos", "title": "Eventos" }
 ]
 ```
 
 | Campo   | Tipo   | Padrão               | Efeito                                                                  |
 | ------- | ------ | -------------------- | ----------------------------------------------------------------------- |
-| `slug`  | string | — (obrigatório)      | `categories.slug` da categoria.                                         |
-| `title` | string | nome da categoria    | Título da trilha.                                                       |
-| `limit` | number | `10`                 | Máximo de cards. Se vierem **todos**, a trilha termina com um card **"Ver mais"** que leva a `/busca?categoryId=<id>`. |
+| `slug`  | string | —                    | `categories.slug` da categoria. Use este **ou** `group`.                |
+| `group` | string | —                    | `categories_group.slug` do grupo. Use este **ou** `slug`.               |
+| `title` | string | nome da categoria/grupo | Título da trilha.                                                       |
+| `limit` | number | `10`                 | Máximo de cards. Se houver **mais** que isso, a trilha termina com um card **"Ver mais"** que leva a `/busca?categoryId=<id>` (ou `/busca?group=<slug>`). |
 
 * Os cards reusam o carrossel do detalhe do anúncio (`ServiceCarouselSection`), então já seguem o
   estilo por categoria de `serviceDetail` (ex.: cinema sem preço, cor de acento).
-* Categoria inexistente, inativa ou **sem anúncios publicados** não renderiza nada.
-* Os dados vêm de `loadCategoryRail(slug, { limit })` (`@kizuna/core/server`), montados no servidor
+* Mesma base da busca (RPC `fn_search_services`): só anúncios ativos e **não expirados**, filtrados
+  pela cidade da home quando houver.
+* **Ordem aleatória a cada visita.** Como a home é ISR, o servidor traz um pool de `limit × 3`
+  anúncios e o `ShuffledServiceCarouselSection` embaralha no navegador e mostra `limit`.
+* Categoria/grupo inexistente, inativo ou **sem anúncios publicados** não renderiza nada.
+* Os dados vêm de `loadCategoryRail({ slug } | { group }, { limit })` (`@kizuna/core/server`), montados no servidor
   pelo componente `CategoryRails` do projeto (`components/home/category-rails.tsx`).
 
 ### Carrossel de categorias

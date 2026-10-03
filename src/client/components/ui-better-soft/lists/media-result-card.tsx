@@ -51,7 +51,8 @@ export function MediaResultCard({
       <div
         className={cn(
           'relative w-full overflow-hidden bg-gradient-to-br from-brand-soft to-secondary',
-          isPoster ? 'aspect-square' : 'aspect-[3/2]'
+          // no mobile a imagem fica ~15% mais baixa
+          isPoster ? 'aspect-square max-sm:aspect-[1/0.85]' : 'aspect-[3/2] max-sm:aspect-[3/1.7]'
         )}
       >
         {image && (

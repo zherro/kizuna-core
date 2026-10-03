@@ -20,3 +20,7 @@ export { AdShareButton } from './ad-share-button';
 export { AdExtraFields } from './ad-extra-fields';
 export { ServiceCarousel } from './service-carousel';
 export { ServiceCarouselSection } from './service-carousel-section';
+export {
+  ShuffledServiceCarouselSection,
+  shuffleServices,
+} from './shuffled-service-carousel-section';

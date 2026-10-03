@@ -8,7 +8,11 @@ const { serverFetchResource, pgrstRpc } = vi.hoisted(() => ({
 vi.mock('../postgrest-crud', () => ({ serverFetchResource }));
 vi.mock('../postrest/conn', () => ({ pgrstRpc }));
 
-import { loadCategoryRail, DEFAULT_CATEGORY_RAIL_LIMIT } from './category-rail-data';
+import {
+  loadCategoryRail,
+  DEFAULT_CATEGORY_RAIL_LIMIT,
+  CATEGORY_RAIL_POOL_FACTOR,
+} from './category-rail-data';
 
 const rows = (n: number) =>
   Array.from({ length: n }, (_, i) => ({ uid: `uid-${i}`, title: `Item ${i}` }));
@@ -34,7 +38,7 @@ describe('loadCategoryRail', () => {
     );
     const body = pgrstRpc.mock.calls[0][1];
     expect(body.p_category_id).toBe(7);
-    expect(body.p_page_size).toBe(DEFAULT_CATEGORY_RAIL_LIMIT);
+    expect(body.p_page_size).toBe(DEFAULT_CATEGORY_RAIL_LIMIT * CATEGORY_RAIL_POOL_FACTOR);
     expect(rail?.category).toEqual({ id: 7, name: 'Cinema', slug: 'cinema' });
     expect(rail?.items).toHaveLength(3);
   });
@@ -43,18 +47,43 @@ describe('loadCategoryRail', () => {
     expect(DEFAULT_CATEGORY_RAIL_LIMIT).toBe(10);
   });
 
-  it('hasMore só quando vêm todos os itens do limite', async () => {
-    rpcReturns(rows(10));
+  it('hasMore só quando o pool passa do limite', async () => {
+    rpcReturns(rows(11));
     expect((await loadCategoryRail('cinema', { limit: 10 }))?.hasMore).toBe(true);
 
-    rpcReturns(rows(9));
+    rpcReturns(rows(10));
     expect((await loadCategoryRail('cinema', { limit: 10 }))?.hasMore).toBe(false);
   });
 
+  it('por grupo: resolve em categories_group e filtra pelo slug do grupo', async () => {
+    serverFetchResource.mockResolvedValue([{ id: 2, name: 'Cinema', slug: 'cinema' }]);
+    rpcReturns(rows(3));
+    const rail = await loadCategoryRail({ group: 'cinema' });
+
+    expect(serverFetchResource).toHaveBeenCalledWith(
+      'categories_group',
+      { slug: 'cinema', active: 'true' },
+      expect.objectContaining({ auth: null, limit: 1 })
+    );
+    const body = pgrstRpc.mock.calls[0][1];
+    expect(body.p_group_category_slug).toBe('cinema');
+    expect(body.p_category_id).toBeNull();
+    expect(rail?.kind).toBe('group');
+  });
+
+  it('seed muda a cada geração (não fixo por slug)', async () => {
+    rpcReturns(rows(3));
+    await loadCategoryRail('cinema');
+    rpcReturns(rows(3));
+    await loadCategoryRail('cinema');
+    expect(pgrstRpc.mock.calls[0][1].p_seed).not.toBe(pgrstRpc.mock.calls[1][1].p_seed);
+  });
+
   it('respeita um limite customizado', async () => {
-    rpcReturns(rows(4));
+    rpcReturns(rows(5));
     const rail = await loadCategoryRail('cinema', { limit: 4 });
-    expect(pgrstRpc.mock.calls[0][1].p_page_size).toBe(4);
+    expect(pgrstRpc.mock.calls[0][1].p_page_size).toBe(4 * CATEGORY_RAIL_POOL_FACTOR);
+    expect(rail?.limit).toBe(4);
     expect(rail?.hasMore).toBe(true);
   });
 
