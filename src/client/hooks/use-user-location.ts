@@ -42,6 +42,13 @@ type ReverseGeocode = {
 
 type ResolvedLocation = Omit<UserLocation, 'source'>;
 
+const RESOLVE_TIMEOUT_MS = 8000;
+const RESOLVE_RETRY_DELAYS_MS = [700, 2000];
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 /**
  * Valida UF + cidade contra a lista de cidades do projeto (`location` do kizuna.config.json):
  * devolve a cidade da lista, a cidade padrão, ou `null` (sem local válido → abrir o seletor).
@@ -51,15 +58,24 @@ export async function resolveLocation(
   stateCode: string,
   cityName: string
 ): Promise<ResolvedLocation | null | undefined> {
-  try {
-    const qs = new URLSearchParams({ uf: stateCode, city: cityName });
-    const res = await fetch(`/api/location/resolve?${qs}`);
-    if (!res.ok) return undefined;
-    const data = (await res.json()) as { location?: ResolvedLocation | null };
-    return data.location ?? null;
-  } catch {
-    return undefined;
+  const qs = new URLSearchParams({ uf: stateCode, city: cityName });
+  // Rede móvel instável (5G/4G trocando de antena) derruba a 1ª chamada com frequência: sem
+  // retry, a 1ª visita ficava sem cidade até um refresh. Só falha de rede/5xx tenta de novo —
+  // `null` (fora da lista) é resposta válida e volta na hora.
+  for (let attempt = 0; attempt < RESOLVE_RETRY_DELAYS_MS.length + 1; attempt++) {
+    if (attempt > 0) await sleep(RESOLVE_RETRY_DELAYS_MS[attempt - 1]);
+    try {
+      const res = await fetch(`/api/location/resolve?${qs}`, {
+        signal: AbortSignal.timeout(RESOLVE_TIMEOUT_MS),
+      });
+      if (!res.ok) continue;
+      const data = (await res.json()) as { location?: ResolvedLocation | null };
+      return data.location ?? null;
+    } catch {
+      // timeout / rede — tenta de novo
+    }
   }
+  return undefined;
 }
 
 /** Países da América Latina e Caribe (ISO 3166-1 alpha-2) — IP fora daqui não é usado. */

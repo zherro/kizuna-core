@@ -48,6 +48,27 @@ describe('useUserLocation — inicialização (igual em toda tela)', () => {
     });
   });
 
+  it('rede instável: o resolve falha e tenta de novo até aplicar a cidade padrão', async () => {
+    let resolveCalls = 0;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.startsWith('/api/location/ip')) throw new TypeError('Failed to fetch');
+        if (url.startsWith('/api/location/resolve')) {
+          resolveCalls += 1;
+          if (resolveCalls === 1) throw new TypeError('Failed to fetch');
+          if (resolveCalls === 2) return json({ message: 'erro' }, 502);
+          return json({ location: CUIABA });
+        }
+        return json({}, 404);
+      })
+    );
+    render(<Probe />);
+    expect(await screen.findByText('Cuiabá', {}, { timeout: 5000 })).toBeTruthy();
+    expect(resolveCalls).toBe(3);
+  });
+
   it('sem cidade padrão (resolve → null) → pronto, sem local', async () => {
     stubIpDown(null);
     render(<Probe />);
