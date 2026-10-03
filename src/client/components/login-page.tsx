@@ -1,11 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { useAuth, type PublicSession } from '../providers/auth-provider';
 import { LoginForm } from './auth/login-form';
-import { Button } from './ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 
 /**
  * Full, working login screen backed by the core auth handlers (`POST /api/auth/login`).
@@ -44,11 +41,8 @@ export function LoginPageContent({
   redirectTo = '/painel',
   ...formProps
 }: LoginPageProps) {
-  const router = useRouter();
   const { user } = useAuth();
   const [oauthError, setOauthError] = useState<string | null>(null);
-  // Login feito nesta tela: em vez de redirecionar sozinho, mostra o card de escolha.
-  const [justLoggedIn, setJustLoggedIn] = useState(false);
 
   // `?returnTo=` (vindo de um login social que falhou ou de um link) vence o padrão, se for local.
   const [target, setTarget] = useState(redirectTo);
@@ -62,32 +56,11 @@ export function LoginPageContent({
     }
   }, []);
 
+  // Navegação completa (não `router.push`): o cache do roteador guarda a versão deslogada de
+  // /painel (que redireciona para /login) e o usuário voltaria para cá depois de entrar.
   useEffect(() => {
-    if (user && !justLoggedIn) router.replace(target);
-  }, [user, justLoggedIn, router, target]);
-
-  // Navegação completa (não `router.push`): o cache do roteador pode ter guardado a versão
-  // deslogada de /painel (que redireciona para /login) e o usuário voltaria para cá.
-  const go = (href: string) => window.location.assign(href);
-
-  if (justLoggedIn) {
-    return (
-      <Card className="w-full max-w-md text-center">
-        <CardHeader>
-          <CardTitle>Login realizado!</CardTitle>
-          <CardDescription>Para onde você quer ir agora?</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-3">
-          <Button className="h-11 w-full" onClick={() => go(target)}>
-            Ir para o painel
-          </Button>
-          <Button variant="outline" className="h-11 w-full" onClick={() => go('/')}>
-            Continuar navegando
-          </Button>
-        </CardContent>
-      </Card>
-    );
-  }
+    if (user) window.location.replace(target);
+  }, [user, target]);
 
   return (
     <div className="flex w-full flex-col items-center gap-4">
@@ -102,8 +75,9 @@ export function LoginPageContent({
       <LoginForm
         {...formProps}
         onSuccess={(u) => {
-          setJustLoggedIn(true);
           onLoginSuccess?.(u);
+          // Recarrega de verdade: não depende do contexto de auth atualizar a tempo.
+          window.location.replace(target);
         }}
       />
     </div>

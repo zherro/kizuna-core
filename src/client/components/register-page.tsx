@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { useAuth, type PublicSession } from '../providers/auth-provider';
 import { RegisterForm } from './auth/register-form';
 
@@ -31,19 +30,21 @@ export function RegisterPageContent({
   redirectTo = '/painel',
   ...formProps
 }: RegisterPageProps) {
-  const router = useRouter();
   const { user } = useAuth();
 
+  // Navegação completa (não `router.push`): o cache do roteador guarda a versão deslogada de
+  // /painel (que redireciona para /login) e o usuário voltaria para cá depois de criar a conta.
   useEffect(() => {
-    if (user) router.replace(redirectTo);
-  }, [user, router, redirectTo]);
+    if (user) window.location.replace(redirectTo);
+  }, [user, redirectTo]);
 
   return (
     <RegisterForm
       {...formProps}
       onSuccess={(u) => {
         onRegisterSuccess?.(u);
-        setTimeout(() => router.push(redirectTo), 900);
+        // Recarrega de verdade: não depende do contexto de auth atualizar a tempo.
+        window.location.replace(redirectTo);
       }}
     />
   );
