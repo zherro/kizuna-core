@@ -320,7 +320,7 @@ function Header({
   return (
     <Grid container containerSize="fluid">
       <Grid sm={10} >
-        <Typography.H4 font="display">{title}</Typography.H4>
+        <Typography.H5 font="display">{title}</Typography.H5>
       </Grid>
       {allLabel && allHref ? (
         <Grid sm={2}>

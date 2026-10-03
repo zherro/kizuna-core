@@ -91,7 +91,8 @@ not camelCase). Three shapes: one row per tenant (`save([item])`), several fixed
 `total`/`totalPages` are not taken as-is from the server. When a page returns fewer rows than
 `pageSize` it is provably the last page, so `total` is derived from
 `(page - 1) * pageSize + items.length`. A full page trusts the server value but floors it at
-`items.length`. Reason: PostgREST's exact count (`Content-Range` via `Prefer: count=exact`) has
+`(page - 1) * pageSize + items.length`; if the server total doesn't exceed that floor (count came
+back 0/missing), `totalPages` is set to `page + 1` so "next" stays enabled. Reason: PostgREST's exact count (`Content-Range` via `Prefer: count=exact`) has
 come back 0/unreliable for some query shapes even with rows present — "0 registros" while rows
 are visibly listed is the symptom this fixes.
 

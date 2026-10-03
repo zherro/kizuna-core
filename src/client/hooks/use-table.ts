@@ -113,15 +113,20 @@ export function useTable<TItem>({
         const loadedItems = Array.isArray(data?.items) ? data.items : [];
         const loadedPage = typeof data?.page === 'number' ? data.page : targetPage;
         const rawTotal = typeof data?.total === 'number' ? data.total : 0;
-        const total =
-          loadedItems.length < configuredPageSize
-            ? (loadedPage - 1) * configuredPageSize + loadedItems.length
-            : Math.max(rawTotal, loadedItems.length);
+        // Linhas comprovadas até esta página. Página cheia com total do servidor que não passa
+        // disso (count veio 0/ausente) => não dá pra saber se acabou: libera a próxima página.
+        const seen = (loadedPage - 1) * configuredPageSize + loadedItems.length;
+        const isLastPage = loadedItems.length < configuredPageSize;
+        const total = isLastPage ? seen : Math.max(rawTotal, seen);
+        const totalPages =
+          !isLastPage && rawTotal <= seen
+            ? loadedPage + 1
+            : Math.ceil(total / configuredPageSize);
 
         setItems(loadedItems);
         setPage(loadedPage);
         setTotal(total);
-        setTotalPages(Math.ceil(total / configuredPageSize));
+        setTotalPages(totalPages);
       } catch {
         setError('Erro de conexao com o servidor.');
       } finally {
