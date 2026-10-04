@@ -45,6 +45,10 @@ export function EmailVerificationPage({ userEmail }: EmailVerificationPageProps)
       const response = await fetch('/api/onboarding/email/request-code', {
         method: 'POST',
       });
+      if (response.status === 401) {
+        router.push('/login?returnTo=/painel/verificar-email');
+        return;
+      }
       const data = (await response.json().catch(() => null)) as {
         message?: string;
         error?: string;
@@ -77,6 +81,10 @@ export function EmailVerificationPage({ userEmail }: EmailVerificationPageProps)
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code }),
       });
+      if (response.status === 401) {
+        router.push('/login?returnTo=/painel/verificar-email');
+        return;
+      }
 
       const data = (await response.json().catch(() => null)) as {
         message?: string;
@@ -124,10 +132,10 @@ export function EmailVerificationPage({ userEmail }: EmailVerificationPageProps)
       </button>
 
       <div>
-        <p className="text-sm font-medium uppercase tracking-[0.22em] text-primary">Step 2</p>
+        <p className="text-sm font-medium uppercase tracking-[0.22em] text-primary">Minha conta</p>
         <h1 className="mt-2 text-2xl font-semibold tracking-tight">Verificação de e-mail</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Confirme seu e-mail para continuar o onboarding e ativar a plataforma.
+          Confirme que este e-mail é seu. Contato verificado libera avaliar, comentar e anunciar.
         </p>
       </div>
 
@@ -200,7 +208,7 @@ export function EmailVerificationPage({ userEmail }: EmailVerificationPageProps)
                 size="lg"
                 className="w-full"
               >
-                {loading ? 'Enviando código...' : 'Começar verificação'}
+                {loading ? 'Enviando código...' : 'Enviar código'}
               </Button>
             </>
           )}
@@ -208,9 +216,24 @@ export function EmailVerificationPage({ userEmail }: EmailVerificationPageProps)
       </Card>
 
       <div className="rounded-[var(--ui-radius-card-sm,0.5rem)] border-[length:var(--ui-border-w-card,1px)] border-border/50 shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] bg-muted/20 p-4">
-        <p className="text-xs leading-relaxed text-muted-foreground">
-          <span className="font-medium">Dica:</span> O código de verificação expira em 10 minutos.
-          Se não recebeu, verifique sua pasta de spam ou solicite um novo código.
+        <p className="text-sm font-medium text-foreground">Como verificar</p>
+        <ol className="mt-2 list-decimal space-y-1.5 pl-5 text-sm text-muted-foreground">
+          <li>
+            Toque em <strong className="text-foreground">Enviar código</strong>: mandamos um código
+            de 6 dígitos para {displayEmail}.
+          </li>
+          <li>
+            Abra seu e-mail. Não chegou em 1 minuto? Procure nas pastas{' '}
+            <strong className="text-foreground">Spam</strong> e{' '}
+            <strong className="text-foreground">Promoções</strong>.
+          </li>
+          <li>
+            Digite o código aqui e toque em{' '}
+            <strong className="text-foreground">Validar código</strong>.
+          </li>
+        </ol>
+        <p className="mt-3 text-xs text-muted-foreground">
+          Pediu mais de um código? Vale sempre o último que chegou.
         </p>
       </div>
     </div>
