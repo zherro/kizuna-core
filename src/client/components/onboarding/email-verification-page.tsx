@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@kizuna/core/client/components/ui/button';
 import {
@@ -14,6 +14,16 @@ import { Input } from '@kizuna/core/client/components/ui/input';
 import { Label } from '@kizuna/core/client/components/ui/label';
 import { CheckCircle2, Mail } from 'lucide-react';
 import { PageHeader } from '../ui-better-soft/headers/page-header';
+import { readStorage, removeStorage, writeStorage } from '../../../lib/helper/local-storage.helper';
+
+// Espera entre pedidos de código, guardada no navegador: vale mesmo recarregando a página.
+const RESEND_KEY = 'kz-email-code-resend';
+const RESEND_SECONDS = 60;
+
+function secondsLeft(): number {
+  const until = readStorage<{ until?: number }>(RESEND_KEY)?.until;
+  return typeof until === 'number' ? Math.max(0, Math.ceil((until - Date.now()) / 1000)) : 0;
+}
 
 type EmailVerificationPageProps = {
   userEmail?: string;
@@ -27,6 +37,22 @@ export function EmailVerificationPage({ userEmail }: EmailVerificationPageProps)
   const [success, setSuccess] = useState<string | null>(null);
   const [codeRequested, setCodeRequested] = useState(false);
   const [verified, setVerified] = useState(false);
+  const [resendIn, setResendIn] = useState(0);
+
+  // Voltou à página dentro da espera: mostra direto o campo do código e o tempo restante.
+  useEffect(() => {
+    const left = secondsLeft();
+    if (left > 0) {
+      setCodeRequested(true);
+      setResendIn(left);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (resendIn <= 0) return;
+    const t = setTimeout(() => setResendIn(secondsLeft()), 1000);
+    return () => clearTimeout(t);
+  }, [resendIn]);
 
   const displayEmail = userEmail ? (
     <>
@@ -39,6 +65,7 @@ export function EmailVerificationPage({ userEmail }: EmailVerificationPageProps)
   );
 
   async function requestCode() {
+    if (secondsLeft() > 0) return;
     setError(null);
     setSuccess(null);
     setLoading(true);
@@ -58,6 +85,8 @@ export function EmailVerificationPage({ userEmail }: EmailVerificationPageProps)
         setError(data?.error ?? 'Não foi possível enviar o código.');
         return;
       }
+      writeStorage(RESEND_KEY, { until: Date.now() + RESEND_SECONDS * 1000 });
+      setResendIn(RESEND_SECONDS);
       setCodeRequested(true);
       setSuccess(data?.message ?? 'Código enviado para seu e-mail.');
     } finally {
@@ -96,6 +125,7 @@ export function EmailVerificationPage({ userEmail }: EmailVerificationPageProps)
         return;
       }
 
+      removeStorage(RESEND_KEY);
       setVerified(true);
       setEmailCode('');
       setSuccess(data?.message ?? 'E-mail verificado com sucesso!');
@@ -182,8 +212,12 @@ export function EmailVerificationPage({ userEmail }: EmailVerificationPageProps)
                 >
                   {loading ? 'Validando...' : 'Validar código'}
                 </Button>
-                <Button variant="outline" onClick={() => void requestCode()} disabled={loading}>
-                  {loading ? 'Enviando...' : 'Reenviar'}
+                <Button
+                  variant="outline"
+                  onClick={() => void requestCode()}
+                  disabled={loading || resendIn > 0}
+                >
+                  {loading ? 'Enviando...' : resendIn > 0 ? `Reenviar em ${resendIn}s` : 'Reenviar'}
                 </Button>
               </div>
             </>
