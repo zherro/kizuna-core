@@ -11,6 +11,8 @@ type Props = {
   displayName: string;
   avatarUrl: string;
   avatarUploading: boolean;
+  /** Progresso do envio da foto (0–100) ou null quando não há envio. */
+  avatarProgress?: number | null;
   avatarError: string | null;
   avatarInputRef: RefObject<HTMLInputElement | null>;
   onAvatarChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -25,6 +27,7 @@ export function ProfileHeader({
   displayName,
   avatarUrl,
   avatarUploading,
+  avatarProgress = null,
   avatarError,
   avatarInputRef,
   onAvatarChange,
@@ -95,9 +98,25 @@ export function ProfileHeader({
               </a>
             ) : null}
           </div>
-          <p className={cn('mt-1 text-xs', avatarError ? 'text-destructive' : 'text-muted-foreground')}>
-            {avatarError ?? 'JPG, PNG ou WebP, até 2 MB. A foto é salva na hora.'}
-          </p>
+          {avatarProgress !== null ? (
+            <div className="mx-auto mt-2 w-full max-w-[14rem] sm:mx-0" role="status" aria-live="polite">
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                <div
+                  className="h-full rounded-full bg-primary transition-[width] duration-200 ease-out"
+                  style={{ width: `${Math.round(avatarProgress)}%` }}
+                />
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {avatarProgress >= 100
+                  ? 'Foto atualizada!'
+                  : `Enviando foto... ${Math.round(avatarProgress)}%`}
+              </p>
+            </div>
+          ) : (
+            <p className={cn('mt-1 text-xs', avatarError ? 'text-destructive' : 'text-muted-foreground')}>
+              {avatarError ?? 'JPG, PNG ou WebP. Você ajusta o enquadramento antes de salvar.'}
+            </p>
+          )}
         </div>
 
         {levelStatus ? (

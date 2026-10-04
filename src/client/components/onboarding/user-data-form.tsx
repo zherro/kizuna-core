@@ -9,6 +9,7 @@ import { stripHtml } from '../../../lib/helper/text.helper';
 import { useToast } from '../../hooks/use-toast';
 import { useAccountLevel } from '../account-levels/use-account-level';
 import { AddressSection } from './account-form/address-section';
+import { AvatarCropper } from './account-form/avatar-cropper';
 import { ContactSection } from './account-form/contact-section';
 import { PersonalSection } from './account-form/personal-section';
 import { ProfileHeader } from './account-form/profile-header';
@@ -18,6 +19,34 @@ import type { AccountFormValues } from './account-form/types';
 
 const ACCEPTED_AVATAR_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const MAX_AVATAR_FILE_SIZE_MB = 2;
+const MAX_AVATAR_SOURCE_FILE_SIZE_MB = 20;
+
+/** POST multipart com progresso real do upload (XHR — `fetch` não expõe progresso de envio). */
+function postWithUploadProgress(
+  url: string,
+  body: FormData,
+  onProgress: (ratio: number) => void
+): Promise<{ ok: boolean; data: unknown }> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', url);
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) onProgress(e.loaded / e.total);
+    };
+    xhr.upload.onload = () => onProgress(1);
+    xhr.onload = () => {
+      let data: unknown = null;
+      try {
+        data = JSON.parse(xhr.responseText);
+      } catch {
+        data = null;
+      }
+      resolve({ ok: xhr.status >= 200 && xhr.status < 300, data });
+    };
+    xhr.onerror = () => reject(new Error('network'));
+    xhr.send(body);
+  });
+}
 
 export {
   DEFAULT_USER_DATA_FIELDS_CONFIG,
@@ -228,6 +257,9 @@ export function AccountForm({
   const toast = useToast();
   const { status: levelStatus, refresh: refreshLevel } = useAccountLevel();
   const [avatarUploading, setAvatarUploading] = useState(false);
+  // Foto escolhida aguardando o recorte (AvatarCropper) e progresso do envio (0–100; null = parado).
+  const [avatarCropFile, setAvatarCropFile] = useState<File | null>(null);
+  const [avatarProgress, setAvatarProgress] = useState<number | null>(null);
   const [avatarError, setAvatarError] = useState<string | null>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const [cityOptions, setCityOptions] = useState<{ value: string; label: string }[]>([]);
@@ -578,7 +610,7 @@ export function AccountForm({
     );
   }
 
-  async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
+  function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
@@ -587,13 +619,31 @@ export function AccountForm({
       setAvatarError('Selecione uma imagem JPG, PNG ou WebP.');
       return;
     }
-    if (file.size > MAX_AVATAR_FILE_SIZE_MB * 1024 * 1024) {
-      setAvatarError(`A imagem deve ter no máximo ${MAX_AVATAR_FILE_SIZE_MB} MB.`);
+    // A foto original pode ser grande (câmera do celular): o recorte gera um JPEG de 512px, que é
+    // o que sobe. O limite aqui só barra arquivos absurdos.
+    if (file.size > MAX_AVATAR_SOURCE_FILE_SIZE_MB * 1024 * 1024) {
+      setAvatarError(`A imagem deve ter no máximo ${MAX_AVATAR_SOURCE_FILE_SIZE_MB} MB.`);
       return;
     }
+    setAvatarError(null);
+    setAvatarCropFile(file);
+  }
 
+  async function uploadAvatar(file: File) {
+    setAvatarCropFile(null);
     setAvatarError(null);
     setAvatarUploading(true);
+    setAvatarProgress(0);
+    // Depois que o arquivo sobe, o servidor ainda otimiza e o perfil é salvo: a barra segue andando
+    // devagar até 95% para não parecer travada.
+    let creep: ReturnType<typeof setInterval> | null = null;
+    const startCreep = () => {
+      if (creep) return;
+      creep = setInterval(
+        () => setAvatarProgress((p) => (p === null ? p : Math.min(95, p + Math.max(0.5, (95 - p) * 0.08)))),
+        200
+      );
+    };
     try {
       const body = new FormData();
       body.append('files', file);
@@ -601,8 +651,12 @@ export function AccountForm({
       body.append('maxFileSizeMb', String(MAX_AVATAR_FILE_SIZE_MB));
       body.append('optimizeImages', 'true');
 
-      const response = await fetch('/api/storage/files', { method: 'POST', body });
-      const data = (await response.json().catch(() => null)) as {
+      const response = await postWithUploadProgress('/api/storage/files', body, (ratio) => {
+        setAvatarProgress((p) => Math.max(p ?? 0, Math.round(ratio * 70)));
+        if (ratio >= 1) startCreep();
+      });
+      startCreep();
+      const data = response.data as {
         message?: string;
         uploaded?: StorageFileRecord[];
       } | null;
@@ -630,11 +684,14 @@ export function AccountForm({
       // saveUserData grava o formulário inteiro, então tudo que estava na tela agora está salvo.
       formik.resetForm({ values: next });
       void refreshLevel();
+      setAvatarProgress(100);
       toast.success('Foto atualizada.');
     } catch {
       setAvatarError('Não foi possível enviar a foto.');
     } finally {
+      if (creep) clearInterval(creep);
       setAvatarUploading(false);
+      setTimeout(() => setAvatarProgress(null), 600);
     }
   }
 
@@ -660,10 +717,19 @@ export function AccountForm({
         avatarUploading={avatarUploading}
         avatarError={avatarError}
         avatarInputRef={avatarInputRef}
-        onAvatarChange={(e) => void handleAvatarChange(e)}
+        onAvatarChange={handleAvatarChange}
+        avatarProgress={avatarProgress}
         publicProfileAvailable={Boolean(existingId)}
         levelStatus={levelStatus}
       />
+
+      {avatarCropFile ? (
+        <AvatarCropper
+          file={avatarCropFile}
+          onCancel={() => setAvatarCropFile(null)}
+          onConfirm={(cropped) => void uploadAvatar(cropped)}
+        />
+      ) : null}
 
       <PublicProfileSection formik={formik} />
 
