@@ -32,6 +32,8 @@ type Props = {
   serviceDetailConfig?: ServiceDetailConfig | null;
   /** Plugin analytics: regra da impressão (`resolveEventRule`); cada card conta ao ficar visível. */
   impressionRule?: EventRule | null;
+  /** Título da lista no lugar do padrão por escopo (ex.: seção de região). */
+  heading?: string;
 };
 
 function priceLabel(r: ServiceResult): string {
@@ -93,6 +95,7 @@ export function SearchResultsView({
   onLoadMore,
   serviceDetailConfig,
   impressionRule = null,
+  heading,
 }: Props) {
   const card = (r: ServiceResult, variant: 'strip' | 'grid') => {
     const item = <ListingResultCard key={r.uid} {...toCardProps(r, serviceDetailConfig)} variant={variant} />;
@@ -173,7 +176,7 @@ export function SearchResultsView({
     <div>
       <div className="mb-3 flex items-baseline justify-between gap-2">
         <h2 className="text-sm font-semibold text-muted-foreground">
-          {scopeHeading(scope, stateName, cityName)}
+          {heading ?? scopeHeading(scope, stateName, cityName)}
         </h2>
         <span className="text-xs text-muted-foreground">{results.length} resultado(s)</span>
       </div>

@@ -37,7 +37,12 @@ export type CategoryRailData = {
 
 export async function loadCategoryRail(
   target: string | CategoryRailTarget,
-  options: { limit?: number; cityIbge?: string } = {}
+  options: {
+    limit?: number;
+    cityIbge?: string;
+    /** Região: busca em cada cidade e junta (a 1ª da lista — a selecionada — vem primeiro). */
+    cityIbges?: string[];
+  } = {}
 ): Promise<CategoryRailData | null> {
   const limit =
     options.limit && options.limit > 0 ? Math.floor(options.limit) : DEFAULT_CATEGORY_RAIL_LIMIT;
@@ -56,14 +61,21 @@ export async function loadCategoryRail(
   if (!row || !Number.isFinite(id)) return null;
 
   const poolSize = limit * CATEGORY_RAIL_POOL_FACTOR;
-  const items = await runServiceSearch(
-    {
-      ...(kind === 'group' ? { p_group_category_slug: row.slug } : { p_category_id: id }),
-      p_page_size: poolSize,
-      p_city_ibge: options.cityIbge ?? null,
-    },
-    Math.random() * 2 - 1
+  const filter = kind === 'group' ? { p_group_category_slug: row.slug } : { p_category_id: id };
+  const seed = Math.random() * 2 - 1;
+  const cities = options.cityIbges?.length ? options.cityIbges : [options.cityIbge ?? null];
+  const perCity = await Promise.all(
+    cities.map((city) =>
+      runServiceSearch({ ...filter, p_page_size: poolSize, p_city_ibge: city }, seed).catch(() => [])
+    )
   );
+  const seen = new Set<string>();
+  const items = perCity.flat().filter((item) => {
+    const key = String((item as { uid?: unknown }).uid ?? '');
+    if (!key || seen.has(key)) return !key;
+    seen.add(key);
+    return true;
+  });
   if (items.length === 0) return null;
 
   return {
