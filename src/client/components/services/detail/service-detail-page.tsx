@@ -274,7 +274,8 @@ export function ServiceDetailPage({
                 />
               </div>
 
-              {provider &&
+              {/* Cinema: o anúncio é o filme, não um prestador — não mostra "Quem anuncia". */}
+              {provider && variantId !== 'cinema' &&
                 (slots?.renderProviderCard?.({ provider }) ?? (
                   <div className="mt-5 flex items-center gap-3 rounded-[var(--ui-radius-card,1rem)] bg-muted/60 p-3">
                     <ProviderAvatar
