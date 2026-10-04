@@ -113,6 +113,11 @@ export function RolesMatrix({ roles, groups, initialGrants, overview, menu = [] 
     }
     return map;
   }, [menu]);
+  // Recurso que libera um único menu: o nome do menu é o rótulo (ex.: "Chamados", não "Painel chamados").
+  const groupLabel = (resource: string) => {
+    const menus = menusByResource.get(resource) ?? [];
+    return menus.length === 1 ? menus[0] : humanizeResource(resource);
+  };
   const catalogResources = useMemo(() => new Set(groups.map((g) => g.resource)), [groups]);
   const rootOnlyMenus = useMemo(() => menu.filter((item) => item.rootOnly), [menu]);
   const uncatalogedMenus = useMemo(
@@ -263,7 +268,7 @@ export function RolesMatrix({ roles, groups, initialGrants, overview, menu = [] 
                       colSpan={editableRoles.length + 2}
                       className="sticky left-0 z-10 px-4 py-2 text-xs font-semibold text-foreground"
                     >
-                      {humanizeResource(group.resource)}
+                      {groupLabel(group.resource)}
                       <span className="ml-2 font-mono text-[10px] font-normal text-muted-foreground">
                         {group.resource}
                       </span>
