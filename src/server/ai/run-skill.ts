@@ -50,7 +50,11 @@ export async function runSkill<I, O>(
     });
   }
 
-  const provider = await resolveProvider({ provider: opts?.provider, model: opts?.model });
+  const provider = await resolveProvider({
+    provider: opts?.provider,
+    model: opts?.model,
+    db: ctx.db,
+  });
   const loaded = (await skill.loadContext?.(input, ctx)) as unknown;
   const { systemPrompt, contents } = skill.buildPrompt(input, loaded);
   const req = {

@@ -13,6 +13,7 @@ export {
   type AiProviderId,
 } from './credentials';
 export * from './text-review';
-export { canAccessAiReview, type AiReviewPerm } from './access';
+export { canAccessAiReview } from './access';
+export { aiTable, aiRpc, type AiUserDb } from './db';
 export { checkRateLimit } from './rate-limit';
 export { readSystemConfig } from './system-config';

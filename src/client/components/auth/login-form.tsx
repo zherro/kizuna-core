@@ -10,6 +10,7 @@ import { cn } from '../../../lib/utils';
 import { Button, buttonVariants } from '../ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Input } from '../ui/input';
+import { PasswordInput } from '../ui/password-input';
 import { Label } from '../ui/label';
 import { SocialLoginButtons } from './social-login-buttons';
 import { PhoneLoginForm } from './phone-login-form';
@@ -150,10 +151,9 @@ export function LoginForm({
                     </Link>
                   ) : null}
                 </div>
-                <Input
+                <PasswordInput
                   id="password"
                   name="password"
-                  type="password"
                   required
                   minLength={6}
                   value={formik.values.password}

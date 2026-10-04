@@ -13,6 +13,7 @@
 
 import { AiUnavailableError } from '../errors';
 import { getProviderKey } from '../credentials';
+import type { AiUserDb } from '../db';
 import { readSystemConfig } from '../system-config';
 import type { AiProvider } from './types';
 import { GeminiProvider } from './gemini';
@@ -22,6 +23,8 @@ import { NotImplementedProvider } from './not-implemented';
 export interface ProviderOverride {
   provider?: string | null;
   model?: string | null;
+  /** JWT do usuário: habilita ler a chave cifrada de `ai_credentials` (senão só env). */
+  db?: AiUserDb | null;
 }
 
 export async function resolveModel(): Promise<string> {
@@ -39,14 +42,14 @@ export async function resolveProvider(override?: ProviderOverride): Promise<AiPr
 
   switch (cfg) {
     case 'gemini': {
-      const key = await getProviderKey('gemini');
+      const key = await getProviderKey('gemini', override?.db);
       if (!key) {
         throw new AiUnavailableError('GEMINI_API_KEY não configurada.', { reason: 'blocked' });
       }
       return new GeminiProvider({ apiKey: key, model: overrideModel || (await resolveModel()) });
     }
     case 'claude': {
-      const key = await getProviderKey('claude');
+      const key = await getProviderKey('claude', override?.db);
       if (!key) {
         throw new AiUnavailableError('Chave da Anthropic (ANTHROPIC_API_KEY) não configurada.', {
           reason: 'blocked',

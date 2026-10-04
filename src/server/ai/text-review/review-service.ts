@@ -1,9 +1,10 @@
 /**
  * Revisa a descrição de UM anúncio: roda a skill `text_review` e grava a sugestão como linha
  * `pending` em `service_text_revisions` (nada é aplicado ao anúncio aqui — a aprovação é humana).
+ * Tudo com o JWT do usuário (`db`).
  */
 
-import { serviceTable } from '../../service-db';
+import { aiTable, type AiUserDb } from '../db';
 import { runSkill } from '../run-skill';
 import { buildServiceContext } from './context';
 import { loadReviewPrompt } from './prompt-store';
@@ -27,8 +28,9 @@ export interface ReviewServiceResult {
   tokensOut: number;
 }
 
-export async function hasPendingRevision(serviceId: number): Promise<boolean> {
-  const res = await serviceTable(
+export async function hasPendingRevision(db: AiUserDb, serviceId: number): Promise<boolean> {
+  const res = await aiTable(
+    db,
     `/service_text_revisions?service_id=eq.${serviceId}&field=eq.description&status=eq.pending&select=service_id&limit=1`
   );
   if (!res.ok) throw new Error(`Falha ao consultar revisões (${res.status}).`);
@@ -36,28 +38,29 @@ export async function hasPendingRevision(serviceId: number): Promise<boolean> {
 }
 
 export async function reviewService(
+  db: AiUserDb,
   serviceId: number,
   opts: ReviewServiceOptions = {}
 ): Promise<ReviewServiceResult> {
-  if (await hasPendingRevision(serviceId)) {
+  if (await hasPendingRevision(db, serviceId)) {
     return { serviceId, skipped: true, revisionId: null, tokensIn: 0, tokensOut: 0 };
   }
 
-  const context = await buildServiceContext(serviceId);
+  const context = await buildServiceContext(db, serviceId);
   if (!context.description.trim()) throw new Error(`Serviço ${serviceId} sem descrição.`);
-  const prompt = await loadReviewPrompt(context.categoryId);
+  const prompt = await loadReviewPrompt(db, context.categoryId);
 
   const { output, provider, model, usage } = await runSkill<TextReviewInput, TextReviewOutput>(
     TEXT_REVIEW_SKILL_KEY,
     { serviceId, context, prompt },
-    { userId: opts.userId ?? 'system', tenantId: context.tenantId ?? '' },
+    { userId: opts.userId ?? 'system', tenantId: context.tenantId ?? '', db },
     { provider: prompt.provider, model: prompt.model, temperature: prompt.temperature }
   );
 
   const tokensIn = usage?.tokensIn ?? 0;
   const tokensOut = usage?.tokensOut ?? 0;
 
-  const res = await serviceTable('/service_text_revisions', {
+  const res = await aiTable(db, '/service_text_revisions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' },
     body: JSON.stringify({

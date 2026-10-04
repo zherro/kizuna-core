@@ -1,6 +1,7 @@
 export { Button, buttonVariants } from './button';
 export { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './card';
 export { Input } from './input';
+export { PasswordInput } from './password-input';
 export { Label } from './label';
 export { Grid } from './grid';
 export { Checkbox } from './checkbox';

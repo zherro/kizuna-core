@@ -3,26 +3,18 @@ import { canAccessAiReview } from './access';
 
 describe('canAccessAiReview', () => {
   it('sem sessão nega', () => {
-    expect(canAccessAiReview(null, 'review')).toBe(false);
-    expect(canAccessAiReview(undefined, 'manage')).toBe(false);
+    expect(canAccessAiReview(null)).toBe(false);
+    expect(canAccessAiReview(undefined)).toBe(false);
   });
-  it('root passa em tudo, mas só com is_root === true', () => {
-    expect(canAccessAiReview({ is_root: true }, 'manage')).toBe(true);
-    expect(canAccessAiReview({ is_root: 'true' }, 'manage')).toBe(false);
-    expect(canAccessAiReview({ is_root: 1 }, 'review')).toBe(false);
+  it('só is_root === true estrito passa', () => {
+    expect(canAccessAiReview({ is_root: true })).toBe(true);
+    expect(canAccessAiReview({ is_root: 'true' })).toBe(false);
+    expect(canAccessAiReview({ is_root: 1 })).toBe(false);
+    expect(canAccessAiReview({ is_root: false })).toBe(false);
+    expect(canAccessAiReview({})).toBe(false);
   });
-  it('review não dá manage; manage cobre review', () => {
-    const review = { perms: { ai_review: { review: true } } };
-    const manage = { perms: { ai_review: { manage: true } } };
-    expect(canAccessAiReview(review, 'review')).toBe(true);
-    expect(canAccessAiReview(review, 'manage')).toBe(false);
-    expect(canAccessAiReview(manage, 'manage')).toBe(true);
-    expect(canAccessAiReview(manage, 'review')).toBe(true);
-  });
-  it('valores não booleanos e outros recursos não contam', () => {
-    expect(canAccessAiReview({ perms: { ai_review: { review: 'true' } } }, 'review')).toBe(false);
-    expect(canAccessAiReview({ perms: { ai_review: { view: true } } }, 'review')).toBe(false);
-    expect(canAccessAiReview({ perms: { default: { review: true, manage: true } } }, 'manage')).toBe(false);
-    expect(canAccessAiReview({ perms: null }, 'review')).toBe(false);
+  it('permissões de papel não abrem acesso', () => {
+    const s = { perms: { ai_review: { manage: true, review: true } } };
+    expect(canAccessAiReview(s as never)).toBe(false);
   });
 });

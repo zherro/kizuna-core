@@ -37,6 +37,42 @@ const STATUS_LABEL: Record<Status, string> = {
 
 const PAGE_SIZE = 20;
 
+const RUN_STATUS_LABEL: Record<string, string> = {
+  pending: 'pendente',
+  running: 'em andamento',
+  done: 'concluída',
+  failed: 'com falha',
+  cancelled: 'cancelada',
+};
+
+/** Resposta de `POST /api/ai/review/runs/[id]/step` (e de `runs/active`). */
+interface RunProgress {
+  runId: number | string;
+  categoryId: number | null;
+  status: string;
+  total: number;
+  processed: number;
+  failed: number;
+  tokensIn: number;
+  tokensOut: number;
+  error: string | null;
+  done: boolean;
+}
+
+function fromProgress(p: RunProgress): RunInfo {
+  return {
+    id: p.runId,
+    categoryId: p.categoryId,
+    status: p.status,
+    total: p.total,
+    processed: p.processed,
+    failed: p.failed,
+    tokensIn: p.tokensIn,
+    tokensOut: p.tokensOut,
+    error: p.error,
+  };
+}
+
 function RevisionCard({
   rev,
   selected,
@@ -140,6 +176,7 @@ export function AiReviewScreen() {
   const [includeReviewed, setIncludeReviewed] = React.useState(false);
   const [run, setRun] = React.useState<RunInfo | null>(null);
   const [starting, setStarting] = React.useState(false);
+  const [paused, setPaused] = React.useState(false);
   const [message, setMessage] = React.useState('');
 
   const [status, setStatus] = React.useState<Status>('pending');
@@ -178,32 +215,67 @@ export function AiReviewScreen() {
     void loadRevisions();
   }, [loadRevisions]);
 
-  // Polling do progresso enquanto o lote roda.
-  const runId = run?.id;
-  const running = run?.status === 'running';
+  const loadRevisionsRef = React.useRef(loadRevisions);
   React.useEffect(() => {
-    if (!runId || !running) return;
-    const timer = setInterval(async () => {
-      try {
-        const next = await apiJson<RunInfo>(`/api/ai/review/runs/${runId}`);
-        setRun(next);
-        if (next.status !== 'running') {
-          clearInterval(timer);
-          setStatus('pending');
-          setPage(1);
-          void loadRevisions();
+    loadRevisionsRef.current = loadRevisions;
+  }, [loadRevisions]);
+
+  // Retoma um run em andamento ao reabrir a tela.
+  React.useEffect(() => {
+    apiJson<{ run: RunProgress | null }>('/api/ai/review/runs/active')
+      .then((r) => {
+        if (r.run) setRun(fromProgress(r.run));
+      })
+      .catch(() => undefined);
+  }, []);
+
+  // O processamento acontece em passos acionados por esta tela: enquanto a aba estiver aberta e o
+  // run ativo (e não pausado), chama o próximo passo em loop. Cada passo é idempotente no servidor.
+  const runId = run?.id;
+  const running = run?.status === 'running' || run?.status === 'pending';
+  React.useEffect(() => {
+    if (!runId || !running || paused) return;
+    let stop = false;
+    (async () => {
+      let errors = 0;
+      while (!stop) {
+        try {
+          const next = await apiJson<RunProgress>(`/api/ai/review/runs/${runId}/step`, { method: 'POST' });
+          errors = 0;
+          if (stop) return;
+          setRun(fromProgress(next));
+          if (next.done) {
+            setStatus('pending');
+            setPage(1);
+          }
+          void loadRevisionsRef.current();
+          if (next.done) return;
+        } catch (e) {
+          errors += 1;
+          if (errors >= 3) {
+            if (!stop) {
+              setPaused(true);
+              setMessage(
+                (e instanceof Error ? e.message : 'Falha no processamento') +
+                  ' O lote foi pausado; use Continuar para tentar de novo.'
+              );
+            }
+            return;
+          }
+          await new Promise((resolve) => setTimeout(resolve, 2000 * errors));
         }
-      } catch {
-        // tenta de novo no próximo ciclo
       }
-    }, 2500);
-    return () => clearInterval(timer);
-  }, [runId, running, loadRevisions]);
+    })();
+    return () => {
+      stop = true;
+    };
+  }, [runId, running, paused]);
 
   async function start() {
     setStarting(true);
     setMessage('');
     try {
+      setPaused(false);
       const r = await apiJson<{ runId: number; status: string; total: number }>('/api/ai/review/run', {
         method: 'POST',
         body: JSON.stringify({
@@ -223,6 +295,9 @@ export function AiReviewScreen() {
         tokensOut: 0,
         error: null,
       });
+      if (r.status !== 'running') {
+        setMessage('Nenhum anúncio elegível para revisar nesta categoria.');
+      }
     } catch (e) {
       setMessage(e instanceof Error ? e.message : 'Falha ao iniciar a revisão.');
     } finally {
@@ -232,8 +307,12 @@ export function AiReviewScreen() {
 
   async function cancel() {
     if (!run) return;
+    setPaused(true); // para o loop antes de cancelar
     try {
       await apiJson(`/api/ai/review/runs/${run.id}/cancel`, { method: 'POST' });
+      setRun(fromProgress(await apiJson<RunProgress>(`/api/ai/review/runs/${run.id}`)));
+      setPaused(false);
+      void loadRevisions();
     } catch (e) {
       setMessage(e instanceof Error ? e.message : 'Falha ao cancelar.');
     }
@@ -312,20 +391,31 @@ export function AiReviewScreen() {
           <div className="space-y-2 rounded-md border border-border bg-muted/40 p-3">
             <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
               <span className="text-foreground">
-                {run.status === 'running' ? 'Revisando…' : `Execução ${run.status}`} {run.processed}/
-                {run.total}
+                {running ? (paused ? 'Pausado' : 'Revisando…') : `Execução ${RUN_STATUS_LABEL[run.status] ?? run.status}`}{' '}
+                {run.processed}/{run.total}
                 {run.failed ? ` · ${run.failed} falha(s)` : ''}
               </span>
               <span className="text-xs text-muted-foreground">
                 {run.tokensIn + run.tokensOut} tokens
               </span>
-              {run.status === 'running' ? (
-                <Button variant="outline" size="sm" onClick={cancel}>
-                  Cancelar
-                </Button>
+              {running ? (
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setPaused((p) => !p)}>
+                    {paused ? 'Continuar' : 'Pausar'}
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={cancel}>
+                    Cancelar
+                  </Button>
+                </div>
               ) : null}
             </div>
             <Progress value={pct} />
+            {running ? (
+              <p className="text-xs text-muted-foreground">
+                O processamento acontece enquanto esta aba estiver aberta. Se fechar, reabra a tela
+                para retomar de onde parou.
+              </p>
+            ) : null}
             {run.error ? <p className="text-xs text-destructive">{run.error}</p> : null}
           </div>
         ) : null}

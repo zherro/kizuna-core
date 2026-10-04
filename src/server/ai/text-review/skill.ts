@@ -3,6 +3,7 @@
  * este módulo. Entrada: `{ serviceId }` (opcionalmente com `context`/`prompt` já carregados).
  */
 
+import { AiUnavailableError } from '../errors';
 import type { AiSkill } from '../skill';
 import { registerSkill } from '../skill';
 import { buildServiceContext, type ServiceReviewContext } from './context';
@@ -135,9 +136,17 @@ export const textReviewSkill: AiSkill<TextReviewInput, TextReviewLoaded, TextRev
   key: TEXT_REVIEW_SKILL_KEY,
   context: 'text_review',
 
-  loadContext: async (input) => {
-    const context = input.context ?? (await buildServiceContext(input.serviceId));
-    const prompt = input.prompt ?? (await loadReviewPrompt(context.categoryId));
+  loadContext: async (input, ctx) => {
+    let context = input.context;
+    if (!context) {
+      if (!ctx.db) {
+        throw new AiUnavailableError('sessão do usuário ausente para carregar o anúncio.', {
+          reason: 'blocked',
+        });
+      }
+      context = await buildServiceContext(ctx.db, input.serviceId);
+    }
+    const prompt = input.prompt ?? (await loadReviewPrompt(ctx.db ?? null, context.categoryId));
     return { context, prompt };
   },
 

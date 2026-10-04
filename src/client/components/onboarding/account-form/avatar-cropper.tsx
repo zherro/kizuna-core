@@ -125,15 +125,52 @@ export function AvatarCropper({ file, onCancel, onConfirm }: Props) {
     if (!natural || !src) return;
     setBusy(true);
     try {
-      const img = new Image();
-      img.src = src;
-      await img.decode();
+      // Fonte já reduzida (lado maior ≤ 4096px) quando o navegador decodifica direto no tamanho
+      // menor; senão cai no <img> original. `k` converte coordenadas originais → da fonte.
+      const k = Math.min(1, 4096 / Math.max(natural.w, natural.h));
+      let source: CanvasImageSource;
+      try {
+        source = await createImageBitmap(file, {
+          resizeWidth: Math.round(natural.w * k),
+          resizeHeight: Math.round(natural.h * k),
+          resizeQuality: 'high',
+        });
+      } catch {
+        const img = new Image();
+        img.src = src;
+        await img.decode();
+        source = img;
+      }
+      const usedK = source instanceof HTMLImageElement ? 1 : k;
       const left = frame / 2 + offset.x - (natural.w * scale) / 2;
       const top = frame / 2 + offset.y - (natural.h * scale) / 2;
       const circleStart = (frame - diameter) / 2;
-      const sx = (circleStart - left) / scale;
-      const sy = (circleStart - top) / scale;
-      const sSize = diameter / scale;
+      // Recorte em pixels da imagem original, preso dentro dela: o Safari não desenha nada
+      // (canvas preto/vazio) quando o retângulo de origem sai, nem que por arredondamento.
+      const sSize = Math.min(diameter / scale, natural.w, natural.h);
+      const sx = Math.min(Math.max(0, (circleStart - left) / scale), natural.w - sSize);
+      const sy = Math.min(Math.max(0, (circleStart - top) / scale), natural.h - sSize);
+
+      // Fotos grandes de câmera (12–48MP) estouram o limite de canvas/memória do iOS e saem
+      // pretas: recorta primeiro num canvas intermediário de no máximo 2048px.
+      const mid = document.createElement('canvas');
+      mid.width = mid.height = Math.max(1, Math.round(Math.min(sSize * k, 2048)));
+      const midCtx = mid.getContext('2d');
+      if (!midCtx) throw new Error('canvas');
+      const srcW = source instanceof HTMLImageElement ? natural.w : (source as ImageBitmap).width;
+      const srcH = source instanceof HTMLImageElement ? natural.h : (source as ImageBitmap).height;
+      const size = Math.min(sSize * usedK, srcW, srcH);
+      midCtx.drawImage(
+        source,
+        Math.min(sx * usedK, srcW - size),
+        Math.min(sy * usedK, srcH - size),
+        size,
+        size,
+        0,
+        0,
+        mid.width,
+        mid.height
+      );
 
       const canvas = document.createElement('canvas');
       canvas.width = canvas.height = OUTPUT_SIZE;
@@ -142,7 +179,7 @@ export function AvatarCropper({ file, onCancel, onConfirm }: Props) {
       ctx.imageSmoothingQuality = 'high';
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, OUTPUT_SIZE, OUTPUT_SIZE);
-      ctx.drawImage(img, sx, sy, sSize, sSize, 0, 0, OUTPUT_SIZE, OUTPUT_SIZE);
+      ctx.drawImage(mid, 0, 0, OUTPUT_SIZE, OUTPUT_SIZE);
 
       const blob = await new Promise<Blob | null>((res) => canvas.toBlob(res, 'image/jpeg', 0.9));
       if (!blob) throw new Error('blob');
@@ -187,6 +224,10 @@ export function AvatarCropper({ file, onCancel, onConfirm }: Props) {
               src={src}
               alt=""
               draggable={false}
+              ref={(el) => {
+                if (el?.complete && el.naturalWidth && !natural)
+                  setNatural({ w: el.naturalWidth, h: el.naturalHeight });
+              }}
               onLoad={(e) =>
                 setNatural({
                   w: e.currentTarget.naturalWidth,

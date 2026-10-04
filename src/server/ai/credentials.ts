@@ -1,11 +1,13 @@
 /**
- * Credenciais de IA gerenciáveis pelo admin: chave do provedor cifrada em `public.ai_credentials`
- * (AES-256-GCM, segredo `AI_SECRET_KEY`), com fallback para env (`GEMINI_API_KEY`,
- * `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`). A chave em claro nunca é logada nem devolvida a clientes.
+ * Credenciais de IA gerenciáveis pelo root: chave do provedor cifrada em `public.ai_credentials`
+ * (AES-256-GCM no Node, segredo `AI_SECRET_KEY`), com fallback para env (`GEMINI_API_KEY`,
+ * `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`). Leitura e gravação passam pelas RPCs
+ * `fn_ai_credential_get_cipher` / `fn_ai_credential_save` com o JWT do usuário (só root).
+ * A chave em claro nunca é logada nem devolvida a clientes.
  */
 
 import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from 'node:crypto';
-import { hasServiceAccess, serviceTable } from '../service-db';
+import { aiRpc, type AiUserDb } from './db';
 import { AiUnavailableError } from './errors';
 
 export type AiProviderId = 'gemini' | 'openai' | 'claude';
@@ -64,30 +66,35 @@ export function envKeyFor(provider: string): string {
   return name ? String(process.env[name] ?? '').trim() : '';
 }
 
-async function readActiveCipher(provider: string): Promise<string | null> {
-  if (!hasServiceAccess()) return null;
+async function readActiveCipher(db: AiUserDb, provider: string): Promise<string | null> {
   try {
-    const res = await serviceTable(
-      `/ai_credentials?provider=eq.${encodeURIComponent(provider)}&active=eq.true` +
-        `&select=key_cipher&order=updated_at.desc&limit=1`
-    );
+    const res = await aiRpc(db, 'fn_ai_credential_get_cipher', { p_provider: provider });
     if (!res.ok) return null;
-    const rows = (await res.json()) as Array<{ key_cipher?: string }>;
-    return rows[0]?.key_cipher ?? null;
+    const cipher = (await res.json()) as unknown;
+    return typeof cipher === 'string' && cipher ? cipher : null;
   } catch {
     return null;
   }
 }
 
-/** Chave do provider: `ai_credentials` ativa (decifrada) → env → `null`. */
-export async function getProviderKey(provider: string): Promise<string | null> {
-  const cipher = await readActiveCipher(provider);
-  if (cipher) return decryptSecret(cipher);
+/**
+ * Chave do provider: `ai_credentials` ativa (decifrada, só com `db` de root) → env → `null`.
+ * Sem `db` (ex.: chamadas fora do fluxo do root) usa só o env.
+ */
+export async function getProviderKey(provider: string, db?: AiUserDb | null): Promise<string | null> {
+  if (db) {
+    const cipher = await readActiveCipher(db, provider);
+    if (cipher) return decryptSecret(cipher);
+  }
   return envKeyFor(provider) || null;
 }
 
-/** Cifra e grava a chave; desativa as anteriores do mesmo provider. Guarda só os 4 últimos dígitos em claro. */
+/**
+ * Cifra e grava a chave pela RPC (que desativa as anteriores do mesmo provider na mesma transação).
+ * Guarda só os 4 últimos dígitos em claro.
+ */
 export async function saveProviderKey(
+  db: AiUserDb,
   provider: AiProviderId,
   label: string,
   key: string
@@ -97,26 +104,13 @@ export async function saveProviderKey(
   const cipher = encryptSecret(clean); // falha cedo se AI_SECRET_KEY ausente
   const last4 = clean.slice(-4);
 
-  // Grava a nova ANTES de desativar as antigas: se a gravação falhar, a chave anterior continua valendo.
-  const res = await serviceTable('/ai_credentials', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' },
-    body: JSON.stringify({ provider, label, key_cipher: cipher, key_last4: last4, active: true }),
+  const res = await aiRpc(db, 'fn_ai_credential_save', {
+    p_provider: provider,
+    p_label: label,
+    p_key_cipher: cipher,
+    p_key_last4: last4,
   });
   if (!res.ok) throw new Error(`Falha ao gravar credencial (${res.status}).`);
-  const rows = (await res.json().catch(() => [])) as Array<{ id?: number | string }>;
-  const newId = rows[0]?.id;
-
-  if (newId != null) {
-    const off = await serviceTable(
-      `/ai_credentials?provider=eq.${encodeURIComponent(provider)}&active=eq.true&id=neq.${newId}`,
-      {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ active: false, updated_at: new Date().toISOString() }),
-      }
-    );
-    if (!off.ok) throw new Error(`Falha ao desativar credencial anterior (${off.status}).`);
-  }
-  return { id: rows[0]?.id ?? null, last4 };
+  const id = (await res.json().catch(() => null)) as number | string | null;
+  return { id: id ?? null, last4 };
 }

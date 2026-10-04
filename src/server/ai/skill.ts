@@ -7,9 +7,13 @@
  * (ver `run-skill.ts`).
  */
 
+import type { AiUserDb } from './db';
+
 export interface AiSkillContext {
   userId: string;
   tenantId: string;
+  /** JWT do usuário para ler banco/credenciais (fluxo root da revisão por IA). */
+  db?: AiUserDb;
 }
 
 export interface AiSkill<I = unknown, L = unknown, O = unknown> {

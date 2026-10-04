@@ -3,7 +3,7 @@
  * (override por categoria, senão o global) com cache curto e fallback para o prompt embutido.
  */
 
-import { hasServiceAccess, serviceTable } from '../../service-db';
+import { aiTable, type AiUserDb } from '../db';
 
 export const REVIEW_PROMPT_KEY = 'service_description_review';
 
@@ -89,17 +89,21 @@ export function pickPromptRow(rows: PromptRow[], categoryId: number | null): Pro
   return rows.find((r) => r.category_id == null) ?? null;
 }
 
-export async function loadReviewPrompt(categoryId: number | null = null): Promise<ReviewPrompt> {
+export async function loadReviewPrompt(
+  db: AiUserDb | null,
+  categoryId: number | null = null
+): Promise<ReviewPrompt> {
   const cacheKey = String(categoryId ?? 'global');
   const hit = cache.get(cacheKey);
   if (hit && Date.now() - hit.at < TTL_MS) return hit.value;
 
   let value = defaultReviewPrompt();
-  if (hasServiceAccess()) {
+  if (db) {
     try {
       const scope =
         categoryId != null ? `&or=(category_id.is.null,category_id.eq.${categoryId})` : '&category_id=is.null';
-      const res = await serviceTable(
+      const res = await aiTable(
+        db,
         `/ai_prompts?key=eq.${REVIEW_PROMPT_KEY}&active=eq.true${scope}` +
           `&select=system_prompt,user_template,provider,model,temperature,version,category_id`
       );

@@ -4,12 +4,13 @@ import type { ResourceConfig } from '../types/resource-config';
 
 /**
  * `ResourceConfig`s do plugin `ai_review` (plugins/ai_review/0001_ai_review.sql). A RLS decide
- * quem vê e escreve (`ai_review.manage` / `ai_review.review`, root sempre); estes configs só
+ * quem vê e escreve (somente root, claim is_root do JWT); estes configs só
  * traduzem campos. Todos os mapInput incluem só o que veio no corpo (PATCH regrava o registro
  * inteiro na rota genérica).
  *
  * - `ai_credentials`: NUNCA expõe `key_cipher`. Criar/trocar a chave é rota do servidor
- *   (cifra AES-256-GCM no Node + service_role); aqui só lista, renomeia e ativa/desativa.
+ *   (cifra AES-256-GCM no Node + RPC fn_ai_credential_save com o JWT do root); aqui só lista,
+ *   renomeia e ativa/desativa.
  * - `service_text_revisions`: o revisor edita só `revised_text`; aprovar/rejeitar são as RPCs
  *   `fn_service_revision_apply` / `fn_service_revision_reject` (`rpcAiReview`).
  * - `ai_review_runs`: leitura; o único PATCH permitido é status = cancelled.

@@ -1,11 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const serviceTable = vi.fn();
-let access = true;
-vi.mock('../service-db', () => ({
-  hasServiceAccess: () => access,
-  serviceTable: (...a: unknown[]) => serviceTable(...a),
+const aiRpc = vi.fn();
+vi.mock('./db', () => ({
+  aiRpc: (...a: unknown[]) => aiRpc(...a),
 }));
+
+const db = { accessToken: 'jwt-do-root' };
 
 import {
   decryptSecret,
@@ -17,8 +17,7 @@ import {
 
 const ORIG = { ...process.env };
 beforeEach(() => {
-  serviceTable.mockReset();
-  access = true;
+  aiRpc.mockReset();
   process.env.AI_SECRET_KEY = Buffer.alloc(32, 7).toString('base64');
   delete process.env.ANTHROPIC_API_KEY;
   delete process.env.GEMINI_API_KEY;
@@ -60,57 +59,61 @@ describe('cifra AES-256-GCM', () => {
 });
 
 describe('getProviderKey', () => {
-  it('usa a credencial ativa do banco (decifrada)', async () => {
+  it('usa a credencial ativa do banco (decifrada) via RPC com o JWT do usuário', async () => {
     const cipher = encryptSecret('db-key');
-    serviceTable.mockResolvedValue(new Response(JSON.stringify([{ key_cipher: cipher }])));
+    aiRpc.mockResolvedValue(new Response(JSON.stringify(cipher)));
     process.env.ANTHROPIC_API_KEY = 'env-key';
-    expect(await getProviderKey('claude')).toBe('db-key');
-    expect(serviceTable.mock.calls[0][0]).toContain('provider=eq.claude');
+    expect(await getProviderKey('claude', db)).toBe('db-key');
+    expect(aiRpc).toHaveBeenCalledWith(db, 'fn_ai_credential_get_cipher', { p_provider: 'claude' });
   });
 
-  it('sem linha no banco → env', async () => {
-    serviceTable.mockResolvedValue(new Response('[]'));
+  it('RPC devolve null → env', async () => {
+    aiRpc.mockResolvedValue(new Response('null'));
     process.env.ANTHROPIC_API_KEY = 'env-key';
-    expect(await getProviderKey('claude')).toBe('env-key');
+    expect(await getProviderKey('claude', db)).toBe('env-key');
   });
 
-  it('sem service access → env, sem tocar o banco', async () => {
-    access = false;
+  it('RPC negada (não root) → env', async () => {
+    aiRpc.mockResolvedValue(new Response('{"message":"forbidden"}', { status: 403 }));
+    process.env.GEMINI_API_KEY = 'g';
+    expect(await getProviderKey('gemini', db)).toBe('g');
+  });
+
+  it('sem db → env, sem tocar o banco', async () => {
     process.env.GEMINI_API_KEY = 'g';
     expect(await getProviderKey('gemini')).toBe('g');
-    expect(serviceTable).not.toHaveBeenCalled();
+    expect(aiRpc).not.toHaveBeenCalled();
   });
 
   it('nada configurado → null', async () => {
-    serviceTable.mockResolvedValue(new Response('[]'));
-    expect(await getProviderKey('claude')).toBeNull();
+    aiRpc.mockResolvedValue(new Response('null'));
+    expect(await getProviderKey('claude', db)).toBeNull();
   });
 });
 
 describe('saveProviderKey', () => {
-  it('grava cifrada com last4 e só depois desativa as anteriores (exceto a nova)', async () => {
-    serviceTable
-      .mockResolvedValueOnce(new Response(JSON.stringify([{ id: 5 }]), { status: 201 }))
-      .mockResolvedValueOnce(new Response(null, { status: 204 }));
-    const r = await saveProviderKey('claude', 'principal', 'sk-ant-abcd1234');
+  it('grava cifrada com last4 pela RPC fn_ai_credential_save', async () => {
+    aiRpc.mockResolvedValueOnce(new Response('5'));
+    const r = await saveProviderKey(db, 'claude', 'principal', 'sk-ant-abcd1234');
     expect(r).toEqual({ id: 5, last4: '1234' });
-    expect(serviceTable.mock.calls[0][1].method).toBe('POST');
-    const body = JSON.parse(serviceTable.mock.calls[0][1].body);
-    expect(body.key_last4).toBe('1234');
-    expect(body.key_cipher).not.toContain('abcd1234');
-    expect(decryptSecret(body.key_cipher)).toBe('sk-ant-abcd1234');
-    expect(serviceTable.mock.calls[1][1].method).toBe('PATCH');
-    expect(serviceTable.mock.calls[1][0]).toContain('id=neq.5');
+    expect(aiRpc).toHaveBeenCalledTimes(1);
+    const [calledDb, name, body] = aiRpc.mock.calls[0];
+    expect(calledDb).toBe(db);
+    expect(name).toBe('fn_ai_credential_save');
+    expect(body.p_provider).toBe('claude');
+    expect(body.p_label).toBe('principal');
+    expect(body.p_key_last4).toBe('1234');
+    expect(body.p_key_cipher).not.toContain('abcd1234');
+    expect(decryptSecret(body.p_key_cipher)).toBe('sk-ant-abcd1234');
   });
 
-  it('se a gravação falha, não desativa a chave anterior', async () => {
-    serviceTable.mockResolvedValueOnce(new Response(null, { status: 500 }));
-    await expect(saveProviderKey('claude', 'x', 'sk-ant-abcd1234')).rejects.toThrow(/gravar credencial/);
-    expect(serviceTable).toHaveBeenCalledTimes(1);
+  it('falha da RPC vira erro', async () => {
+    aiRpc.mockResolvedValueOnce(new Response(null, { status: 500 }));
+    await expect(saveProviderKey(db, 'claude', 'x', 'sk-ant-abcd1234')).rejects.toThrow(/gravar credencial/);
   });
 
   it('a mensagem de erro nunca contém a chave', async () => {
-    serviceTable.mockResolvedValueOnce(new Response(null, { status: 500 }));
-    await expect(saveProviderKey('claude', 'x', 'sk-ant-SEGREDO9999')).rejects.not.toThrow(/SEGREDO/);
+    aiRpc.mockResolvedValueOnce(new Response(null, { status: 500 }));
+    await expect(saveProviderKey(db, 'claude', 'x', 'sk-ant-SEGREDO9999')).rejects.not.toThrow(/SEGREDO/);
   });
 });

@@ -11,6 +11,7 @@ import { cn } from '../../../lib/utils';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Input } from '../ui/input';
+import { PasswordInput } from '../ui/password-input';
 import { Label } from '../ui/label';
 import { SocialLoginButtons } from './social-login-buttons';
 import { PhoneLoginForm } from './phone-login-form';
@@ -162,10 +163,9 @@ export function RegisterForm({
 
               <div className="space-y-2">
                 <Label htmlFor="password">Senha</Label>
-                <Input
+                <PasswordInput
                   id="password"
                   name="password"
-                  type="password"
                   required
                   minLength={6}
                   value={formik.values.password}
@@ -180,10 +180,9 @@ export function RegisterForm({
 
               <div className="space-y-2">
                 <Label htmlFor="confirm-password">Confirmar senha</Label>
-                <Input
+                <PasswordInput
                   id="confirm-password"
                   name="confirmPassword"
-                  type="password"
                   required
                   minLength={6}
                   value={formik.values.confirmPassword}

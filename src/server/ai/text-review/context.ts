@@ -3,7 +3,7 @@
  * do formulário dinâmico (`form_results`, rotuladas pelo schema do formulário quando possível).
  */
 
-import { serviceTable } from '../../service-db';
+import { aiTable, type AiUserDb } from '../db';
 
 export interface ServiceReviewContext {
   serviceId: number;
@@ -79,9 +79,9 @@ export function formatAnswers(
   return lines.join('\n');
 }
 
-async function getJson<T>(path: string): Promise<T | null> {
+async function getJson<T>(db: AiUserDb, path: string): Promise<T | null> {
   try {
-    const res = await serviceTable(path);
+    const res = await aiTable(db, path);
     if (!res.ok) return null;
     return (await res.json()) as T;
   } catch {
@@ -89,7 +89,7 @@ async function getJson<T>(path: string): Promise<T | null> {
   }
 }
 
-export async function buildServiceContext(serviceId: number): Promise<ServiceReviewContext> {
+export async function buildServiceContext(db: AiUserDb, serviceId: number): Promise<ServiceReviewContext> {
   const rows = await getJson<
     Array<{
       id: number;
@@ -101,6 +101,7 @@ export async function buildServiceContext(serviceId: number): Promise<ServiceRev
       group?: { name?: string | null } | null;
     }>
   >(
+    db,
     `/services?id=eq.${serviceId}&select=id,tenant_id,title,description,category_id,` +
       `category:categories(name,description),group:categories_group(name)&limit=1`
   );
@@ -108,12 +109,14 @@ export async function buildServiceContext(serviceId: number): Promise<ServiceRev
   if (!s) throw new Error(`Serviço ${serviceId} não encontrado.`);
 
   const subs = await getJson<Array<{ sub?: { name?: string | null } | null }>>(
+    db,
     `/service_categories_sub?service_id=eq.${serviceId}&active=eq.true&select=sub:categories_sub(name)`
   );
 
   const fr = await getJson<
     Array<{ form_key?: string; answers?: Record<string, unknown>; schema_snapshot?: { fields?: SchemaField[] } }>
   >(
+    db,
     `/form_results?domain=eq.service&reference_id=eq.${serviceId}` +
       `&select=form_key,answers,schema_snapshot&limit=1`
   );
@@ -121,6 +124,7 @@ export async function buildServiceContext(serviceId: number): Promise<ServiceRev
   let schema = result?.schema_snapshot;
   if ((!schema || !schema.fields?.length) && result?.form_key) {
     const forms = await getJson<Array<{ schema?: { fields?: SchemaField[] } }>>(
+      db,
       `/forms?form_key=eq.${encodeURIComponent(result.form_key)}&active=eq.true&select=schema&limit=1`
     );
     schema = forms?.[0]?.schema;
