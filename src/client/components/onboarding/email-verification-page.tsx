@@ -12,7 +12,8 @@ import {
 } from '@kizuna/core/client/components/ui/card';
 import { Input } from '@kizuna/core/client/components/ui/input';
 import { Label } from '@kizuna/core/client/components/ui/label';
-import { CheckCircle2, Mail, ArrowLeft } from 'lucide-react';
+import { CheckCircle2, Mail } from 'lucide-react';
+import { PageHeader } from '../ui-better-soft/headers/page-header';
 
 type EmailVerificationPageProps = {
   userEmail?: string;
@@ -123,21 +124,12 @@ export function EmailVerificationPage({ userEmail }: EmailVerificationPageProps)
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8 md:px-6">
-      <button
-        onClick={() => router.back()}
-        className="inline-flex w-fit items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Voltar
-      </button>
-
-      <div>
-        <p className="text-sm font-medium uppercase tracking-[0.22em] text-primary">Minha conta</p>
-        <h1 className="mt-2 text-2xl font-semibold tracking-tight">Verificação de e-mail</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Confirme que este e-mail é seu. Contato verificado libera avaliar, comentar e anunciar.
-        </p>
-      </div>
+      <PageHeader
+        title="Verificação de e-mail"
+        description="Confirme que este e-mail é seu. Contato verificado libera avaliar, comentar e anunciar."
+        backHref="/painel/minha-conta"
+        backLabel="Minha conta"
+      />
 
       <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
         <CardHeader>
