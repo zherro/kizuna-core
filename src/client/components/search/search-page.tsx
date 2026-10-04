@@ -18,7 +18,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '../ui/sheet';
-import { getStoredLocation } from '../../hooks/use-user-location';
+import { useUserLocation } from '../../hooks/use-user-location';
 import { LocationModal } from '../location-modal';
 import { cn } from '../../../lib/utils';
 import { AssistantIcon } from './assistant-icon';
@@ -115,7 +115,8 @@ function SearchPageInner({
   impressionRule,
   aiEnabled = true,
 }: SearchPageProps) {
-  const stored = getStoredLocation();
+  // A cidade do topo (seletor do header): reage na hora quando o usuário troca.
+  const { location: stored } = useUserLocation();
   const location = useMemo(
     () => ({
       state: stored?.stateCode ?? '',
@@ -243,6 +244,8 @@ function SearchPageInner({
   );
 
   useEffect(() => {
+    // Sem cidade carregada ainda (1º render, antes de ler o seletor do topo): não busca sem cidade.
+    if (!location.state) return;
     const controller = new AbortController();
     const seed = Math.random() * 2 - 1;
     setLoading(true);
@@ -253,23 +256,16 @@ function SearchPageInner({
         // 1) cidade + filtros
         let effective = base;
         let items = await runSearch(effective, controller.signal);
+        // A cidade do topo é fixa: os fallbacks abaixo afrouxam categoria/texto, nunca a cidade.
         let nextScope: ResultsScope = base.p_city_id ? 'city' : 'state';
 
-        // 2) sem cidade
-        if (items.length === 0 && base.p_city_id) {
-          effective = { ...base, p_city_id: null, p_city_ibge: null };
-          items = await runSearch(effective, controller.signal);
-          nextScope = 'state';
-        }
-        // 3) só estado + texto (larga grupo/categoria/subcategoria)
+        // 2) mesma cidade + texto (larga grupo/categoria/subcategoria)
         if (
           items.length === 0 &&
           (base.p_group_category_slug || base.p_category_id || base.p_subcategories)
         ) {
           effective = {
             ...base,
-            p_city_id: null,
-            p_city_ibge: null,
             p_group_category_slug: null,
             p_category_id: null,
             p_subcategories: null,
@@ -277,12 +273,10 @@ function SearchPageInner({
           items = await runSearch(effective, controller.signal);
           nextScope = 'related';
         }
-        // 4) larga também o texto — mostra o que houver no estado
+        // 3) larga também o texto — mostra o que houver na cidade
         if (items.length === 0 && base.p_query) {
           effective = {
             ...base,
-            p_city_id: null,
-            p_city_ibge: null,
             p_group_category_slug: null,
             p_category_id: null,
             p_subcategories: null,
@@ -329,7 +323,7 @@ function SearchPageInner({
     // direto/inicial. Se entrasse na dependência, o próprio `updatePageParam` do "carregar mais"
     // (que também escreve em `searchParams`) disparava esse efeito de novo a cada página.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bodyKey, runSearch, toSearchAdsBody]);
+  }, [bodyKey, runSearch, toSearchAdsBody, location.state]);
 
   const loadMore = useCallback(async () => {
     const body = effectiveBodyRef.current;
@@ -871,16 +865,7 @@ function SearchPageInner({
 
       <LocationModal
         open={isLocationOpen}
-        onClose={() => {
-          setLocationOpen(false);
-          const loc = getStoredLocation();
-          if (loc)
-            setFilters({
-              state: loc.stateCode,
-              cityId: loc.cityId > 0 ? loc.cityId : null,
-              cityName: loc.cityName || null,
-            });
-        }}
+        onClose={() => setLocationOpen(false)}
       />
     </main>
   );
