@@ -23,9 +23,14 @@ function StatusChip({ verified }: { verified: boolean }) {
 }
 
 /**
- * Verificação do e-mail por código: envia (POST /api/account/email/request), confere
- * (POST /api/account/email/verify) e chama `onVerified` para recarregar o nível da conta.
+ * Verificação do e-mail por código: envia (POST /api/onboarding/email/request-code), confere
+ * (POST /api/onboarding/email/verify-code) e chama `onVerified` para recarregar o nível da conta.
  */
+// Sessão expirada: verificar o e-mail exige login — volta para cá depois de entrar.
+function goToLogin() {
+  window.location.href = `/login?returnTo=${encodeURIComponent(window.location.pathname)}`;
+}
+
 function EmailVerifier({ onVerified }: { onVerified: () => void }) {
   const [step, setStep] = useState<'idle' | 'code'>('idle');
   const [code, setCode] = useState('');
@@ -44,22 +49,15 @@ function EmailVerifier({ onVerified }: { onVerified: () => void }) {
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch('/api/account/email/request', { method: 'POST' });
-      const data = (await res.json().catch(() => null)) as {
-        message?: string;
-        alreadyVerified?: boolean;
-        cooldownSec?: number;
-      } | null;
+      const res = await fetch('/api/onboarding/email/request-code', { method: 'POST' });
+      if (res.status === 401) return goToLogin();
+      const data = (await res.json().catch(() => null)) as { message?: string; error?: string } | null;
       if (!res.ok) {
-        setError(data?.message ?? 'Não foi possível enviar o código.');
-        return;
-      }
-      if (data?.alreadyVerified) {
-        onVerified();
+        setError(data?.error ?? 'Não foi possível enviar o código.');
         return;
       }
       setMessage(data?.message ?? 'Enviamos um código para o seu e-mail.');
-      setCooldown(data?.cooldownSec ?? 60);
+      setCooldown(60);
       setStep('code');
     } catch {
       setError('Erro de conexão. Tente de novo.');
@@ -72,14 +70,15 @@ function EmailVerifier({ onVerified }: { onVerified: () => void }) {
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch('/api/account/email/verify', {
+      const res = await fetch('/api/onboarding/email/verify-code', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code }),
       });
-      const data = (await res.json().catch(() => null)) as { message?: string } | null;
+      if (res.status === 401) return goToLogin();
+      const data = (await res.json().catch(() => null)) as { error?: string } | null;
       if (!res.ok) {
-        setError(data?.message ?? 'Código inválido.');
+        setError(data?.error ?? 'Código inválido.');
         return;
       }
       onVerified();
