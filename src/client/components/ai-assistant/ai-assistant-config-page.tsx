@@ -5,11 +5,11 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 
-/** Provedores conhecidos. Só `gemini` está implementado hoje; os demais aparecem desabilitados. */
+/** Provedores conhecidos. `gemini` e `claude` estão implementados; `openai` aparece desabilitado. */
 const PROVIDER_OPTIONS: Array<{ value: string; label: string; enabled: boolean }> = [
   { value: 'gemini', label: 'Gemini (Google)', enabled: true },
   { value: 'openai', label: 'OpenAI — em breve', enabled: false },
-  { value: 'claude', label: 'Claude (Anthropic) — em breve', enabled: false },
+  { value: 'claude', label: 'Claude (Anthropic)', enabled: true },
 ];
 
 export interface AiAssistantConfigValue {
@@ -115,7 +115,7 @@ export function AiAssistantConfigPage({
           ))}
         </select>
         <p className="text-xs text-muted-foreground">
-          OpenAI e Claude ainda não têm adapter implementado (em breve).
+          OpenAI ainda não tem adapter implementado (em breve).
         </p>
       </div>
 
@@ -125,7 +125,7 @@ export function AiAssistantConfigPage({
           id="ai-model"
           value={model}
           disabled={disabled}
-          placeholder="gemini-2.0-flash"
+          placeholder="gemini-3.6-flash / claude-haiku-4-5-20251001"
           onChange={(e) => setModel(e.target.value)}
         />
       </div>

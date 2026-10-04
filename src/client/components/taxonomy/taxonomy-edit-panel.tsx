@@ -37,6 +37,7 @@ type FormValues = {
   icon: string;
   formKey: string;
   requestFormKey: string;
+  aiReview: boolean;
 };
 
 const EMPTY_VALUES: FormValues = {
@@ -52,6 +53,7 @@ const EMPTY_VALUES: FormValues = {
   icon: '',
   formKey: '',
   requestFormKey: '',
+  aiReview: false,
 };
 
 function buildInitialValues(target: TaxonomyEditTarget | null): FormValues {
@@ -81,6 +83,7 @@ function buildInitialValues(target: TaxonomyEditTarget | null): FormValues {
       icon: item?.icon ?? '',
       formKey: item?.formKey ?? '',
       requestFormKey: item?.requestFormKey ?? '',
+      aiReview: item?.aiReview ?? false,
       active: item?.active ?? true,
       groupId: item?.categoryGroupId != null ? String(item.categoryGroupId) : '',
     };
@@ -297,6 +300,7 @@ export function TaxonomyEditPanel({
           base.categoryGroupId = values.groupId ? values.groupId : null;
           base.formKey = values.formKey.trim() || null;
           base.requestFormKey = values.requestFormKey.trim() || null;
+          base.aiReview = values.aiReview;
         }
         if (level === 'subcategory') base.categoryId = Number(values.categoryId);
         if (level === 'tag') {
@@ -635,6 +639,9 @@ export function TaxonomyEditPanel({
           </div>
         ) : null}
 
+        {level === 'category' ? (
+          <FormField formik={formik} field="aiReview" as="switch" label="Revisar textos com IA" />
+        ) : null}
         <FormField formik={formik} field="active" as="switch" label="Ativo" />
       </div>
     </ModalPanel>

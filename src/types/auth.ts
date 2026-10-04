@@ -4,6 +4,8 @@ export type PermissionActions = {
   edit?: boolean;
   delete?: boolean;
   manage?: boolean;
+  /** Ações de plugins (ex.: ai_review.review) vêm do mesmo mapa. */
+  review?: boolean;
 };
 export type PermissionMap = Record<string, PermissionActions>;
 

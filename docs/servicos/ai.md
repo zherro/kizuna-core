@@ -12,12 +12,14 @@ _skills_ concretas (prompt, schema, validação, carga de taxonomia) moram no **
 
 | Peça                                                                                                                                 | O quê                                                                                                                                                                                                                                                                                                                                                          |
 | ------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `AiProvider` (`provider/types.ts`)                                                                                                   | Interface: `generateStructured(req) → Record<string,unknown>`. `req` = `{ systemPrompt, contents, schema, timeoutMs, temperature? }`. Falha recuperável ⇒ lança `AiUnavailableError`.                                                                                                                                                                          |
+| `AiProvider` (`provider/types.ts`)                                                                                                   | Interface: `generateStructured(req) → Record<string,unknown>`. `req` = `{ systemPrompt, contents, schema, timeoutMs, temperature? }`. Opcional `generateStructuredWithUsage(req)` devolve também `{ usage: { tokensIn, tokensOut }, model }` (Gemini e Claude implementam). Falha recuperável ⇒ lança `AiUnavailableError`.                                                                                                                                                                          |
 | `GeminiProvider` (`provider/gemini.ts`)                                                                                              | Único adapter real. `fetch` → checa `res.ok` → `classifyAiError` → parseia `candidates[0].content.parts`.                                                                                                                                                                                                                                                      |
-| `NotImplementedProvider` (`provider/not-implemented.ts`)                                                                             | `openai` / `claude` — `generateStructured` lança `AiUnavailableError(..., { reason: 'blocked' })`. Ligar um provider sem adapter degrada limpo.                                                                                                                                                                                                                |
-| `resolveProvider()` (`provider/resolve.ts`)                                                                                          | Lê `system_config` `ai_assistant.provider` / `ai_assistant.model` + env `GEMINI_API_KEY` / `GEMINI_MODEL`. Sem chave ⇒ `AiUnavailableError('… não configurada', { reason: 'blocked' })`.                                                                                                                                                                       |
+| `ClaudeProvider` (`provider/claude.ts`) | `fetch` cru em `https://api.anthropic.com/v1/messages` (`x-api-key`, `anthropic-version: 2023-06-01`). Saída estruturada por **tool-use forçado** (uma tool `respond` cujo `input_schema` é o schema da skill). Modelo padrão `claude-haiku-4-5-20251001`. 401/403 ⇒ `blocked`; 429/5xx/529 ⇒ `transient`. |
+| `NotImplementedProvider` (`provider/not-implemented.ts`) | Só `openai` — `generateStructured` lança `AiUnavailableError(..., { reason: 'blocked' })`. |
+| `resolveProvider(override?)` (`provider/resolve.ts`) | Lê `system_config` `ai_assistant.provider` / `ai_assistant.model`; aceita `{ provider, model }` para sobrepor (ex.: prompt com provider próprio). A chave vem de `getProviderKey` (banco cifrado → env). Sem chave ⇒ `AiUnavailableError('… não configurada', { reason: 'blocked' })`. |
+| `getProviderKey` / `saveProviderKey` / `encryptSecret` / `decryptSecret` (`credentials.ts`) | Chave do provedor em `public.ai_credentials` cifrada com AES-256-GCM (segredo `AI_SECRET_KEY`: 32 bytes em base64, ou qualquer frase derivada por scrypt). Leitura via `service-db`; fallback para `GEMINI_API_KEY` / `ANTHROPIC_API_KEY` / `OPENAI_API_KEY`. Sem `AI_SECRET_KEY` ⇒ `AiUnavailableError` blocked. |
 | `AiSkill` + `registerSkill` / `getSkill` / `listSkillContexts` (`skill.ts`)                                                          | Uma skill empacota `{ key, context, loadContext?, buildPrompt, schema, validate, rateLimit? }`. O **app** registra as suas num módulo importado pelo bootstrap server. `context` agrupa skills para o liga/desliga.                                                                                                                                            |
-| `runSkill(skillKey, input, ctx)` (`run-skill.ts`)                                                                                    | Orquestrador: resolve a skill → checa o toggle `ai_assistant.contexts[skill.context]` (`=== false` desliga; ausente = ligado) → `checkRateLimit` opcional → `resolveProvider` → `loadContext` → `buildPrompt` → `provider.generateStructured` → `skill.validate`. Falha da IA vira `AiUnavailableError`; rate-limit local estourado vira `AiRateLimitedError`. |
+| `runSkill(skillKey, input, ctx, opts?)` (`run-skill.ts`)                                                                                    | Orquestrador: resolve a skill → checa o toggle `ai_assistant.contexts[skill.context]` (`=== false` desliga; ausente = ligado) → `checkRateLimit` opcional → `resolveProvider` → `loadContext` → `buildPrompt` → `provider.generateStructured` → `skill.validate`. Devolve `{ output, provider, model, usage }`; `opts` = `{ provider?, model?, temperature? }`. Falha da IA vira `AiUnavailableError`; rate-limit local estourado vira `AiRateLimitedError`. |
 | `checkRateLimit(key, max, windowMs)` (`rate-limit.ts`)                                                                               | In-memory, por processo. Persistência ⇒ [`../manutencao/todo-ai.md`](../manutencao/todo-ai.md).                                                                                                                                                                                                                                                                                                          |
 | `readSystemConfig<T>(key)` (`system-config.ts`)                                                                                      | Lê um valor de `auth.system_config` via PostgREST.                                                                                                                                                                                                                                                                                                             |
 | `AiUnavailableError`, `AiRateLimitedError`, `classifyAiError`, `isRecoverableAiError` (`errors.ts` + `@kizuna/core/shared/ai-error`) | `classifyAiError` é isomórfico (string matching puro) — server e client. `'blocked'` (sem retry) vs `'transient'` (vale tentar). `AiRateLimitedError extends AiUnavailableError` (`retryAfterSec?`): a rota checa antes → **429** em vez de 503, e o cliente não queima strike de degradação.                                                                  |
@@ -46,7 +48,7 @@ Máquina sticky por sessão (não persiste): `report` com `'blocked'` ⇒ `unava
 ## Client — `@kizuna/core/client/components/ai-assistant`
 
 `<AiAssistantConfigPage contexts={string[]} value onSave statusConfigured loading />` — tela de
-config (provedor `select` com `gemini` ativo e `openai`/`claude` desabilitados; `model` texto; um
+config (provedor `select` com `gemini` e `claude` ativos e `openai` desabilitado; `model` texto; um
 toggle por contexto). **O core não lê nem grava `system_config`** — recebe `value` e devolve a
 edição por `onSave` (o app faz 3 `submitResource` contra `system_config`). `statusConfigured ===
 false` (de `GET /api/ai/status`) mostra um aviso de chave ausente.
@@ -67,5 +69,40 @@ false` (de `GET /api/ai/status`) mostra um aviso de chave ausente.
 | `GEMINI_MODEL`   | —       | usado só quando `ai_assistant.model` não está setado (`resolveModel`: system_config → env → `gemini-3.6-flash`) |
 | `AI_TIMEOUT_MS`  | `18000` | timeout de uma chamada                                                                                          |
 
-A chave de API **nunca** entra em `system_config` — só env. `GET /api/ai/status` devolve
-`{ configured, provider }`, nunca a chave.
+A chave de API **nunca** entra em `system_config`: vem de env ou da tabela `ai_credentials` (cifrada). `GET /api/ai/status` devolve `{ configured, provider }`, nunca a chave.
+
+| Var | Nota |
+| --- | --- |
+| `AI_SECRET_KEY` | segredo de cifra das chaves gravadas no banco (obrigatório para `saveProviderKey`/ler chave do banco) |
+| `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` | fallback quando não há credencial ativa no banco |
+
+## Revisão de texto de anúncios — `@kizuna/core/server/ai` (`text-review/`)
+
+Skill `text_review` (contexto `text_review`, liga/desliga em `ai_assistant.contexts`) que sugere uma descrição revisada. **Nunca altera o anúncio**: grava uma linha `pending` em `service_text_revisions` para aprovação humana.
+
+| Peça | O quê |
+| --- | --- |
+| `loadReviewPrompt(categoryId)` / `renderTemplate` (`prompt-store.ts`) | Prompt ativo `service_description_review` de `ai_prompts` (override por categoria, senão global), cache de 30 s, fallback para o prompt embutido. Placeholders do template: `category`, `group`, `subcategories`, `fields`, `title`, `original` (entre chaves duplas). |
+| `buildServiceContext(serviceId)` (`context.ts`) | Categoria, grupo, subcategorias e respostas de `form_results` rotuladas pelo schema do formulário. |
+| `textReviewSkill` / `validateRevision` (`skill.ts`) | Schema `{ revised }`; valida não vazio, tamanho entre 0,4x e 2,5x do original, só as tags p, strong, em, ul, ol, li, br, a (sem atributos, exceto href http/https/mailto/tel no a) e diferente do original. |
+| `reviewService(serviceId, { runId, userId })` (`review-service.ts`) | Roda a skill e insere a revisão `pending` com provider, model, `prompt_version` e tokens. Se já existe `pending`, não gera outra (`skipped`). |
+| `runReviewBatch({ categoryId, limit, includeReviewed, userId, background })` (`run-batch.ts`) | Cria `ai_review_runs`, seleciona anúncios `active`/`pending` com descrição (exclui os com revisão `pending`/`approved`, salvo `includeReviewed`, que ainda nunca duplica `pending`), processa com concorrência 3, atualiza contadores a cada item, falha por item não aborta; erro `blocked` (sem chave, contexto desligado) aborta como `failed`. |
+
+### Credenciais, chaves e prompts
+
+- Chave por provedor: `saveProviderKey(provider, label, key)` cifra (AES-256-GCM, segredo `AI_SECRET_KEY`) e grava em `ai_credentials`, desativando a anterior do mesmo provedor; só `key_last4` é legível. `getProviderKey` lê banco e cai para a env. A coluna cifrada nunca sai do servidor (nem pelo recurso REST).
+- Prompts ficam em `ai_prompts` (editáveis na tela `/painel/root/ia`, aba Prompts); `version` sobe por trigger quando o texto muda e é gravada em cada revisão.
+
+### Fluxo de revisão e telas
+
+1. A categoria precisa de `ai_review = true` (flag na edição da categoria).
+2. `/painel/administracao/revisao-ia` (root, `ai_review.review` ou `ai_review.manage`): escolhe categoria, quantidade e "incluir já revisados" e dispara `POST /api/ai/review/run`. A rota valida a categoria, chama `runReviewBatch` com `background: true` e devolve `runId` (202); a tela acompanha por `GET /api/ai/review/runs/[id]` a cada 2,5 s. O processamento continua no processo Node após a resposta (requer runtime Node persistente, como o build standalone em Docker; em serverless puro o lote pode ser interrompido).
+3. Cancelar: `POST /api/ai/review/runs/[id]/cancel` marca o run como `cancelled`; o lote confere o status após cada anúncio e para.
+4. Revisão lado a lado: original (texto simples) à esquerda, revisado em editor editável à direita. Aplicar chama `POST /api/ai/review/revisions/[id]/apply` (corpo opcional com o texto editado) e rejeitar chama `.../reject`; ambas usam as RPCs `fn_service_revision_apply`/`fn_service_revision_reject` com o JWT do usuário. `POST /api/ai/review/apply-bulk` aplica várias sem edição.
+5. `/painel/root/ia` (root): abas Provedores e chaves (provedor/modelo padrão, contextos, chaves por provedor), Prompts (editar, testar em um anúncio sem gravar, override por categoria) e Execuções (progresso, tokens, cancelar). Teste: `POST /api/ai/prompts/test`.
+
+Componentes reutilizáveis: `@kizuna/core/client/components/ai-review` (`AiAdminScreen`, `AiReviewScreen`). O slot `ia` do `ROOT_SCREEN_REGISTRY` recebe `AiAdminScreen` por `slotComponents` na page do projeto.
+
+### Integração com robôs de importação
+
+Uma revisão `approved` é a descrição definitiva do anúncio. Importadores/robôs não devem sobrescrever `description` de serviço que tenha `service_text_revisions` com `status = 'approved'` (ver `docs/integracoes/cinema-depara.md`).

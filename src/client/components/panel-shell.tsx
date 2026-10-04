@@ -7,6 +7,7 @@ import { LogOut, X } from 'lucide-react';
 import { buttonVariants } from './ui/button';
 import { useAuth } from '../providers/auth-provider';
 import { cn } from '../../lib/utils';
+import type { PermissionActions } from '../../types/auth';
 import { MobileMenuButton } from './mobile-menu-button';
 import { PanelSidebarContext, type PanelSidebarControl } from './panel-sidebar-context';
 import { activeNavHref } from './panel-shell-active';
@@ -16,6 +17,8 @@ export type PanelNavIcon = ComponentType<{ className?: string }>;
 export type PanelNavAccessCondition = {
   /** Resource key from the JWT's `perms` claim — passes if `user.hasPerm(resource)` is true. */
   permResource?: string;
+  /** Ação do recurso conferida em `permResource` (padrão: `view`). Ex.: `review`, `manage`. */
+  permAction?: keyof PermissionActions;
   /** Passes if `user.is_root` — a different axis from `permResource`/`hasPerm`. */
   rootOnly?: boolean;
 };
@@ -63,7 +66,7 @@ export type PanelTopAction = {
 /** User shape needed to evaluate access — a subset of `useAuth()`'s `user`. */
 export type PanelNavAccessUser =
   | {
-      hasPerm?: (resource: string) => boolean;
+      hasPerm?: (resource: string, action?: keyof PermissionActions) => boolean;
       is_root?: boolean;
     }
   | null
@@ -82,7 +85,7 @@ export function isPanelNavItemAccessible(
   if (item.visibleIf && item.visibleIf.length > 0) {
     return item.visibleIf.some(
       (cond) =>
-        (!cond.permResource || (user?.hasPerm?.(cond.permResource) ?? false)) &&
+        (!cond.permResource || (user?.hasPerm?.(cond.permResource, cond.permAction) ?? false)) &&
         (!cond.rootOnly || (user?.is_root ?? false))
     );
   }

@@ -77,6 +77,7 @@ follow-ups (`0002_*.sql`, …) for data seeds or later migrations; the installer
   into its `postgrestRpcs`. The second page mode (e.g. "Pedir um serviço") is injected through
   `SearchPage`'s `requestMode` prop — the plugin knows nothing about demandas. No
   `auth.permissions` (public, read-only).
+- `ai_review/` — revisão de textos de anúncios por IA com aprovação humana. Tabelas `ai_credentials` (chave do provider cifrada no Node, `key_cipher` nunca legível por `auth_user`), `ai_prompts` (prompts versionados, override por categoria; seed `service_description_review`), `service_text_revisions` (original x proposto, `pending|approved|rejected`), `ai_review_runs` (lotes). RPCs `fn_service_revision_apply` / `fn_service_revision_reject`. A flag `categories.ai_review` vem do `taxonomy` 0004. Registra `ai_review.manage` e `ai_review.review`; o servidor (`service_role`) chama a IA e grava as revisões. Recursos: `screen-engine/resources/ai-review` (`resourceAiReview`, `rpcAiReview`).
 - `swipe/` — página pública `/descobrir` (deslizar itens da busca: curtir/passar) e `/curtidos`.
   `service_user_favorites` (1 linha por usuário+item, upsert, sem DELETE — descurtir é
   `fn_swipe_record(..., 'unlike')`, que grava `skip`; um `skip` comum nunca rebaixa um `like`).

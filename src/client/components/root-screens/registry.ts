@@ -30,6 +30,8 @@ export const ROOT_SCREEN_REGISTRY: Record<string, RootScreenEntry> = {
   plugins: { title: 'Plugins instalados', group: 'root', component: PluginsScreen },
   papeis: { title: 'Papéis e permissões', group: 'root', component: RolesManagerScreen },
   configuracoes: { title: 'Configurações', group: 'root', component: null },
+  // Slot: o app passa `AiAdminScreen` (core, components/ai-review) via slotComponents.
+  ia: { title: 'Inteligência artificial', group: 'root', component: null },
   'root-access-log': {
     title: 'Log de acesso root',
     group: 'security',

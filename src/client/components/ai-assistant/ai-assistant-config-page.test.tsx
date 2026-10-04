@@ -13,12 +13,12 @@ describe('AiAssistantConfigPage', () => {
     expect(screen.getByText('service-wizard')).toBeDefined();
   });
 
-  it('opções openai/claude aparecem desabilitadas', () => {
+  it('openai aparece desabilitada e claude habilitada', () => {
     render(<AiAssistantConfigPage contexts={[]} />);
     const openai = screen.getByRole('option', { name: /openai/i }) as HTMLOptionElement;
     const claude = screen.getByRole('option', { name: /claude/i }) as HTMLOptionElement;
     expect(openai.disabled).toBe(true);
-    expect(claude.disabled).toBe(true);
+    expect(claude.disabled).toBe(false);
   });
 
   it('mostra aviso quando statusConfigured é false', () => {

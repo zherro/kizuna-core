@@ -8,16 +8,24 @@
  */
 
 import { AiUnavailableError, isRecoverableAiError } from '../errors';
-import type { AiProvider, AiStructuredRequest } from './types';
+import type { AiProvider, AiStructuredRequest, AiStructuredResult } from './types';
 
 type GeminiPart = { text?: string };
 
 export class GeminiProvider implements AiProvider {
   readonly id = 'gemini' as const;
 
-  constructor(private readonly opts: { apiKey: string; model: string }) {}
+  readonly model: string;
+
+  constructor(private readonly opts: { apiKey: string; model: string }) {
+    this.model = opts.model;
+  }
 
   async generateStructured(req: AiStructuredRequest): Promise<Record<string, unknown>> {
+    return (await this.generateStructuredWithUsage(req)).output;
+  }
+
+  async generateStructuredWithUsage(req: AiStructuredRequest): Promise<AiStructuredResult> {
     const { apiKey, model } = this.opts;
 
     let res: Response;
@@ -49,6 +57,7 @@ export class GeminiProvider implements AiProvider {
 
     const data = (await res.json().catch(() => null)) as {
       candidates?: { content?: { parts?: GeminiPart[] } }[];
+      usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number };
       error?: { message?: string };
     } | null;
 
@@ -64,8 +73,16 @@ export class GeminiProvider implements AiProvider {
         .join('')
         .trim() ?? '';
 
+    const um = data?.usageMetadata;
+    const usage = um
+      ? {
+          tokensIn: Number(um.promptTokenCount ?? 0) || 0,
+          tokensOut: Number(um.candidatesTokenCount ?? 0) || 0,
+        }
+      : undefined;
+
     try {
-      return JSON.parse(raw) as Record<string, unknown>;
+      return { output: JSON.parse(raw) as Record<string, unknown>, usage, model };
     } catch {
       throw new AiUnavailableError('Resposta da IA em formato inesperado.');
     }

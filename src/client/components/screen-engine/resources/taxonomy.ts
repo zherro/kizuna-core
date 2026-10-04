@@ -30,7 +30,7 @@ export const resourceTaxonomy: Record<string, ResourceConfig> = {
     // the category's secondary ("also shows under") groups. `category_group_id` itself stays the
     // one primary/home group. See plugins/taxonomy/0003_taxonomy_group_link.sql.
     select:
-      'id,name,slug,description,icon,form_key,request_form_key,category_group_id,active,created_at,updated_at,categories_group_link(category_group_id)',
+      'id,name,slug,description,icon,form_key,request_form_key,category_group_id,ai_review,active,created_at,updated_at,categories_group_link(category_group_id)',
     primaryKey: 'id',
     defaultOrder: 'name',
     searchableColumns: ['name', 'description', 'slug'],
@@ -48,7 +48,7 @@ export const resourceTaxonomy: Record<string, ResourceConfig> = {
       const formKey = String(input.formKey ?? input.form_key ?? '').trim();
       const requestFormKey = String(input.requestFormKey ?? input.request_form_key ?? '').trim();
 
-      return {
+      const out: Record<string, unknown> = {
         name,
         description,
         slug,
@@ -58,6 +58,10 @@ export const resourceTaxonomy: Record<string, ResourceConfig> = {
         category_group_id: Number.isFinite(categoryGroupId) ? categoryGroupId : null,
         active,
       };
+      // PATCH regrava o registro inteiro: só inclui ai_review quando veio, para não zerar o flag.
+      const aiReviewRaw = input.aiReview ?? input.ai_review;
+      if (aiReviewRaw !== undefined) out.ai_review = parseActive(aiReviewRaw);
+      return out;
     },
     mapOutput: (record) => ({
       id: record.id,
@@ -68,6 +72,7 @@ export const resourceTaxonomy: Record<string, ResourceConfig> = {
       formKey: record.form_key ?? record.formKey ?? null,
       requestFormKey: record.request_form_key ?? record.requestFormKey ?? null,
       categoryGroupId: record.category_group_id ?? record.categoryGroupId ?? null,
+      aiReview: Boolean(record.ai_review ?? record.aiReview ?? false),
       extraGroupIds: Array.isArray(record.categories_group_link)
         ? (record.categories_group_link as Array<{ category_group_id: string | number }>).map(
             (link) => link.category_group_id

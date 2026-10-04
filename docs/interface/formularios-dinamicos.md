@@ -47,7 +47,8 @@ Cada `FormField` tem, entre outros:
 | Tipo                                                    | Valor da resposta                        | Observações                                                                           |
 | ------------------------------------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------- |
 | `text`, `email`, `url`, `phone`, `password`, `textarea` | `string`                                 |                                                                                       |
-| `number`, `decimal`, `currency`                         | `number` (ou `''` se limpo)              | `number` usa passo 1; os demais 0,01.                                                 |
+| `number`, `decimal`                                     | `number` (ou `''` se limpo)              | `number` usa passo 1; `decimal` 0,01.                                                 |
+| `currency`                                              | `number` (ou `''` se limpo)              | Máscara R$ enquanto digita (centavos da direita para a esquerda); salva o número.     |
 | `date`, `time`, `datetime`                              | `string` (valor do input HTML)           |                                                                                       |
 | `select`, `radio`                                       | `string`                                 | Usam `options` ou `optionsSource`.                                                    |
 | `multiselect`                                           | `string[]`                               | Idem.                                                                                 |

@@ -14,6 +14,7 @@ import { Button } from '../ui/button';
 import { Tooltip } from '../ui/tooltip';
 import { ChoiceChips } from './choice-chips';
 import { cn, resolveLucideIcon } from '../../../lib/utils';
+import { formatCurrencyMask, parseCurrencyMask } from '../../../lib/shared/currency-mask';
 import { useResourceOptions } from '../../hooks/use-resource-options';
 import {
   DEFAULT_GRID,
@@ -206,9 +207,27 @@ function BaseField({
           readOnly={readOnly}
         />
       );
+    case 'currency': {
+      // Máscara R$ enquanto digita (centavos da direita p/ esquerda); o valor salvo continua número.
+      const amount = typeof value === 'number' ? value : value === '' || value == null ? null : Number(value);
+      return withLabel(
+        adornInput(
+          <Input
+            id={commonId}
+            type="text"
+            inputMode="numeric"
+            className={Icon ? 'pl-9' : undefined}
+            placeholder={field.placeholder ?? 'R$ 0,00'}
+            value={amount == null || !Number.isFinite(amount) ? '' : formatCurrencyMask(amount)}
+            onChange={(e) => onChange(parseCurrencyMask(e.target.value) ?? '')}
+            disabled={disabled}
+            readOnly={readOnly}
+          />
+        )
+      );
+    }
     case 'number':
     case 'decimal':
-    case 'currency':
       return withLabel(
         adornInput(
           <Input

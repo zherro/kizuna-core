@@ -23,6 +23,8 @@ export type TaxonomyCategory = {
    * flow for entities in this category. Buyer-facing sibling of `formKey`. */
   requestFormKey?: string | null;
   categoryGroupId: string | number | null;
+  /** Plugin ai_review: os textos dos anúncios desta categoria entram na revisão por IA. */
+  aiReview?: boolean;
   /** Secondary groups this category also shows under (plugins/taxonomy/0003_taxonomy_group_link.sql)
    * — does NOT change `categoryGroupId` (the primary/home group a service inherits at creation). */
   extraGroupIds: Array<string | number>;

@@ -62,6 +62,9 @@ a materializa num projeto e mantém projeto ↔ core alinhados. Ver **`docs/come
     through the `fn_service_moderate` RPC).
     `resources/analytics` (`resourceAnalytics` — `analytics_events`, read-only; `rpcAnalytics` —
     `fn_analytics_track`, public write with optional session; the `analytics` plugin owns them).
+    `resources/ai-review` (`resourceAiReview` — `ai_credentials` (sem `key_cipher`) / `ai_prompts` /
+    `service_text_revisions` / `ai_review_runs`; `rpcAiReview` — `fn_service_revision_apply` /
+    `fn_service_revision_reject`; the `ai_review` plugin owns them).
     `resources/agenda-config` (`resourceAgendaConfig` — `agenda_schedule` / `agenda_schedule_hours` /
     `agenda_booking_preferences` / `agenda_notification_preferences`; the `agenda` plugin v1.1.0 owns
     them, a consuming project spreads `resourceAgendaConfig` into its `postgrestResources`).

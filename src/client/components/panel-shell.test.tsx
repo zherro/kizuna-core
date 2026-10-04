@@ -39,6 +39,24 @@ describe('isPanelNavItemAccessible', () => {
     );
   });
 
+  it('permAction confere a ação do recurso (ex.: ai_review.review sem view)', () => {
+    const item = {
+      visibleIf: [
+        { rootOnly: true },
+        { permResource: 'ai_review', permAction: 'review' as const },
+        { permResource: 'ai_review', permAction: 'manage' as const },
+      ],
+    };
+    const has = (granted: string[]) => ({
+      is_root: false,
+      hasPerm: (r: string, a = 'view') => granted.includes(`${r}.${a}`),
+    });
+    expect(isPanelNavItemAccessible(item, has(['ai_review.review']))).toBe(true);
+    expect(isPanelNavItemAccessible(item, has(['ai_review.manage']))).toBe(true);
+    expect(isPanelNavItemAccessible(item, has(['ai_review.view']))).toBe(false);
+    expect(isPanelNavItemAccessible(item, has([]))).toBe(false);
+  });
+
   it('visibleIf presente ignora permResource/rootOnly do próprio item', () => {
     const item = { rootOnly: true, visibleIf: [{ permResource: 'forms' }] };
     expect(isPanelNavItemAccessible(item, { hasPerm: (r) => r === 'forms', is_root: false })).toBe(
