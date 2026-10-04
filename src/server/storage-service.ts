@@ -234,6 +234,7 @@ async function uploadSingleFilePostgres(args: {
   let finalName = file.name;
   let dimensions: { width: number; height: number } | null = null;
   let thumb: { buffer: Buffer; width: number | null; height: number | null } | null = null;
+  let optimizedAt: string | null = null;
 
   // Imagem: sharp no próprio servidor (redimensiona por `purpose`, converte para WebP) + miniatura.
   if (args.input.optimizeImages && mimeType && mimeType.startsWith(IMAGE_MIME_PREFIX)) {
@@ -246,6 +247,7 @@ async function uploadSingleFilePostgres(args: {
       finalBuffer = optimized.image.buffer;
       finalMime = optimized.image.mimeType;
       finalName = file.name.replace(/\.[^.]+$/, '') + '.webp';
+      optimizedAt = new Date().toISOString();
       if (optimized.image.width && optimized.image.height) {
         dimensions = { width: optimized.image.width, height: optimized.image.height };
       }
@@ -279,6 +281,7 @@ async function uploadSingleFilePostgres(args: {
     thumb_size_bytes: thumb ? thumb.buffer.length : null,
     thumb_width: thumb?.width ?? null,
     thumb_height: thumb?.height ?? null,
+    optimized_at: optimizedAt,
     purpose,
     active: true,
   };

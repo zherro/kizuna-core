@@ -5,6 +5,7 @@
     "src/app/api/storage/files/route.ts": "managed",
     "src/app/api/storage/files/[id]/route.ts": "managed",
     "src/app/api/storage/files/[id]/content/route.ts": "managed",
-    "src/app/api/public/storage/files/[id]/content/route.ts": "managed"
+    "src/app/api/public/storage/files/[id]/content/route.ts": "managed",
+    "src/app/api/storage/admin/route.ts": "managed"
   }
 }

@@ -116,6 +116,27 @@ answers with the optimized WebP bytes (`X-Image-Width`/`X-Image-Height` headers)
 Import from `@kizuna/core/server/image` (not `@kizuna/core/server`) so projects that don't handle
 images never load sharp.
 
+## Root: storage screen (`/painel/root/storage`)
+
+Root-only screen (`root-screens/storage-screen.tsx`, slug `storage` in `root-screens/registry.ts`)
+to bring **existing** images up to date: lists `public.files` images (filter: not optimized /
+optimized / all, and by `purpose`), mark images and optimize the marked ones, or optimize every
+pending one in batches with progress, bytes saved and failures.
+
+- "Not optimized" = `files.optimized_at IS NULL` (migration `storage/0006`). Upload sets it when the
+  image goes through `optimizeImage`; rows written straight to the database (e.g. a robot import)
+  start pending.
+- Re-optimizing (`reoptimizeStoredImage`, `@kizuna/core/server/storage-admin`) rewrites the **same
+  row** (same `id`, no reference changes): large version by the `purpose` preset + thumbnail. The
+  large version is only replaced when it gets smaller (or has fewer pixels — above the preset);
+  otherwise the file stays and only the thumbnail is added. `optimized_at` is set either way.
+  Unsupported formats (HEIC…) are skipped and stay pending.
+- Runs as `service_role` (`POSTGREST_SERVICE_TOKEN`, `kizuna token service`) — the root session
+  can't pass the owner-only UPDATE policy. Missing token → 503 with the message.
+- API (managed route of the storage plugin): `src/app/api/storage/admin/route.ts` →
+  `createStorageAdminHandlers()`. `GET ?status=pending|optimized|all&purpose=&limit=&offset=` →
+  `{ items, total }`; `POST { ids }` (max 10 per call) → `{ results }`. Both check `is_root`.
+
 ## `ImageGalleryManager` (`client/components/storage/image-gallery-manager.tsx`)
 
 Client component (`'use client'`). Generic image gallery: upload, preview, remove. Ported from the
