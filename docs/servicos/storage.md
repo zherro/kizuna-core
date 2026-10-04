@@ -69,21 +69,31 @@ DELETE /api/storage/files/:id             soft delete
 
 Display in a component: `<img src={`/api/storage/files/${id}/content`} />`.
 
-## Image optimization — `optimizeImageBuffer` (`server/image-optimizer.ts`)
+## Image optimization — `optimizeImage` (`server/image/`)
 
-TinyPNG (`tinify`), server-side, applied automatically on upload when `optimizeImages` is set and
-the MIME type starts with `image/`.
+sharp (libvips) on the server itself: free, no quota, no network round trip. Applied automatically
+on upload when `optimizeImages` is set: fixes EXIF rotation, strips metadata (GPS included),
+resizes by preset and converts to WebP. The preset comes from the upload `purpose`:
+
+| `purpose` | Preset | Result |
+| --- | --- | --- |
+| `avatar` | `avatar` | 512×512 cover, WebP q80 |
+| `ad_image` / `listing` | `listing` | up to 1600px, WebP q80 |
+| anything else | `default` | up to 2048px, WebP q82 |
 
 ```ts
-const { buffer, optimized, reason } = await optimizeImageBuffer({
-  input: Buffer,
-  mimeType: 'image/jpeg' | 'image/png' | 'image/webp',
-  strict: false,
-});
-// strict:false → returns the original buffer on failure; strict:true → throws
+import { optimizeImage } from '@kizuna/core/server/image';
+const { buffer, mimeType, width, height, optimized } = await optimizeImage(input, 'image/jpeg', 'listing');
 ```
 
-Env: `TINYPNG_API_KEY` or `TINIFY_API_KEY`. Non-image files skip optimization.
+Unsupported format or a sharp failure returns the original untouched (`optimized: false`).
+
+**As an API:** `src/app/api/images/optimize/route.ts` →
+`export const POST = createImageOptimizeHandler({ maxFileSizeMb: 20 })`. Multipart `{ file, preset? }`,
+answers with the optimized WebP bytes (`X-Image-Width`/`X-Image-Height` headers).
+
+Import from `@kizuna/core/server/image` (not `@kizuna/core/server`) so projects that don't handle
+images never load sharp.
 
 ## `ImageGalleryManager` (`client/components/storage/image-gallery-manager.tsx`)
 

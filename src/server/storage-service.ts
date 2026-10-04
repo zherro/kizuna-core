@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { optimizeImageBuffer } from './image-optimizer';
+import { optimizeImage, presetForPurpose } from './image';
 import { readImageDimensions } from './image-dimensions';
 import { pgrstTable } from './postrest/conn';
 
@@ -213,31 +213,36 @@ async function uploadSingleFilePostgres(args: {
   }
 
   const originalBuffer = Buffer.from(await file.arrayBuffer());
-  let finalBuffer: any = originalBuffer;
+  let finalBuffer: Buffer = originalBuffer;
+  let finalMime = mimeType;
+  let finalName = file.name;
+  let dimensions: { width: number; height: number } | null = null;
 
+  // Imagem: sharp no próprio servidor (redimensiona por `purpose`, converte para WebP).
   if (args.input.optimizeImages && mimeType && mimeType.startsWith(IMAGE_MIME_PREFIX)) {
-    const optimized = await optimizeImageBuffer({
-      input: originalBuffer,
-      mimeType,
-      strict: false,
-    });
-    finalBuffer = optimized.buffer;
+    const optimized = await optimizeImage(originalBuffer, mimeType, presetForPurpose(purpose));
+    if (optimized.optimized) {
+      finalBuffer = optimized.buffer;
+      finalMime = optimized.mimeType;
+      finalName = file.name.replace(/\.[^.]+$/, '') + '.webp';
+      if (optimized.width && optimized.height) {
+        dimensions = { width: optimized.width, height: optimized.height };
+      }
+    }
   }
 
-  const storagePath = makeStoragePath(purpose, file.name);
+  const storagePath = makeStoragePath(purpose, finalName);
 
-  // Dimensões lidas do cabeçalho do arquivo original (antes da otimização — o TinyPNG
-  // preserva as dimensões). Formato não-imagem / desconhecido → null, sem quebrar o upload.
-  const dimensions =
-    mimeType && mimeType.startsWith(IMAGE_MIME_PREFIX)
-      ? readImageDimensions(originalBuffer, mimeType)
-      : null;
+  // Sem otimização, as dimensões vêm do cabeçalho do arquivo original.
+  if (!dimensions && mimeType && mimeType.startsWith(IMAGE_MIME_PREFIX)) {
+    dimensions = readImageDimensions(originalBuffer, mimeType);
+  }
 
   const payload = {
-    original_name: file.name,
+    original_name: finalName,
     storage_path: storagePath,
     public_url: null,
-    mime_type: mimeType,
+    mime_type: finalMime,
     size_bytes: finalBuffer.length,
     width: dimensions?.width ?? null,
     height: dimensions?.height ?? null,
