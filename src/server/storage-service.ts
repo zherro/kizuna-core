@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { optimizeImage, presetForPurpose } from './image';
+import { optimizeImageWithThumbnail, presetForPurpose } from './image';
 import { readImageDimensions } from './image-dimensions';
 import { pgrstTable } from './postrest/conn';
 
@@ -13,11 +13,21 @@ export type StorageFileRecord = {
   sizeBytes: number;
   width: number | null;
   height: number | null;
+  /** Tem miniatura (`/content?size=thumb`)? Sem ela a rota devolve a imagem grande. */
+  hasThumb: boolean;
   purpose: string;
   active: boolean;
   createdAt: string | null;
   updatedAt: string | null;
 };
+
+/** Versão do conteúdo: `full` (padrão) ou `thumb` — sem miniatura gravada, cai na `full`. */
+export type FileContentSize = 'full' | 'thumb';
+
+/** `?size=thumb` na URL da rota de conteúdo → `thumb`; qualquer outra coisa → `full`. */
+export function fileContentSizeFromRequest(request: Request): FileContentSize {
+  return new URL(request.url).searchParams.get('size') === 'thumb' ? 'thumb' : 'full';
+}
 
 export type UploadFileInput = {
   file: File;
@@ -39,7 +49,12 @@ export type StorageService = {
     errors: Array<{ fileName: string; message: string }>;
   }>;
   deleteFile: (args: { authHeader: string; id: string }) => Promise<boolean>;
-  getFileContent: (args: { authHeader: string; id: string; activeOnly?: boolean }) => Promise<{
+  getFileContent: (args: {
+    authHeader: string;
+    id: string;
+    activeOnly?: boolean;
+    size?: FileContentSize;
+  }) => Promise<{
     mimeType: string;
     originalName: string;
     content: Buffer;
@@ -135,6 +150,7 @@ function mapFileRecord(input: Record<string, unknown>): StorageFileRecord {
     sizeBytes: Number(input.size_bytes ?? 0),
     width: input.width === null || input.width === undefined ? null : Number(input.width),
     height: input.height === null || input.height === undefined ? null : Number(input.height),
+    hasThumb: input.thumb_width !== null && input.thumb_width !== undefined,
     purpose: String(input.purpose ?? 'other'),
     active: Boolean(input.active ?? true),
     createdAt: input.created_at ? String(input.created_at) : null,
@@ -151,7 +167,7 @@ async function listFilesPostgres(args: {
 }) {
   const query = new URLSearchParams({
     select:
-      'id,uid,original_name,storage_path,public_url,mime_type,size_bytes,width,height,purpose,active,created_at,updated_at',
+      'id,uid,original_name,storage_path,public_url,mime_type,size_bytes,width,height,thumb_width,purpose,active,created_at,updated_at',
     order: 'created_at.desc',
     limit: String(Math.max(1, Math.min(args.limit ?? 100, 200))),
   });
@@ -217,17 +233,29 @@ async function uploadSingleFilePostgres(args: {
   let finalMime = mimeType;
   let finalName = file.name;
   let dimensions: { width: number; height: number } | null = null;
+  let thumb: { buffer: Buffer; width: number | null; height: number | null } | null = null;
 
-  // Imagem: sharp no próprio servidor (redimensiona por `purpose`, converte para WebP).
+  // Imagem: sharp no próprio servidor (redimensiona por `purpose`, converte para WebP) + miniatura.
   if (args.input.optimizeImages && mimeType && mimeType.startsWith(IMAGE_MIME_PREFIX)) {
-    const optimized = await optimizeImage(originalBuffer, mimeType, presetForPurpose(purpose));
-    if (optimized.optimized) {
-      finalBuffer = optimized.buffer;
-      finalMime = optimized.mimeType;
+    const optimized = await optimizeImageWithThumbnail(
+      originalBuffer,
+      mimeType,
+      presetForPurpose(purpose)
+    );
+    if (optimized.image.optimized) {
+      finalBuffer = optimized.image.buffer;
+      finalMime = optimized.image.mimeType;
       finalName = file.name.replace(/\.[^.]+$/, '') + '.webp';
-      if (optimized.width && optimized.height) {
-        dimensions = { width: optimized.width, height: optimized.height };
+      if (optimized.image.width && optimized.image.height) {
+        dimensions = { width: optimized.image.width, height: optimized.image.height };
       }
+    }
+    if (optimized.thumb) {
+      thumb = {
+        buffer: optimized.thumb.buffer,
+        width: optimized.thumb.width,
+        height: optimized.thumb.height,
+      };
     }
   }
 
@@ -247,12 +275,16 @@ async function uploadSingleFilePostgres(args: {
     width: dimensions?.width ?? null,
     height: dimensions?.height ?? null,
     content: toPgBytea(finalBuffer),
+    thumb_content: thumb ? toPgBytea(thumb.buffer) : null,
+    thumb_size_bytes: thumb ? thumb.buffer.length : null,
+    thumb_width: thumb?.width ?? null,
+    thumb_height: thumb?.height ?? null,
     purpose,
     active: true,
   };
 
   const response = await pgrstTable(
-    '/files?select=id,uid,original_name,storage_path,public_url,mime_type,size_bytes,width,height,purpose,active,created_at,updated_at',
+    '/files?select=id,uid,original_name,storage_path,public_url,mime_type,size_bytes,width,height,thumb_width,purpose,active,created_at,updated_at',
     {
       method: 'POST',
       headers: {
@@ -322,23 +354,19 @@ async function deleteFilePostgres(args: { authHeader: string; id: string }) {
   return Boolean(rows[0]?.id);
 }
 
-async function getFileContentPostgres(args: {
+async function fetchFileColumn(args: {
   authHeader: string;
   id: string;
-  activeOnly?: boolean;
+  activeOnly: boolean;
+  column: 'content' | 'thumb_content';
 }) {
-  const cleanId = String(args.id ?? '').trim();
-  if (!UUID_RE.test(cleanId)) {
-    return null;
-  }
-
   const query = new URLSearchParams({
-    select: 'id,original_name,mime_type,content,active',
-    id: `eq.${cleanId}`,
+    select: `id,original_name,mime_type,${args.column},active`,
+    id: `eq.${args.id}`,
     limit: '1',
   });
 
-  if (args.activeOnly ?? true) {
+  if (args.activeOnly) {
     query.set('active', 'eq.true');
   }
 
@@ -361,7 +389,47 @@ async function getFileContentPostgres(args: {
   }
 
   const rows = (Array.isArray(payload) ? payload : []) as Array<Record<string, unknown>>;
-  const found = rows[0];
+  return rows[0] ?? null;
+}
+
+async function getFileContentPostgres(args: {
+  authHeader: string;
+  id: string;
+  activeOnly?: boolean;
+  size?: FileContentSize;
+}) {
+  const cleanId = String(args.id ?? '').trim();
+  if (!UUID_RE.test(cleanId)) {
+    return null;
+  }
+  const activeOnly = args.activeOnly ?? true;
+
+  // Miniatura primeiro (só a coluna dela, pra não trafegar a imagem grande junto); sem miniatura,
+  // cai na versão grande.
+  if (args.size === 'thumb') {
+    const row = await fetchFileColumn({
+      authHeader: args.authHeader,
+      id: cleanId,
+      activeOnly,
+      column: 'thumb_content',
+    });
+    if (!row) return null;
+    const thumb = fromPgBytea(row.thumb_content);
+    if (thumb) {
+      return {
+        mimeType: 'image/webp',
+        originalName: String(row.original_name ?? `file-${cleanId}`),
+        content: thumb,
+      };
+    }
+  }
+
+  const found = await fetchFileColumn({
+    authHeader: args.authHeader,
+    id: cleanId,
+    activeOnly,
+    column: 'content',
+  });
   if (!found) return null;
 
   const content = fromPgBytea(found.content);
@@ -393,7 +461,12 @@ class PostgresStorageService implements StorageService {
     return deleteFilePostgres(args);
   }
 
-  async getFileContent(args: { authHeader: string; id: string; activeOnly?: boolean }) {
+  async getFileContent(args: {
+    authHeader: string;
+    id: string;
+    activeOnly?: boolean;
+    size?: FileContentSize;
+  }) {
     return getFileContentPostgres(args);
   }
 }

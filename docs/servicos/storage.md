@@ -78,7 +78,7 @@ resizes by preset and converts to WebP. The preset comes from the upload `purpos
 | `purpose` | Preset | Result |
 | --- | --- | --- |
 | `avatar` | `avatar` | 512×512 cover, WebP q80 |
-| `ad_image` / `listing` | `listing` | up to 1600px, WebP q80 |
+| `ad_image` / `service_image` / `listing` | `listing` | up to 1600px, WebP q80 |
 | anything else | `default` | up to 2048px, WebP q82 |
 
 ```ts
@@ -87,6 +87,27 @@ const { buffer, mimeType, width, height, optimized } = await optimizeImage(input
 ```
 
 Unsupported format or a sharp failure returns the original untouched (`optimized: false`).
+
+### Thumbnails (`files.thumb_content`, migration `storage/0005`)
+
+Each image row also keeps a small version: WebP, up to **640px on the longest side**, aspect ratio
+kept (preset `thumb`, q75) — enough for a 260px card on a 2x screen, landscape photo or portrait
+movie poster alike. Same `id`, so no reference changes:
+
+```
+/api/public/storage/files/<id>/content             → full image (detail, lightbox, swipe)
+/api/public/storage/files/<id>/content?size=thumb  → thumbnail (cards, search, carousels, gallery)
+```
+
+No thumbnail stored (image already ≤ 640px, not an image, or uploaded before `0005`) → the route
+returns the full image. The upload creates both via `optimizeImageWithThumbnail` (the thumbnail is
+made from the already-optimized image). Client helpers: `fileUrl(id, 'thumb')` / `thumbUrl(id)`
+(`client/components/services/service-helpers.ts`); `StorageFileRecord.hasThumb` says whether one exists.
+
+Rules shared with the browser (no sharp) live in `src/shared/image`: `IMAGE_PRESETS`,
+`presetForPurpose`, `THUMB_MAX_SIDE`, `needsThumbnail`, `LOW_RESOLUTION_MIN_SIDE` (600) and
+`isLowResolution` — `ImageGalleryManager` warns after uploading a photo whose shorter side is
+below 600px (accepted, just flagged: upscaling would only add bytes, not detail).
 
 **As an API:** `src/app/api/images/optimize/route.ts` →
 `export const POST = createImageOptimizeHandler({ maxFileSizeMb: 20 })`. Multipart `{ file, preset? }`,
@@ -117,5 +138,5 @@ Props (`ImageGalleryManagerProps`):
 
 - Upload: `POST /api/storage/files` (multipart: `files`, `purpose`, `maxFileSizeMb`, `optimizeImages`).
 - Listing: `GET /api/storage/files?ids=&purpose=&active=true&limit=` → `{ items: StorageFileRecord[] }`.
-- Preview/thumbnail: `<Image src={`/api/storage/files/{id}/content`} />` (`next/image`, `unoptimized`).
+- Grid: `<Image src={`/api/storage/files/{id}/content?size=thumb`} />`; preview modal: full image (`next/image`, `unoptimized`).
 - Max 3 images. Remove calls `onPersist` with the shortened list.

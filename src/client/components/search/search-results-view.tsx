@@ -54,7 +54,7 @@ function toCardProps(r: ServiceResult, detailConfig?: ServiceDetailConfig | null
     cardStyle: isCinema ? ('cinema' as const) : ('default' as const),
     tagLabel: r.category,
     subtitleLabel: r.subcategory,
-    imageUrl: r.cover_file_id ? `/api/public/storage/files/${r.cover_file_id}/content` : null,
+    imageUrl: r.cover_file_id ? `/api/public/storage/files/${r.cover_file_id}/content?size=thumb` : null,
     locationLabel: formatLocationLabel(r),
     highlighted: r.sponsored,
     highlightLabel: 'Patrocinado',

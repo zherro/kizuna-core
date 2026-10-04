@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { AlertTriangle, CheckCircle2, Loader2, Trash2, Upload, X } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardDescription, CardHeader } from '../ui/card';
+import { isLowResolution, LOW_RESOLUTION_MIN_SIDE } from '../../../shared/image';
 
 type StorageFileRecord = {
   id: string;
@@ -115,6 +116,7 @@ export function ImageGalleryManager({
   const [busyDeleteIds, setBusyDeleteIds] = useState<Set<string>>(new Set());
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [warning, setWarning] = useState('');
   const [previewItem, setPreviewItem] = useState<StorageFileRecord | null>(null);
   const hydratedKeyRef = useRef('');
 
@@ -212,6 +214,7 @@ export function ImageGalleryManager({
     setUploading(true);
     setError('');
     setSuccess('');
+    setWarning('');
 
     try {
       const remainingSlots = Math.max(0, maxFiles - selectedIds.length);
@@ -274,6 +277,14 @@ export function ImageGalleryManager({
       if (errors.length > 0) {
         setError(errors.map((item) => `${item.fileName}: ${item.message}`).join(' | '));
       }
+
+      // Aceita, mas avisa: foto pequena fica borrada no detalhe do anúncio.
+      const lowRes = uploaded.filter((item) => isLowResolution(item.width, item.height));
+      if (lowRes.length > 0) {
+        setWarning(
+          `${lowRes.map((item) => item.originalName).join(', ')}: imagem pequena (menos de ${LOW_RESOLUTION_MIN_SIDE}px), pode ficar borrada. Se tiver, envie uma foto maior.`
+        );
+      }
     } catch {
       setError('Nao foi possivel realizar upload das imagens.');
     } finally {
@@ -316,6 +327,13 @@ export function ImageGalleryManager({
           <div className="flex items-start gap-2 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/70 dark:bg-red-950/40 dark:text-red-300">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
             <p>{error}</p>
+          </div>
+        ) : null}
+
+        {warning ? (
+          <div className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-900/70 dark:bg-amber-950/40 dark:text-amber-300">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+            <p>{warning}</p>
           </div>
         ) : null}
 
@@ -384,7 +402,7 @@ export function ImageGalleryManager({
 
                 const thumb = isImage ? (
                   <Image
-                    src={`/api/storage/files/${item.id}/content`}
+                    src={`/api/storage/files/${item.id}/content?size=thumb`}
                     alt={item.originalName}
                     width={112}
                     height={112}

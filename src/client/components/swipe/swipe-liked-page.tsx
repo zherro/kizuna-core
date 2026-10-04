@@ -124,7 +124,7 @@ function SwipeLikedInner({ discoverHref = '/descobrir' }: Props) {
           <div key={i.uid} className="relative overflow-hidden rounded-[var(--ui-radius-card,1rem)] border-[length:var(--ui-border-w-card,1px)] border-border shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] bg-card">
             <Link href={`/anuncios/${i.uid}`}>
               {coverUrl(i.cover_file_id) ? (
-                <img src={coverUrl(i.cover_file_id)!} alt={i.title} className="h-32 w-full object-cover" loading="lazy" />
+                <img src={coverUrl(i.cover_file_id, 'thumb')!} alt={i.title} className="h-32 w-full object-cover" loading="lazy" />
               ) : (
                 <div className="h-32 w-full bg-muted" />
               )}

@@ -88,7 +88,11 @@ export {
 
 export { pgrstTable, pgrstRpc } from './postrest/conn';
 export { isOnboardingCompletedServer } from './onboarding';
-export { getStorageService } from './storage-service';
+export {
+  getStorageService,
+  fileContentSizeFromRequest,
+  type FileContentSize,
+} from './storage-service';
 export { handleSearchChat } from './search';
 export { apiError } from './api-error';
 export { isCaptchaEnabled, verifyCaptcha, type VerifyCaptchaResult } from './captcha';

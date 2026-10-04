@@ -1,21 +1,23 @@
 import sharp from 'sharp';
 import { getSession } from '../auth';
+import { IMAGE_PRESETS, needsThumbnail, type ImagePreset } from '../../shared/image';
+
+export {
+  IMAGE_PRESETS,
+  isLowResolution,
+  LOW_RESOLUTION_MIN_SIDE,
+  needsThumbnail,
+  presetForPurpose,
+  THUMB_MAX_SIDE,
+  type ImagePreset,
+  type ImagePresetConfig,
+} from '../../shared/image';
 
 /**
  * Otimização de imagens no próprio servidor com sharp (libvips) — grátis, sem limite e sem rede.
  * Corrige a rotação do EXIF, tira metadados (inclui GPS), redimensiona e converte para WebP.
  * Usado pelo upload (`storage-service`) e exposto como API por `createImageOptimizeHandler`.
  */
-
-export type ImagePreset = 'avatar' | 'listing' | 'default';
-
-type PresetConfig = { width: number; height: number; fit: 'cover' | 'inside'; quality: number };
-
-export const IMAGE_PRESETS: Record<ImagePreset, PresetConfig> = {
-  avatar: { width: 512, height: 512, fit: 'cover', quality: 80 },
-  listing: { width: 1600, height: 1600, fit: 'inside', quality: 80 },
-  default: { width: 2048, height: 2048, fit: 'inside', quality: 82 },
-};
 
 const SUPPORTED = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/gif']);
 
@@ -29,13 +31,6 @@ export type OptimizedImage = {
 
 export function isOptimizableImage(mimeType?: string | null): boolean {
   return !!mimeType && SUPPORTED.has(mimeType.toLowerCase());
-}
-
-/** `purpose` do upload → preset (avatar → avatar; foto de anúncio → listing; resto → default). */
-export function presetForPurpose(purpose?: string | null): ImagePreset {
-  if (purpose === 'avatar') return 'avatar';
-  if (purpose === 'ad_image' || purpose === 'listing') return 'listing';
-  return 'default';
 }
 
 /** Otimiza; se o formato não for suportado ou o sharp falhar, devolve o original intacto. */
@@ -65,6 +60,27 @@ export async function optimizeImage(
     console.error('[image] optimize_failed', error instanceof Error ? error.message : error);
     return original;
   }
+}
+
+export type OptimizedImageWithThumbnail = {
+  image: OptimizedImage;
+  /** `null` quando a imagem já cabe na miniatura (a rota `?size=thumb` devolve a própria) ou não
+   * deu pra otimizar. */
+  thumb: OptimizedImage | null;
+};
+
+/** Versão grande (pelo `preset`) + miniatura (preset `thumb`), as duas em WebP. A miniatura sai
+ * da versão grande já otimizada (menos trabalho que reprocessar o original) e só é gerada se a
+ * imagem for maior que ela. */
+export async function optimizeImageWithThumbnail(
+  input: Buffer,
+  mimeType: string | null,
+  preset: ImagePreset = 'default'
+): Promise<OptimizedImageWithThumbnail> {
+  const image = await optimizeImage(input, mimeType, preset);
+  if (!image.optimized || !needsThumbnail(image.width, image.height)) return { image, thumb: null };
+  const thumb = await optimizeImage(image.buffer, image.mimeType, 'thumb');
+  return { image, thumb: thumb.optimized ? thumb : null };
 }
 
 /**

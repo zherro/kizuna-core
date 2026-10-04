@@ -1,8 +1,16 @@
 import { PRICE_UNIT_LABEL } from './service-labels';
 import type { ServiceRecord } from './service-type';
 
-export function fileUrl(id: string | number) {
-  return `/api/public/storage/files/${id}/content`;
+/** URL pública do arquivo. `size: 'thumb'` → miniatura (até 640px, para cards/listas); sem
+ * miniatura gravada, a rota devolve a imagem grande. */
+export function fileUrl(id: string | number, size: 'full' | 'thumb' = 'full') {
+  const base = `/api/public/storage/files/${id}/content`;
+  return size === 'thumb' ? `${base}?size=thumb` : base;
+}
+
+/** Atalho de `fileUrl(id, 'thumb')` — imagem em card, busca, carrossel. */
+export function thumbUrl(id: string | number) {
+  return fileUrl(id, 'thumb');
 }
 
 /** First image url for a service's card/hero — `extras.coverFileId`, falling back to the first of
