@@ -23,6 +23,20 @@ export type RoleRow = {
 
 export type RoleGrantRow = { role_id: number; permission_id: number };
 
+/**
+ * Um item do menu do painel do projeto, só com o que a tela de papéis precisa (serializável — sem
+ * ícone). O projeto passa a MESMA lista que monta a barra lateral (`PanelNavGroup[]` achatada), pra
+ * tela mostrar cada permissão com os nomes dos menus que ela libera.
+ */
+export type RolesMenuItem = {
+  title: string;
+  group?: string;
+  /** Recurso de `auth.permissions` que libera o item (`hasPerm(resource)`). */
+  permResource?: string;
+  /** Só root vê — não depende de perfil. */
+  rootOnly?: boolean;
+};
+
 export type TenantUserRow = {
   user_id: string;
   display_name: string | null;
