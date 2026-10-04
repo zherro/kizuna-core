@@ -396,7 +396,7 @@ export function PanelShellBase({
           <nav className="panel-menu-scroll flex flex-1 flex-col gap-6 overflow-y-auto px-3 py-4">
             {visibleNavigationGroups.map((group, groupIndex) => (
               <div
-                key={group.title}
+                key={`${groupIndex}:${group.title}`}
                 className={cn('space-y-2', groupIndex > 0 && 'border-t border-border pt-6')}
               >
                 <p
