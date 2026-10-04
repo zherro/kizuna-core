@@ -5,6 +5,7 @@ import {
   getRoleOverview,
   getRoles,
   groupPermissions,
+  type RolesMenuItem,
 } from './rbac-data';
 import { RolesMatrix } from './roles-matrix';
 
@@ -16,8 +17,12 @@ import { RolesMatrix } from './roles-matrix';
  * Root não usa papéis (acesso total) e aparece só como coluna informativa. As mudanças valem no
  * próximo login de cada usuário (as permissões vão no token da sessão).
  * The `is_root` gate itself lives in `resolveRootScreen`, not here.
+ *
+ * `menu`: os itens do menu do painel do projeto (a mesma lista da barra lateral) — cada módulo
+ * mostra os menus que libera, com os mesmos nomes; menus só-root e menus cujo recurso não tem
+ * permissão no catálogo aparecem numa lista à parte. Sem `menu`, só o catálogo técnico.
  */
-export async function RolesManagerScreen() {
+export async function RolesManagerScreen({ menu = [] }: { menu?: RolesMenuItem[] } = {}) {
   const [permissions, roles, grants, overview] = await Promise.all([
     getPermissionsCatalog(),
     getRoles(),
@@ -45,6 +50,7 @@ export async function RolesManagerScreen() {
           groups={groupPermissions(permissions)}
           initialGrants={grants}
           overview={overview}
+          menu={menu}
         />
       )}
     </div>

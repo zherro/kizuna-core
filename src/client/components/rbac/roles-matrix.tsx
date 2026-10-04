@@ -9,7 +9,13 @@ import { Checkbox } from '../ui/checkbox';
 import { Input } from '../ui/input';
 import { cn } from '../../../lib/utils';
 import { callRbacRpc } from './rbac-rpc';
-import type { PermissionRow, RoleGrantRow, RoleOverviewRow, RoleRow } from './rbac-data';
+import type {
+  PermissionRow,
+  RoleGrantRow,
+  RoleOverviewRow,
+  RoleRow,
+  RolesMenuItem,
+} from './rbac-data';
 
 type PermissionGroup = { resource: string; items: PermissionRow[] };
 
@@ -18,6 +24,8 @@ type Props = {
   groups: PermissionGroup[];
   initialGrants: RoleGrantRow[];
   overview: RoleOverviewRow[];
+  /** Menu do painel do projeto — ver `RolesMenuItem`. */
+  menu?: RolesMenuItem[];
 };
 
 const key = (roleId: number, permId: number) => `${roleId}:${permId}`;
@@ -68,7 +76,7 @@ function plural(n: number, one: string, many: string) {
  * `fn_rbac__set_role_grant`. Os cartões do topo mostram quantos usuários cada perfil tem hoje,
  * por tipo de tenant (`fn_rbac__role_overview`), para a tela refletir a quem a regra se aplica.
  */
-export function RolesMatrix({ roles, groups, initialGrants, overview }: Props) {
+export function RolesMatrix({ roles, groups, initialGrants, overview, menu = [] }: Props) {
   const { user } = useAuth();
   const { success, error } = useToast();
   const isRoot = user?.is_root === true;
@@ -94,6 +102,27 @@ export function RolesMatrix({ roles, groups, initialGrants, overview }: Props) {
     return map;
   }, [overview]);
 
+  // Menus do painel por recurso de permissão — mesmos nomes da barra lateral.
+  const menusByResource = useMemo(() => {
+    const map = new Map<string, string[]>();
+    for (const item of menu) {
+      if (item.rootOnly || !item.permResource) continue;
+      const list = map.get(item.permResource) ?? [];
+      if (!list.includes(item.title)) list.push(item.title);
+      map.set(item.permResource, list);
+    }
+    return map;
+  }, [menu]);
+  const catalogResources = useMemo(() => new Set(groups.map((g) => g.resource)), [groups]);
+  const rootOnlyMenus = useMemo(() => menu.filter((item) => item.rootOnly), [menu]);
+  const uncatalogedMenus = useMemo(
+    () =>
+      menu.filter(
+        (item) => !item.rootOnly && item.permResource && !catalogResources.has(item.permResource)
+      ),
+    [menu, catalogResources]
+  );
+
   const visibleGroups = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return groups;
@@ -101,9 +130,10 @@ export function RolesMatrix({ roles, groups, initialGrants, overview }: Props) {
       (g) =>
         g.resource.toLowerCase().includes(q) ||
         humanizeResource(g.resource).toLowerCase().includes(q) ||
+        (menusByResource.get(g.resource) ?? []).some((t) => t.toLowerCase().includes(q)) ||
         g.items.some((p) => (p.name ?? '').toLowerCase().includes(q))
     );
-  }, [groups, query]);
+  }, [groups, query, menusByResource]);
 
   async function toggle(role: RoleRow, perm: PermissionRow) {
     const k = key(role.id, perm.id);
@@ -192,8 +222,8 @@ export function RolesMatrix({ roles, groups, initialGrants, overview }: Props) {
         <Input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Buscar módulo..."
-          aria-label="Buscar módulo"
+          placeholder="Buscar módulo ou menu..."
+          aria-label="Buscar módulo ou menu"
           className="pl-9"
         />
       </div>
@@ -237,6 +267,16 @@ export function RolesMatrix({ roles, groups, initialGrants, overview }: Props) {
                       <span className="ml-2 font-mono text-[10px] font-normal text-muted-foreground">
                         {group.resource}
                       </span>
+                      {menusByResource.get(group.resource)?.length ? (
+                        <div className="mt-1 flex flex-wrap items-center gap-1 font-normal">
+                          <span className="text-[11px] text-muted-foreground">Menus:</span>
+                          {menusByResource.get(group.resource)!.map((title) => (
+                            <Badge key={title} variant="secondary" className="text-[10px] font-normal">
+                              {title}
+                            </Badge>
+                          ))}
+                        </div>
+                      ) : null}
                     </td>
                   </tr>
                   {group.items.map((perm) => (
@@ -290,6 +330,60 @@ export function RolesMatrix({ roles, groups, initialGrants, overview }: Props) {
           </tbody>
         </table>
       </div>
+
+      {uncatalogedMenus.length > 0 || rootOnlyMenus.length > 0 ? (
+        <div className="grid gap-3 md:grid-cols-2">
+          {uncatalogedMenus.length > 0 ? (
+            <MenuList
+              title="Menus sem permissão no catálogo"
+              description="O recurso destes menus não tem permissão cadastrada em auth.permissions — só o root vê. Rode as migrations do plugin ou ajuste o permResource do menu."
+              items={uncatalogedMenus}
+              showResource
+            />
+          ) : null}
+          {rootOnlyMenus.length > 0 ? (
+            <MenuList
+              title="Menus só do root"
+              description="Não dependem de perfil: aparecem apenas para contas root."
+              items={rootOnlyMenus}
+            />
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function MenuList({
+  title,
+  description,
+  items,
+  showResource = false,
+}: {
+  title: string;
+  description: string;
+  items: RolesMenuItem[];
+  showResource?: boolean;
+}) {
+  return (
+    <div className="rounded-[var(--ui-radius-card-compact,0.75rem)] border-[length:var(--ui-border-w-card,1px)] border-border bg-card p-4 shadow-[shadow:var(--ui-shadow-item,0_0_#0000)]">
+      <p className="text-sm font-semibold text-foreground">{title}</p>
+      <p className="mt-1 text-xs text-muted-foreground">{description}</p>
+      <ul className="mt-3 flex flex-wrap gap-1.5">
+        {items.map((item) => (
+          <li key={`${item.group ?? ''}:${item.title}`}>
+            <Badge variant="outline" className="text-[11px] font-normal">
+              {item.group ? `${item.group} › ` : ''}
+              {item.title}
+              {showResource && item.permResource ? (
+                <span className="ml-1 font-mono text-[10px] text-muted-foreground">
+                  {item.permResource}
+                </span>
+              ) : null}
+            </Badge>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
