@@ -18,7 +18,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '../ui/sheet';
-import { getStoredLocation } from '../../hooks/use-user-location';
+import { useUserLocation } from '../../hooks/use-user-location';
 import { LocationModal } from '../location-modal';
 import { cn } from '../../../lib/utils';
 import { AssistantIcon } from './assistant-icon';
@@ -26,6 +26,7 @@ import { LocationGate } from './location-gate';
 import { SearchChat } from './search-chat';
 import { SearchFiltersPanel } from './search-filters-panel';
 import { SearchResultsView, type ResultsScope } from './search-results-view';
+import { regionGroupsFor, type RegionConfig, type RegionGroup } from '../../../shared/regions';
 import type { ServiceDetailConfig } from '../services/detail/category-style';
 import type { EventRule } from '../../../shared/analytics';
 import {
@@ -83,7 +84,12 @@ export type SearchPageProps = {
    * assistente e deixa só a busca por texto + filtros. Padrão `true`.
    */
   aiEnabled?: boolean;
+  /** `regions` do kizuna.config.json: sugere anúncios das cidades vizinhas abaixo dos resultados
+   * da cidade selecionada (que continua sendo o filtro principal). */
+  regions?: RegionConfig[];
 };
+
+const REGION_PAGE_SIZE = 12;
 
 export function SearchPage(props: SearchPageProps) {
   return (
@@ -114,8 +120,10 @@ function SearchPageInner({
   serviceDetailConfig,
   impressionRule,
   aiEnabled = true,
+  regions = [],
 }: SearchPageProps) {
-  const stored = getStoredLocation();
+  // A cidade do topo (seletor do header): reage na hora quando o usuário troca.
+  const { location: stored } = useUserLocation();
   const location = useMemo(
     () => ({
       state: stored?.stateCode ?? '',
@@ -155,6 +163,7 @@ function SearchPageInner({
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(false);
   const [scope, setScope] = useState<ResultsScope>('city');
+  const [regionResults, setRegionResults] = useState<Array<RegionGroup & { items: ServiceResult[] }>>([]);
   // corpo do RPC que "venceu" a cascata + seed dessa busca — a paginação continua da MESMA
   // consulta/ordem (novo seed a cada página traria duplicatas e ordem inconsistente).
   const effectiveBodyRef = useRef<SearchAdsBody | null>(null);
@@ -243,6 +252,8 @@ function SearchPageInner({
   );
 
   useEffect(() => {
+    // Sem cidade carregada ainda (1º render, antes de ler o seletor do topo): não busca sem cidade.
+    if (!location.state) return;
     const controller = new AbortController();
     const seed = Math.random() * 2 - 1;
     setLoading(true);
@@ -250,26 +261,20 @@ function SearchPageInner({
     (async () => {
       try {
         const base = toSearchAdsBody(seed);
+        setRegionResults([]);
         // 1) cidade + filtros
         let effective = base;
         let items = await runSearch(effective, controller.signal);
+        // A cidade do topo é fixa: os fallbacks abaixo afrouxam categoria/texto, nunca a cidade.
         let nextScope: ResultsScope = base.p_city_id ? 'city' : 'state';
 
-        // 2) sem cidade
-        if (items.length === 0 && base.p_city_id) {
-          effective = { ...base, p_city_id: null, p_city_ibge: null };
-          items = await runSearch(effective, controller.signal);
-          nextScope = 'state';
-        }
-        // 3) só estado + texto (larga grupo/categoria/subcategoria)
+        // 2) mesma cidade + texto (larga grupo/categoria/subcategoria)
         if (
           items.length === 0 &&
           (base.p_group_category_slug || base.p_category_id || base.p_subcategories)
         ) {
           effective = {
             ...base,
-            p_city_id: null,
-            p_city_ibge: null,
             p_group_category_slug: null,
             p_category_id: null,
             p_subcategories: null,
@@ -277,12 +282,10 @@ function SearchPageInner({
           items = await runSearch(effective, controller.signal);
           nextScope = 'related';
         }
-        // 4) larga também o texto — mostra o que houver no estado
+        // 3) larga também o texto — mostra o que houver na cidade
         if (items.length === 0 && base.p_query) {
           effective = {
             ...base,
-            p_city_id: null,
-            p_city_ibge: null,
             p_group_category_slug: null,
             p_category_id: null,
             p_subcategories: null,
@@ -317,6 +320,28 @@ function SearchPageInner({
         setRawResults(allItems);
         setScope(nextScope);
         setHasMore(moreAvailable);
+        setLoading(false);
+
+        // Região: mesmos filtros nas cidades vizinhas / sugeridas — seções abaixo da cidade.
+        const groups = regionGroupsFor(regions, base.p_city_ibge ?? base.p_city_id);
+        if (groups.length > 0) {
+          const loaded = await Promise.all(
+            groups.map(async (group) => {
+              const perCity = await Promise.all(
+                group.cities.map((city) =>
+                  runSearch(
+                    { ...base, p_city_id: Number(city), p_city_ibge: city, p_page: 0, p_page_size: REGION_PAGE_SIZE },
+                    controller.signal
+                  )
+                )
+              );
+              const seen = new Set(allItems.map((r) => r.uid));
+              const items = perCity.flat().filter((r) => !seen.has(r.uid) && !!seen.add(r.uid));
+              return { ...group, items: items.slice(0, REGION_PAGE_SIZE) };
+            })
+          );
+          if (!controller.signal.aborted) setRegionResults(loaded.filter((g) => g.items.length > 0));
+        }
       } catch {
         /* abort ou rede — mantém estado anterior */
       } finally {
@@ -329,7 +354,7 @@ function SearchPageInner({
     // direto/inicial. Se entrasse na dependência, o próprio `updatePageParam` do "carregar mais"
     // (que também escreve em `searchParams`) disparava esse efeito de novo a cada página.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bodyKey, runSearch, toSearchAdsBody]);
+  }, [bodyKey, runSearch, toSearchAdsBody, location.state, regions]);
 
   const loadMore = useCallback(async () => {
     const body = effectiveBodyRef.current;
@@ -428,6 +453,9 @@ function SearchPageInner({
     [searchParams, basePath]
   );
   const locationLabel = location.cityName || location.stateName || location.state;
+  // Cidade sem resultado mas com anúncios na região: mostra a região no lugar do "nenhum resultado".
+  const cityEmptyWithRegion =
+    !loading && (scope === 'empty' || results.length === 0) && regionResults.length > 0;
   const collapseBase =
     'grid transition-[grid-template-rows,opacity] duration-300 ease-out motion-reduce:transition-none';
 
@@ -660,7 +688,12 @@ function SearchPageInner({
 
       {/* Carrossel de anúncios (mobile) — prévia horizontal logo abaixo da busca; a listagem
           completa vem em seguida, na seção de conteúdo. */}
-      <section className="mx-auto w-full max-w-[1900px] px-4 pt-4 lg:hidden">
+      <section
+        className={cn(
+          'mx-auto w-full max-w-[1900px] px-4 pt-4 lg:hidden',
+          cityEmptyWithRegion && 'hidden'
+        )}
+      >
         <SearchResultsView
           results={results}
           loading={loading}
@@ -699,8 +732,14 @@ function SearchPageInner({
             </div>
           </aside>
 
-          {/* Resultados */}
-          <div className="min-w-0">
+          {/* Resultados: a cidade selecionada primeiro; depois a região (vizinhas e sugestões). */}
+          <div className="min-w-0 space-y-10">
+            {cityEmptyWithRegion ? (
+              <p className="rounded-[var(--ui-radius-card-sm,0.5rem)] border-[length:var(--ui-border-w-card,1px)] border-dashed border-border bg-card px-4 py-3 text-sm text-muted-foreground">
+                Nada em <span className="font-medium text-foreground">{locationLabel}</span> com
+                esses filtros ainda — veja o que tem por perto:
+              </p>
+            ) : (
             <SearchResultsView
               results={results}
               loading={loading}
@@ -716,6 +755,23 @@ function SearchPageInner({
               serviceDetailConfig={serviceDetailConfig}
               impressionRule={impressionRule}
             />
+            )}
+            {regionResults.map((group) => (
+              <SearchResultsView
+                key={group.key}
+                results={group.items}
+                loading={false}
+                scope="related"
+                stateName={location.state}
+                cityName={location.cityName}
+                layout="grid"
+                heading={group.title}
+                onClearFilters={resetFilters}
+                onChangeLocation={() => setLocationOpen(true)}
+                serviceDetailConfig={serviceDetailConfig}
+                impressionRule={impressionRule}
+              />
+            ))}
           </div>
         </div>
       </section>
@@ -871,16 +927,7 @@ function SearchPageInner({
 
       <LocationModal
         open={isLocationOpen}
-        onClose={() => {
-          setLocationOpen(false);
-          const loc = getStoredLocation();
-          if (loc)
-            setFilters({
-              state: loc.stateCode,
-              cityId: loc.cityId > 0 ? loc.cityId : null,
-              cityName: loc.cityName || null,
-            });
-        }}
+        onClose={() => setLocationOpen(false)}
       />
     </main>
   );

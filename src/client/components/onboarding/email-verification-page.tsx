@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@kizuna/core/client/components/ui/button';
 import {
@@ -12,7 +12,18 @@ import {
 } from '@kizuna/core/client/components/ui/card';
 import { Input } from '@kizuna/core/client/components/ui/input';
 import { Label } from '@kizuna/core/client/components/ui/label';
-import { CheckCircle2, Mail, ArrowLeft } from 'lucide-react';
+import { CheckCircle2, Mail } from 'lucide-react';
+import { PageHeader } from '../ui-better-soft/headers/page-header';
+import { readStorage, removeStorage, writeStorage } from '../../../lib/helper/local-storage.helper';
+
+// Espera entre pedidos de código, guardada no navegador: vale mesmo recarregando a página.
+const RESEND_KEY = 'kz-email-code-resend';
+const RESEND_SECONDS = 60;
+
+function secondsLeft(): number {
+  const until = readStorage<{ until?: number }>(RESEND_KEY)?.until;
+  return typeof until === 'number' ? Math.max(0, Math.ceil((until - Date.now()) / 1000)) : 0;
+}
 
 type EmailVerificationPageProps = {
   userEmail?: string;
@@ -26,6 +37,22 @@ export function EmailVerificationPage({ userEmail }: EmailVerificationPageProps)
   const [success, setSuccess] = useState<string | null>(null);
   const [codeRequested, setCodeRequested] = useState(false);
   const [verified, setVerified] = useState(false);
+  const [resendIn, setResendIn] = useState(0);
+
+  // Voltou à página dentro da espera: mostra direto o campo do código e o tempo restante.
+  useEffect(() => {
+    const left = secondsLeft();
+    if (left > 0) {
+      setCodeRequested(true);
+      setResendIn(left);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (resendIn <= 0) return;
+    const t = setTimeout(() => setResendIn(secondsLeft()), 1000);
+    return () => clearTimeout(t);
+  }, [resendIn]);
 
   const displayEmail = userEmail ? (
     <>
@@ -38,6 +65,7 @@ export function EmailVerificationPage({ userEmail }: EmailVerificationPageProps)
   );
 
   async function requestCode() {
+    if (secondsLeft() > 0) return;
     setError(null);
     setSuccess(null);
     setLoading(true);
@@ -45,6 +73,10 @@ export function EmailVerificationPage({ userEmail }: EmailVerificationPageProps)
       const response = await fetch('/api/onboarding/email/request-code', {
         method: 'POST',
       });
+      if (response.status === 401) {
+        router.push('/login?returnTo=/painel/verificar-email');
+        return;
+      }
       const data = (await response.json().catch(() => null)) as {
         message?: string;
         error?: string;
@@ -53,6 +85,8 @@ export function EmailVerificationPage({ userEmail }: EmailVerificationPageProps)
         setError(data?.error ?? 'Não foi possível enviar o código.');
         return;
       }
+      writeStorage(RESEND_KEY, { until: Date.now() + RESEND_SECONDS * 1000 });
+      setResendIn(RESEND_SECONDS);
       setCodeRequested(true);
       setSuccess(data?.message ?? 'Código enviado para seu e-mail.');
     } finally {
@@ -77,6 +111,10 @@ export function EmailVerificationPage({ userEmail }: EmailVerificationPageProps)
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code }),
       });
+      if (response.status === 401) {
+        router.push('/login?returnTo=/painel/verificar-email');
+        return;
+      }
 
       const data = (await response.json().catch(() => null)) as {
         message?: string;
@@ -87,6 +125,7 @@ export function EmailVerificationPage({ userEmail }: EmailVerificationPageProps)
         return;
       }
 
+      removeStorage(RESEND_KEY);
       setVerified(true);
       setEmailCode('');
       setSuccess(data?.message ?? 'E-mail verificado com sucesso!');
@@ -115,21 +154,12 @@ export function EmailVerificationPage({ userEmail }: EmailVerificationPageProps)
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8 md:px-6">
-      <button
-        onClick={() => router.back()}
-        className="inline-flex w-fit items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Voltar
-      </button>
-
-      <div>
-        <p className="text-sm font-medium uppercase tracking-[0.22em] text-primary">Step 2</p>
-        <h1 className="mt-2 text-2xl font-semibold tracking-tight">Verificação de e-mail</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Confirme seu e-mail para continuar o onboarding e ativar a plataforma.
-        </p>
-      </div>
+      <PageHeader
+        title="Verificação de e-mail"
+        description="Confirme que este e-mail é seu. Contato verificado libera avaliar, comentar e anunciar."
+        backHref="/painel/minha-conta"
+        backLabel="Minha conta"
+      />
 
       <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
         <CardHeader>
@@ -182,8 +212,12 @@ export function EmailVerificationPage({ userEmail }: EmailVerificationPageProps)
                 >
                   {loading ? 'Validando...' : 'Validar código'}
                 </Button>
-                <Button variant="outline" onClick={() => void requestCode()} disabled={loading}>
-                  {loading ? 'Enviando...' : 'Reenviar'}
+                <Button
+                  variant="outline"
+                  onClick={() => void requestCode()}
+                  disabled={loading || resendIn > 0}
+                >
+                  {loading ? 'Enviando...' : resendIn > 0 ? `Reenviar em ${resendIn}s` : 'Reenviar'}
                 </Button>
               </div>
             </>
@@ -200,7 +234,7 @@ export function EmailVerificationPage({ userEmail }: EmailVerificationPageProps)
                 size="lg"
                 className="w-full"
               >
-                {loading ? 'Enviando código...' : 'Começar verificação'}
+                {loading ? 'Enviando código...' : 'Enviar código'}
               </Button>
             </>
           )}
@@ -208,9 +242,24 @@ export function EmailVerificationPage({ userEmail }: EmailVerificationPageProps)
       </Card>
 
       <div className="rounded-[var(--ui-radius-card-sm,0.5rem)] border-[length:var(--ui-border-w-card,1px)] border-border/50 shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] bg-muted/20 p-4">
-        <p className="text-xs leading-relaxed text-muted-foreground">
-          <span className="font-medium">Dica:</span> O código de verificação expira em 10 minutos.
-          Se não recebeu, verifique sua pasta de spam ou solicite um novo código.
+        <p className="text-sm font-medium text-foreground">Como verificar</p>
+        <ol className="mt-2 list-decimal space-y-1.5 pl-5 text-sm text-muted-foreground">
+          <li>
+            Toque em <strong className="text-foreground">Enviar código</strong>: mandamos um código
+            de 6 dígitos para {displayEmail}.
+          </li>
+          <li>
+            Abra seu e-mail. Não chegou em 1 minuto? Procure nas pastas{' '}
+            <strong className="text-foreground">Spam</strong> e{' '}
+            <strong className="text-foreground">Promoções</strong>.
+          </li>
+          <li>
+            Digite o código aqui e toque em{' '}
+            <strong className="text-foreground">Validar código</strong>.
+          </li>
+        </ol>
+        <p className="mt-3 text-xs text-muted-foreground">
+          Pediu mais de um código? Vale sempre o último que chegou.
         </p>
       </div>
     </div>

@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { ListingResultCard } from '../../ui-better-soft/lists/listing-result-card';
 import type { ServiceResult } from '../../search/search-types';
-import { fileUrl, formatServicePrice } from '../service-helpers';
+import { thumbUrl, formatServicePrice } from '../service-helpers';
 import { serviceHref } from '../../../../shared/city-routing/city-slug';
 import { formatLocationLabel } from '../../search/format-location-label';
 import { resolveServiceDetailVariant, type ServiceDetailConfig } from './category-style';
@@ -72,7 +72,7 @@ export function ServiceCarousel({
                 cardStyle={isCinema ? 'cinema' : 'default'}
                 tagLabel={service.category}
                 subtitleLabel={service.subcategory}
-                imageUrl={service.cover_file_id ? fileUrl(service.cover_file_id) : null}
+                imageUrl={service.cover_file_id ? thumbUrl(service.cover_file_id) : null}
                 locationLabel={showCity ? formatLocationLabel(service) : null}
                 highlighted={service.sponsored}
                 highlightLabel="Patrocinado"

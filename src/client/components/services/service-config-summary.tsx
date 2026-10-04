@@ -79,7 +79,7 @@ export function ServiceConfigSummary({
                 className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-border"
               >
                 <Image
-                  src={`/api/storage/files/${id}/content`}
+                  src={`/api/storage/files/${id}/content?size=thumb`}
                   alt={`Foto ${index + 1}`}
                   fill
                   unoptimized

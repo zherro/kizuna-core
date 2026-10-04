@@ -14,7 +14,7 @@ export function TicketAttachments({ imageIds = [] }: { imageIds?: string[] }) {
             className="block overflow-hidden rounded-lg border border-border bg-muted/20"
           >
             <Image
-              src={`/api/storage/files/${id}/content`}
+              src={`/api/storage/files/${id}/content?size=thumb`}
               alt={`Anexo ${index + 1}`}
               width={160}
               height={160}

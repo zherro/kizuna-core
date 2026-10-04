@@ -174,4 +174,4 @@ export function defaultPriceUnitForCategory(categorySlug?: string | null): strin
 }
 
 /** `extras`/`ServiceRecord` helpers moved to `./service-helpers`; re-exported for back-compat. */
-export { fileUrl, coverImage, formatServicePrice } from './service-helpers';
+export { fileUrl, thumbUrl, coverImage, formatServicePrice } from './service-helpers';

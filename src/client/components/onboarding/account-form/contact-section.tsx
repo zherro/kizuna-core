@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { CheckCircle2, Clock, Mail, Smartphone } from 'lucide-react';
 import { cn } from '../../../../lib/utils';
@@ -26,7 +27,7 @@ type Props = {
   formik: AccountFormik;
   emailVerified: boolean;
   phoneVerified: boolean;
-  /** Chamado depois de verificar o celular — recarrega o nível da conta. */
+  /** Chamado depois de verificar o e-mail ou o celular — recarrega o nível da conta. */
   onVerified: () => void;
 };
 
@@ -66,6 +67,14 @@ export function ContactSection({ formik, emailVerified, phoneVerified, onVerifie
           <p className="mt-0.5 text-xs text-muted-foreground">
             É o e-mail de acesso da sua conta e não pode ser alterado aqui.
           </p>
+          {!emailVerified ? (
+            <Link
+              href="/painel/verificar-email"
+              className="mt-2 inline-flex h-9 items-center rounded-[var(--ui-radius-pill,0.375rem)] bg-primary px-3 text-sm font-medium text-primary-foreground hover:opacity-90"
+            >
+              Verificar meu e-mail
+            </Link>
+          ) : null}
         </div>
       </div>
 

@@ -27,6 +27,9 @@ export function ForgotPasswordPageContent({
   loginHref = '/login',
 }: ForgotPasswordPageProps) {
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  // Token do Turnstile é de uso único: após cada tentativa, `captchaKey` recria o widget para
+  // gerar outro — sem isso o botão ficava travado depois de um erro (ex.: senha errada).
+  const [captchaKey, setCaptchaKey] = useState(0);
   const [sent, setSent] = useState(false);
   const captchaRequired = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
 
@@ -47,6 +50,7 @@ export function ForgotPasswordPageContent({
         if (!response.ok) {
           setError(data.message || 'Nao foi possivel enviar o pedido.');
           setCaptchaToken(null);
+          setCaptchaKey((k) => k + 1);
           return;
         }
 
@@ -57,6 +61,8 @@ export function ForgotPasswordPageContent({
         );
       } catch {
         setError('Erro de conexao com o servidor.');
+        setCaptchaToken(null);
+        setCaptchaKey((k) => k + 1);
       }
     },
   });
@@ -104,7 +110,7 @@ export function ForgotPasswordPageContent({
 
           {!sent ? (
             <>
-              <TurnstileWidget onToken={setCaptchaToken} />
+              <TurnstileWidget key={captchaKey} onToken={setCaptchaToken} />
               <Button
                 type="submit"
                 className="w-full"

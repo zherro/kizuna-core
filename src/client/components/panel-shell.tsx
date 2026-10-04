@@ -492,7 +492,7 @@ export function PanelShellBase({
   return (
     <PanelSidebarContext.Provider value={sidebarControl}>
     <div
-      className="flex h-full min-h-0 overflow-hidden bg-muted/20"
+      className="flex h-full min-h-0 overflow-x-clip bg-muted/20"
       // Largura do menu fixo (w-24 / w-72) — barras `fixed` de telas filhas (rodapé do wizard)
       // começam depois dele em vez de ficarem por baixo.
       style={{ ['--panel-sidebar-w' as string]: collapsed ? '6rem' : '18rem' }}

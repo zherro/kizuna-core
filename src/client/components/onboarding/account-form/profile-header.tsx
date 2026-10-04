@@ -11,6 +11,8 @@ type Props = {
   displayName: string;
   avatarUrl: string;
   avatarUploading: boolean;
+  /** Progresso do envio da foto (0–100) ou null quando não há envio. */
+  avatarProgress?: number | null;
   avatarError: string | null;
   avatarInputRef: RefObject<HTMLInputElement | null>;
   onAvatarChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -25,6 +27,7 @@ export function ProfileHeader({
   displayName,
   avatarUrl,
   avatarUploading,
+  avatarProgress = null,
   avatarError,
   avatarInputRef,
   onAvatarChange,
@@ -75,11 +78,11 @@ export function ProfileHeader({
           <p className="truncate text-sm text-muted-foreground">
             {displayName ? `@${displayName}` : 'Escolha um nome de exibição'}
           </p>
-          <div className="mt-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs sm:justify-start">
+          <div className="mt-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-sm sm:justify-start">
             <button
               type="button"
               onClick={() => avatarInputRef.current?.click()}
-              className="font-medium text-primary hover:underline"
+              className="font-medium text-primary underline underline-offset-4 hover:opacity-80"
             >
               {avatarUrl ? 'Trocar foto' : 'Adicionar foto'}
             </button>
@@ -90,14 +93,30 @@ export function ProfileHeader({
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground"
               >
-                <ExternalLink className="h-3 w-3" />
+                <ExternalLink className="h-3.5 w-3.5" />
                 Ver perfil público
               </a>
             ) : null}
           </div>
-          <p className={cn('mt-1 text-xs', avatarError ? 'text-destructive' : 'text-muted-foreground')}>
-            {avatarError ?? 'JPG, PNG ou WebP, até 2 MB. A foto é salva na hora.'}
-          </p>
+          {avatarProgress !== null ? (
+            <div className="mx-auto mt-2 w-full max-w-[14rem] sm:mx-0" role="status" aria-live="polite">
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                <div
+                  className="h-full rounded-full bg-primary transition-[width] duration-200 ease-out"
+                  style={{ width: `${Math.round(avatarProgress)}%` }}
+                />
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {avatarProgress >= 100
+                  ? 'Foto atualizada!'
+                  : `Enviando foto... ${Math.round(avatarProgress)}%`}
+              </p>
+            </div>
+          ) : (
+            <p className={cn('mt-1 text-xs', avatarError ? 'text-destructive' : 'text-muted-foreground')}>
+              {avatarError ?? 'JPG, PNG ou WebP. Você ajusta o enquadramento antes de salvar.'}
+            </p>
+          )}
         </div>
 
         {levelStatus ? (

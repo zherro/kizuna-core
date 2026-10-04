@@ -9,6 +9,6 @@ no core e deixa o conteúdo específico (templates, prompts, rotas) no projeto c
 
 | Página                            | Cobre                                                                                         |
 | --------------------------------- | --------------------------------------------------------------------------------------------- |
-| [Storage & imagens](storage.md)   | `getStorageService()`, arquivos em `bytea` (plugin `storage`), `optimizeImageBuffer`, rotas.  |
+| [Storage & imagens](storage.md)   | `getStorageService()`, arquivos em `bytea` (plugin `storage`), `optimizeImage` (sharp), rotas.  |
 | [E-mail](email.md)                | Transporte nodemailer (`sendEmail` / `EmailTemplate`); templates ficam no app.               |
 | [IA](ai.md)                       | Plugin `ai_assistant`: provider sem SDK, skills, rate-limit e degradação graciosa.           |

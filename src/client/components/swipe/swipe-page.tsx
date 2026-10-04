@@ -268,7 +268,7 @@ function SwipePageInner({ basePath = '/descobrir', likedHref = '/curtidos' }: Pr
             {liked.map((e) => (
               <Link key={e.uid} href={`/anuncios/${e.uid}`} className="w-32 shrink-0">
                 {coverUrl(e.cover_file_id) ? (
-                  <img src={coverUrl(e.cover_file_id)!} alt={e.title} className="h-20 w-32 rounded-xl object-cover" loading="lazy" />
+                  <img src={coverUrl(e.cover_file_id, 'thumb')!} alt={e.title} className="h-20 w-32 rounded-xl object-cover" loading="lazy" />
                 ) : (
                   <div className="h-20 w-32 rounded-xl bg-muted" />
                 )}

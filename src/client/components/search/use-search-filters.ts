@@ -71,9 +71,11 @@ export function useSearchFilters(
   const filters = useMemo<SearchFilters>(() => {
     const sortParam = params.get('sort');
     return {
-      state: params.get('state')?.trim() || location.state,
-      cityId: parseIntOrNull(params.get('cityId')) ?? location.cityId,
-      cityName: params.get('cityName') || location.cityName,
+      // Cidade/estado vêm SEMPRE do seletor do topo (user_location) — nunca da URL, senão um link
+      // antigo ou compartilhado buscaria noutra cidade.
+      state: location.state,
+      cityId: location.cityId,
+      cityName: location.cityName,
       groupSlug: params.get('group') || null,
       categoryId: parseIntOrNull(params.get('categoryId')),
       subcategoryIds: parseIdList(params.get('subcategoryIds')),
@@ -84,15 +86,11 @@ export function useSearchFilters(
         ? sortParam
         : 'relevance') as SearchSort,
     };
-    // location entra só como fallback; params é o gatilho real de recomputo
   }, [params, location.state, location.cityId, location.cityName]);
 
   const writeUrl = useCallback(
     (next: SearchFilters) => {
       const sp = new URLSearchParams();
-      if (next.state) sp.set('state', next.state);
-      if (next.cityId) sp.set('cityId', String(next.cityId));
-      if (next.cityName) sp.set('cityName', next.cityName);
       if (next.groupSlug) sp.set('group', next.groupSlug);
       if (next.categoryId) sp.set('categoryId', String(next.categoryId));
       if (next.subcategoryIds.length) sp.set('subcategoryIds', next.subcategoryIds.join(','));

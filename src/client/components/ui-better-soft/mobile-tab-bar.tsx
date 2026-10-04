@@ -123,8 +123,8 @@ export function MobileTabBar({ items, guestItems, hideOn = [], className }: Mobi
                 {item.featured ? (
                   <span
                     className={cn(
-                      '-mt-6 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg ring-4 ring-background',
-                      '[&>svg]:h-6 [&>svg]:w-6'
+                      '-mt-3.5 flex h-[2.16rem] w-[2.16rem] items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg ring-4 ring-background',
+                      '[&>svg]:h-[1.08rem] [&>svg]:w-[1.08rem]'
                     )}
                   >
                     {item.icon}
