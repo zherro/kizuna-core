@@ -39,6 +39,11 @@ export {
   type OtpRequestBody,
   type OtpVerifyBody,
 } from './otp-handlers';
+export {
+  buildEmailVerificationEmail,
+  createEmailVerifyConfirmHandler,
+  createEmailVerifyRequestHandler,
+} from './email-verification';
 export { registerOtpProvider, isPhoneLoginEnabled, logOtpProvider } from './otp/registry';
 export {
   hasServiceAccess,

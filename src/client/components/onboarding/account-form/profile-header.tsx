@@ -75,11 +75,11 @@ export function ProfileHeader({
           <p className="truncate text-sm text-muted-foreground">
             {displayName ? `@${displayName}` : 'Escolha um nome de exibição'}
           </p>
-          <div className="mt-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs sm:justify-start">
+          <div className="mt-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-sm sm:justify-start">
             <button
               type="button"
               onClick={() => avatarInputRef.current?.click()}
-              className="font-medium text-primary hover:underline"
+              className="font-medium text-primary underline underline-offset-4 hover:opacity-80"
             >
               {avatarUrl ? 'Trocar foto' : 'Adicionar foto'}
             </button>
@@ -90,7 +90,7 @@ export function ProfileHeader({
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground"
               >
-                <ExternalLink className="h-3 w-3" />
+                <ExternalLink className="h-3.5 w-3.5" />
                 Ver perfil público
               </a>
             ) : null}
