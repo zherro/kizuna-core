@@ -1,8 +1,9 @@
 {
   "owner": "swipe",
-  "_comment": "Páginas /descobrir (swipe público sobre os itens da busca, com o filtro do /busca) e /curtidos (protegida). Requer os plugins search, services, taxonomy, user_data, reviews, location e system_config. Registre `resourceServiceReactions` em postgrestResources (src/lib/server/resources.ts): `service_reactions` grava curtir/passar (upsert) e alimenta os botões Gostei/Favoritar do detalhe do anúncio (config serviceDetail.reactions); `liked_services` lista os curtidos. Sem funções próprias no banco.",
+  "_comment": "Páginas /descobrir (swipe público sobre os itens da busca, com o filtro do /busca) e /curtidos (protegida); /painel/favoritos é a mesma tela de curtidos dentro do painel (permissão favorites/view). Requer os plugins search, services, taxonomy, user_data, reviews, location e system_config. Registre `resourceServiceReactions` em postgrestResources (src/lib/server/resources.ts): `service_reactions` grava curtir/passar (upsert) e alimenta os botões Gostei/Favoritar do detalhe do anúncio (config serviceDetail.reactions); `liked_services` lista os curtidos. Sem funções próprias no banco.",
   "files": {
     "src/app/descobrir/page.tsx": "managed",
-    "src/app/curtidos/page.tsx": "managed"
+    "src/app/curtidos/page.tsx": "managed",
+    "src/app/painel/favoritos/page.tsx": "managed"
   }
 }
