@@ -23,7 +23,12 @@ base; `nova-tela-screen-engine`, `novo-wizard`, `criar-recurso` e `criar-plugin`
 3. **Recurso novo primeiro tenta a rota genérica.** Antes de escrever uma rota `/api/xxx/*` à
    mão, veja se um `ResourceConfig` em `postgrestResources` já resolve — ver skill `criar-recurso`
    e `kizuna-core/docs/arquitetura/api.md`. Só crie rota custom quando o `mapInput` genérico realmente não dá
-   conta (upload de arquivo, sync N:N sem endpoint em lote, upsert de chave composta sem id).
+   conta (upload de arquivo, sync N:N sem endpoint em lote).
+4. **Resource primeiro, função SQL só se não tiver outro jeito.** Consulta, filtro, join
+   (embed `tabela!inner(...)`), paginação e upsert (`upsertOn`) se resolvem com `ResourceConfig`
+   + RLS. Nada de `fn_*` para fazer uma consulta ou gravar uma linha. Função só para o que o
+   PostgREST não faz: operação atômica em várias tabelas, busca/ranking pesado, ou acesso que a
+   RLS não consegue expressar (`SECURITY DEFINER`).
 4. **PATCH pelo recurso genérico reconstrói o registro inteiro.** `updateResource()` roda
    `mapInput` sobre o corpo todo e regrava todas as colunas, usando default pra qualquer campo
    omitido — não é partial update. Toda tela/wizard que salva em passos precisa de

@@ -100,7 +100,7 @@ export const postgrestResources = {
 
 Nunca inline um config direto no `index.ts` — sempre num `resource-<dominio>.ts` e spread.
 
-**RPC** em vez de tabela → `postgrestRpcs` no mesmo `index.ts`:
+**RPC** em vez de tabela (último recurso — só quando embed/filtro/`upsertOn`/RLS não resolvem; ver regra 4 do `padrao-de-projeto`) → `postgrestRpcs` no mesmo `index.ts`:
 `fn_x: { schema: 'public', requiresAuth: false }`. O POST `/api/resources/fn_x` vira
 `executeRpcResource` automaticamente (via `isRpcResource`).
 
