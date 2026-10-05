@@ -252,12 +252,23 @@ export async function createResource(resource: string, request: Request) {
     }
   }
 
+  const schemaHeaders = getSchemaHeaders(config, 'POST');
+  const upsert = config.upsertOn
+    ? `&on_conflict=${encodeURIComponent(config.upsertOn)}`
+    : '';
   const response = await pgrstTable(
-    `/${config.table}?select=${encodeURIComponent(config.select)}`,
+    `/${config.table}?select=${encodeURIComponent(config.select)}${upsert}`,
     {
       method: 'POST',
       headers: {
-        ...getSchemaHeaders(config, 'POST'),
+        ...schemaHeaders,
+        ...(config.upsertOn
+          ? {
+              Prefer: [schemaHeaders.Prefer, 'resolution=merge-duplicates']
+                .filter(Boolean)
+                .join(','),
+            }
+          : {}),
       },
       body: JSON.stringify(mappedInput),
     },

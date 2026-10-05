@@ -6,7 +6,7 @@ description: Plugin search — RPC fn_search_services, filtro de local por ender
 
 Busca pública de serviços: RPC `fn_search_services` (`SECURITY DEFINER`, chamável por `anon`) e a
 página `/busca`. Versão atual: **1.1.0** (`plugins/search/0002_search_addresses.sql`). Depende de
-[`services`](services.md) 1.2.0 ou superior. `fn_swipe_deck` e `fn_swipe_liked` (plugin `swipe`)
+[`services`](services.md) 1.2.0 ou superior. o deck do plugin `swipe`
 devolvem as mesmas colunas de local.
 
 ## Parâmetros de filtro
@@ -35,7 +35,7 @@ O resultado continua com uma linha por serviço (semi-join, sem `JOIN` que dupli
 
 Anúncios com `services.expires_at` no passado não entram na busca nem no deck do swipe
 (`expires_at IS NULL OR expires_at > now()`, aplicado junto de `active` e `status`). Requer
-`services` 1.3.0. As curtidas (`fn_swipe_liked`) não aplicam o filtro: o histórico continua visível.
+`services` 1.3.0. As curtidas (`liked_services`) não aplicam o filtro: o histórico continua visível.
 
 ## Colunas retornadas
 

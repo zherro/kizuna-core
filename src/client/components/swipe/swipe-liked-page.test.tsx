@@ -14,12 +14,8 @@ const createMockItems = (count: number, startIdx: number = 0) =>
   }));
 
 const api = vi.hoisted(() => ({
-  fetchLiked: vi.fn(async (before: string | null, pageSize: number) => {
-    if (before === null) {
-      // First page: return 24 items
-      return createMockItems(24, 0);
-    }
-    // Subsequent pages: return items that come after the cursor
+  fetchLiked: vi.fn(async (page: number, _pageSize: number) => {
+    if (page === 1) return createMockItems(24, 0);
     return [];
   }),
   recordSwipe: vi.fn(async () => {}),
@@ -78,7 +74,7 @@ describe('SwipeLikedPage', () => {
     await waitFor(() => expect(screen.queryByText('Pintor')).toBeNull());
   });
 
-  it('pagina com cursor baseado em liked_at', async () => {
+  it('pagina por número de página', async () => {
     // First page: 24 items
     api.fetchLiked.mockResolvedValueOnce(createMockItems(24, 0));
     // Second page (after load more): should be called with the liked_at of the last item
@@ -101,15 +97,15 @@ describe('SwipeLikedPage', () => {
     const loadMoreBtn = screen.getByText('Carregar mais');
     fireEvent.click(loadMoreBtn);
 
-    // Verify fetchLiked was called with the liked_at of the last remaining item (Item 23)
+    // "Ver mais" pede a página seguinte
     await waitFor(() => {
-      expect(api.fetchLiked).toHaveBeenCalledWith('2026-09-02', 24);
+      expect(api.fetchLiked).toHaveBeenCalledWith(2, 24);
     });
   });
 
   it('erro ao carregar mostra mensagem e "Tentar de novo" recarrega', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    api.fetchLiked.mockRejectedValueOnce(new Error('fn_swipe_liked 500'));
+    api.fetchLiked.mockRejectedValueOnce(new Error('liked_services 500'));
     api.fetchLiked.mockResolvedValueOnce([
       { uid: 'u1', title: 'Pintor', price: null, price_type: 'quote', category: 'Casa', cover_file_id: null, liked_at: '2026-09-25' },
     ]);
@@ -143,6 +139,6 @@ describe('SwipeLikedPage', () => {
     expect(screen.queryByText(/Entre para ver seus curtidos/)).toBeNull();
     await waitFor(() => expect(screen.queryByText('fake-login')).toBeNull());
     expect(api.fetchLiked).toHaveBeenCalledTimes(1);
-    expect(api.fetchLiked).toHaveBeenCalledWith(null, 24);
+    expect(api.fetchLiked).toHaveBeenCalledWith(1, 24);
   });
 });

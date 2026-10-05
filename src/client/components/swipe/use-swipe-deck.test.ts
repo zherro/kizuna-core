@@ -106,7 +106,7 @@ describe('useSwipeDeck', () => {
 
   it('falha ao carregar expõe error, não marca exhausted e não entra em loop', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    api.fetchDeck.mockRejectedValueOnce(new Error('fn_swipe_deck 500'));
+    api.fetchDeck.mockRejectedValueOnce(new Error('deck 500'));
     const { result } = renderHook(() => useSwipeDeck({ baseBody, filterKey: 'a', loggedIn: true }));
     await waitFor(() => expect(result.current.error).toBe(true));
     expect(result.current.loading).toBe(false);

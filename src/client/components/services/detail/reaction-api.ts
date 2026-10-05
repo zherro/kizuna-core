@@ -18,21 +18,20 @@ export async function fetchReaction(serviceUid: string): Promise<Reaction> {
   }
 }
 
-/** Grava o estado completo (update regrava o registro todo). Descobre POST x PATCH relendo a linha. */
+/** Grava o estado completo — POST é upsert por (usuário, anúncio) no `service_reactions`. */
 export async function saveReaction(
   serviceUid: string,
   next: { liked: boolean; favorite: boolean }
 ): Promise<Reaction> {
-  const current = await fetchReaction(serviceUid);
-  const body = JSON.stringify({ serviceUid, liked: next.liked, favorite: next.favorite });
-  const res = await fetch(
-    current.uid ? `/api/resources/service_reactions/${current.uid}` : '/api/resources/service_reactions',
-    { method: current.uid ? 'PATCH' : 'POST', headers: { 'Content-Type': 'application/json' }, body }
-  );
+  const res = await fetch('/api/resources/service_reactions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ serviceUid, liked: next.liked, favorite: next.favorite }),
+  });
   if (!res.ok) throw new Error(`service_reactions ${res.status}`);
   const data = (await res.json().catch(() => null)) as { item?: Item } | null;
   return {
-    uid: data?.item?.uid ?? current.uid,
+    uid: data?.item?.uid ?? null,
     liked: next.liked || next.favorite,
     favorite: next.favorite,
   };

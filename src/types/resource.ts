@@ -26,6 +26,11 @@ export type ResourceConfig = {
   listRequiresAuth?: boolean;
   returnRepresentation?: boolean;
   returnCountPreferDisabled?: boolean;
+  /**
+   * POST vira upsert: colunas do conflito (ex. `'user_id,service_uid'`). Se a linha já existe, os
+   * campos enviados a atualizam (`on_conflict` + `Prefer: resolution=merge-duplicates`).
+   */
+  upsertOn?: string;
   select: string;
   primaryKey: string;
   defaultOrder?: string;

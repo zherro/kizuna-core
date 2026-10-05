@@ -32,18 +32,18 @@ function SwipeLikedInner({ discoverHref = '/descobrir' }: Props) {
   const userId = user?.user_id ?? null;
   const requireAuth = useRequireAuth();
   const [items, setItems] = useState<LikedItem[]>([]);
-  const [cursor, setCursor] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(false);
   const [error, setError] = useState(false);
   const [attempt, setAttempt] = useState(0);
 
-  const load = useCallback(async (c: string | null) => {
+  const load = useCallback(async (p: number) => {
     setLoading(true);
     setError(false);
     try {
-      const batch = await fetchLiked(c, PAGE_SIZE);
-      setItems((prev) => (c === null ? batch : [...prev, ...batch]));
+      const batch = await fetchLiked(p, PAGE_SIZE);
+      setItems((prev) => (p === 1 ? batch : [...prev, ...batch]));
       setHasMore(batch.length === PAGE_SIZE);
     } catch (err) {
       console.warn('[swipe] falha ao carregar curtidos', err);
@@ -55,20 +55,15 @@ function SwipeLikedInner({ discoverHref = '/descobrir' }: Props) {
 
   useEffect(() => {
     if (!userId) return; // só busca com sessão (anônimo levaria 401)
-    void load(cursor);
-  }, [userId, cursor, attempt, load]);
+    void load(page);
+  }, [userId, page, attempt, load]);
 
   const unlike = (uid: string) => {
     setItems((prev) => prev.filter((i) => i.uid !== uid));
     recordSwipe([uid], 'unlike').catch((err) => console.warn('[swipe] falha ao descurtir', err));
   };
 
-  const loadMore = () => {
-    const lastItem = items[items.length - 1];
-    if (lastItem) {
-      setCursor(lastItem.liked_at);
-    }
-  };
+  const loadMore = () => setPage((p) => p + 1);
 
   if (authLoading) {
     return <div className="p-10 text-center text-sm text-muted-foreground">Carregando…</div>;
@@ -83,7 +78,7 @@ function SwipeLikedInner({ discoverHref = '/descobrir' }: Props) {
           <button
             type="button"
             // a lista carrega quando o usuário aparece no contexto; a ação só garante a 1ª página
-            onClick={() => requireAuth(() => setCursor(null))}
+            onClick={() => requireAuth(() => setPage(1))}
             className="mt-4 inline-block rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground"
           >
             Entrar
