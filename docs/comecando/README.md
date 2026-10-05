@@ -52,10 +52,14 @@ node kizuna-core/cli db migrate --db-url "..."             # só as migrations p
 git add kizuna-core kizuna.lock src/ && git commit -m "chore: bump kizuna-core"
 ```
 
-* **managed** (proxy, rotas de API, catch-all): `update` faz fast-forward se você não editou;
+* **managed** (proxy, rotas de API, login, páginas por cidade, anúncio, painel, IA — a casca
+  genérica): `update` faz fast-forward se você não editou;
   senão mostra o diff.
-* **seed** (`// EXEMPLO` — layout, home, painel, `globals.css`): nunca são tocados. `update`
-  **lista** os que mudaram no core; `--reseed "<paths>"` (ou `--reseed all`) sobrescreve.
+* **seed** (layout, componentes da home, painel, `globals.css`): se você **não mexeu**, o `update` aplica a versão nova sozinho (hash em `kizuna.lock`); se **customizou**, não toca e lista no fim da saída. `--reseed "<paths>"` sobrescreve esses; `--reseed all` não atropela customizados.
+* **install** (imagens/ícones, artes de login/cadastro, páginas de conteúdo como sobre/termos/
+  privacidade e a home `app/page.tsx`): copiados só quando faltam (`install` ou `update`). Nem
+  `--reseed all` nem `install --force` sobrescrevem; para pegar a versão do core, apague o
+  arquivo e rode `update`.
 * **Recomeçar do zero** (se só editou o `.env`): apague `src`, `package.json`, …, `kizuna.lock` e
   rode `cli install --force`.
 
@@ -68,5 +72,5 @@ node kizuna-core/cli sync                  # empurra melhorias da SUA casca pro 
 node kizuna-core/cli lock                  # marca versão como "vista" sem aplicar
 ```
 
-Referência completa dos comandos, do `kizuna.lock` e das estratégias managed/seed/merge:
+Referência completa dos comandos, do `kizuna.lock` e das estratégias managed/seed/install/merge:
 [CLI](cli.md).

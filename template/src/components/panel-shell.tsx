@@ -1,123 +1,53 @@
 'use client';
 
-// EXEMPLO — este é o menu do painel. Edite `navigationGroups` e `branding`
+// EXEMPLO — casca do painel. O menu (`navigationGroups`) fica em ./panel-nav.ts; edite `branding`
 // conforme o seu app. Os links abaixo apontam só para telas que o kizuna-core
 // já entrega (resolvidas por /painel/[...kizuna] e /painel/root|security/[slug]).
 import {
-  Blocks,
-  CalendarDays,
-  FileText,
-  FlaskConical,
-  FolderTree,
-  GitFork,
   Home,
-  KeyRound,
   LayoutGrid,
-  LockKeyhole,
-  Network,
-  NotebookPen,
-  Settings,
   UserCircle,
-  UserCog,
 } from 'lucide-react';
-import { PanelShellBase, type PanelNavGroup } from '@kizuna/core/client/components/panel-shell';
+import { usePathname } from 'next/navigation';
+import cfg from '@/../kizuna.config.json';
+import {
+  PanelShellBase,
+  type PanelTopAction,
+} from '@kizuna/core/client/components/panel-shell';
+import { navigationGroups } from './panel-nav';
+import { OpenTicketsBadge } from '@kizuna/core/client/components/tickets/open-tickets-badge';
 
-const navigationGroups: PanelNavGroup[] = [
-  {
-    title: 'Navegação',
-    items: [
-      { title: 'Tela inicial', href: '/', icon: Home, permResource: 'default' },
-      { title: 'Painel', href: '/painel', icon: LayoutGrid, permResource: 'default' },
-      {
-        title: 'Minha conta',
-        href: '/painel/minha-conta',
-        icon: UserCircle,
-        permResource: 'default',
-      },
-    ],
-  },
-  {
-    title: 'Catálogo',
-    items: [
-      {
-        title: 'Categorias',
-        href: '/painel/taxonomia/categorias',
-        icon: FolderTree,
-        permResource: 'categories',
-      },
-      {
-        title: 'Subcategorias',
-        href: '/painel/taxonomia/subcategorias',
-        icon: GitFork,
-        permResource: 'categories',
-      },
-      {
-        title: 'Árvore',
-        href: '/painel/taxonomia/arvore',
-        icon: Network,
-        permResource: 'categories',
-      },
-    ],
-  },
-  {
-    title: 'Conteúdo',
-    items: [
-      {
-        title: 'Formulários',
-        href: '/painel/administracao/formularios',
-        icon: NotebookPen,
-        permResource: 'forms',
-      },
-      {
-        title: 'Páginas',
-        href: '/painel/administracao/paginas',
-        icon: FileText,
-        permResource: 'pages',
-      },
-      { title: 'Agenda', href: '/painel/agenda', icon: CalendarDays, permResource: 'agenda' },
-    ],
-  },
-  {
-    title: 'Administração',
-    items: [
-      {
-        title: 'Acessos dos usuários',
-        href: '/painel/administracao/acessos',
-        icon: UserCog,
-        permResource: 'tenant_member',
-      },
-      { title: 'Teste de funções', href: '/painel/funcoes', icon: FlaskConical, devOnly: true },
-    ],
-  },
-  {
-    title: 'Root',
-    items: [
-      { title: 'Plugins instalados', href: '/painel/root/plugins', icon: Blocks, rootOnly: true },
-      { title: 'Papéis e permissões', href: '/painel/root/papeis', icon: KeyRound, rootOnly: true },
-      {
-        title: 'Configurações',
-        href: '/painel/root/configuracoes',
-        icon: Settings,
-        rootOnly: true,
-      },
-      {
-        title: 'Log de acesso root',
-        href: '/painel/security/root-access-log',
-        icon: LockKeyhole,
-        rootOnly: true,
-      },
-    ],
-  },
-];
+const site = (cfg as { site?: { name?: string; logo?: string } }).site;
+const siteName = site?.name ?? 'Kizuna';
+
 
 export function PanelShell({ children }: Readonly<{ children: React.ReactNode }>) {
+  const pathname = usePathname() ?? '';
+  const topActions: PanelTopAction[] = [
+    { title: 'Tela inicial', href: '/', icon: Home },
+    { title: 'Painel', href: '/painel', icon: LayoutGrid, isActive: pathname === '/painel' },
+    {
+      title: 'Minha conta',
+      href: '/painel/minha-conta',
+      icon: UserCircle,
+      isActive: pathname.startsWith('/painel/minha-conta'),
+    },
+  ];
+
   return (
     <PanelShellBase
       navGroups={navigationGroups}
+      topActions={topActions}
+      topActionsIconOnly
+      renderItemBadge={(item, collapsed) =>
+        item.href === '/painel/chamados' && !collapsed ? <OpenTicketsBadge /> : null
+      }
       branding={{
-        kicker: 'Kizuna',
-        shortLabel: 'KZ',
-        fullLabel: 'Kizuna',
+        kicker: siteName,
+        shortLabel: siteName.slice(0, 2).toUpperCase(),
+        fullLabel: siteName,
+        // Mesma logo do header do site (site.logo); sem ela, o selo com as iniciais.
+        logo: site?.logo || undefined,
       }}
     >
       {children}

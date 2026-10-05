@@ -105,7 +105,9 @@ Skill `text_review` (contexto `text_review`, liga/desliga em `ai_assistant.conte
 4. Revisão lado a lado: original (texto simples) à esquerda, revisado em editor editável à direita. Aplicar chama `POST /api/ai/review/revisions/[id]/apply` (corpo opcional com o texto editado) e rejeitar chama `.../reject`; ambas usam as RPCs `fn_service_revision_apply`/`fn_service_revision_reject` com o JWT do usuário. `POST /api/ai/review/apply-bulk` aplica várias sem edição.
 5. `/painel/root/ia` (somente root): abas Provedores e chaves (provedor/modelo padrão, contextos, chaves por provedor), Prompts (editar, testar em um anúncio sem gravar, override por categoria) e Execuções (progresso, tokens, cancelar). Teste: `POST /api/ai/prompts/test`.
 
-Componentes reutilizáveis: `@kizuna/core/client/components/ai-review` (`AiAdminScreen`, `AiReviewScreen`). O slot `ia` do `ROOT_SCREEN_REGISTRY` recebe `AiAdminScreen` por `slotComponents` na page do projeto.
+Componentes reutilizáveis: `@kizuna/core/client/components/ai-review` (`AiAdminScreen`, `AiReviewScreen`). O slot `ia` do `ROOT_SCREEN_REGISTRY` recebe `AiAdminScreen` por `slotComponents` em `src/app/painel/root/[slug]/page.tsx`.
+
+Rotas e páginas vêm do core como arquivos `managed` do template (`template/kizuna.manifest.json`): `src/app/api/ai/**` (`status`, `credentials`, `prompts/test`, `review/*`), `/painel/administracao/revisao-ia` e `/painel/root/[slug]`. O projeto não as edita (mudança vai por `sync` + commit no submódulo). Essas rotas (menos `/api/ai/search-chat`, do plugin `search`) abrem com `requireAiRoot()` de `@kizuna/core/server/ai/gate` (sessão + `is_root`; 401 sem sessão, 403 se não for root), que devolve o `AiUserDb` com o JWT da sessão; `jsonError(e, status)` padroniza a resposta de erro.
 
 ### Integração com robôs de importação
 

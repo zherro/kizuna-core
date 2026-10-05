@@ -12,9 +12,31 @@ export class DuplicateOwnerError extends Error {
   }
 }
 
+// Modos aceitos no manifesto:
+//   managed — o core é o dono; update faz fast-forward / 3-way.
+//   seed    — copiado se ausente; `update --reseed` / `install --force` sobrescrevem.
+//   install — copiado SÓ se ausente; nunca sobrescrito (nem por --reseed all,
+//             --reseed "<path>" ou install --force). Para artes e páginas de
+//             conteúdo que o projeto customiza.
+export const MODES = Object.freeze(['managed', 'seed', 'install']);
+
+export class InvalidModeError extends Error {
+  constructor(manifestPath, invalid) {
+    super(
+      `modo inválido em ${manifestPath}: ` +
+        invalid.map(([p, m]) => `${p} → ${JSON.stringify(m)}`).join('; ') +
+        ` (aceitos: ${MODES.join(', ')})`
+    );
+    this.name = 'InvalidModeError';
+    this.invalid = invalid;
+  }
+}
+
 function readOne(manifestPath, resolveSource) {
   const raw = JSON.parse(readFileSync(manifestPath, 'utf8'));
   const owner = raw.owner;
+  const invalid = Object.entries(raw.files ?? {}).filter(([, mode]) => !MODES.includes(mode));
+  if (invalid.length) throw new InvalidModeError(manifestPath, invalid);
   const entries = Object.entries(raw.files ?? {}).map(([projectPath, mode]) => ({
     projectPath,
     mode,

@@ -1,9 +1,22 @@
+import { redirect } from 'next/navigation';
+import { getSession } from '@kizuna/core/server';
 import { RegisterPageContent } from '@kizuna/core/client/components/register-page';
+import { AuthSplit } from '@kizuna/core/client/components/auth/auth-split';
+import { RegisterAside } from '@/components/register-aside';
 
-export default function RegisterPage() {
+// Usuário já logado não fica aqui: vai direto para o painel (checado no servidor, sem cache).
+export const dynamic = 'force-dynamic';
+
+export default async function RegisterPage() {
+  if (await getSession()) redirect('/painel');
+
   return (
-    <div className="mx-auto flex w-full max-w-[1600px] flex-1 items-center justify-center px-4 py-10 md:px-6">
-      <RegisterPageContent />
-    </div>
+    <AuthSplit aside={<RegisterAside />}>
+      <RegisterPageContent
+        title="Criar conta"
+        description="Cadastre-se com sua conta do gmail"
+        soft
+      />
+    </AuthSplit>
   );
 }

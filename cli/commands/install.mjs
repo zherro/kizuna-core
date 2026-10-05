@@ -57,7 +57,7 @@ export async function run(ctx) {
   }
 
   // (4) materializa. --force re-materializa TUDO por cima de um projeto existente
-  // (managed sobrescreve, seeds também) — para re-sincronizar a casca inteira.
+  // (managed sobrescreve, seeds também; arquivos 'install' nunca) — para re-sincronizar a casca inteira.
   const report = await materialize(set, {
     projectDir,
     coreDir,

@@ -111,9 +111,9 @@ export function RegisterForm({
   return (
     <Card
       className={cn(
-        'w-full max-w-md',
+        'mx-auto w-full max-w-md',
         soft &&
-          'rounded-3xl border-0 bg-card/90 p-2 shadow-[0_28px_70px_-24px_color-mix(in_oklch,var(--primary)_55%,transparent)] backdrop-blur-sm sm:p-4',
+          'rounded-3xl border-0 bg-card/90 p-2 shadow-[0_28px_70px_-24px_color-mix(in_oklch,var(--primary)_55%,transparent)] sm:p-4',
       )}
     >
       <CardHeader>

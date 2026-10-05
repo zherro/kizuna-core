@@ -50,8 +50,9 @@ server-side fetch: `registry.ts` (`ROOT_SCREEN_REGISTRY`, slug → `{ title, gro
 `configuracoes`), and the consuming project supplies its own component via `resolveRootScreen`'s
 `slotComponents` option instead. Ships `PluginsScreen` (`auth.plugin_registry`) and
 `RootAccessLogScreen` (`auth.root_access_log`) as ready screens. Consumed by two thin catch-all
-routes in the host project — `/painel/root/[slug]` and `/painel/security/[slug]` — see
-foco-total's `src/app/painel/root/[slug]/page.tsx`.
+routes — `/painel/root/[slug]` and `/painel/security/[slug]` — shipped as `managed` files of the
+core template (`template/src/app/painel/root/[slug]/page.tsx`, which fills the `configuracoes` and
+`ia` slots).
 
 ## `client/components/showcase/*` — visual catalog
 
@@ -195,8 +196,8 @@ with either style.
   [Adopting in an existing project](#adopting-in-an-existing-project).
 - **Where the values live:** the consuming project's `globals.css`, section "FORMA (data-ui-style)":
   the `:root` block is `classic`, the `soft` block (selector on `data-ui-style`) overrides it.
-  The consumer's own `globals.css` must contain them: `kizuna-starter` ships both blocks, the core
-  template does not yet. Without the blocks the components fall back to `classic` through the `var()` fallback.
+  The consumer's own `globals.css` must contain them: the core template's `globals.css` (seed)
+  ships both blocks. Without the blocks the components fall back to `classic` through the `var()` fallback.
 
 | Token | `classic` | `soft` | Used for |
 | ----- | --------- | ------ | -------- |
@@ -240,9 +241,10 @@ key when it is one of `DISPLAY_FONTS` (`src/shared/display-fonts.ts`); the per-f
 
 #### Adopting in an existing project
 
-The core template (`template/src/app/layout.tsx` and `template/src/app/globals.css`) does not include
-the style support yet; `kizuna-starter` does, and is the reference implementation (see its
-`src/app/layout.tsx` and `src/app/globals.css`, section "FORMA (data-ui-style)"). To adopt it:
+The core template already ships the style support in its seeds (`template/src/app/layout.tsx` and
+`template/src/app/globals.css`, section "FORMA (data-ui-style)"), so a new project gets it from
+`install`. A project whose `layout.tsx`/`globals.css` seeds predate it can run
+`update --reseed "src/app/layout.tsx"` (loses local edits) or adopt it by hand:
 
 1. **Layout, style attribute.** In the root layout add `data-ui-style={ACTIVE_UI_STYLE}` to the
    `<html>` tag, importing `ACTIVE_UI_STYLE` from `@kizuna/core/client/lib/ui-theme`.

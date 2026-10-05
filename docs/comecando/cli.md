@@ -101,17 +101,33 @@ Campo a campo:
 | `plugins.core.migrations`                                      | idem para `sql/*.sql` do core.                                                                                                                                                                                                                                                                      |
 | `packageJson.ownedKeys.{dependencies,devDependencies,scripts}` | `Record<string,string>` — proveniência do merge. O que o core escreveu da última vez. No merge seguinte: se o valor atual do projeto == `ownedKeys` (core controlava) → atualiza; se difere (usuário mexeu) → mantém o do usuário e registra conflito. Nunca remove chave que o core não contribui. |
 
-## Estratégias `managed` / `seed` / `merge`
+## Estratégias `managed` / `seed` / `install` / `merge`
 
 Cada path da casca é classificado em `template/kizuna.manifest.json` (e nos
 `plugins/<n>/shell/manifest.json`):
 
 - **`managed`** — o core é o dono. `update` reaplica. Editar no projeto gera conflito no próximo
   `update`; a forma certa de mudar um managed é `sync` (empurra pro `template/`) + commit no submódulo.
-- **`seed`** — copiado **uma vez**, no `install`, só se o arquivo ainda não existe. Depois é do
-  usuário: `update` **nunca** reaplica um seed (mesmo se o do core mudou — ver "Limitações"). São
-  os arquivos que todo projeto vai querer editar: `app/layout.tsx`, `app/page.tsx`, `tsconfig.json`,
-  `next.config.ts`, `.gitignore`, etc.
+- **`seed`** — casca configurável (`app/layout.tsx`, `app/globals.css`, componentes da home,
+  `tsconfig.json`, `next.config.ts`, `.gitignore`, etc.). O `kizuna.lock` guarda em
+  `template.seeds` o hash da versão do template gravada no projeto:
+  - **não customizado** (arquivo ainda com esse hash): `update` aplica a versão nova sozinho;
+  - **customizado**: não é tocado e aparece **no fim** da saída do `update` como customizado.
+    Só `update --reseed "<path>"` (explícito) ou `install --force` sobrescrevem — `--reseed all`
+    **não** atropela customizados.
+  Seed sem hash no lock (projeto anterior a esse controle) e diferente do template conta como
+  customizado; se for igual, o hash é registrado e ele passa a seguir o template.
+  A ideia é customizar cada vez menos: o que for genérico vai para o core, e o seed volta a ser
+  igual ao template e a seguir o core sozinho.
+- **`install`** — copiado **só** quando o arquivo não existe no projeto (`install` ou `update`).
+  **Nunca** é sobrescrito: nem por `--reseed all`, nem por `--reseed "<path>"`, nem por
+  `install --force`, e não aparece na lista de drift do `update`. Para imagens/artes e páginas de
+  conteúdo que o projeto customiza (sobre, termos, privacidade, artes do login). "Existe" é
+  checado pelo **nome sem extensão** no mesmo diretório: se o projeto tem `src/app/icon.png`, o
+  `icon.svg` do template não é copiado (no Next os dois juntos conflitam). Para receber a
+  versão nova do core, apague o arquivo e rode `update`. `sync` não empurra arquivos `install`
+  (nem `seed`) de volta pro core — só `managed`; e eles não têm hash no `kizuna.lock`, então
+  `check`/`lock`/`adopt` os ignoram.
 - **`merge`** — só `package.json`, contra `template/package.kizuna.json`, campo a campo em
   `dependencies`/`devDependencies`/`scripts` pela lógica de `ownedKeys` acima.
 
@@ -165,21 +181,19 @@ git commit && git push`. Bumpa o `VERSION` se a mudança for relevante (ver acim
 
 ## Conhecido / backlog Fase A — back-references `@/` em `kizuna-core/src/`
 
-Seis módulos do core ainda importam do espaço do **projeto consumidor** via `@/`. Um projeto só
-precisa satisfazê-los **se importar aquele módulo específico do core**:
+Cinco back-references ainda importam do espaço do **projeto consumidor** via `@/`. Um projeto só
+precisa satisfazê-las **se importar aquele módulo específico do core** — e as quatro primeiras já
+vêm resolvidas num projeto novo, porque o template as semeia:
 
-| Back-reference                         | Quem no core usa                     | Nota                                                                                            |
-| -------------------------------------- | ------------------------------------ | ----------------------------------------------------------------------------------------------- |
-| `@/i18n/messages`                      | `AppPreferencesProvider`             | a casca base **não** monta esse provider (é concern do plugin `account_preferences`)            |
-| `@/lib/server/resources`               | rotas `resources` (`postgrest-crud`) | **semeado pelo template** (`src/lib/server/resources.ts`, seed) — já resolvido num projeto novo |
-| `@/lib/server/app-preferences-config`  | telas de preferências                | só quem usa a tela de preferências                                                              |
-| `@/lib/server/user-data-fields-config` | `system-config-screen`               | só quem usa essa tela                                                                           |
-| `@/components/services/service-type`   | showcase de serviços                 | só quem importa esse showcase                                                                   |
-| `@/types/chat`                         | componentes de chat                  | só quem usa o plugin de mensageria                                                              |
+| Back-reference                         | Quem no core usa                                        | Nota                                                                       |
+| -------------------------------------- | ------------------------------------------------------- | -------------------------------------------------------------------------- |
+| `@/i18n/messages`                      | `AppPreferencesProvider`, step de moderação do wizard   | **semeado pelo template** (`src/i18n/messages.ts`, seed)                   |
+| `@/lib/server/resources`               | `postgrest-crud` (rotas `resources`), `list-block`      | **semeado pelo template** (`src/lib/server/resources.ts`, seed)            |
+| `@/lib/server/app-preferences-config`  | `system-config-screen`                                  | **semeado pelo template** (seed)                                           |
+| `@/lib/server/user-data-fields-config` | `system-config-screen`                                  | **semeado pelo template** (seed)                                           |
+| `@/types/chat`                         | `chat-better-soft` (componentes de chat)                | não vem no template; só quem usa o plugin de mensageria precisa criar      |
 
-A **casca base + os 5 shells de plugin limpos** (`storage`, `location`, `pages`, `onboarding`,
-`agenda`) **não** tocam nenhum desses — verificado no smoke (projeto novo, `next build` verde).
-Desacoplar as 5 refs restantes é o grosso da Fase A (spec
+Desacoplar essas refs continua no backlog da Fase A (spec
 `docs/superpowers/specs/2026-09-04-kizuna-starter-setup-design.md`).
 
 ## Limitações conhecidas
@@ -187,9 +201,8 @@ Desacoplar as 5 refs restantes é o grosso da Fase A (spec
 - **`update` não conta merges.** As linhas "N aplicado(s), M sem mudança" cobrem só os managed;
   um merge de `package.json` que de fato mudou deps não aparece na contagem (o merge acontece, só
   não é reportado).
-- **Seed com bug não chega a projeto existente.** `update` nunca reaplica um `seed` — se um seed
-  do core for corrigido, projetos que já rodaram `install` não recebem a correção via `update`.
-  Re-seed opcional é um follow-up.
+- **Seed customizado não recebe correções do core.** Seed não customizado já segue o template
+  sozinho; um customizado precisa de merge manual (ou `--reseed "<path>"`, perdendo a customização).
 - **`check` "nunca falha" só é garantido em `kizuna check` puro.** O special-case que engole
   qualquer erro interno keia em `process.argv[2]`, então `kizuna --project X check` não seria
   reconhecido como `check`. O `predev` usa `kizuna check` puro, então segura na prática.

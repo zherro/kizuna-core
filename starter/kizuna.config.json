@@ -1,5 +1,5 @@
 {
-  "_comment": "Configuração do projeto (por cliente). Lida pelo app em runtime — ex.: createWizardFromJson(cfg.wizards.<nome>, registry). Passos são referenciados por chave do registry; componentes novos continuam sendo código. Ver kizuna-core/docs/interface/wizard.md.",
+  "_comment": "Configuração do projeto (por cliente). Lida pelo app em runtime — ex.: createWizardFromJson(cfg.wizards.<nome>, registry). Passos são referenciados por chave do registry; componentes novos continuam sendo código. Ver kizuna-core/docs/comecando/configuracao.md e kizuna-core/docs/interface/wizard.md.",
   "site": {
     "_comment": "Identidade/SEO do site — usada no <title>, meta description, Open Graph, manifest do PWA, robots/sitemap e logo do header. \"url\" é a URL pública em produção (sem barra no final). \"logo\" é opcional (caminho em public/); sem ele o header mostra o nome.",
     "name": "Kizuna",
@@ -10,10 +10,11 @@
     "logo": null
   },
   "theme": {
-    "_comment": "Cor/tema visual padrão. \"default\" é aplicado enquanto o usuário não escolhe outro (ou sempre, se \"selectable\" for false — aí o seletor de cor some do botão de preferências). Temas disponíveis: blue, green, purple, teal, red, orange, coral, terracotta, bora_cuiaba, metro_orange, laranja_intenso, laranja_medio. \"metaColor\" é a cor da barra do navegador no mobile (meta theme-color). \"displayFont\": fonte dos títulos, uma de quicksand | baloo | bricolage; sem ela vale o padrão do estilo (NEXT_PUBLIC_UI_STYLE: classic = quicksand, soft = baloo). Requer o suporte no layout/globals.css (ver docs/interface/componentes.md).",
-    "default": "bora_cuiaba",
+    "_comment": "Cor/tema visual padrão. \"default\" é aplicado enquanto o usuário não escolhe outro (ou sempre, se \"selectable\" for false — aí o seletor de cor some do botão de preferências). Temas disponíveis: blue, green, purple, teal, red, orange, coral, terracotta, bora_cuiaba, metro_orange, laranja_intenso, laranja_medio. \"metaColor\" / \"metaColorDark\" são a cor da barra do navegador no mobile (meta theme-color) no modo claro / escuro antes do JS carregar — use o --background do tema; depois o ThemeColorMeta copia o fundo real da página. \"displayFont\": fonte dos títulos, uma de quicksand | baloo | bricolage; sem ela vale o padrão do estilo (NEXT_PUBLIC_UI_STYLE: classic = quicksand, soft = baloo).",
+    "default": "orange",
     "selectable": true,
-    "metaColor": "#2563eb"
+    "metaColor": "#2563eb",
+    "metaColorDark": "#1c0e05"
   },
   "vocabulary": {
     "_comment": "Como o app chama o item que o usuário cria e gerencia (menu, telas do painel). Só texto: rotas e banco não mudam. \"context\": preset — publicacao (padrão: Publicação/Publicações, feminino) | servico (Serviço/Serviços, masculino). \"terms.item\": troca o termo — singular, plural e gender (\"m\" | \"f\"; obrigatório ao trocar o termo, as frases Novo/Nova, Nenhum/Nenhuma dependem dele). \"phrases\": sobrescreve uma frase pronta (singular, plural, new, manage, manageDescription, yours, mine, createFirst, noneRegistered, registerFirstHint, noneFound, reviewTitle, reviewDescription). Exemplo: { \"terms\": { \"item\": { \"singular\": \"Anúncio\", \"plural\": \"Anúncios\", \"gender\": \"m\" } }, \"phrases\": { \"new\": \"Anunciar\" } }. Ver kizuna-core/docs/interface/vocabulario.md.",
@@ -27,71 +28,47 @@
     "_comment": "\"variant\": classic (padrão) | compact — layout do cabeçalho do site.",
     "variant": "classic"
   },
+  "preferences": {
+    "_comment": "Preferências de tema claro/escuro, cor e idioma: o botão flutuante no canto da tela e os seletores do rodapé. \"fab\": false esconde os dois; o site segue o modo do sistema e o tema padrão (theme.default).",
+    "fab": false
+  },
+  "regions": [
+    {
+      "_comment": "Regiões: cidades vizinhas cujos anúncios são SUGERIDOS além da cidade selecionada (ela vem sempre primeiro; o seletor continua escolhendo uma cidade só). cities = códigos IBGE. suggestTo = regiões cujos visitantes também veem esta como sugestão. Usado pela busca (seções abaixo dos resultados) e pelos carrosséis da home com \"scope\": \"region\".",
+      "key": "minha-regiao",
+      "title": "Também na região",
+      "cities": [],
+      "suggestTo": []
+    }
+  ],
   "location": {
-    "_comment": "Seletor de local do header (plugin location). Lista só as cidades com location_city.search_city = true (seed do projeto). \"outsideList\": cidade detectada por GPS/IP fora da lista → prompt (abre o seletor) | default (seleciona \"defaultCityIbge\", código IBGE de 7 dígitos, que precisa estar marcada). Ver kizuna-core/docs/plugins/location.md.",
-    "outsideList": "prompt"
+    "_comment": "Seletor de local do header (plugin location). Lista só as cidades com location_city.search_city = true (marque as cidades do projeto num seed em db/extras/). \"outsideList\": cidade detectada por GPS/IP fora da lista → prompt (abre o seletor) | default (seleciona \"defaultCityIbge\", código IBGE de 7 dígitos, que precisa estar marcada). Ver kizuna-core/docs/plugins/location.md.",
+    "outsideList": "prompt",
+    "defaultCityIbge": ""
   },
-  "home": {
-    "_comment": "\"showHero\": seção hero. \"categoriesVariant\": classic|compact. \"categoriesOnlyWithListings\": true lista só categorias com anúncio publicado (requer plugin services). \"showDiscover\": banner Descobrir no swipe. \"inkPicker\": mostra o seletor de intensidade do fundo escuro dos cards (false esconde). \"inkLevel\": intensidade padrão (1-7); com o seletor ativo, a escolha salva do usuário prevalece.",
-    "showHero": true,
-    "categoriesVariant": "classic",
-    "categoriesOnlyWithListings": false,
-    "showDiscover": false,
-    "inkPicker": true,
-    "inkLevel": 6,
-    "_comment_categoryRails": "Carrosséis por categoria ou grupo na home (um por item, na ordem). slug = categories.slug OU group = categories_group.slug; mesma base da busca (só ativos e não expirados), ordem embaralhada a cada visita; title opcional (default = nome da categoria); limit opcional (default 10) — se houver mais que isso, a trilha termina com o card \"Ver mais\". O estilo dos cards vem de serviceDetail. Categoria sem anúncios não aparece.",
-    "categoryRails": [
-      { "slug": "cinema", "title": "Em cartaz", "limit": 10 }
-    ]
-  },
-  "serviceDetail": {
-    "_comment": "Layout/cor da tela de detalhe do anúncio (/anuncios/[uid], se o projeto tiver essa rota) por categoria. \"variantByCategorySlug\": slug da categoria -> variant (\"service\" é o default, sempre disponível). \"colors\": hue OKLCH (0-360) do acento; \"default\" vale pra categoria sem entrada própria. Sem esta chave, tudo cai no variant/hue default. \"reactions\": botões Gostei/Favoritar do detalhe (plugin swipe) — icon (nome lucide-react), label, labelActive; remova um bloco para esconder o botão.",
-    "defaultVariant": "service",
-    "variantByCategorySlug": {
-      "cinema": "cinema"
-    },
-    "colors": {
-      "default": { "hue": 230 },
-      "cinema": { "hue": 268 }
-    },
-    "reactions": {
-      "like": { "icon": "ThumbsUp", "label": "Gostei", "labelActive": "Gostei" },
-      "favorite": { "icon": "Heart", "label": "Favoritar", "labelActive": "Favoritado" }
-    }
-  },
-  "wizards": {
-    "servicos": {
-      "resource": "services",
-      "layout": "stepper",
-      "lockLayout": true,
-      "assistant": false,
-      "steps": [
-        "start",
-        "category",
-        "location",
-        "price",
-        "images",
-        "description",
-        "dynamic-form",
-        "moderation"
-      ],
-      "disable": [],
-      "finishHrefByMode": {
-        "create": "/painel/meus-servicos",
-        "review": "/painel/administracao/aprovacoes"
+  "weather": {
+    "_comment": "Plugin weather (widget de clima no header, depois da busca). Integração: Open-Meteo — grátis, sem chave de API. apiUrl = endpoint do provedor; timezone = fuso das datas (IANA); cacheSeconds = quanto tempo o servidor guarda a resposta; rotateSeconds = intervalo da troca de cidade no botão; pastDays/forecastDays = dias antes/depois de hoje no modal; forecastModal = false desativa o modal (a temperatura vira só informação, sem clique). cities = lista exibida (a 1ª aparece primeiro). Remova o bloco para esconder o widget.",
+    "apiUrl": "https://api.open-meteo.com/v1/forecast",
+    "timezone": "America/Sao_Paulo",
+    "cacheSeconds": 900,
+    "rotateSeconds": 5,
+    "pastDays": 1,
+    "forecastDays": 7,
+    "forecastModal": false,
+    "cities": [
+      {
+        "name": "São Paulo",
+        "latitude": -23.5505,
+        "longitude": -46.6333
       }
-    }
-  },
-  "otp": {
-    "_comment": "Login por telefone (código de uso único). \"enabled\": false desliga (padrão true) — o botão some e /api/auth/otp/* responde 404. providers = cadeia de envio em ordem (fallback). \"log\" só imprime o JSON no log do servidor e é ignorado em produção. Vazio = desligado (o botão não aparece). Ver docs/comecando/login-social-telefone.md.",
-    "enabled": true,
-    "providers": [
-      "log"
     ]
   },
   "accountLevels": {
-    "contactVerification": { "email": true, "phone": false },
-    "_comment": "Níveis de conta progressivos: título/ordem/requisito aqui; o que cada nível libera fica no código do projeto (defineCapabilities). Ver docs/arquitetura/niveis-de-conta.md.",
+    "contactVerification": {
+      "email": true,
+      "phone": false
+    },
+    "_comment": "Níveis de conta progressivos (entra fácil, evolui para fazer mais). Aqui só rótulo e ordem: key (usada no mapa de capacidades em src/lib/account-levels.ts), level (1..N, sequencial; 0 = visitante, implícito), title, description, onboardingOrder (ordem na tela /painel/onboarding), profileOrder (ordem no resumo da conta), requirement (regra em código: authenticated | contact_verified | profile_complete | listing_published | identity_verified), enabled (false = 'em breve'), href (para onde o botão 'completar' leva). contactVerification: quais contatos o nível contact_verified exige ({ email, phone }; padrão os dois). missingLinks: para onde cada pendência (\"Falta: ...\") leva — chaves login, email, phone, fullName, avatar, document, address, listing, listingPending; só sobrescreve as informadas (padrões em DEFAULT_MISSING_LINKS do core). O que cada nível LIBERA fica em src/lib/account-levels.ts. Ver kizuna-core/docs/arquitetura/niveis-de-conta.md.",
     "levels": [
       {
         "key": "conta",
@@ -122,15 +99,171 @@
       }
     ]
   },
+  "otp": {
+    "_comment": "Login por telefone (código de uso único). \"enabled\": false desliga (padrão true) — o botão some e /api/auth/otp/* responde 404. providers = cadeia de envio em ordem (fallback). \"log\" só imprime o JSON no log do servidor e NÃO habilita em produção — sem um provedor real o botão 'Entrar com telefone' some. Provedor real = registerOtpProvider() no core. Ver kizuna-core/docs/comecando/login-social-telefone.md.",
+    "enabled": true,
+    "providers": [
+      "log"
+    ],
+    "codeLength": 6,
+    "ttlSec": 300,
+    "cooldownSec": 60,
+    "dailyLimit": 10,
+    "maxAttempts": 5
+  },
+  "home": {
+    "showHero": true,
+    "categoriesVariant": "classic",
+    "_comment_categorias": "\"categoriesOnlyWithListings\": true lista no carrossel só categorias com ao menos um anúncio publicado (requer plugin services).",
+    "categoriesOnlyWithListings": false,
+    "showDiscover": false,
+    "_comment_slider": "Slider de destaques da home, logo abaixo do banner do swipe. \"enabled\": false esconde; \"autoplayMs\": tempo entre slides (0 = parado; com 1 slide não há autoplay). Cada slide: id (único), eyebrow, title, text, cta {label, href} e live (texto do selo pulsante, opcional). Sem slides, o slider não aparece.",
+    "slider": {
+      "enabled": true,
+      "autoplayMs": 6000,
+      "slides": []
+    },
+    "_comment_instagram": "URL do perfil do Instagram (ex.: https://instagram.com/seuperfil). Vazio = o card de Instagram nao aparece.",
+    "instagramUrl": "",
+    "_comment": "\"inkPicker\": mostra o seletor de intensidade do fundo escuro dos cards (false esconde). \"inkLevel\": intensidade padrão (1-7); com o seletor ativo, a escolha salva do usuário prevalece.",
+    "inkPicker": true,
+    "inkLevel": 6,
+    "_comment_categoryRails": "Carrosséis por categoria ou grupo na home (um por item, na ordem). slug = categories.slug OU group = categories_group.slug; mesma base da busca (só ativos e não expirados), ordem embaralhada a cada visita; title opcional (default = nome da categoria); limit opcional (default 10) — se houver mais que isso, a trilha termina com o card \"Ver mais\" (leva à busca da categoria). scope: \"city\" (padrão, só a cidade da página) | \"region\" (a cidade + as vizinhas da mesma região em `regions`, com a cidade no card). O estilo dos cards vem de serviceDetail. Categoria sem anúncios não aparece.",
+    "categoryRails": [
+      {
+        "slug": "cinema",
+        "title": "Em cartaz",
+        "limit": 10
+      }
+    ]
+  },
+  "serviceDetail": {
+    "_comment": "Layout/cor da tela de detalhe do anúncio (/anuncios/[uid]) por categoria. \"variantByCategorySlug\": slug da categoria -> variant (\"service\" é o default, sempre disponível; \"cinema\" mostra sessões/gêneros/duração em vez da faixa de facts genérica, e some com o preço no card de resumo). Categoria sem entrada aqui cai em \"defaultVariant\". \"colors\": hue OKLCH (0-360) do acento (marcador de seção, faixa do hero); \"default\" vale pra categoria sem entrada própria. \"excludeFromMixedCategorySlugs\": slugs fora da busca/home quando não há filtro de categoria — a categoria continua acessível sozinha (ex. pelo carrossel). Vazio = nada escondido (comportamento atual). \"reactions\": botões Gostei/Favoritar do detalhe (plugin swipe) — icon (nome lucide-react), label, labelActive; remova um bloco para esconder o botão.",
+    "defaultVariant": "service",
+    "variantByCategorySlug": {
+      "cinema": "cinema"
+    },
+    "colors": {
+      "default": {
+        "hue": 230
+      },
+      "cinema": {
+        "hue": 268
+      }
+    },
+    "excludeFromMixedCategorySlugs": [],
+    "reactions": {
+      "like": {
+        "icon": "ThumbsUp",
+        "label": "Gostei",
+        "labelActive": "Gostei"
+      },
+      "favorite": {
+        "icon": "Heart",
+        "label": "Favoritar",
+        "labelActive": "Favoritado"
+      }
+    }
+  },
+  "wizards": {
+    "servicos": {
+      "resource": "services",
+      "layout": "stepper",
+      "lockLayout": true,
+      "assistant": false,
+      "steps": [
+        "start",
+        "category",
+        "location",
+        "price",
+        "images",
+        "description",
+        "dynamic-form",
+        "moderation"
+      ],
+      "disable": [],
+      "skipStepsByGroup": {
+        "location": [
+          "noticias"
+        ]
+      },
+      "stepProfiles": {
+        "location": {
+          "default": {
+            "options": [
+              {
+                "value": "no_estabelecimento",
+                "model": "addresses",
+                "maxAddresses": 5,
+                "icon": "MapPin"
+              },
+              {
+                "value": "no_cliente",
+                "model": "identifier",
+                "icon": "Home"
+              },
+              {
+                "value": "remoto",
+                "model": "identifier",
+                "icon": "Globe"
+              }
+            ]
+          }
+        },
+        "price": {
+          "default": {
+            "options": [
+              {
+                "value": "service"
+              },
+              {
+                "value": "hour"
+              },
+              {
+                "value": "quote"
+              }
+            ],
+            "defaultValue": "service",
+            "startingPrice": true,
+            "priceTable": {
+              "fields": [
+                "description",
+                "amount",
+                "link"
+              ]
+            }
+          }
+        }
+      },
+      "finishHrefByMode": {
+        "create": "/painel/meus-servicos",
+        "review": "/painel/administracao/aprovacoes"
+      }
+    }
+  },
   "analytics": {
     "_comment": "Plugin analytics (métricas do anunciante). events = só os listados ligam. minVisibleMs = tempo contínuo em tela, em milissegundos, antes de contar (piso: view 500, impression 200; teto 60000). minVisibleRatio = fração do elemento visível (0..1). oncePerSession = conta no máximo 1x por sessão do navegador. 0 ms = conta na hora (cliques de ação). entities.<tipo>.events sobrescreve por tipo de entidade. enabled:false desliga; remova o bloco para usar os defaults.",
     "enabled": true,
     "events": {
-      "impression": { "minVisibleMs": 500, "minVisibleRatio": 0.6, "oncePerSession": true },
-      "view": { "minVisibleMs": 1500, "minVisibleRatio": 0.5, "oncePerSession": true },
-      "contact_click": { "minVisibleMs": 0 },
-      "favorite": { "minVisibleMs": 0 },
-      "share": { "minVisibleMs": 0 }
+      "impression": {
+        "minVisibleMs": 500,
+        "minVisibleRatio": 0.6,
+        "oncePerSession": true
+      },
+      "view": {
+        "minVisibleMs": 1500,
+        "minVisibleRatio": 0.5,
+        "oncePerSession": true
+      },
+      "contact_click": {
+        "minVisibleMs": 0
+      },
+      "favorite": {
+        "minVisibleMs": 0
+      },
+      "share": {
+        "minVisibleMs": 0
+      }
     },
     "entities": {}
   }

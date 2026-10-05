@@ -2,6 +2,23 @@ node_modules/
 .next/
 .env
 dist/
+scrawler/
 next-env.d.ts
 .repowise/
 .superpowers/
+
+# Marketing (skills, contexto e planos locais)
+marketing/
+.agents/
+
+# Redação (skills, linha editorial e artigos em rascunho — local)
+redacao/
+.claude/skills/bora-editorial/
+.claude/skills/redacao-*/
+# Skills externas instaladas via npx skills (article-writing, journalism etc.)
+.claude/skills/*
+!.claude/skills/criar-depara/
+skills-lock.json
+
+# cache do TypeScript
+*.tsbuildinfo

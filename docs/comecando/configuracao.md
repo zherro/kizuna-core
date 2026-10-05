@@ -29,7 +29,7 @@ instala. Ele é lido pelo CLI no `install`, não pelo app. Ver [Plugins](../plug
 | [`site`](#site)        | nome, descrição, URL pública, idioma, logo                         | `layout.tsx`, `manifest.ts`, `robots.ts`, `sitemap.ts`, `footer.tsx` |
 | [`theme`](#theme)      | tema de cor padrão, se o usuário pode trocar, cor da barra mobile  | `layout.tsx`, `manifest.ts`                     |
 | [`header`](#header)    | layout do cabeçalho (`classic` / `compact`)                        | `layout.tsx`                                    |
-| [`home`](#home)        | seções da home e formato do carrossel de categorias                | `app/page.tsx`                                  |
+| [`home`](#home)        | seções da home e formato do carrossel de categorias                | `components/home-page.tsx` (seed)               |
 | [`weather`](#weather)  | widget de clima no cabeçalho (plugin `weather`)                    | `app/api/weather/route.ts`, `layout.tsx`, `footer.tsx` |
 | [`wizards`](#wizards)  | passos, layout e perfis dos wizards (ex.: cadastro de serviço)     | páginas do plugin `services`                    |
 | [`vocabulary`](#vocabulary) | como o app chama o item que o usuário cria (Publicação, Serviço…) — preset, termo com gênero, frases | `src/lib/vocabulary.ts`, `components/panel-shell.tsx` |
@@ -75,14 +75,13 @@ Esqueceu o `url` em produção? O sitemap e as URLs do Open Graph saem apontando
 | `default`    | string  | `"blue"`    | Tema de cor aplicado enquanto o usuário não escolhe outro. Valor inválido cai em `blue`.   |
 | `selectable` | boolean | `true`      | `false` fixa o `default` para todos e **esconde o seletor de cor** do botão de preferências. |
 | `metaColor`  | string  | `"#2563eb"` | Cor da barra do navegador no mobile (`<meta name="theme-color">`) e `theme_color` do PWA. |
-| `displayFont` | string | padrão do estilo | Fonte dos títulos (`Typography font="display"`). Uma de `quicksand`, `baloo` ou `bricolage` (lista `DISPLAY_FONTS` em `src/shared/display-fonts.ts`). Ausente ou inválido, vale o padrão do projeto, definido no `globals.css` por estilo visual (no `kizuna-starter`: Quicksand no `classic`, Baloo 2 no `soft`). **Só tem efeito com o suporte no `layout.tsx` e no `globals.css`** descrito em [Adopting in an existing project](../interface/componentes.md#adopting-in-an-existing-project); o template do core ainda não o traz. |
+| `displayFont` | string | padrão do estilo | Fonte dos títulos (`Typography font="display"`). Uma de `quicksand`, `baloo` ou `bricolage` (lista `DISPLAY_FONTS` em `src/shared/display-fonts.ts`). Ausente ou inválido, vale o padrão do estilo visual, definido no `globals.css` (Quicksand no `classic`, Baloo 2 no `soft`). O `layout.tsx` e o `globals.css` do template (seed) já trazem o suporte; projeto com seed antigo precisa do passo a passo em [Adopting in an existing project](../interface/componentes.md#adopting-in-an-existing-project). |
 
 Temas disponíveis (lista em `src/shared/theme-colors.ts`): `blue`, `green`, `purple`, `teal`,
 `red`, `orange`, `coral`, `terracotta`, `bora_cuiaba`, `metro_orange`, `laranja_intenso`,
 `laranja_medio`. Um tema novo precisa de código: entrada em `THEME_COLORS` + tokens no CSS.
 
-Fontes de título (`DISPLAY_FONTS`): `quicksand`, `baloo` (Baloo 2), `bricolage`. No projeto que já tem o suporte (referência: `src/app/layout.tsx` do
-`kizuna-starter`), o `layout.tsx` valida o valor com `isDisplayFont` e o grava em
+Fontes de título (`DISPLAY_FONTS`): `quicksand`, `baloo` (Baloo 2), `bricolage`. No `layout.tsx` do template (seed), o layout valida o valor com `isDisplayFont` e o grava em
 `<html data-display-font>`; o `globals.css` troca a fonte por CSS (`--ui-font-display-active`), sem rebuild de estilo. Fonte nova precisa de código: nome em
 `DISPLAY_FONTS`, `next/font` no layout e um bloco por fonte no `globals.css` (seletor em `data-display-font`).
 

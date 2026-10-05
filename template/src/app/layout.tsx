@@ -1,13 +1,33 @@
 import type { Metadata, Viewport } from 'next';
-import { Roboto, Geist_Mono, Bricolage_Grotesque, Playfair_Display, Inter } from 'next/font/google';
-import { Megaphone, Search } from 'lucide-react';
+import { Roboto, Geist_Mono, Bricolage_Grotesque, Quicksand, Baloo_2 } from 'next/font/google';
+import {
+  Briefcase,
+  Compass,
+  Home,
+  LayoutDashboard,
+  LogIn,
+  Megaphone,
+  PlusCircle,
+  Search,
+  UserCircle,
+} from 'lucide-react';
 import { PwaRegister } from '@kizuna/core/client/components/pwa-register';
+import {
+  MobileTabBar,
+  type MobileTabItem,
+} from '@kizuna/core/client/components/ui-better-soft/mobile-tab-bar';
 import { PreferencesFab } from '@kizuna/core/client/components/preferences-fab';
+import { ThemeColorMeta } from '@kizuna/core/client/components/theme-color-meta';
 import { AppPreferencesProvider } from '@kizuna/core/client/providers/app-preferences-provider';
+import { ACTIVE_UI_STYLE } from '@kizuna/core/client/lib/ui-theme';
 import { isThemeColor } from '@kizuna/core/shared/theme-colors';
+import { isDisplayFont } from '@kizuna/core/shared/display-fonts';
 import { AuthProvider } from '@kizuna/core/client/providers/auth-provider';
 import { KizunaHeader } from '@kizuna/core/client/components/kizuna-header';
 import { Footer } from '@/components/footer';
+import { CityCookieSync } from '@kizuna/core/client/components/city/city-cookie-sync';
+import { ViewingCityProvider } from '@kizuna/core/client/components/viewing-city';
+import { WeatherWidget } from '@kizuna/core/client/components/weather/weather-widget';
 import { Toaster } from 'sonner';
 import cfg from '@/../kizuna.config.json';
 import './globals.css';
@@ -19,6 +39,14 @@ const headerVariant = headerCfg?.variant === 'compact' ? 'compact' : 'classic';
 // (lista de temas disponíveis no _comment de lá).
 const defaultThemeColor = isThemeColor(cfg.theme?.default) ? cfg.theme.default : 'blue';
 const themeColorSelectable = cfg.theme?.selectable !== false;
+// Botão flutuante de preferências (tema/cor/idioma) — chave "preferences.fab" (padrão: visível).
+const showPreferencesFab =
+  (cfg as { preferences?: { fab?: boolean } }).preferences?.fab !== false;
+
+// Fonte de títulos — chave "theme.displayFont" (lista em DISPLAY_FONTS). Sem ela, vale o default do
+// estilo (soft = Baloo 2, classic = Quicksand), definido em globals.css.
+const displayFontCfg = (cfg as { theme?: { displayFont?: string } }).theme?.displayFont;
+const displayFont = isDisplayFont(displayFontCfg) ? displayFontCfg : undefined;
 
 // EXEMPLO — reescreva as fontes/metadata/nav do seu app.
 //
@@ -27,7 +55,7 @@ const themeColorSelectable = cfg.theme?.selectable !== false;
 // da sessão no servidor é o layout de /painel. Aqui o `AuthProvider` recebe
 // `initialUser={null}` e hidrata sozinho via `GET /api/auth/me` no cliente.
 // A trava de ambiente (falta de PostgREST/JWT) roda no proxy, não aqui.
-// Ver docs/manutencao/hardening.md.
+// Ver docs/HARDENING.md.
 
 const robotoSans = Roboto({
   variable: '--font-roboto',
@@ -48,20 +76,20 @@ const bricolage = Bricolage_Grotesque({
   display: 'swap',
 });
 
-// Usadas só pelo tema `bora_cuiaba` (globals.css troca --font-display/--font-body
-// dentro daquele escopo) — não afetam o restante do app, que continua no
-// Roboto/Bricolage acima.
-const playfairDisplay = Playfair_Display({
-  variable: '--font-playfair-display',
+// Fonte de títulos (Typography font="display") — ver --font-display em globals.css.
+// Geométrica/arredondada como a Roboto do corpo, então título e texto combinam sem "brigar".
+const quicksand = Quicksand({
+  variable: '--font-quicksand',
   subsets: ['latin'],
-  weight: ['600', '700', '800'],
+  weight: ['500', '600', '700'],
   display: 'swap',
 });
 
-const inter = Inter({
-  variable: '--font-inter',
+// Fonte de títulos do estilo soft (default da lista curada em DISPLAY_FONTS) — ver --ui-font-display-active.
+const baloo = Baloo_2({
+  variable: '--font-baloo',
   subsets: ['latin'],
-  weight: ['400', '500', '600'],
+  weight: ['500', '600', '700'],
   display: 'swap',
 });
 
@@ -86,9 +114,32 @@ export const metadata: Metadata = {
   twitter: { card: 'summary_large_image', title: siteName, description: site?.description },
 };
 
+// Cor da barra do navegador (mobile) na 1ª pintura, por modo claro/escuro do sistema. Depois do
+// JS, o <ThemeColorMeta /> passa a copiar o fundo real da página (= header), inclusive quando o
+// usuário força o modo ou troca o tema.
+const metaColor = cfg.theme?.metaColor ?? '#2563eb';
+const metaColorDark = (cfg.theme as { metaColorDark?: string } | undefined)?.metaColorDark ?? metaColor;
+
 export const viewport: Viewport = {
-  themeColor: cfg.theme?.metaColor ?? '#2563eb',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: metaColor },
+    { media: '(prefers-color-scheme: dark)', color: metaColorDark },
+  ],
 };
+
+// Primeiros 3 itens da barra inferior (mobile), iguais para logado e visitante. "Anunciar" é o CTA
+// central — o visitante vai ao login e volta (requiresAuth).
+const tabsCommon: MobileTabItem[] = [
+  { href: '/', label: 'Início', icon: <Home /> },
+  { href: '/busca', label: 'Buscar', icon: <Search /> },
+  {
+    href: '/painel/meus-servicos/novo',
+    label: 'Anunciar',
+    icon: <PlusCircle />,
+    featured: true,
+    requiresAuth: true,
+  },
+];
 
 export default function RootLayout({
   children,
@@ -99,8 +150,12 @@ export default function RootLayout({
     <html
       lang={site?.lang ?? 'pt-BR'}
       data-theme-color={defaultThemeColor}
+      // `data-ui-style` (NEXT_PUBLIC_UI_STYLE) é fixo por deploy: resolvido no servidor, sem flash —
+      // ao contrário de `data-theme-color`, que o provider do cliente pode trocar.
+      data-ui-style={ACTIVE_UI_STYLE}
+      data-display-font={displayFont}
       suppressHydrationWarning
-      className={`${robotoSans.variable} ${geistMono.variable} ${bricolage.variable} ${playfairDisplay.variable} ${inter.variable} h-full antialiased`}
+      className={`${robotoSans.variable} ${geistMono.variable} ${bricolage.variable} ${quicksand.variable} ${baloo.variable} h-full antialiased`}
     >
       <body
         suppressHydrationWarning
@@ -111,7 +166,10 @@ export default function RootLayout({
           themeColorSelectable={themeColorSelectable}
         >
           <AuthProvider initialUser={null}>
+            <ViewingCityProvider>
             <PwaRegister swUrl="/sw.js?v=1" migrationKey="kizuna-sw-v1" />
+            <ThemeColorMeta />
+            <CityCookieSync />
             {/* Variante vem de kizuna.config.json (header.variant: classic|compact). */}
             <KizunaHeader
               variant={headerVariant}
@@ -119,15 +177,62 @@ export default function RootLayout({
               authCta="single"
               brandLabel={siteName}
               brandLogo={site?.logo ?? undefined}
+              actions={
+                // Só no desktop: no mobile o header já tem cidade + menu e ficava apertado.
+                cfg.weather ? (
+                  // Clima só a partir de tablet: no celular o header fica só com logo e conta.
+                  <div className="hidden md:flex">
+                    <WeatherWidget forecastModal={cfg.weather.forecastModal !== false} />
+                  </div>
+                ) : undefined
+              }
               navLinks={[
                 { href: '/busca', label: 'Buscar', icon: <Search /> },
                 { href: '/painel', label: 'Anunciar', icon: <Megaphone /> },
               ]}
             />
-            <main className="flex-1">{children}</main>
+            {/* pb: reserva o espaço da barra inferior no mobile (--mobile-tab-h é publicado pelo MobileTabBar). */}
+            {/* A página que tiver um filho direto `data-fill` ocupa toda a altura útil (ex.: /login). */}
+            <main className="flex-1 pb-[var(--mobile-tab-h,0px)] md:pb-0 [&:has(>[data-fill])]:flex [&:has(>[data-fill])]:flex-col">
+              {children}
+            </main>
             <Footer />
-            <PreferencesFab />
+            <MobileTabBar
+              // Wizard/onboarding têm rodapé próprio de navegação — a barra some neles.
+              hideOn={['/painel/meus-servicos/novo', '/painel/onboarding']}
+              items={[
+                ...tabsCommon,
+                // Mesma vaga na barra: dentro do painel "Meus anúncios", fora dele "Meu painel".
+                {
+                  href: '/painel/meus-servicos',
+                  label: 'Meus anúncios',
+                  icon: <Briefcase />,
+                  exact: true,
+                  onlyOn: ['/painel'],
+                },
+                {
+                  href: '/painel',
+                  label: 'Meu painel',
+                  icon: <LayoutDashboard />,
+                  exceptOn: ['/painel'],
+                },
+                { href: '/painel/minha-conta', label: 'Conta', icon: <UserCircle /> },
+              ]}
+              // Visitante: no lugar de "Meus anúncios"/"Conta" (que só levariam ao login), Descobrir e Entrar.
+              guestItems={[
+                ...tabsCommon,
+                { href: '/descobrir', label: 'Descobrir', icon: <Compass /> },
+                {
+                  href: '/login',
+                  label: 'Entrar',
+                  icon: <LogIn />,
+                  match: ['/login', '/registre-se'],
+                },
+              ]}
+            />
+            {showPreferencesFab ? <PreferencesFab /> : null}
             <Toaster richColors position="bottom-center" />
+            </ViewingCityProvider>
           </AuthProvider>
         </AppPreferencesProvider>
       </body>

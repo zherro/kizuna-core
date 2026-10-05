@@ -38,7 +38,8 @@ git add kizuna-core kizuna.lock src/ && git commit -m "chore: bump kizuna-core"
 ```
 
 - **managed** (proxy, rotas de API, catch-all): `update` faz fast-forward se você não editou; senão mostra diff.
-- **seed** (`// EXEMPLO` — layout, home, painel, globals.css): nunca tocados. `update` **lista** os que mudaram no core; `--reseed "<paths>"` (ou `--reseed all`) sobrescreve.
+- **seed** (layout, componentes da home, painel, `globals.css`): se você **não mexeu**, o `update` aplica a versão nova sozinho (hash em `kizuna.lock`); se **customizou**, não toca e lista no fim da saída. `--reseed "<paths>"` sobrescreve esses; `--reseed all` não atropela customizados.
+- **install** (imagens/ícones, artes de login/cadastro, páginas de conteúdo como sobre/termos/privacidade e a home): copiados só quando faltam (`install` ou `update`); nem `--reseed all` nem `install --force` sobrescrevem.
 - **nuke total** (se só editou `.env`): `rm -rf src package.json … kizuna.lock && cli install --force`.
 
 ## Outros comandos
@@ -53,6 +54,6 @@ node kizuna-core/cli lock                  # marca versão como "vista" sem apli
 ## Referência
 
 - `kizuna-core/docs/comecando/cli.md` — comandos + formato do `kizuna.lock`
-- `kizuna-core/docs/plugins/README.md` — plugins (`taxonomy` fica fora da lista de propósito)
+- `kizuna-core/docs/plugins/README.md` — plugins (a lista do `kizuna.plugins.json` já vem completa, em ordem de dependência)
 - `kizuna-core/docs/manutencao/hardening.md` — stub; o tracker de performance/segurança mora no
   `docs/PENDENCIAS.md` do projeto consumidor

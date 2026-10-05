@@ -1,18 +1,55 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { useAppPreferences } from '@kizuna/core/client/providers/app-preferences-provider';
-import { Button } from '@kizuna/core/client/components/ui/button';
-import { GitBranchIcon, Moon, Sun } from 'lucide-react';
-import cfg from '@/../kizuna.config.json';
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useAppPreferences } from "@kizuna/core/client/providers/app-preferences-provider";
+import { Button } from "@kizuna/core/client/components/ui/button";
+import { Moon, Sun } from "lucide-react";
+import cfg from "@/../kizuna.config.json";
+
+// Versão do app (env APP_VERSION, incrementada por push) + versão do core — ver next.config.ts.
+const appVersion = [
+  process.env.APP_VERSION,
+  process.env.KIZUNA_CORE_VERSION && `core ${process.env.KIZUNA_CORE_VERSION}`,
+]
+  .filter(Boolean)
+  .join(" · ");
 
 // Marca do site — bloco "site" do kizuna.config.json (mesma logo do header).
 const siteLogo = cfg.site?.logo ?? undefined;
 
+const AUTH_ROUTES = new Set(["/login", "/registre-se"]);
+
+// Mesma chave do botão flutuante (kizuna.config.json → preferences.fab): desligada, o rodapé
+// também não mostra cor, idioma e modo escuro.
+const showPreferences =
+  (cfg as { preferences?: { fab?: boolean } }).preferences?.fab !== false;
+
+/** Ícone do Instagram (o lucide-react não traz mais ícones de marca). */
+function InstagramIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <rect x="2" y="2" width="20" height="20" rx="5" />
+      <circle cx="12" cy="12" r="4" />
+      <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
 export function Footer() {
   const pathname = usePathname();
-  const isPainelRoute = pathname.startsWith('/painel');
+  const isPainelRoute = pathname.startsWith("/painel");
+  // Telas de entrada: sem rodapé, para o foco ficar no formulário.
+  const isAuthRoute = AUTH_ROUTES.has(pathname.replace(/\/+$/, ""));
 
   const {
     language,
@@ -28,35 +65,39 @@ export function Footer() {
   } = useAppPreferences();
 
   // Rendered globally from the root layout; the painel has its own shell/chrome.
-  if (isPainelRoute) return null;
+  if (isPainelRoute || isAuthRoute) return null;
 
   const currentYear = new Date().getFullYear();
   const siteName = cfg.site?.name ?? messages.nav.title;
 
   const navLinks = [
-    { href: '/', label: messages.nav.home },
-    { href: '/painel', label: messages.default.dashboard },
-    { href: '/painel/taxonomia/categorias', label: messages.footer.categories },
-    { href: '#', label: messages.nav.contact },
-    { href: '/login', label: messages.nav.login },
-    { href: '/registre-se', label: messages.nav.signUp },
+    { href: "/", label: messages.nav.home },
+    { href: "/painel", label: messages.default.dashboard },
+    { href: "/painel/taxonomia/categorias", label: messages.footer.categories },
+    { href: "/sobre", label: messages.footer.about },
+    { href: "/contato", label: messages.nav.contact },
+    { href: "/privacidade", label: messages.footer.privacy },
+    { href: "/termos", label: messages.footer.terms },
+    { href: "/login", label: messages.nav.login },
+    { href: "/registre-se", label: messages.nav.signUp },
   ];
 
   const themeColors = [
-    { value: 'blue', label: messages.nav.blue },
-    { value: 'green', label: messages.nav.green },
-    { value: 'purple', label: messages.nav.purple },
-    { value: 'teal', label: messages.nav.teal },
-    { value: 'red', label: messages.nav.red },
-    { value: 'orange', label: messages.nav.orange },
-    { value: 'coral', label: messages.nav.coral },
+    { value: "blue", label: messages.nav.blue },
+    { value: "green", label: messages.nav.green },
+    { value: "purple", label: messages.nav.purple },
+    { value: "teal", label: messages.nav.teal },
+    { value: "red", label: messages.nav.red },
+    { value: "orange", label: messages.nav.orange },
+    { value: "coral", label: messages.nav.coral },
   ];
 
   const socialLinks = [
-    { href: 'https://github.com', label: 'GitHub', icon: GitBranchIcon },
-    { href: 'https://twitter.com', label: 'Twitter', icon: GitBranchIcon },
-    { href: 'https://instagram.com', label: 'Instagram', icon: GitBranchIcon },
-    { href: 'https://linkedin.com', label: 'LinkedIn', icon: GitBranchIcon },
+    {
+      href: "https://www.instagram.com/boracuiaba.ofc",
+      label: "Instagram",
+      icon: InstagramIcon,
+    },
   ];
 
   return (
@@ -76,7 +117,9 @@ export function Footer() {
                     className="inline-block h-2.5 w-2.5 rounded-full bg-primary"
                     aria-hidden="true"
                   />
-                  <span className="text-sm font-semibold tracking-tight">{siteName}</span>
+                  <span className="text-sm font-semibold tracking-tight">
+                    {siteName}
+                  </span>
                 </>
               )}
             </Link>
@@ -84,48 +127,54 @@ export function Footer() {
               {messages.footer.tagline}
             </p>
 
-            <div className="flex flex-wrap items-center gap-2 pt-1">
-              {themeColorSelectable && (
+            {showPreferences ? (
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                {themeColorSelectable && (
+                  <select
+                    value={themeColor}
+                    onChange={(e) =>
+                      setThemeColor(e.target.value as typeof themeColor)
+                    }
+                    aria-label={messages.nav.color}
+                    className="h-9 rounded-[var(--ui-radius-field,0.375rem)] border border-input bg-background px-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+                  >
+                    {themeColors.map((c) => (
+                      <option key={c.value} value={c.value}>
+                        {c.label}
+                      </option>
+                    ))}
+                  </select>
+                )}
+
                 <select
-                  value={themeColor}
-                  onChange={(e) => setThemeColor(e.target.value as typeof themeColor)}
-                  aria-label={messages.nav.color}
-                  className="h-9 rounded-md border border-input bg-background px-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+                  value={language}
+                  onChange={(e) => setLanguage(e.target.value as typeof language)}
+                  aria-label={messages.nav.language}
+                  className="h-9 rounded-[var(--ui-radius-field,0.375rem)] border border-input bg-background px-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
                 >
-                  {themeColors.map((c) => (
-                    <option key={c.value} value={c.value}>
-                      {c.label}
+                  {languages.map((item) => (
+                    <option key={item} value={item}>
+                      {languageNames[item]}
                     </option>
                   ))}
                 </select>
-              )}
 
-              <select
-                value={language}
-                onChange={(e) => setLanguage(e.target.value as typeof language)}
-                aria-label={messages.nav.language}
-                className="h-9 rounded-md border border-input bg-background px-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
-              >
-                {languages.map((item) => (
-                  <option key={item} value={item}>
-                    {languageNames[item]}
-                  </option>
-                ))}
-              </select>
-
-              <Button
-                variant="outline"
-                size="icon"
-                aria-label={messages.nav.theme}
-                onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
-              >
-                {resolvedTheme === 'dark' ? (
-                  <Sun className="h-4 w-4" />
-                ) : (
-                  <Moon className="h-4 w-4" />
-                )}
-              </Button>
-            </div>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  aria-label={messages.nav.theme}
+                  onClick={() =>
+                    setTheme(resolvedTheme === "dark" ? "light" : "dark")
+                  }
+                >
+                  {resolvedTheme === "dark" ? (
+                    <Sun className="h-4 w-4" />
+                  ) : (
+                    <Moon className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            ) : null}
           </div>
 
           {/* Col 2 — Navigation */}
@@ -133,15 +182,17 @@ export function Footer() {
             <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               {messages.footer.navigation}
             </p>
-            {navLinks.map((link) => (
-              <Link
-                key={link.href + link.label}
-                href={link.href}
-                className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-              >
-                {link.label}
-              </Link>
-            ))}
+            <div className="grid grid-flow-col grid-rows-5 gap-x-6 gap-y-2">
+              {navLinks.map((link) => (
+                <Link
+                  key={link.href + link.label}
+                  href={link.href}
+                  className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </div>
           </nav>
 
           {/* Col 3 — Social */}
@@ -157,7 +208,7 @@ export function Footer() {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={label}
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-input bg-background text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-[var(--ui-radius-pill,0.375rem)] border border-input bg-background text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
                 >
                   <Icon className="h-4 w-4" />
                 </a>
@@ -166,15 +217,30 @@ export function Footer() {
           </div>
         </div>
 
+        {/* Citação */}
+        <figure className="mt-8 mx-auto max-w-[772px] text-center">
+          <blockquote className="text-sm italic leading-relaxed text-muted-foreground">
+            “Por isso louvei a alegria, porque nada há melhor para o homem debaixo do sol,
+            do que comer, e beber, e alegrar-se; porque isso o acompanhará no seu
+            trabalho, nos dias da sua vida, que Deus lhe deu debaixo do sol.”
+          </blockquote>
+          <figcaption className="mt-2 text-xs text-muted-foreground">
+            Eclesiastes 8:15 · Almeida
+          </figcaption>
+        </figure>
+
         {/* Divider + copyright */}
         <div className="mt-8 flex flex-col items-center justify-between gap-2 border-t border-border/70 pt-6 sm:flex-row">
           <p className="text-xs text-muted-foreground">
             © {currentYear} {siteName}. {messages.footer.rights}
+            {appVersion && (
+              <span className="ml-2 opacity-70">v{appVersion}</span>
+            )}
           </p>
           <p className="text-xs text-muted-foreground">
-            {'weather' in cfg && (
+            {"weather" in cfg && (
               <>
-                {messages.footer.weatherCredit}:{' '}
+                {messages.footer.weatherCredit}:{" "}
                 <a
                   href="https://open-meteo.com"
                   target="_blank"
@@ -183,7 +249,7 @@ export function Footer() {
                 >
                   Open-Meteo
                 </a>
-                {' · '}
+                {" · "}
               </>
             )}
             {messages.footer.madeWith}

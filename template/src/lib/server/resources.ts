@@ -16,6 +16,15 @@ import { PAGES_RESOURCE } from '@kizuna/core/client/components/screen-engine/res
 import { resourceTaxonomy } from '@kizuna/core/client/components/screen-engine/resources/taxonomy';
 import { resourceReviews } from '@kizuna/core/client/components/screen-engine/resources/reviews';
 import { resourceServices } from '@kizuna/core/client/components/screen-engine/resources/services';
+import { rpcSearch } from '@kizuna/core/client/components/screen-engine/resources/search';
+import {
+  resourceServiceReactions,
+  rpcSwipe,
+} from '@kizuna/core/client/components/screen-engine/resources/swipe';
+import { resourceAnalytics, rpcAnalytics } from '@kizuna/core/client/components/screen-engine/resources/analytics';
+import { resourceAiReview, rpcAiReview } from '@kizuna/core/client/components/screen-engine/resources/ai-review';
+import { resourceTickets } from '@kizuna/core/client/components/screen-engine/resources/tickets';
+import { resourceUserData } from '@kizuna/core/client/components/screen-engine/resources/user-data';
 import type { ResourceConfig, RpcConfig } from '@kizuna/core/types';
 
 export { parseActive, makeSlug } from '@kizuna/core/types';
@@ -34,6 +43,15 @@ export const postgrestResources: Record<string, ResourceConfig> = {
   ...(resourceTaxonomy as Record<string, ResourceConfig>),
   ...(resourceReviews as Record<string, ResourceConfig>),
   ...(resourceServices as Record<string, ResourceConfig>),
+  ...(resourceAnalytics as Record<string, ResourceConfig>),
+  // tickets plugin — chamados e comentários (RLS decide o escopo: usuário x staff).
+  ...(resourceTickets as Record<string, ResourceConfig>),
+  // ai_review plugin — revisão de textos por IA (credenciais sem cifra, prompts, revisões, execuções).
+  ...(resourceAiReview as Record<string, ResourceConfig>),
+  // swipe plugin — reações do usuário (gostei/favorito) por anúncio; RLS por dono.
+  ...(resourceServiceReactions as Record<string, ResourceConfig>),
+  // user_data plugin — perfil da conta (Minha conta); RLS limita à própria linha.
+  ...(resourceUserData as Record<string, ResourceConfig>),
   // ...spread aqui os recursos do seu app: ...resourceMeuDominio,
 };
 
@@ -52,6 +70,14 @@ export const postgrestRpcs: Record<string, RpcConfig> = {
   fn_review_moderate: { schema: 'public' },
   // services plugin — moderação do anúncio (insere service_moderations e deriva services.status).
   fn_service_moderate: { schema: 'public' },
+  // ai_review plugin — aprovar/rejeitar revisão de texto de anúncio.
+  ...rpcAiReview,
+  // search plugin — busca pública de serviços (/busca). Só relevante com o plugin `search` ativo.
+  ...rpcSearch,
+  // swipe plugin — deck de descoberta com swipe (liking/disliking). Público + sessão opcional.
+  ...rpcSwipe,
+  // analytics plugin — escrita anônima de eventos (views, cliques...). Pública + sessão opcional.
+  ...rpcAnalytics,
   // messaging plugin — o chat usa rotas bespoke `/api/chat/*` que chamam
   // `fn_msg_*` direto (cursor + delta sync não cabem na rota genérica). Se quiser
   // expô-las aqui: fn_msg_start_conversation / fn_msg_send_message / fn_msg_mark_read

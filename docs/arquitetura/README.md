@@ -4,8 +4,13 @@
 
 ```
 kizuna-core/
-├── sql/                        core auth schema + RBAC + plugin registry (0001-0108, apply in order)
-├── plugins/<name>/0001_*.sql   optional, independent tables — see ../plugins/README.md
+├── sql/                        core auth schema + RBAC + plugin registry (0001-0118, apply in order)
+├── plugins/<name>/NNNN_*.sql   optional, independent tables — see ../plugins/README.md
+├── plugins/<name>/shell/       plugin's slice of the app shell (routes/pages + manifest.json)
+├── template/                   generic app shell copied into the project (kizuna.manifest.json:
+│                               managed / seed / install) — see ../comecando/cli.md
+├── starter/                    initial kizuna.config.json / kizuna.plugins.json / README of a new project
+├── cli/                        `node kizuna-core/cli …` (install, update, sync, db, …)
 ├── scripts/install.sh          fresh-install: sql/ then requested plugins
 └── src/
     ├── types/                  ResourceConfig, ScreenConfig, AuthContext, PermissionMap, ...
@@ -16,7 +21,8 @@ kizuna-core/
     │       ├── ui-better-soft/   richer domain-flavored kit
     │       ├── screen-engine/    JSON-driven screen composition
     │       └── showcase/         live component catalog (runs at /showcase)
-    ├── server/                  auth handlers, session, PostgREST wrappers, resource CRUD
+    ├── server/                  auth handlers, session, PostgREST wrappers, resource CRUD, AI, location
+    ├── shared/                  isomorphic helpers (city routing, analytics metrics, account levels, ...)
     └── lib/                     cn, isShowcaseEnabled, Temporal polyfill
 ```
 

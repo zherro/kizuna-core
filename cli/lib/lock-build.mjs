@@ -34,6 +34,9 @@ export function stampCore(lock, { coreDir, enabled }) {
 export function applyFragment(lock, fragment) {
   lock.template = lock.template ?? { version: null, files: {} };
   lock.template.files = { ...(lock.template.files ?? {}), ...fragment.templateFiles };
+  if (fragment.seedFiles && Object.keys(fragment.seedFiles).length) {
+    lock.template.seeds = { ...(lock.template.seeds ?? {}), ...fragment.seedFiles };
+  }
   lock.plugins = lock.plugins ?? {};
   for (const [owner, files] of Object.entries(fragment.pluginShellFiles ?? {})) {
     lock.plugins[owner] = {

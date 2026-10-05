@@ -61,8 +61,14 @@ opções globais:
   --no-input         falha em vez de perguntar
   --force            (install) re-materializa TODA a casca por cima do projeto
   --prune            (install/update) remove arquivos de um layout anterior
-  --reseed <paths>   (update) re-copia seeds do template ("all" ou "a,b,c")
+  --reseed <paths>   (update) sobrescreve esses seeds mesmo customizados ("a,b,c")
   --help             esta ajuda
+
+modos do manifesto (template/kizuna.manifest.json):
+  managed            o core é o dono; update reaplica (fast-forward / 3-way)
+  seed               copiado se ausente; segue o template sozinho se não customizado;
+                     customizado só com --reseed "<path>" ou install --force
+  install            copiado só se ausente; NUNCA sobrescrito (artes, sobre/termos/privacidade)
 `;
 
 export default async function main(argv) {

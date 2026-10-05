@@ -192,3 +192,103 @@ it('--reseed sobrescreve o seed divergente', async () => {
   expect(readFileSync(join(proj, 'app', 'page.tsx'), 'utf8')).toBe('novo do template\n');
   cleanup();
 });
+
+function scaffoldInstall() {
+  const s = scaffold();
+  writeFileSync(
+    join(s.core, 'template', 'kizuna.manifest.json'),
+    JSON.stringify({
+      owner: 'base',
+      files: { 'app/sobre.tsx': 'install', 'app/icon.svg': 'install' },
+    })
+  );
+  writeFileSync(join(s.core, 'template', 'app', 'sobre.tsx'), 'sobre v1\n');
+  writeFileSync(join(s.core, 'template', 'app', 'icon.svg'), '<svg/>\n');
+  return s;
+}
+
+const applyOpts = (proj, extra = {}) => ({
+  projectDir: proj,
+  direction: 'apply',
+  lock: emptyLock(),
+  prompt: { choose: vi.fn() },
+  dryRun: false,
+  ...extra,
+});
+
+it('install: copia quando ausente', async () => {
+  const { core, proj, cleanup } = scaffoldInstall();
+  const r = await materialize(loadManifests(core, []), applyOpts(proj));
+  expect(r.applied).toEqual(expect.arrayContaining(['app/sobre.tsx', 'app/icon.svg']));
+  expect(readFileSync(join(proj, 'app', 'sobre.tsx'), 'utf8')).toBe('sobre v1\n');
+  cleanup();
+});
+
+it('install: nunca sobrescreve (reseed all, reseed path, force) e não entra em seedDrift', async () => {
+  const { core, proj, cleanup } = scaffoldInstall();
+  await materialize(loadManifests(core, []), applyOpts(proj));
+  writeFileSync(join(proj, 'app', 'sobre.tsx'), 'customizado\n');
+  writeFileSync(join(core, 'template', 'app', 'sobre.tsx'), 'sobre v2\n');
+  for (const extra of [{}, { reseed: true }, { reseed: ['app/sobre.tsx'] }, { force: true, reseed: true }]) {
+    const r = await materialize(loadManifests(core, []), applyOpts(proj, extra));
+    expect(r.skipped).toContain('app/sobre.tsx');
+    expect(r.applied).not.toContain('app/sobre.tsx');
+    expect(r.seedDrift).not.toContain('app/sobre.tsx');
+    expect(readFileSync(join(proj, 'app', 'sobre.tsx'), 'utf8')).toBe('customizado\n');
+  }
+  cleanup();
+});
+
+it('install: existe pelo nome sem extensão (icon.png bloqueia icon.svg)', async () => {
+  const { core, proj, cleanup } = scaffoldInstall();
+  mkdirSync(join(proj, 'app'), { recursive: true });
+  writeFileSync(join(proj, 'app', 'icon.png'), 'png');
+  const r = await materialize(loadManifests(core, []), applyOpts(proj, { reseed: true }));
+  expect(r.skipped).toContain('app/icon.svg');
+  expect(existsSync(join(proj, 'app', 'icon.svg'))).toBe(false);
+  cleanup();
+});
+
+it('install: sync (push) não empurra de volta', async () => {
+  const { core, proj, cleanup } = scaffoldInstall();
+  await materialize(loadManifests(core, []), applyOpts(proj));
+  writeFileSync(join(proj, 'app', 'sobre.tsx'), 'customizado\n');
+  await materialize(loadManifests(core, []), applyOpts(proj, { direction: 'push' }));
+  expect(readFileSync(join(core, 'template', 'app', 'sobre.tsx'), 'utf8')).toBe('sobre v1\n');
+  cleanup();
+});
+
+it('seed não customizado segue o template sozinho; customizado fica e entra em seedDrift', async () => {
+  const { core, proj, cleanup } = scaffold();
+  const opts = (lock, extra = {}) => ({
+    projectDir: proj,
+    direction: 'apply',
+    lock,
+    prompt: { choose: vi.fn() },
+    ...extra,
+  });
+  // install: grava o seed e registra o hash da versão do template
+  const r1 = await materialize(loadManifests(core, []), opts(emptyLock()));
+  const lock = emptyLock();
+  lock.template.seeds = r1.newLockFragment.seedFiles;
+  expect(lock.template.seeds['app/page.tsx']).toMatch(/^sha256:/);
+
+  // template muda; projeto não mexeu → aplica sem --reseed
+  writeFileSync(join(core, 'template', 'app', 'page.tsx'), 'export default () => 1;\n');
+  const r2 = await materialize(loadManifests(core, []), opts(lock));
+  expect(readFileSync(join(proj, 'app', 'page.tsx'), 'utf8')).toContain('=> 1');
+  expect(r2.applied).toContain('app/page.tsx');
+  lock.template.seeds = { ...lock.template.seeds, ...r2.newLockFragment.seedFiles };
+
+  // projeto customiza; template muda de novo → não toca, nem com --reseed all
+  writeFileSync(join(proj, 'app', 'page.tsx'), 'export default () => "meu";\n');
+  writeFileSync(join(core, 'template', 'app', 'page.tsx'), 'export default () => 2;\n');
+  const r3 = await materialize(loadManifests(core, []), opts(lock, { reseed: true }));
+  expect(readFileSync(join(proj, 'app', 'page.tsx'), 'utf8')).toContain('"meu"');
+  expect(r3.seedDrift).toContain('app/page.tsx');
+
+  // path explícito sobrescreve
+  await materialize(loadManifests(core, []), opts(lock, { reseed: ['app/page.tsx'] }));
+  expect(readFileSync(join(proj, 'app', 'page.tsx'), 'utf8')).toContain('=> 2');
+  cleanup();
+});

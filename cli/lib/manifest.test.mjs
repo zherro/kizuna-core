@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { loadManifests, DuplicateOwnerError } from './manifest.mjs';
+import { loadManifests, DuplicateOwnerError, InvalidModeError } from './manifest.mjs';
 
 function fakeCore() {
   const dir = mkdtempSync(join(tmpdir(), 'kz-core-'));
@@ -57,4 +57,26 @@ it('lança DuplicateOwnerError em path com dois donos', () => {
   );
   expect(() => loadManifests(core, ['x'])).toThrowError(DuplicateOwnerError);
   rmSync(core, { recursive: true, force: true });
+});
+
+it('aceita o modo install', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'kz-core-'));
+  mkdirSync(join(dir, 'template'), { recursive: true });
+  writeFileSync(
+    join(dir, 'template', 'kizuna.manifest.json'),
+    JSON.stringify({ owner: 'base', files: { 'public/arte.png': 'install' } })
+  );
+  expect(loadManifests(dir, []).entries[0]).toMatchObject({ mode: 'install' });
+  rmSync(dir, { recursive: true, force: true });
+});
+
+it('rejeita modo desconhecido', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'kz-core-'));
+  mkdirSync(join(dir, 'template'), { recursive: true });
+  writeFileSync(
+    join(dir, 'template', 'kizuna.manifest.json'),
+    JSON.stringify({ owner: 'base', files: { 'a.ts': 'manged' } })
+  );
+  expect(() => loadManifests(dir, [])).toThrow(InvalidModeError);
+  rmSync(dir, { recursive: true, force: true });
 });

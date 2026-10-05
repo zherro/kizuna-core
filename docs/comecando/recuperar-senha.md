@@ -45,8 +45,8 @@ produção atrás de proxy pode gerar um link errado ou manipulável. **Defina `
 | Peça                    | Onde                                                                   |
 | ----------------------- | ---------------------------------------------------------------------- |
 | Link no login           | `LoginPageContent`, prop `forgotPasswordHref` (`null` esconde)         |
-| Tela "Esqueci a senha"  | `/esqueci-senha` → `ForgotPasswordPageContent` (seed)                  |
-| Tela "Nova senha"       | `/redefinir-senha` → `ResetPasswordPageContent` (seed, em `<Suspense>`) |
+| Tela "Esqueci a senha"  | `/esqueci-senha` → `ForgotPasswordPageContent` (managed)               |
+| Tela "Nova senha"       | `/redefinir-senha` → `ResetPasswordPageContent` (managed, em `<Suspense>`) |
 | API                     | `POST /api/auth/forgot-password` e `POST /api/auth/reset-password` (managed) |
 | Handlers                | `@kizuna/core/server/password-reset`                                   |
 | Banco                   | `auth.password_reset_tokens` + 2 RPCs em `sql/0112_password_reset.sql` |

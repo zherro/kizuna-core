@@ -1,12 +1,24 @@
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { SearchPage } from '@kizuna/core/client/components/search/search-page';
+import type { ServiceDetailConfig } from '@kizuna/core/client/components/services/detail';
+import { trackRule } from '@/lib/analytics';
+import { parseRegions } from '@kizuna/core/shared/regions';
 import cfg from '@/../kizuna.config.json';
 
 // O carrossel de categorias da busca segue EXATAMENTE a regra do da home: as mesmas chaves de
 // `home` no kizuna.config.json (variante e "só categorias com anúncio publicado").
 const home = (cfg as { home?: { categoriesVariant?: string; categoriesOnlyWithListings?: boolean } })
   .home;
+// Categorias com layout de detalhe próprio (ex. cinema) podem sair do resultado misto — ver
+// `serviceDetail.excludeFromMixedCategorySlugs` no kizuna.config.json.
+const serviceDetailConfig: ServiceDetailConfig | null =
+  (cfg as { serviceDetail?: ServiceDetailConfig }).serviceDetail ?? null;
+const excludeFromMixedCategorySlugs = serviceDetailConfig?.excludeFromMixedCategorySlugs ?? [];
+// `search.ai` no kizuna.config.json: false desativa a busca com IA (assistente). Omitido = ligado.
+const aiEnabled = (cfg as { search?: { ai?: boolean } }).search?.ai !== false;
+// Cidades vizinhas sugeridas abaixo dos resultados (kizuna.config.json → regions).
+const regions = parseRegions((cfg as { regions?: unknown }).regions);
 
 type Props = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -57,6 +69,11 @@ export default function BuscaPage() {
           variant: home?.categoriesVariant === 'compact' ? 'compact' : 'classic',
           onlyWithListings: home?.categoriesOnlyWithListings === true,
         }}
+        excludeFromMixedCategorySlugs={excludeFromMixedCategorySlugs}
+        serviceDetailConfig={serviceDetailConfig}
+        aiEnabled={aiEnabled}
+        regions={regions}
+        impressionRule={trackRule('service', 'impression')}
       />
     </Suspense>
   );

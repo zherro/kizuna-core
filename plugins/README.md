@@ -77,6 +77,21 @@ follow-ups (`0002_*.sql`, …) for data seeds or later migrations; the installer
   into its `postgrestRpcs`. The second page mode (e.g. "Pedir um serviço") is injected through
   `SearchPage`'s `requestMode` prop — the plugin knows nothing about demandas. No
   `auth.permissions` (public, read-only).
+- `services/` — marketplace domain (a provider's listing) plus its moderation queue: `services`,
+  `service_categories_sub`, `service_addresses`, `service_moderations`, view
+  `vw_category_service_stats`; `fn_service_moderate` records the decision and derives
+  `services.status`. Depends on `taxonomy` and (soft) `storage`. Registers `services.moderate`.
+  Shell: `/painel/meus-servicos/*` and `/painel/administracao/aprovacoes/*`. See
+  `docs/plugins/services.md`.
+- `ai_assistant/` — generic AI mechanism, no data table: config lives in `auth.system_config`
+  (`ai_assistant.provider` / `.model` / `.contexts`), provider key in env or `ai_credentials`.
+  Depends on `system_config`. Registers `ai_assistant.manage`. TS side: `@kizuna/core/server/ai/*`
+  (see `docs/servicos/ai.md`).
+- `demandas/` — open request ("pedido aberto") not tied to a provider: `demanda` (moderated before
+  it shows up), `demanda_moderacao`, `demanda_proposta`, `demanda_proposta_servico` (each proposal
+  anchored on the provider's own `services`). `0002` attachments, `0003` expiry date, `0004`
+  chosen subcategories. Depends on `services`, `taxonomy`, `forms`; goes before `pedidos`.
+  Registers `demandas.moderate`.
 - `ai_review/` — revisão de textos de anúncios por IA com aprovação humana, **somente root e somente com o JWT do usuário logado** (sem service_role). Tabelas `ai_credentials` (chave do provider cifrada no Node; `key_cipher` não é legível por SELECT, só pela RPC `fn_ai_credential_get_cipher`), `ai_prompts` (prompts versionados, override por categoria; seed `service_description_review`), `service_text_revisions` (original x proposto, `pending|approved|rejected`), `ai_review_runs` (lotes processados em passos acionados pela tela; colunas `service_ids`, `failed_ids`, `updated_at`). Gate `public.fn_ai_review_is_root()` (claim is_root do JWT) usado por policies e RPCs. RPCs `fn_ai_credential_save` / `fn_ai_credential_get_cipher` / `fn_service_revision_apply` / `fn_service_revision_reject`. A flag `categories.ai_review` vem do `taxonomy` 0004. As permissões `ai_review.manage` e `ai_review.review` ficam só no catálogo (a regra efetiva é root). Recursos: `screen-engine/resources/ai-review` (`resourceAiReview`, `rpcAiReview`).
 - `swipe/` — página pública `/descobrir` (deslizar itens da busca: curtir/passar) e `/curtidos`.
   `service_user_favorites` (1 linha por usuário+item, upsert, sem DELETE — descurtir é
@@ -162,10 +177,9 @@ follow-ups (`0002_*.sql`, …) for data seeds or later migrations; the installer
   to this prestador" checks in `fn_pedido_create`/`fn_pedido_add_servico`) and on `messaging`/
   `conversation` (FK from `pedido.conversation_id`, and `fn_pedido_create` checks the caller —
   and, since I1, `p_prestador_id` too — are participants of that conversation via
-  `conversation_participant`). Because of the FKs into `services` and `conversation`, `pedidos`
-  is **not** listed in `kizuna.plugins.json`; it is applied manually, after `services` and
-  `messaging,user_data`, by the consuming project's install script (foco-total's
-  `db/install.sh`).
+  `conversation_participant`). Because of the FKs into `services`, `conversation` and (since
+  `0004`) `demanda`, `pedidos` goes last in `kizuna.plugins.json` — the installer applies plugins
+  in list order.
 
 ## Convention: registering with RBAC
 

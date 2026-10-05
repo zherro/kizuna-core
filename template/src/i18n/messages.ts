@@ -13,11 +13,12 @@ export const languageNames: Record<AppLanguage, string> = {
  * este objeto até serem traduzidos (fallback em português).
  */
 export const WIZARD_PT_BR = {
-  exitConfirm: 'Sair agora descarta este anúncio. Tem certeza?',
+  exitConfirm: 'Sair agora descarta esta publicação. Tem certeza?',
+
   // Rótulo de cada passo no stepper/trilho, por chave do passo (sobrescreve o `label` do registry).
   stepLabels: {
-    start: 'Início',
-    category: 'Categoria',
+    start: 'Titulo',
+    category: 'Tipo',
     location: 'Onde você atende',
     price: 'Quanto você cobra',
     images: 'Fotos',
@@ -31,87 +32,79 @@ export const WIZARD_PT_BR = {
     whyShort: 'Por quê?',
     hideWhy: 'Ocultar explicação',
   },
+
   start: {
-    title: 'Digite o título do seu anúncio',
-    subtitle: 'Curto e direto: o que você oferece e, se ajudar, um diferencial.',
-    placeholder: 'Ex.: Trilha guiada até a cachoeira, saída todo sábado',
+    title: 'Hora de criar o título da sua publicação',
+    subtitle: 'O que você oferece, ou descrição curta do assunto.',
+    placeholder: '... digite o titulo aqui.',
     tooShort: 'Escreva um pouco mais (mínimo 5 caracteres).',
   },
+
   category: {
-    title: 'Em qual área é o seu anúncio?',
-    subtitle: 'Escolha a área — a categoria vem na sequência e as especialidades logo abaixo.',
-    why: 'Começamos pela área porque ela é mais ampla: a mesma categoria pode aparecer em áreas diferentes, e a área certa põe o seu anúncio na frente de quem procura.',
-    emptyGroups: 'Nenhuma área ativa encontrada.',
+    title: 'Qual o tipo da sua publicação?',
+    subtitle: 'Escolha o tipo — a categoria vem na sequência.',
+    why: 'Começamos pelo tipo porque ele é mais amplo: a mesma categoria pode aparecer em tipos diferentes, e o tipo certo põe o seu anúncio na frente de quem procura.',
+    emptyGroups: 'Nenhum tipo encontrado.',
     pickCategory: 'Escolher categoria',
-    changeGroupCategory: 'Mudar área',
+    changeGroupCategory: 'Mudar tipo',
     change: 'Trocar',
     open: 'Abrir',
     pickerTitle: 'Qual a sua categoria?',
 
-    categoryTitle: 'Para continuar, selecione uma categoria!',
+    categoryTitle: 'Qual a categoria do serviço?',
     loadingCategories: 'Carregando categorias…',
     back: 'Voltar',
     noCategories: 'Nenhuma categoria ativa nesta área.',
   },
+
   subcategory: {
     title: 'Especialidades',
     stepTitle: 'Quais especialidades você atende?',
     changeCategory: 'Mudar categoria',
 
     editTags: 'Editar',
-    why: 'Cada especialidade marcada é mais uma busca em que o seu anúncio aparece. Marque só o que realmente se aplica.',
+    why: 'Cada especialidade marcada é mais uma busca em que a sua publicação aparece. Marque só o que realmente se aplica.',
     empty:
       'Esta categoria não tem especialidades cadastradas. Você detalha no título e na descrição.',
   },
+
   location: {
     title: 'Onde acontece?',
-    subtitle: 'Escolha o formato que combina com o seu anúncio.',
-    why: 'Isso define como o público encontra você. Anúncios com endereço aparecem nas buscas da região; anúncios online aparecem para todo o país.',
+    subtitle: 'Escolha o formato que combina com a sua publicação.',
+    why: 'Isso define como o público encontra você. Publicações com endereço aparecem nas buscas da região; publicações online aparecem para todo o país.',
     noCliente: 'Você vai até o endereço do interessado.',
     noEstabelecimento: 'O interessado vem até o seu endereço.',
     remoto: 'Acontece online, sem atendimento presencial.',
     addressTitle: 'Endereço de referência',
     addressHint:
-      'Usado só para posicionar você na busca por região. O endereço exato não aparece no anúncio.',
+      'Usado só para posicionar você na busca por região. O endereço exato não aparece na publicação.',
     addressSearch: 'Não sei meu CEP',
+    // Textos por opção de `locationOptions` (kizuna.config.json) — a chave é o `value` gravado.
     options: {
-      no_cliente: {
-        hint: 'O profissional vai até o cliente; nenhum endereço é necessário.',
+      no_estabelecimento: {
+        title: 'Presencial',
+        description: 'Atendimento em um endereço físico.',
       },
-    },
-    remoteHint: 'Anúncios online aparecem para todo o país, sem filtro de região.',
-    addresses: {
-      title: 'Endereços de atendimento',
-      hint: 'Adicione os locais onde você atende. Marque um como principal — é ele que define sua posição na busca.',
-      label: 'Apelido (opcional, ex.: Matriz)',
-      primary: 'Principal',
-      makePrimary: 'Tornar principal',
-      add: 'Adicionar endereço',
-      remove: 'Remover endereço',
-      empty: 'Nenhum endereço ainda.',
-      limit: 'Limite de endereços atingido.',
-    },
+      remoto: {
+        title: 'Online',
+        description: 'Atendimento à distância, sem endereço.',
+        hint: 'Publicações online aparecem para todo o país, sem filtro de região.',
+      },
+    } as Record<string, { title?: string; description?: string; hint?: string }>,
+    remoteHint: 'Publicações online aparecem para todo o país, sem filtro de região.',
   },
+
   price: {
     title: 'Quanto custa?',
     subtitle:
       "Um valor de referência ajuda o público a decidir antes de entrar em contato. Não precisa ser o preço final — é o 'a partir de'.",
-    why: "Anúncios com um valor de referência recebem contatos mais sérios: quem chama já sabe a ordem de grandeza. Se o valor depende de cada caso, escolha 'sob orçamento' e combine o resto no chat.",
+    why: "Publicações com um valor de referência recebem contatos mais sérios: quem chama já sabe a ordem de grandeza. Se o valor depende de cada caso, escolha 'sob orçamento' e combine o resto no chat.",
     unitLabel: 'Como é cobrado?',
     amountOptional: 'Valor a partir de (opcional)',
     amount: 'Valor a partir de (R$)',
     quoteHint:
       'Com “sob orçamento” você pode deixar em branco. Se preencher, o público vê “a partir de R$ X”.',
     agree: 'A combinar',
-    // Validade do anúncio (perfil `stepProfiles.price` com `expiresAt`).
-    expiresAt: {
-      label: 'Válido até',
-      optional: '(opcional)',
-      hint: 'Depois dessa data o anúncio deixa de valer. O prazo termina no fim do dia escolhido.',
-      clear: 'Limpar data',
-      required: 'Informe até quando o anúncio vale',
-      past: 'A data não pode estar no passado',
-    },
     // Tabela de preços (perfil `stepProfiles.price` com `priceTable: true`).
     table: {
       title: 'Tabela de preços',
@@ -128,20 +121,32 @@ export const WIZARD_PT_BR = {
     },
     // Textos por forma de cobrança (chave = `textKey` ou o `value` de `price_unit`):
     // `{ title, description }`. Sem entrada, valem os textos padrão do core.
-    options: {} as Record<string, { title?: string; description?: string }>,
+    options: {
+      service: {
+        title: 'Por evento',
+        description: 'Valor do ingresso ou voucher',
+      },
+      hour: { title: 'Por hora', description: 'Passe ou voucher específico.' },
+      quote: {
+        title: 'Sob orçamento',
+        description: 'Você combina o valor no chat',
+      },
+    } as Record<string, { title?: string; description?: string }>,
   },
+
   images: {
-    title: 'Adicione fotos do seu anúncio',
-    subtitle: 'Adicione ao menos 1 foto para continuar. A primeira vira a capa do anúncio.',
-    why: 'Quem procura quer ver antes de entrar em contato. Anúncios com foto recebem muito mais contato — mostre o local, o ambiente e o que está incluso.',
-    saveError: 'Não foi possível salvar as imagens do anúncio.',
+    title: 'Adicione fotos da sua publicação',
+    subtitle: 'Adicione ao menos 1 foto para continuar. A primeira vira a capa da publicação.',
+    why: 'Quem procura quer ver antes de entrar em contato. Publicações com foto recebem muito mais contato — mostre o local, o ambiente e o que está incluso.',
+    saveError: 'Não foi possível salvar as imagens da publicação.',
     saveFirst: 'Volte e salve a categoria antes de adicionar fotos.',
     tip: 'Fotos suas valem mais que imagens da internet. Boa luz e enquadramento reto passam confiança.',
   },
+
   description: {
-    title: 'Conte um pouco sobre o seu anúncio',
+    title: 'Conte um pouco sobre a sua publicação',
     subtitle: 'Escreva com suas palavras: o que é, o que tem de diferente e como funciona.',
-    why: 'É aqui que o visitante decide entre entrar em contato ou passar para o próximo anúncio. Responder as dúvidas comuns (o que está incluso, duração, regras, como chegar) evita idas e vindas no chat.',
+    why: 'É aqui que o visitante decide entre entrar em contato ou passar para a próxima publicação. Responder as dúvidas comuns (o que está incluso, duração, regras, como chegar) evita idas e vindas no chat.',
     placeholder:
       'Ex.: Trilha de dificuldade moderada, 4 horas, com guia local e lanche incluso. Saídas aos sábados às 8h, grupos de até 10 pessoas.',
     hint: 'Dica: o que está incluso, região, duração, regras e como chegar.',
@@ -149,10 +154,11 @@ export const WIZARD_PT_BR = {
     minCount: 'Mínimo de {min} caracteres ({length}/{min})',
     tip: 'Evite descrições vagas. Ser específico sobre o que você oferece passa mais confiança e atrai o público certo.',
   },
+
   moderation: {
     title: 'Revisão',
     subtitle:
-      'Registre a decisão desta revisão. Ela vira um novo registro de moderação e ajusta o status do anúncio automaticamente.',
+      'Registre a decisão desta revisão. Ela vira um novo registro de moderação e ajusta o status da publicação automaticamente.',
     decision: 'Decisão',
     approve: 'Aprovar',
     reject: 'Rejeitar',
@@ -166,15 +172,16 @@ export const WIZARD_PT_BR = {
       price_invalid: 'Preço inválido',
       missing_info: 'Informações faltando',
       prohibited_item: 'Item proibido',
-      fake_listing: 'Anúncio falso',
+      fake_listing: 'Publicação falsa',
       other: 'Outro motivo',
     },
     noteLabel: 'Observação da revisão',
     notePlaceholder: 'Detalhes da decisão — visível só para a equipe (opcional)',
   },
+
   page: {
-    loading: 'Carregando dados do anúncio...',
-    loadError: 'Não foi possível carregar o anúncio para edição.',
+    loading: 'Carregando dados da publicação...',
+    loadError: 'Não foi possível carregar a publicação para edição.',
   },
 };
 
@@ -226,10 +233,21 @@ export type AppMessages = {
     step2Text: string;
     step3Title: string;
     step3Text: string;
+    step3Cta: string;
     joinKicker: string;
     joinTitle: string;
     joinText: string;
     joinCta: string;
+    instagramTitle: string;
+    instagramText: string;
+    instagramCta: string;
+    installTitle: string;
+    installText: string;
+    installCta: string;
+    installHint: string;
+    installIosPre: string;
+    installIosMid: string;
+    installIosPost: string;
   };
   sejaPrestador: {
     metaTitle: string;
@@ -258,6 +276,9 @@ export type AppMessages = {
     social: string;
     rights: string;
     weatherCredit: string;
+    about: string;
+    privacy: string;
+    terms: string;
     madeWith: string;
   };
   default: {
@@ -301,21 +322,32 @@ export const messages: Record<AppLanguage, AppMessages> = {
       heroSub: 'Profissionais avaliados por quem já contratou, aqui na sua região.',
       searchPlaceholder: 'buscar serviço ou profissional',
       searchButton: 'Buscar',
-      categoriesTitle: 'Explore por categoria',
+      categoriesTitle: 'Seu guia de entretenimento começa aqui!',
       categoriesAll: 'Ver todas',
       nearbyTitle: 'Quem está por perto',
       nearbySub: 'Uma amostra de quem está oferecendo serviço agora.',
       howTitle: 'Como funciona',
-      step1Title: 'Busque',
-      step1Text: 'Diga o que você precisa. A gente mostra quem faz isso perto de você.',
-      step2Title: 'Converse',
-      step2Text: 'Fale direto com o profissional, tire dúvidas e peça um orçamento.',
-      step3Title: 'Combine',
-      step3Text: 'Fechou? Combine data, valor e pagamento com quem você escolheu.',
+      step1Title: 'Descubra',
+      step1Text: 'Eventos, filmes em cartaz, lugares e serviços da sua cidade, tudo num só lugar.',
+      step2Title: 'Bora!',
+      step2Text: 'Chama a galera, compartilha o rolê e aproveita o melhor da cidade.',
+      step3Title: 'Anuncie',
+      step3Text: 'Tem um evento ou negócio? Divulgue de graça e apareça para quem está procurando o que fazer.',
+      step3Cta: 'Anunciar meu evento ou negócio',
       joinKicker: 'Para quem oferece serviço',
       joinTitle: 'Você também faz?',
       joinText: 'Publique seu serviço de graça e apareça para quem procura na sua região.',
       joinCta: 'Anunciar meu serviço',
+      instagramTitle: 'Siga a gente no Instagram',
+      instagramText: 'Estreias, programação e novidades da cidade direto no seu feed.',
+      instagramCta: 'Seguir no Instagram',
+      installTitle: 'Instale o app',
+      installText: 'Acesso rápido da tela inicial do celular, sem baixar nada na loja.',
+      installCta: 'Instalar app',
+      installHint: 'No menu do navegador, escolha “Instalar app”.',
+      installIosPre: 'Toque em',
+      installIosMid: 'e depois em',
+      installIosPost: 'Adicionar à Tela de Início',
     },
     sejaPrestador: {
       metaTitle: 'Seja um prestador',
@@ -339,12 +371,15 @@ export const messages: Record<AppLanguage, AppMessages> = {
       haveAccount: 'Já tem conta? Use o formulário para entrar.',
     },
     footer: {
-      tagline: 'Gerencie seus anúncios com facilidade.',
+      tagline: 'Entretenimento, eventos e dicas.',
       navigation: 'Navegação',
       categories: 'Categorias',
       social: 'Redes sociais',
       rights: 'Todos os direitos reservados.',
       weatherCredit: 'Previsão do tempo',
+      about: 'Sobre',
+      privacy: 'Privacidade',
+      terms: 'Termos de uso',
       madeWith: 'Feito com ♥',
     },
     default: {
@@ -391,16 +426,27 @@ export const messages: Record<AppLanguage, AppMessages> = {
       nearbyTitle: 'Whos nearby',
       nearbySub: 'A sample of who is offering services right now.',
       howTitle: 'How it works',
-      step1Title: 'Search',
-      step1Text: 'Tell us what you need. We show you who does it near you.',
-      step2Title: 'Chat',
-      step2Text: 'Talk straight to the pro, ask questions, and request a quote.',
-      step3Title: 'Arrange',
-      step3Text: 'Good to go? Set the date, price, and payment with the pro you picked.',
+      step1Title: 'Discover',
+      step1Text: 'Events, movies now showing, places and services in your city, all in one place.',
+      step2Title: "Let's go!",
+      step2Text: 'Call your friends, share the plan and enjoy the best of the city.',
+      step3Title: 'Advertise',
+      step3Text: 'Have an event or a business? Promote it for free and reach people looking for things to do.',
+      step3Cta: 'Advertise my event or business',
       joinKicker: 'For service providers',
       joinTitle: 'You do this too?',
       joinText: 'Post your service for free and show up for people searching in your area.',
       joinCta: 'List my service',
+      instagramTitle: 'Follow us on Instagram',
+      instagramText: 'Premieres, listings and city news right in your feed.',
+      instagramCta: 'Follow on Instagram',
+      installTitle: 'Install the app',
+      installText: 'Quick access from your phone home screen, no app store needed.',
+      installCta: 'Install app',
+      installHint: 'In your browser menu, choose “Install app”.',
+      installIosPre: 'Tap',
+      installIosMid: 'then',
+      installIosPost: 'Add to Home Screen',
     },
     sejaPrestador: {
       metaTitle: 'Become a provider',
@@ -424,12 +470,15 @@ export const messages: Record<AppLanguage, AppMessages> = {
       haveAccount: 'Already have an account? Use the form to sign in.',
     },
     footer: {
-      tagline: 'Manage your listings with ease.',
+      tagline: 'Entertainment, events and tips to enjoy Cuiabá.',
       navigation: 'Navigation',
       categories: 'Categories',
       social: 'Social media',
       rights: 'All rights reserved.',
       weatherCredit: 'Weather forecast',
+      about: 'About',
+      privacy: 'Privacy',
+      terms: 'Terms of use',
       madeWith: 'Made with ♥',
     },
     default: {
@@ -476,16 +525,27 @@ export const messages: Record<AppLanguage, AppMessages> = {
       nearbyTitle: 'Quién está cerca',
       nearbySub: 'Una muestra de quienes están ofreciendo servicios ahora.',
       howTitle: 'Cómo funciona',
-      step1Title: 'Busca',
-      step1Text: 'Di lo que necesitas. Te mostramos quién lo hace cerca de ti.',
-      step2Title: 'Conversa',
-      step2Text: 'Habla directo con el profesional, resuelve dudas y pide un presupuesto.',
-      step3Title: 'Acuerda',
-      step3Text: '¿Todo listo? Acuerda fecha, precio y pago con quien elegiste.',
+      step1Title: 'Descubre',
+      step1Text: 'Eventos, películas en cartelera, lugares y servicios de tu ciudad, todo en un solo lugar.',
+      step2Title: '¡Vamos!',
+      step2Text: 'Llama a tus amigos, comparte el plan y disfruta lo mejor de la ciudad.',
+      step3Title: 'Anuncia',
+      step3Text: '¿Tienes un evento o negocio? Publícalo gratis y llega a quien busca qué hacer.',
+      step3Cta: 'Anunciar mi evento o negocio',
       joinKicker: 'Para quienes ofrecen servicios',
       joinTitle: '¿Tú también lo haces?',
       joinText: 'Publica tu servicio gratis y aparece para quienes buscan en tu zona.',
       joinCta: 'Publicar mi servicio',
+      instagramTitle: 'Síguenos en Instagram',
+      instagramText: 'Estrenos, cartelera y novedades de la ciudad en tu feed.',
+      instagramCta: 'Seguir en Instagram',
+      installTitle: 'Instala la app',
+      installText: 'Acceso rápido desde la pantalla de inicio, sin descargar de la tienda.',
+      installCta: 'Instalar app',
+      installHint: 'En el menú del navegador, elige “Instalar app”.',
+      installIosPre: 'Toca',
+      installIosMid: 'y luego',
+      installIosPost: 'Añadir a pantalla de inicio',
     },
     sejaPrestador: {
       metaTitle: 'Sé un profesional',
@@ -509,12 +569,15 @@ export const messages: Record<AppLanguage, AppMessages> = {
       haveAccount: '¿Ya tienes cuenta? Usa el formulario para iniciar sesión.',
     },
     footer: {
-      tagline: 'Gestiona tus anuncios con facilidad.',
+      tagline: 'Entretenimiento, eventos y consejos para disfrutar Cuiabá.',
       navigation: 'Navegación',
       categories: 'Categorías',
       social: 'Redes sociales',
       rights: 'Todos los derechos reservados.',
       weatherCredit: 'Pronóstico del tiempo',
+      about: 'Acerca de',
+      privacy: 'Privacidad',
+      terms: 'Términos de uso',
       madeWith: 'Hecho con ♥',
     },
     default: {

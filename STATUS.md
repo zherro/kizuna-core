@@ -15,15 +15,20 @@ a materializa num projeto e mantém projeto ↔ core alinhados. Ver **`docs/come
   é o changelog — sem `CHANGELOG`.
 - `cli/` — `index.mjs` (dispatcher) + `commands/{install,update,sync,lock,check,adopt,plugin,db,token}.mjs`
   - `lib/*.mjs`. Zero deps, ESM, Node ≥ 20. Testes: `npx vitest run cli/`.
-- `template/` — `kizuna.manifest.json` (21 paths: `managed` / `seed` / `merge`) + os arquivos da
-  casca base.
+- `template/` — `kizuna.manifest.json` (~100 paths em 3 modos — `managed` / `seed` / `install` —
+  + `merge` do `package.json`) + os arquivos da casca base. A casca genérica inteira vive aqui:
+  login/cadastro, home, páginas por cidade (`[cidade]`), detalhe de anúncio, painel (home,
+  métricas, onboarding, root/security, revisão por IA), rotas de API (auth, resources, IA,
+  storage, location, onboarding…). O projeto consumidor só guarda o que é dele (seeds editados,
+  arquivos `install` — imagens, artes, páginas de conteúdo — e os pacotes próprios).
 - `plugins/<n>/shell/` — fragmento de casca por plugin (rotas limpas + registry): hoje
-  `storage`, `location`, `pages`, `onboarding`, `agenda`, `tickets`.
+  `agenda`, `location`, `onboarding`, `pages`, `search`, `services`, `storage`, `swipe`,
+  `tickets`, `weather`.
 - `kizuna.lock` (no projeto consumidor, não aqui) — hashes + versões do que foi instalado.
 
 ## Docs
 
-- `docs/comecando/cli.md` — o CLI (`install`/`update`/`sync`/`plugin`/`lock`/`check`/`adopt`/`db`), o `kizuna.lock`, managed/seed/merge, regra de bump do `VERSION`.
+- `docs/comecando/cli.md` — o CLI (`install`/`update`/`sync`/`plugin`/`lock`/`check`/`adopt`/`db`), o `kizuna.lock`, managed/seed/install/merge, regra de bump do `VERSION`.
 - `docs/arquitetura/README.md` — folder layout, `ResourceConfig`/`ScreenConfig` split, context refs.
 - `docs/arquitetura/auth.md` — JWT/session, login/register/logout, `is_root`, RBAC, route protection (proxy).
 - `docs/plugins/README.md` — what a plugin is, the plugins that exist today, how to activate them.
@@ -177,6 +182,14 @@ a materializa num projeto e mantém projeto ↔ core alinhados. Ver **`docs/come
   degradation state machine.
 - `@kizuna/core/shared/ai-error`: `classifyAiError`, `AiUnavailableReason` — isomorphic
   (server + client) AI error classifier.
+- Lógica da casca genérica (importada pelos arquivos do `template/`, caminho profundo):
+  `client/components/city/*` (`CityRouteMarker`, `CityInvite`, `CityCookieSync`),
+  `server/location/cities` (`loadRoutableCities`, `resolveCitySlug`),
+  `client/components/analytics/painel-home` (`PainelHero`, `PainelStats`) e `painel-metricas`
+  (`PainelMetricas`), `shared/analytics/metrics` (`METRICS`, `METRIC_GROUPS`, `FEATURED_METRICS`,
+  `PERIODS`, `formatMetric`, `SOURCE_LABELS`), `client/components/pages/static-page`
+  (`StaticPage`), `client/components/auth/auth-split` (`AuthSplit`), `server/ai/gate`
+  (`requireAiRoot`, `jsonError` — gate root das rotas `/api/ai/*`).
 - `@kizuna/core/lib/utils`: `cn`, `isShowcaseEnabled`
 - `@kizuna/core/lib/temporal-global`: side-effect import, polyfills `globalThis.Temporal`
 - `@kizuna/core/lib/api-error-message`: `translateApiErrorMessage` (PostgREST/DB message → pt-BR)
@@ -217,7 +230,7 @@ the generic `/api/resources/[resource]` route via `listResource`/`createResource
 
 ## SQL side
 
-`sql/0001-0115` (auth schema, RBAC, plugin registry — apply in numeric order), all `SECURITY
+`sql/0001-0118` (auth schema, RBAC, plugin registry — apply in numeric order), all `SECURITY
 DEFINER` functions in `auth` pinning `SET search_path = auth, public`. Recreate the whole thing
 from scratch on a scratch DB any time — nothing here targets a live migration history, it's a
 from-zero installer (`scripts/install.sh`).

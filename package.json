@@ -1,6 +1,6 @@
 {
   "name": "@kizuna/core",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Configuration-driven framework for Next.js + PostgREST",
   "type": "module",
   "main": "./dist/index.js",

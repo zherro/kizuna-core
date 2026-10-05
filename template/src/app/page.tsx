@@ -1,38 +1,27 @@
-// EXEMPLO — home pública. A cara é parametrizada por `kizuna.config.json`
-// (chave "home"), não por env — evita rebuild de Docker com --build-arg
-// para cada toggle novo.
-import { HomeContent } from '@/components/home-content';
+// Home global. Com o cookie `kz_city` apontando pra uma cidade atendida, vai pra home dela
+// (`/[cidade]`). Sem cookie (1ª visita) e com `location.outsideList: "default"`, vai direto pra
+// cidade padrão do kizuna.config.json — sem depender da detecção no navegador, que só grava o
+// cookie e não navega (antes a 1ª visita caía na home sem cidade até um refresh). Cidade fora da
+// lista / sem padrão → home global, sem loop.
+import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
+import { parseLocationConfig } from '@kizuna/core/server';
+import { CITY_COOKIE, cityPath } from '@kizuna/core/shared/city-routing/city-slug';
+import { HomePage } from '@/components/home-page';
+import { loadRoutableCities, resolveCitySlug } from '@kizuna/core/server/location/cities';
 import cfg from '@/../kizuna.config.json';
-import { HOME_INK_LEVELS, type HomeInkLevel } from '@/components/home/home-ink-config';
-import { CategoryRails, type CategoryRailConfig } from '@/components/home/category-rails';
-import type { ServiceDetailConfig } from '@kizuna/core/client/components/services/detail';
 
-const home = cfg.home as typeof cfg.home & {
-  inkPicker?: boolean;
-  inkLevel?: number;
-  categoriesOnlyWithListings?: boolean;
-  categoryRails?: CategoryRailConfig[];
-};
-const categoryRails = (home?.categoryRails ?? []).filter((rail) => rail?.slug);
-const serviceDetailConfig = (cfg as { serviceDetail?: ServiceDetailConfig }).serviceDetail ?? null;
-const inkLevel = HOME_INK_LEVELS.includes(home?.inkLevel as HomeInkLevel)
-  ? (home.inkLevel as HomeInkLevel)
-  : undefined;
+const locationConfig = parseLocationConfig((cfg as { location?: unknown }).location);
 
-export default function Home() {
-  return (
-    <HomeContent
-      showHero={cfg.home?.showHero !== false}
-      categoriesVariant={cfg.home?.categoriesVariant === 'compact' ? 'compact' : 'classic'}
-      categoriesOnlyWithListings={home?.categoriesOnlyWithListings === true}
-      showDiscover={cfg.home?.showDiscover === true}
-      inkPicker={home?.inkPicker !== false}
-      inkLevel={inkLevel}
-      categoryRails={
-        categoryRails.length > 0 ? (
-          <CategoryRails rails={categoryRails} detailConfig={serviceDetailConfig} />
-        ) : null
-      }
-    />
-  );
+export default async function Home() {
+  const slug = (await cookies()).get(CITY_COOKIE)?.value;
+  if (slug && (await resolveCitySlug(slug))) redirect(`/${slug}`);
+
+  if (!slug && locationConfig.outsideList === 'default' && locationConfig.defaultCityIbge) {
+    const cities = await loadRoutableCities().catch(() => []);
+    const fallback = cities.find((c) => c.ibge === locationConfig.defaultCityIbge);
+    if (fallback) redirect(cityPath(fallback));
+  }
+
+  return <HomePage city={null} />;
 }

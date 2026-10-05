@@ -2,10 +2,12 @@ import { redirect } from 'next/navigation';
 import { getSession } from '@kizuna/core/server';
 import { AuthProvider } from '@kizuna/core/client/providers/auth-provider';
 import { PanelShell } from '@/components/panel-shell';
+// side effect: registra o vocabulário do projeto ("$vocab.*" nas telas do screen-engine)
+import '@/lib/vocabulary';
 
 // EXEMPLO — a área /painel É logada: aqui SIM lemos a sessão no servidor
 // (`getSession`) e passamos para o `AuthProvider` deste subtree. O layout raiz
-// não faz isso de propósito (páginas públicas estáticas — ver docs/manutencao/hardening.md), então
+// não faz isso de propósito (páginas públicas estáticas — ver HARDENING.md), então
 // sem este AuthProvider aninhado o `PanelShell` renderiza com `user=null` no F5 e
 // o gate de permissão manda pra notFound().
 export default async function PainelLayout({

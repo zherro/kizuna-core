@@ -3,6 +3,8 @@
 
 export function classify(liveHash, lockedHash, currentHash) {
   if (liveHash === lockedHash) return 'noop';
+  // Projeto já igual ao template (ex.: arquivo que migrou do projeto para o core): só registra.
+  if (currentHash === liveHash) return 'fast-forward';
   if (currentHash === null || currentHash === undefined) return 'fast-forward';
   if (currentHash === lockedHash) return 'fast-forward';
   return 'conflict';

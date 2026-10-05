@@ -55,7 +55,8 @@ export async function run(ctx) {
   const preTemplate = { ...(lock.template?.files ?? {}) };
   const preShell = deepCopyShellFiles(lock.plugins);
 
-  // --reseed all  → todos os seeds divergentes;  --reseed "a,b"  → só esses.
+  // --reseed "a,b" → sobrescreve esses seeds mesmo customizados. --reseed all não
+  // sobrescreve customizados (os não customizados já seguem o template sozinhos).
   const reseed =
     flags.reseed === 'all'
       ? true
@@ -136,16 +137,17 @@ export async function run(ctx) {
   );
   if (report.applied.length) console.log(`  aplicados: ${report.applied.join(', ')}`);
   if (report.conflicts.length) console.log(`  conflitos: ${report.conflicts.join(', ')}`);
+  // Por último, para ficar visível: o que NÃO foi tocado por estar customizado.
   if (report.seedDrift?.length) {
     console.log('');
     console.log(
-      `  ⚠ ${report.seedDrift.length} seed(s) mudaram no template e NÃO foram tocados (você pode ter customizado):`
+      `  ⚠ ${report.seedDrift.length} seed(s) CUSTOMIZADO(S) no projeto — NÃO tocados (o template tem versão nova):`
     );
     for (const p of report.seedDrift) console.log(`      ${p}`);
     console.log(
-      '    revise o diff, ou rode:  node kizuna-core/cli update --reseed "<path,path>"  (sobrescreve com a versão do template)'
+      '    seeds não customizados já seguiram o template sozinhos. Para descartar a customização de um destes:'
     );
-    console.log('    ou  --reseed all  para todos.');
+    console.log('      node kizuna-core/cli update --reseed "<path,path>"');
   }
   return 0;
 }

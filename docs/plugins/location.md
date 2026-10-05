@@ -86,6 +86,20 @@ Com `outsideList: "default"`, a cidade de `defaultCityIbge` precisa estar marcad
 A lógica fica em `src/server/location/index.ts` (`parseLocationConfig`, `listLocationCities`,
 `resolveLocation`, exportados por `@kizuna/core/server`).
 
+## Cidade na URL (`/[cidade]`)
+
+As páginas por cidade (`src/app/[cidade]/page.tsx`, `[cidade]/layout.tsx`,
+`[cidade]/anuncio/[uid]/page.tsx`) são arquivos `managed` do template do core, não do projeto.
+A lógica é do core:
+
+| Peça | Onde | O quê |
+| ---- | ---- | ----- |
+| `loadRoutableCities`, `resolveCitySlug` | `@kizuna/core/server/location/cities` | cidades marcadas (`search_city`) em cache de 5 min; slug da URL → cidade |
+| `cityPath`, `findCityBySlug` | `@kizuna/core/shared/city-routing/city-slug` | monta/lê o slug da cidade |
+| `CityRouteMarker` | `@kizuna/core/client/components/city/city-route-marker` | declara a cidade da página; gravar outra no seletor navega para ela |
+| `CityInvite` | `@kizuna/core/client/components/city/city-invite` | convite quando a URL mostra cidade diferente da salva |
+| `CityCookieSync` | `@kizuna/core/client/components/city/city-cookie-sync` | espelha a cidade salva no cookie `kz_city`, que a home usa para redirecionar |
+
 {% hint style="info" %}
 O endereço do prestador e dos anúncios usa CEP (wizard de serviço) ou `/api/agenda/cities` (plugin
 `agenda`, IBGE — formulário de `user_data`), não este seletor: restringir as cidades do seletor não
