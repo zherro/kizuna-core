@@ -4,7 +4,7 @@ import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/re
 
 const m = vi.hoisted(() => ({
   fetchReaction: vi.fn(),
-  saveReaction: vi.fn(),
+  setReaction: vi.fn(),
   requireAuth: vi.fn((fn: () => void) => fn()),
   toastError: vi.fn(),
   user: { id: 'u1' } as { id: string } | null,
@@ -12,7 +12,7 @@ const m = vi.hoisted(() => ({
 
 vi.mock('./reaction-api', () => ({
   fetchReaction: m.fetchReaction,
-  saveReaction: m.saveReaction,
+  setReaction: m.setReaction,
 }));
 vi.mock('../../../providers/auth-provider', () => ({ useAuth: () => ({ user: m.user }) }));
 vi.mock('../../../hooks/use-toast', () => ({
@@ -30,73 +30,96 @@ const CFG = {
   like: { icon: 'ThumbsUp', label: 'Gostei', labelActive: 'Gostei!' },
   favorite: { icon: 'Heart', label: 'Favoritar', labelActive: 'Favoritado' },
 };
-const NONE = { uid: null, liked: false, favorite: false };
+const state = (p: Partial<{ liked: boolean; favorite: boolean; likeCount: number; favoriteCount: number }> = {}) => ({
+  liked: false,
+  favorite: false,
+  likeCount: 3,
+  favoriteCount: 1,
+  ...p,
+});
 
 function setup(props: Partial<React.ComponentProps<typeof ServiceReactionButtons>> = {}) {
-  return render(<ServiceReactionButtons serviceUid="s1" likeCount={3} config={CFG} {...props} />);
+  return render(
+    <ServiceReactionButtons serviceUid="s1" likeCount={3} favoriteCount={1} config={CFG} {...props} />
+  );
 }
 
 beforeEach(() => {
   m.user = { id: 'u1' };
-  m.fetchReaction.mockReset().mockResolvedValue(NONE);
-  m.saveReaction.mockReset().mockImplementation(async (_u, next) => ({ uid: 'r1', ...next }));
+  m.fetchReaction.mockReset().mockResolvedValue(state());
+  m.setReaction.mockReset().mockImplementation(async (_u: string, kind: string, active: boolean) =>
+    kind === 'like'
+      ? state({ liked: active, likeCount: active ? 4 : 2 })
+      : state({ favorite: active, favoriteCount: active ? 2 : 0 })
+  );
   m.requireAuth.mockReset().mockImplementation((fn: () => void) => fn());
   m.toastError.mockReset();
 });
 afterEach(cleanup);
 
+const likeBtn = () => screen.getByRole('button', { name: /gostei/i });
+const favBtn = () => screen.getByRole('button', { name: /favorit/i });
+
 describe('ServiceReactionButtons', () => {
-  it('carrega o estado inicial e mostra labelActive e contador', async () => {
-    m.fetchReaction.mockResolvedValue({ uid: 'r1', liked: true, favorite: true });
+  it('carrega o estado inicial e mostra labelActive e os dois totais', async () => {
+    m.fetchReaction.mockResolvedValue(state({ liked: true, favorite: true, likeCount: 7, favoriteCount: 5 }));
     setup();
     expect(await screen.findByRole('button', { name: /gostei!/i })).toBeTruthy();
     expect(screen.getByRole('button', { name: /favoritado/i })).toBeTruthy();
-    expect(screen.getByText('3')).toBeTruthy();
+    expect(likeBtn().textContent).toContain('7');
+    expect(favBtn().textContent).toContain('5');
   });
 
-  it('Gostei grava e incrementa otimista', async () => {
+  it('Gostei grava só o like e incrementa otimista', async () => {
     setup();
-    fireEvent.click(screen.getByRole('button', { name: /gostei/i }));
-    expect(screen.getByText('4')).toBeTruthy();
-    await waitFor(() => expect(m.saveReaction).toHaveBeenCalledWith('s1', { liked: true, favorite: false }));
+    await waitFor(() => expect(m.fetchReaction).toHaveBeenCalled());
+    fireEvent.click(likeBtn());
+    expect(likeBtn().textContent).toContain('4');
+    await waitFor(() => expect(m.setReaction).toHaveBeenCalledWith('s1', 'like', true));
+    expect(favBtn().getAttribute('aria-pressed')).toBe('false');
   });
 
-  it('Favoritar marca também Gostei', async () => {
+  it('Favoritar é independente do Gostei', async () => {
     setup();
-    fireEvent.click(screen.getByRole('button', { name: /favoritar/i }));
-    await waitFor(() => expect(m.saveReaction).toHaveBeenCalledWith('s1', { liked: true, favorite: true }));
-    expect(await screen.findByRole('button', { name: /gostei!/i })).toBeTruthy();
+    await waitFor(() => expect(m.fetchReaction).toHaveBeenCalled());
+    fireEvent.click(favBtn());
+    await waitFor(() => expect(m.setReaction).toHaveBeenCalledWith('s1', 'favorite', true));
+    expect(await screen.findByRole('button', { name: /favoritado/i })).toBeTruthy();
+    expect(favBtn().textContent).toContain('2');
+    expect(likeBtn().getAttribute('aria-pressed')).toBe('false');
   });
 
-  it('Gostei com Favorito ativo desfavorita', async () => {
-    m.fetchReaction.mockResolvedValue({ uid: 'r1', liked: true, favorite: true });
+  it('remover favorito desliga só o favorito', async () => {
+    m.fetchReaction.mockResolvedValue(state({ liked: true, favorite: true }));
     setup();
-    fireEvent.click(await screen.findByRole('button', { name: /gostei!/i }));
-    await waitFor(() => expect(m.saveReaction).toHaveBeenCalledWith('s1', { liked: false, favorite: false }));
+    fireEvent.click(await screen.findByRole('button', { name: /favoritado/i }));
+    await waitFor(() => expect(m.setReaction).toHaveBeenCalledWith('s1', 'favorite', false));
+    expect(m.setReaction).toHaveBeenCalledTimes(1);
   });
 
   it('erro ao salvar reverte e avisa', async () => {
-    m.saveReaction.mockRejectedValue(new Error('x'));
+    m.setReaction.mockRejectedValue(new Error('x'));
     setup();
-    fireEvent.click(screen.getByRole('button', { name: /gostei/i }));
+    await waitFor(() => expect(m.fetchReaction).toHaveBeenCalled());
+    fireEvent.click(likeBtn());
     await waitFor(() => expect(m.toastError).toHaveBeenCalled());
-    expect(screen.getByText('3')).toBeTruthy();
-    expect(screen.getByRole('button', { name: /gostei/i }).getAttribute('aria-pressed')).toBe('false');
+    expect(likeBtn().textContent).toContain('3');
+    expect(likeBtn().getAttribute('aria-pressed')).toBe('false');
   });
 
   it('visitante passa pelo gate e não grava', () => {
     m.user = null;
     m.requireAuth.mockImplementation(() => {});
     setup();
-    fireEvent.click(screen.getByRole('button', { name: /gostei/i }));
+    fireEvent.click(likeBtn());
     expect(m.requireAuth).toHaveBeenCalled();
-    expect(m.saveReaction).not.toHaveBeenCalled();
+    expect(m.setReaction).not.toHaveBeenCalled();
   });
 
   it('renderiza só o que está configurado', () => {
     const { unmount } = setup({ config: { like: { icon: 'ThumbsUp' } } });
-    expect(screen.getByRole('button', { name: /gostei/i })).toBeTruthy();
-    expect(screen.queryByRole('button', { name: /favoritar/i })).toBeNull();
+    expect(likeBtn()).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /favorit/i })).toBeNull();
     unmount();
     const { container } = setup({ config: undefined });
     expect(container.innerHTML).toBe('');

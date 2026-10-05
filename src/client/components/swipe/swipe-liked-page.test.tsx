@@ -10,8 +10,15 @@ const createMockItems = (count: number, startIdx: number = 0) =>
     price_type: 'quote',
     category: 'Casa',
     cover_file_id: null,
+    liked: true,
+    favorite: false,
     liked_at: `2026-09-${String(25 - i).padStart(2, '0')}`,
   }));
+
+const pintor = (p: { liked?: boolean; favorite?: boolean } = {}) => ({
+  uid: 'u1', title: 'Pintor', price: null, price_type: 'quote', category: 'Casa', cover_file_id: null,
+  liked: true, favorite: false, liked_at: '2026-09-25', ...p,
+});
 
 const api = vi.hoisted(() => ({
   fetchLiked: vi.fn(async (before: string | null, pageSize: number) => {
@@ -22,9 +29,12 @@ const api = vi.hoisted(() => ({
     // Subsequent pages: return items that come after the cursor
     return [];
   }),
-  recordSwipe: vi.fn(async () => {}),
 }));
+const reaction = vi.hoisted(() => ({ setReaction: vi.fn(async () => ({})) }));
+const toast = vi.hoisted(() => ({ error: vi.fn() }));
 vi.mock('./swipe-api', () => api);
+vi.mock('../services/detail/reaction-api', () => reaction);
+vi.mock('../../hooks/use-toast', () => ({ useToast: () => ({ error: toast.error, success: vi.fn(), info: vi.fn() }) }));
 vi.mock('next/link', () => ({ default: (p: { href: string; children: React.ReactNode }) => <a href={p.href}>{p.children}</a> }));
 // form falso que faz o que LoginForm faz no sucesso: setUser e onSuccess no mesmo tick
 vi.mock('../auth/login-form', async () => {
@@ -61,21 +71,42 @@ beforeEach(() => { stubMe({ user_id: 'me' }); window.history.replaceState(null, 
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+  api.fetchLiked.mockReset().mockImplementation(async (before: string | null) => (before === null ? createMockItems(24, 0) : []));
+  reaction.setReaction.mockReset().mockResolvedValue({});
   vi.unstubAllGlobals();
 });
 
 describe('SwipeLikedPage', () => {
-  it('lista e descurte', async () => {
-    // Reset mock for this test
-    api.fetchLiked.mockResolvedValueOnce([
-      { uid: 'u1', title: 'Pintor', price: null, price_type: 'quote', category: 'Casa', cover_file_id: null, liked_at: '2026-09-25' },
-    ]);
+  it('lista curtidos e favoritos juntos; desligar os dois tira o item', async () => {
+    api.fetchLiked.mockResolvedValueOnce([pintor({ liked: true, favorite: true })]);
 
     render(<SwipeLikedPage />);
     expect(await screen.findByText('Pintor')).toBeTruthy();
     fireEvent.click(screen.getByLabelText('Descurtir Pintor'));
-    expect(api.recordSwipe).toHaveBeenCalledWith(['u1'], 'unlike');
+    await waitFor(() => expect(reaction.setReaction).toHaveBeenCalledWith('u1', 'like', false));
+    expect(screen.getByText('Pintor')).toBeTruthy(); // ainda favorito
+    fireEvent.click(screen.getByLabelText('Desfavoritar Pintor'));
+    await waitFor(() => expect(reaction.setReaction).toHaveBeenCalledWith('u1', 'favorite', false));
     await waitFor(() => expect(screen.queryByText('Pintor')).toBeNull());
+  });
+
+  it('favoritar pelo card liga o favorito', async () => {
+    api.fetchLiked.mockResolvedValueOnce([pintor()]);
+    render(<SwipeLikedPage />);
+    fireEvent.click(await screen.findByLabelText('Favoritar Pintor'));
+    await waitFor(() => expect(reaction.setReaction).toHaveBeenCalledWith('u1', 'favorite', true));
+    expect(screen.getByLabelText('Desfavoritar Pintor').getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('erro ao salvar desfaz e avisa', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    api.fetchLiked.mockResolvedValueOnce([pintor()]);
+    reaction.setReaction.mockRejectedValueOnce(new Error('x'));
+    render(<SwipeLikedPage />);
+    fireEvent.click(await screen.findByLabelText('Descurtir Pintor'));
+    await waitFor(() => expect(toast.error).toHaveBeenCalled());
+    expect(screen.getByText('Pintor')).toBeTruthy();
+    warn.mockRestore();
   });
 
   it('pagina com cursor baseado em liked_at', async () => {
@@ -94,8 +125,7 @@ describe('SwipeLikedPage', () => {
     const unlikeButtons = screen.getAllByLabelText(/Descurtir Item/);
     fireEvent.click(unlikeButtons[0]); // Unlike first item
 
-    // Verify record was called
-    expect(api.recordSwipe).toHaveBeenCalledWith(['u0'], 'unlike');
+    expect(reaction.setReaction).toHaveBeenCalledWith('u0', 'like', false);
 
     // Click load more
     const loadMoreBtn = screen.getByText('Carregar mais');
@@ -110,9 +140,7 @@ describe('SwipeLikedPage', () => {
   it('erro ao carregar mostra mensagem e "Tentar de novo" recarrega', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     api.fetchLiked.mockRejectedValueOnce(new Error('fn_swipe_liked 500'));
-    api.fetchLiked.mockResolvedValueOnce([
-      { uid: 'u1', title: 'Pintor', price: null, price_type: 'quote', category: 'Casa', cover_file_id: null, liked_at: '2026-09-25' },
-    ]);
+    api.fetchLiked.mockResolvedValueOnce([pintor()]);
     render(<SwipeLikedPage />);
     expect(await screen.findByText(/Não foi possível carregar/)).toBeTruthy();
     expect(screen.queryByText('Você ainda não curtiu nada.')).toBeNull();

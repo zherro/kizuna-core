@@ -146,7 +146,7 @@ pedem conta na hora de uma ação específica (curtir, favoritar, comprar), em v
 `requireAuth` vem de `useRequireAuth()`, chamado dentro do provider. Sem `<RequireAuthProvider>`
 no topo da árvore, `useRequireAuth()` lança.
 
-Uso no detalhe do anúncio (`/anuncios/[uid]`): os botões Gostei e Favoritar (plugin `swipe`, resource `service_reactions`, configurados em `serviceDetail.reactions`) chamam `requireAuth` ao clicar, então o visitante anônimo vê o `AuthModal` e a reação é aplicada após o login.
+Uso no detalhe do anúncio (`/anuncios/[uid]`): os botões Gostei e Favoritar (plugin `swipe`, RPCs `fn_service_reaction_state` / `fn_service_react`, configurados em `serviceDetail.reactions`; independentes entre si, cada um com seu total em `services`) chamam `requireAuth` ao clicar, então o visitante anônimo vê o `AuthModal` e a reação é aplicada após o login.
 
 ## Typography & Grid
 

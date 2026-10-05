@@ -1,39 +1,46 @@
-export type Reaction = { uid: string | null; liked: boolean; favorite: boolean };
-const EMPTY: Reaction = { uid: null, liked: false, favorite: false };
+export type ReactionKind = 'like' | 'favorite';
 
-type Item = { uid: string; liked: boolean; favorite: boolean };
+/** Estado do usuário no anúncio + totais do anúncio (`services.like_count` / `favorite_count`). */
+export type Reaction = { liked: boolean; favorite: boolean; likeCount: number; favoriteCount: number };
 
-/** Estado do usuário no anúncio. Visitante (401) e erro de rede = "nada marcado". */
-export async function fetchReaction(serviceUid: string): Promise<Reaction> {
+type Row = { liked: boolean; favorite: boolean; like_count: number; favorite_count: number };
+
+function toReaction(row: Row | undefined): Reaction | null {
+  if (!row) return null;
+  return {
+    liked: Boolean(row.liked),
+    favorite: Boolean(row.favorite),
+    likeCount: Number(row.like_count ?? 0),
+    favoriteCount: Number(row.favorite_count ?? 0),
+  };
+}
+
+async function rpc(name: string, body: unknown): Promise<Reaction | null> {
+  const res = await fetch(`/api/resources/${name}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`${name} ${res.status}`);
+  const data = (await res.json().catch(() => null)) as { items?: Row[] } | null;
+  return toReaction(data?.items?.[0]);
+}
+
+/** Estado atual (`fn_service_reaction_state`). Visitante recebe nada marcado; erro = `null`. */
+export async function fetchReaction(serviceUid: string): Promise<Reaction | null> {
   try {
-    const res = await fetch(
-      `/api/resources/service_reactions?filter.service_uid=${encodeURIComponent(serviceUid)}&pageSize=1`
-    );
-    if (!res.ok) return EMPTY;
-    const data = (await res.json().catch(() => null)) as { items?: Item[] } | null;
-    const row = data?.items?.[0];
-    return row ? { uid: row.uid, liked: row.liked, favorite: row.favorite } : EMPTY;
+    return await rpc('fn_service_reaction_state', { p_service_uid: serviceUid });
   } catch {
-    return EMPTY;
+    return null;
   }
 }
 
-/** Grava o estado completo (update regrava o registro todo). Descobre POST x PATCH relendo a linha. */
-export async function saveReaction(
-  serviceUid: string,
-  next: { liked: boolean; favorite: boolean }
-): Promise<Reaction> {
-  const current = await fetchReaction(serviceUid);
-  const body = JSON.stringify({ serviceUid, liked: next.liked, favorite: next.favorite });
-  const res = await fetch(
-    current.uid ? `/api/resources/service_reactions/${current.uid}` : '/api/resources/service_reactions',
-    { method: current.uid ? 'PATCH' : 'POST', headers: { 'Content-Type': 'application/json' }, body }
-  );
-  if (!res.ok) throw new Error(`service_reactions ${res.status}`);
-  const data = (await res.json().catch(() => null)) as { item?: Item } | null;
-  return {
-    uid: data?.item?.uid ?? current.uid,
-    liked: next.liked || next.favorite,
-    favorite: next.favorite,
-  };
+/**
+ * Liga/desliga `like` ou `favorite` (`fn_service_react`). Remover não apaga a linha — vira
+ * `active = false` e o total do anúncio é decrementado pela trigger. Devolve o estado novo.
+ */
+export async function setReaction(serviceUid: string, kind: ReactionKind, active: boolean): Promise<Reaction> {
+  const r = await rpc('fn_service_react', { p_service_uid: serviceUid, p_kind: kind, p_active: active });
+  if (!r) throw new Error('fn_service_react sem retorno');
+  return r;
 }

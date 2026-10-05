@@ -21,7 +21,7 @@ export const resourceServices: Record<string, ResourceConfig> = {
     table: 'services',
     returnRepresentation: true,
     select:
-      'id,uid,title,category_group:categories_group(id, name, slug, active, icon),category:categories(id, name, slug, icon, form_key, request_form_key),category_id,description,starting_price,price_unit,urgent_available,extras,status,sponsored,like_count,service_location,active,expires_at,created_by,created_at,updated_at',
+      'id,uid,title,category_group:categories_group(id, name, slug, active, icon),category:categories(id, name, slug, icon, form_key, request_form_key),category_id,description,starting_price,price_unit,urgent_available,extras,status,sponsored,like_count,favorite_count,service_location,active,expires_at,created_by,created_at,updated_at',
     primaryKey: 'id',
     defaultOrder: 'created_at',
     searchableColumns: ['title', 'description'],
@@ -92,6 +92,7 @@ export const resourceServices: Record<string, ResourceConfig> = {
         status: String(record.status ?? 'pending'),
         sponsored: parseActive(record.sponsored),
         likeCount: Number(record.like_count ?? 0),
+        favoriteCount: Number(record.favorite_count ?? 0),
         serviceLocation: record.service_location ?? null,
         active: parseActive(record.active),
         expiresAt: record.expires_at ?? null,

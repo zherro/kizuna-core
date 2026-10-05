@@ -43,7 +43,8 @@ function priceLabel(r: ServiceResult): string {
   return `${formatCurrency(Number(r.price))}${unit ? ` ${unit}` : ''}`;
 }
 
-function toCardProps(r: ServiceResult, detailConfig?: ServiceDetailConfig | null) {
+/** Props do `ListingResultCard` para um item da busca — também usado pela lista de curtidos. */
+export function toCardProps(r: ServiceResult, detailConfig?: ServiceDetailConfig | null) {
   const variant = resolveServiceDetailVariant({ slug: r.category_slug }, detailConfig);
   // O card de cinema só divulga a sessão (não vende o ingresso) e usa capa de filme em pé —
   // mesma variant que decide o layout de detalhe, sem config própria pro card.

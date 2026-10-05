@@ -1,7 +1,7 @@
 -- plugins/swipe/0002_swipe_addresses.sql
 -- Endereços do serviço no swipe: fn_swipe_deck herda de fn_search_services (search 0002) as colunas
--- city / state / address_count; fn_swipe_liked devolve as mesmas (endereço principal + contagem,
--- via LATERAL LIMIT 1, sem duplicar linhas). Nunca devolve rua/número.
+-- city / state / address_count, e `category_slug` (search 0003) — `SELECT c.*` exige o mesmo
+-- formato de fn_search_services. Nunca devolve rua/número.
 -- Depende de `search` >= 1.1.0 e `services` >= 1.2.0.
 
 DROP FUNCTION IF EXISTS public.fn_swipe_deck(character varying, integer, character varying, bigint, jsonb, text, double precision, integer, text, uuid[], numeric, numeric);
@@ -26,6 +26,7 @@ RETURNS TABLE(
   price numeric,
   price_type character varying,
   category character varying,
+  category_slug character varying,
   subcategory character varying,
   sponsored boolean,
   cover_file_id character varying,
@@ -63,7 +64,9 @@ BEGIN
         SELECT 1 FROM public.service_user_favorites sw
         WHERE sw.user_id = v_user
           AND sw.service_uid = c.uid
-          AND (sw.action = 'like' OR sw.updated_at > now() - v_ttl)
+          AND sw.active
+          -- curtido ou favoritado nunca volta; passado volta depois do TTL
+          AND (sw.kind <> 'skip' OR sw.updated_at > now() - v_ttl)
       )
     )
   LIMIT LEAST(GREATEST(p_page_size, 1), 50);
@@ -73,67 +76,7 @@ $function$;
 GRANT EXECUTE ON FUNCTION public.fn_swipe_deck(character varying, integer, character varying, bigint, jsonb, text, double precision, integer, text, uuid[], numeric, numeric)
   TO anon, auth_user;
 
-DROP FUNCTION IF EXISTS public.fn_swipe_liked(timestamptz, integer);
-
-CREATE OR REPLACE FUNCTION public.fn_swipe_liked(p_before timestamptz DEFAULT NULL, p_page_size integer DEFAULT 24)
-RETURNS TABLE(
-  uid uuid,
-  title character varying,
-  price numeric,
-  price_type character varying,
-  category character varying,
-  cover_file_id character varying,
-  liked_at timestamptz,
-  city text,
-  state text,
-  address_count integer
-)
-LANGUAGE plpgsql
-STABLE
-SECURITY DEFINER
-SET search_path = public
-AS $function$
-DECLARE
-  v_user uuid := auth.fun_auth_user_id();
-BEGIN
-  IF v_user IS NULL THEN
-    RAISE EXCEPTION 'login necessario' USING ERRCODE = 'insufficient_privilege';
-  END IF;
-
-  RETURN QUERY
-  SELECT
-    s.uid,
-    s.title::character varying,
-    s.starting_price::numeric,
-    s.price_unit::character varying,
-    c.name::character varying,
-    COALESCE(NULLIF(s.extras->>'coverFileId', ''), s.extras->'images'->>0)::character varying,
-    sw.updated_at,
-    ad.a_city::text,
-    ad.a_state::text,
-    COALESCE(ad.cnt, 0)::integer
-  FROM public.service_user_favorites sw
-  JOIN public.services s ON s.uid = sw.service_uid
-  LEFT JOIN public.categories c ON c.id = s.category_id
-  LEFT JOIN LATERAL (
-    SELECT a.city AS a_city, a.state AS a_state, count(*) OVER () AS cnt
-    FROM public.service_addresses a
-    WHERE a.service_id = s.id
-      AND a.active
-    ORDER BY a.is_primary DESC, a.id
-    LIMIT 1
-  ) ad ON true
-  WHERE sw.user_id = v_user
-    AND sw.action = 'like'
-    AND s.active = true
-    AND s.status = 'active'
-    AND (p_before IS NULL OR sw.updated_at < p_before)
-  ORDER BY sw.updated_at DESC
-  LIMIT LEAST(GREATEST(p_page_size, 1), 100);
-END;
-$function$;
-
-GRANT EXECUTE ON FUNCTION public.fn_swipe_liked(timestamptz, integer) TO auth_user;
+-- fn_swipe_liked: ver 0003 (lista única de curtidos + favoritos).
 
 INSERT INTO auth.plugin_registry (name, version)
 VALUES ('swipe', '1.1.0')

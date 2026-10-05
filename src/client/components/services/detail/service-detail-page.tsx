@@ -264,6 +264,7 @@ export function ServiceDetailPage({
                 <ServiceReactionButtons
                   serviceUid={service.uid}
                   likeCount={service.likeCount ?? 0}
+                  favoriteCount={service.favoriteCount ?? 0}
                   config={detailConfig?.reactions}
                   trackUid={analytics ? service.uid : undefined}
                 />

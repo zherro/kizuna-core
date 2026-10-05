@@ -1,5 +1,5 @@
 import type { ServiceResult } from '../search/search-types';
-import type { LikedItem, SwipeAction, SwipeDeckBody } from './swipe-types';
+import type { LikedItem, LikedKind, SwipeAction, SwipeDeckBody } from './swipe-types';
 
 async function rpc(name: string, body: unknown, signal?: AbortSignal): Promise<Response> {
   return fetch(`/api/resources/${name}`, {
@@ -28,6 +28,13 @@ export async function recordSwipe(uids: string[], action: SwipeAction): Promise<
   if (!res.ok) throw new Error(`fn_swipe_record ${res.status}`);
 }
 
-export async function fetchLiked(before: string | null, pageSize: number): Promise<LikedItem[]> {
-  return readItems<LikedItem>('fn_swipe_liked', await rpc('fn_swipe_liked', { p_before: before, p_page_size: pageSize }));
+export async function fetchLiked(
+  before: string | null,
+  pageSize: number,
+  kind: LikedKind = null
+): Promise<LikedItem[]> {
+  return readItems<LikedItem>(
+    'fn_swipe_liked',
+    await rpc('fn_swipe_liked', { p_before: before, p_page_size: pageSize, p_kind: kind })
+  );
 }

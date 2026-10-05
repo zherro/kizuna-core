@@ -12,6 +12,7 @@ DECLARE
   v_a uuid; v_b uuid; v_c uuid;
   v_pmin numeric; v_pmax numeric;
   v_cnt integer;
+  v_fav integer;
 BEGIN
   SELECT array_agg(uid) INTO v_all
     FROM public.fn_swipe_deck(NULL, NULL, NULL, NULL, NULL, NULL, 0.5, 50, NULL, NULL);
@@ -40,32 +41,41 @@ BEGIN
 
   -- curtidos
   ASSERT (SELECT count(*) FROM public.fn_swipe_liked(NULL, 20) WHERE uid = v_a) = 1, 'liked lista A';
-  -- skip nunca rebaixa um like (ex.: passados do anônimo migrados no login)
+  -- skip nunca mexe no like (ex.: passados do anônimo migrados no login)
   PERFORM public.fn_swipe_record(ARRAY[v_a], 'skip');
-  ASSERT (SELECT action FROM public.service_user_favorites WHERE service_uid = v_a) = 'like', 'skip apos like mantem like';
+  ASSERT (SELECT active FROM public.service_user_favorites WHERE service_uid = v_a AND kind = 'like'), 'skip apos like mantem like';
   ASSERT (SELECT count(*) FROM public.fn_swipe_liked(NULL, 20) WHERE uid = v_a) = 1, 'skip nao descurte';
   RAISE NOTICE 'skip keeps like OK';
-  -- descurtir = unlike (grava skip)
-  ASSERT public.fn_swipe_record(ARRAY[v_a], 'unlike') = 1, 'record unlike';
-  ASSERT (SELECT action FROM public.service_user_favorites WHERE service_uid = v_a) = 'skip', 'unlike grava skip';
+  -- descurtir = unlike (like inativo + skip)
+  SELECT like_count INTO v_cnt FROM public.services WHERE uid = v_a;
+  PERFORM public.fn_swipe_record(ARRAY[v_a], 'unlike');
+  ASSERT NOT (SELECT active FROM public.service_user_favorites WHERE service_uid = v_a AND kind = 'like'), 'unlike desativa like';
+  ASSERT (SELECT active FROM public.service_user_favorites WHERE service_uid = v_a AND kind = 'skip'), 'unlike grava skip';
   ASSERT (SELECT count(*) FROM public.fn_swipe_liked(NULL, 20) WHERE uid = v_a) = 0, 'descurtir';
+  ASSERT (SELECT like_count FROM public.services WHERE uid = v_a) = v_cnt - 1, 'unlike decrementa like_count';
   RAISE NOTICE 'liked OK';
 
-  -- favorito + like_count (trigger)
-  SELECT like_count INTO v_cnt FROM public.services WHERE uid = v_a;
-  PERFORM public.fn_swipe_record(ARRAY[v_a], 'like');
-  ASSERT (SELECT like_count FROM public.services WHERE uid = v_a) = v_cnt + 1, 'like incrementa like_count';
-  UPDATE public.service_user_favorites SET favorite = true WHERE service_uid = v_a;
-  ASSERT (SELECT favorite FROM public.service_user_favorites WHERE service_uid = v_a), 'favoritar um like';
-  PERFORM public.fn_swipe_record(ARRAY[v_a], 'like');
-  ASSERT (SELECT favorite FROM public.service_user_favorites WHERE service_uid = v_a), 'like preserva favorite';
-  PERFORM public.fn_swipe_record(ARRAY[v_a], 'unlike');
-  ASSERT NOT (SELECT favorite FROM public.service_user_favorites WHERE service_uid = v_a), 'unlike zera favorite';
-  ASSERT (SELECT like_count FROM public.services WHERE uid = v_a) = v_cnt, 'skip decrementa like_count';
+  -- gostei / favorito independentes, contadores no service
+  SELECT like_count, favorite_count INTO v_cnt, v_fav FROM public.services WHERE uid = v_c;
+  ASSERT (SELECT NOT liked AND NOT favorite FROM public.fn_service_reaction_state(v_c)), 'estado inicial';
+  ASSERT (SELECT favorite AND NOT liked AND favorite_count = v_fav + 1
+            FROM public.fn_service_react(v_c, 'favorite', true)), 'favoritar';
+  ASSERT (SELECT liked AND favorite AND like_count = v_cnt + 1
+            FROM public.fn_service_react(v_c, 'like', true)), 'gostei';
+  ASSERT (SELECT like_count = v_cnt + 1 FROM public.fn_service_react(v_c, 'like', true)), 'gostei repetido nao conta 2x';
+  ASSERT (SELECT liked AND favorite FROM public.fn_swipe_liked(NULL, 20) WHERE uid = v_c), 'lista unica com os dois';
+  ASSERT (SELECT count(*) FROM public.fn_swipe_liked(NULL, 20, 'favorite') WHERE uid = v_c) = 1, 'filtro favorite';
+  ASSERT NOT (v_c = ANY(ARRAY(SELECT uid FROM public.fn_swipe_deck(NULL, NULL, NULL, NULL, NULL, NULL, 0.5, 50, NULL, NULL)))),
+    'favoritado fora do deck';
+  ASSERT (SELECT NOT favorite AND liked AND favorite_count = v_fav
+            FROM public.fn_service_react(v_c, 'favorite', false)), 'desfavoritar';
+  ASSERT (SELECT NOT liked AND like_count = v_cnt
+            FROM public.fn_service_react(v_c, 'like', false)), 'remover gostei';
+  ASSERT (SELECT count(*) FROM public.service_user_favorites WHERE service_uid = v_c) = 2, 'remover nao apaga linha';
   BEGIN
-    UPDATE public.service_user_favorites SET favorite = true WHERE service_uid = v_a; -- action = 'skip'
-    RAISE EXCEPTION 'esperava violacao do CHECK fav_implies_like';
-  EXCEPTION WHEN check_violation THEN RAISE NOTICE 'favorite/like_count OK';
+    PERFORM public.fn_service_react(v_c, 'skip', true);
+    RAISE EXCEPTION 'esperava erro de kind invalido';
+  EXCEPTION WHEN invalid_parameter_value THEN RAISE NOTICE 'react OK';
   END;
 
   -- faixa de preço: mesma semântica do /busca (sem preço / <= 0 = "Sob consulta" passa sempre)
@@ -110,6 +120,8 @@ SET LOCAL request.jwt.claims TO '{"role":"anon"}';
 SET LOCAL ROLE anon;
 DO $$ BEGIN
   PERFORM 1 FROM public.fn_swipe_deck(NULL, NULL, NULL, NULL, NULL, NULL, 0.5, 5, NULL, NULL);
+  ASSERT (SELECT NOT liked AND NOT favorite FROM public.fn_service_reaction_state(
+    (SELECT uid FROM public.services LIMIT 1))), 'anon state';
   RAISE NOTICE 'anon deck OK';
 END $$;
 

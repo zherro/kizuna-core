@@ -1,4 +1,4 @@
-import type { SearchAdsBody } from '../search/search-types';
+import type { SearchAdsBody, ServiceResult } from '../search/search-types';
 
 /** Decisão sobre um card do deck. */
 export type SwipeDecision = 'like' | 'skip';
@@ -18,18 +18,18 @@ export type SwipeDeckBody = Omit<SearchAdsBody, 'p_page'> & {
   p_price_max: number | null;
 };
 
-export type LikedItem = {
-  uid: string;
-  title: string;
-  price: number | null;
-  price_type: string;
-  category: string | null;
-  cover_file_id: string | null;
+/**
+ * Linha de `fn_swipe_liked`: mesmas colunas do card da busca + o que o usuário marcou no anúncio
+ * (curtidos e favoritos na mesma lista). `liked_at` = última reação (cursor da paginação).
+ */
+export type LikedItem = ServiceResult & {
+  liked: boolean;
+  favorite: boolean;
   liked_at: string;
-  city?: string | null;
-  state?: string | null;
-  address_count?: number | null;
 };
+
+/** `p_kind` de `fn_swipe_liked`: `null` = curtidos + favoritos. */
+export type LikedKind = 'like' | 'favorite' | null;
 
 export const SWIPE_BATCH = 20;
 export const SWIPE_PREFETCH_AT = 5;

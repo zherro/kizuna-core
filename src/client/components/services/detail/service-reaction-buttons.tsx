@@ -8,69 +8,64 @@ import { useAuth } from '../../../providers/auth-provider';
 import { trackEvent } from '../../../analytics/analytics-api';
 import { resolveLucideIcon } from '../../../../lib/lucide-icon';
 import { RequireAuthProvider, useRequireAuth } from '../../auth/require-auth';
-import { fetchReaction, saveReaction, type Reaction } from './reaction-api';
+import { fetchReaction, setReaction, type Reaction, type ReactionKind } from './reaction-api';
 import type { ReactionButtonConfig } from './category-style';
 
 type Props = {
   serviceUid: string;
   likeCount: number;
+  favoriteCount?: number;
   config?: { like?: ReactionButtonConfig; favorite?: ReactionButtonConfig } | null;
   /** quando informado, conta o evento `favorite` (plugin analytics) ao favoritar. */
   trackUid?: string;
 };
 
-const NONE: Reaction = { uid: null, liked: false, favorite: false };
-
-function Inner({ serviceUid, likeCount, config, trackUid }: Props) {
+/**
+ * Gostei e Favoritar são independentes (uma linha por kind em `service_user_favorites`); os totais
+ * vêm de `services.like_count` / `favorite_count` e são reconciliados com o que o servidor devolve.
+ */
+function Inner({ serviceUid, likeCount, favoriteCount = 0, config, trackUid }: Props) {
   const { user } = useAuth();
   const requireAuth = useRequireAuth();
   const toast = useToast();
-  const [state, setState] = useState<Reaction>(NONE);
-  const [count, setCount] = useState(likeCount);
+  const [state, setState] = useState<Reaction>({ liked: false, favorite: false, likeCount, favoriteCount });
   const busy = useRef(false);
 
   useEffect(() => {
-    if (!user) {
-      setState(NONE);
-      return;
-    }
     let alive = true;
-    fetchReaction(serviceUid).then((r) => alive && setState(r));
+    fetchReaction(serviceUid).then((r) => {
+      if (!alive || !r) return;
+      // visitante: o servidor devolve só os totais (liked/favorite = false)
+      setState(user ? r : { ...r, liked: false, favorite: false });
+    });
     return () => {
       alive = false;
     };
   }, [user, serviceUid]);
 
-  async function apply(next: { liked: boolean; favorite: boolean }) {
+  async function toggle(kind: ReactionKind) {
     if (busy.current) return;
     busy.current = true;
     const prev = state;
-    const prevCount = count;
-    setState({ ...prev, ...next });
-    setCount(prevCount + (next.liked ? 1 : 0) - (prev.liked ? 1 : 0));
+    const on = kind === 'like' ? !prev.liked : !prev.favorite;
+    const delta = on ? 1 : -1;
+    setState(
+      kind === 'like'
+        ? { ...prev, liked: on, likeCount: Math.max(prev.likeCount + delta, 0) }
+        : { ...prev, favorite: on, favoriteCount: Math.max(prev.favoriteCount + delta, 0) }
+    );
     try {
-      const saved = await saveReaction(serviceUid, next);
-      setState(saved);
-      if (next.favorite && !prev.favorite && trackUid) {
+      setState(await setReaction(serviceUid, kind, on));
+      if (kind === 'favorite' && on && trackUid) {
         trackEvent({ entityType: 'service', entityId: trackUid, event: 'favorite' });
       }
     } catch {
       setState(prev);
-      setCount(prevCount);
       toast.error('Não foi possível salvar. Tente novamente.');
     } finally {
       busy.current = false;
     }
   }
-
-  const toggleLike = () =>
-    requireAuth(() =>
-      apply(state.liked ? { liked: false, favorite: false } : { liked: true, favorite: state.favorite })
-    );
-  const toggleFavorite = () =>
-    requireAuth(() =>
-      apply(state.favorite ? { liked: state.liked, favorite: false } : { liked: true, favorite: true })
-    );
 
   const like = config?.like;
   const favorite = config?.favorite;
@@ -82,23 +77,31 @@ function Inner({ serviceUid, likeCount, config, trackUid }: Props) {
   return (
     <div className="flex gap-2">
       {like && (
-        <Button variant="outline" className="flex-1" onClick={toggleLike} aria-pressed={state.liked}>
+        <Button
+          variant="outline"
+          className="flex-1"
+          onClick={() => requireAuth(() => toggle('like'))}
+          aria-pressed={state.liked}
+        >
           <LikeIcon className={state.liked ? 'mr-2 h-4 w-4 fill-current' : 'mr-2 h-4 w-4'} />
           {state.liked ? (like.labelActive ?? like.label ?? 'Gostei') : (like.label ?? 'Gostei')}
-          {count > 0 && <span className="ml-1 text-muted-foreground">{count}</span>}
+          {state.likeCount > 0 && <span className="ml-1 text-muted-foreground">{state.likeCount}</span>}
         </Button>
       )}
       {favorite && (
         <Button
           variant="outline"
           className="flex-1"
-          onClick={toggleFavorite}
+          onClick={() => requireAuth(() => toggle('favorite'))}
           aria-pressed={state.favorite}
         >
           <FavIcon className={state.favorite ? 'mr-2 h-4 w-4 fill-current' : 'mr-2 h-4 w-4'} />
           {state.favorite
             ? (favorite.labelActive ?? favorite.label ?? 'Favoritado')
             : (favorite.label ?? 'Favoritar')}
+          {state.favoriteCount > 0 && (
+            <span className="ml-1 text-muted-foreground">{state.favoriteCount}</span>
+          )}
         </Button>
       )}
     </div>
