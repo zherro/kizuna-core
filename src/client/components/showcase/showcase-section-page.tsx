@@ -44,6 +44,8 @@ import { ConfirmDialog } from '../ui-better-soft/overlay/confirm-dialog';
 import { FilterStatCard } from '../ui-better-soft/lists/filter-stat-card';
 import { EntityListCard } from '../ui-better-soft/lists/entity-list-card';
 import { MediaResultCard } from '../ui-better-soft/lists/media-result-card';
+import { HighlightSlider } from '../ui-better-soft/highlight-slider';
+import { BallotBoxArt } from '../ui-better-soft/ballot-box-art';
 import { IconChoiceGrid } from '../ui-better-soft/lists/icon-choice-grid';
 import { ChipToggleList } from '../ui-better-soft/lists/chip-toggle-list';
 import { EmptyStateCard } from '../ui-better-soft/lists/empty-state-card';
@@ -664,6 +666,32 @@ function MediaResultCardDemo() {
   );
 }
 
+function HighlightSliderDemo() {
+  return (
+    <HighlightSlider
+      autoplayMs={6000}
+      slides={[
+        {
+          id: 'apuracao',
+          live: 'Apuracao ao vivo',
+          eyebrow: 'Eleicoes 2026',
+          title: 'Acompanhe a apuracao em tempo real',
+          text: 'Presidente, Governador, Senador e Deputados, no Brasil e por estado.',
+          cta: { label: 'Ver resultados', href: '#' },
+          art: <BallotBoxArt />,
+        },
+        {
+          id: 'agenda',
+          eyebrow: 'Fim de semana',
+          title: 'O que fazer na cidade',
+          text: 'Shows, feiras e eventos selecionados pela redacao.',
+          cta: { label: 'Ver agenda', href: '#' },
+        },
+      ]}
+    />
+  );
+}
+
 function IconChoiceGridDemo() {
   const [value, setValue] = useState<string>('1');
 
@@ -994,6 +1022,7 @@ function SectionDemo({ sectionId }: { sectionId: ShowcaseSectionId }) {
   if (sectionId === 'filter-stat-card') return <FilterStatCardDemo />;
   if (sectionId === 'entity-list-card') return <EntityListCardDemo />;
   if (sectionId === 'media-result-card') return <MediaResultCardDemo />;
+  if (sectionId === 'highlight-slider') return <HighlightSliderDemo />;
   if (sectionId === 'icon-choice-grid') return <IconChoiceGridDemo />;
   if (sectionId === 'chip-toggle-list') return <ChipToggleListDemo />;
   if (sectionId === 'empty-state-card') return <EmptyStateCardDemo />;

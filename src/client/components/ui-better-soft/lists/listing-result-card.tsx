@@ -197,7 +197,8 @@ export function ListingResultCard({
           <h3
             className={cn(
               'text-sm font-bold leading-tight',
-              isCinema ? 'line-clamp-2' : 'line-clamp-1'
+              // cinema reserva as 2 linhas: título curto não deixa o card mais baixo que os vizinhos
+              isCinema ? 'line-clamp-2 min-h-[2.5em]' : 'line-clamp-1'
             )}
           >
             {title}

@@ -82,7 +82,7 @@ export async function run(ctx) {
   if (dbUrl && !flags.skipDb) {
     for (const name of ['core', ...enabled]) {
       const from = lock.plugins?.[name]?.migrations ?? 0;
-      applyMigrations({ dbUrl, coreDir, plugin: name, from });
+      await applyMigrations({ dbUrl, coreDir, plugin: name, from, psql: flags.psql });
     }
   }
 

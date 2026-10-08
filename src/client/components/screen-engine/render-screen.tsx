@@ -2,6 +2,7 @@ import { cn } from '../../../lib/utils';
 import type { ScreenConfig, ScreenContext } from '../../../types/screen';
 import { SCREEN_COMPONENT_REGISTRY } from './registry';
 import { resolveContextRefs } from './context';
+import { SCREEN_CONTAINER_CLASS } from './screen-container';
 
 /**
  * Resolves a `ScreenConfig` (a plain, JSON-serializable block list) against
@@ -24,15 +25,9 @@ export function RenderScreen({
   context?: ScreenContext;
 }) {
   return (
-    <div
-      className={cn(
-        // Same px-4/py-6/sm:px-6/lg:px-8 formula as /painel/agenda/feriados's own hand-rolled
-        // container (this app's page-layout standard) — every screen-engine page shares one
-        // spacing rhythm, not a per-screen approximation of it.
-        'mx-auto flex w-full flex-1 flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8',
-        config.maxWidth === 'narrow' ? 'max-w-[1600px]' : 'max-w-[1600px]'
-      )}
-    >
+    // Every screen-engine page shares one spacing rhythm (SCREEN_CONTAINER_CLASS), not a
+    // per-screen approximation of it. `maxWidth: 'narrow'` hoje usa a mesma largura.
+    <div className={cn(SCREEN_CONTAINER_CLASS, 'gap-6')}>
       {config.blocks.map((block: ScreenConfig['blocks'][number], index: number) => {
         const entry = SCREEN_COMPONENT_REGISTRY[block.component];
 

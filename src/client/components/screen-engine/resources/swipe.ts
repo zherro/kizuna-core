@@ -38,12 +38,13 @@ export const resourceServiceReactions: Record<string, ResourceConfig> = {
   /**
    * Curtidos do usuário (/curtidos): a mesma tabela com o anúncio embutido (`services!inner`), só
    * anúncios ativos. Filtros pela URL: `filter.action=like&filter.service.active=true&...`.
+   * `expires_at` vem junto: vencido segue `status = 'active'`, e a tela o separa em "Expirados".
    */
   liked_services: {
     schema: 'public',
     table: 'service_user_favorites',
     select:
-      'uid,updated_at,action,service:services!inner(uid,title,starting_price,price_unit,extras,active,status,category:categories(name))',
+      'uid,updated_at,action,service:services!inner(uid,title,starting_price,price_unit,extras,active,status,expires_at,category:categories(name))',
     primaryKey: 'uid',
     defaultOrder: 'updated_at',
     searchableColumns: [],
@@ -59,6 +60,7 @@ export const resourceServiceReactions: Record<string, ResourceConfig> = {
         category: ((s.category ?? null) as { name?: string } | null)?.name ?? null,
         cover_file_id: extras.coverFileId || extras.images?.[0] || null,
         liked_at: String(r.updated_at ?? ''),
+        expires_at: s.expires_at == null ? null : String(s.expires_at),
       };
     },
   },

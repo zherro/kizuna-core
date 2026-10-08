@@ -22,12 +22,13 @@ git clone --recurse-submodules <repo-do-projeto> meu-app && cd meu-app
 node kizuna-core/cli install                    # materializa a casca + npm install
 cp .env.example .env                            # preencher PGRST_JWT_SECRET + POSTGREST_URL
 node kizuna-core/cli db install --db-url "postgresql://user:pass@host:5432/db"
-#   Windows:  --psql "C:\Program Files\PostgreSQL\17\bin\psql.exe"
-#   Docker:   --psql "docker exec -i <container> psql"
+#   conecta direto com o driver pg do CLI (JS puro, sem psql) — igual no Windows e no Linux.
+#   o banco precisa estar acessível na porta da URL (num container: publique a 5432 ou use túnel ssh).
 node kizuna-core/cli token service              # → POSTGREST_SERVICE_TOKEN no .env (só servidor)
 
 npm run dev                                     # /registre-se → 1º usuário vira root
 node kizuna-core/cli db install --db-url "..."  # re-rodar: seeds que dependem de tenant
+#   seeds próprios do projeto: node kizuna-core/cli db run <arquivo.sql> --db-url "..."
 ```
 
 Depois do install, commite: `src/ package.json package-lock.json tsconfig*.json

@@ -21,6 +21,7 @@ export type ShowcaseSectionId =
   | 'filter-stat-card'
   | 'entity-list-card'
   | 'media-result-card'
+  | 'highlight-slider'
   | 'icon-choice-grid'
   | 'chip-toggle-list'
   | 'empty-state-card'
@@ -1097,6 +1098,34 @@ export function MonthPicker() {
         { value: 10, label: 'outubro' },
       ]}
       onChange={setMes}
+    />
+  );
+}`,
+  },
+  {
+    id: 'highlight-slider',
+    groupId: 'ui-better-soft',
+    label: 'Highlight Slider',
+    description:
+      'Slider de destaques em cartao escuro com o primario do tema: selo "ao vivo" opcional, eyebrow, titulo, texto, CTA pulsante e arte a direita (slot). Varios slides alternam com fade e pausam no hover/foco.',
+    usageCode: `import { HighlightSlider } from '../ui-better-soft/highlight-slider';
+import { BallotBoxArt } from '../ui-better-soft/ballot-box-art';
+
+export function HomeHighlights() {
+  return (
+    <HighlightSlider
+      autoplayMs={6000}
+      slides={[
+        {
+          id: 'apuracao',
+          live: 'Apuracao ao vivo',
+          eyebrow: 'Eleicoes 2026',
+          title: 'Acompanhe a apuracao em tempo real',
+          text: 'Presidente, Governador, Senador e Deputados, no Brasil e por estado.',
+          cta: { label: 'Ver resultados', href: '/resultados' },
+          art: <BallotBoxArt />,
+        },
+      ]}
     />
   );
 }`,

@@ -1,5 +1,5 @@
 import { Plus } from 'lucide-react';
-import { PageHeader } from './ui-better-soft/headers/page-header';
+import { PAGE_HEADER_ACTION_CLASS, PageHeader } from './ui-better-soft/headers/page-header';
 import { GatedCreateLink } from './gated-create-link';
 import { buttonVariants } from './ui/button';
 import { cn } from '../../lib/utils';
@@ -57,7 +57,8 @@ export function PageHeaderBlock({
             gateAction={createAction.gateAction}
             className={cn(
               buttonVariants(),
-              'h-10 w-10 rounded-full p-0 shadow-md shadow-primary/25 transition-[background-color,box-shadow] duration-300 hover:shadow-lg hover:shadow-primary/30 sm:w-auto sm:rounded-[var(--ui-radius-pill,0.375rem)] sm:px-4'
+              PAGE_HEADER_ACTION_CLASS,
+              'shadow-md shadow-primary/25 transition-[background-color,box-shadow] duration-300 hover:shadow-lg hover:shadow-primary/30'
             )}
           >
             <Plus className="h-4 w-4" />

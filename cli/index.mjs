@@ -49,14 +49,14 @@ comandos:
   check              avisa se o core divergiu do lock (nunca falha)
   lock               marca o core atual como "visto" no kizuna.lock
   adopt              gera kizuna.lock de um projeto que já tem a casca
-  db <install|migrate>   roda a instalação / migrations incrementais
+  db <install|migrate|run>   instalação / migrations incrementais / .sql avulso (db run db/reseed.sql)
   plugin <list|add <nome>>
   token service      imprime o JWT de serviço (POSTGREST_SERVICE_TOKEN, só servidor)
 
 opções globais:
   --project <dir>    raiz do projeto (padrão: cwd)
   --db-url <url>     conexão do PostgreSQL (ou env DATABASE_URL)
-  --psql "<cmd>"     comando psql (ou env KIZUNA_PSQL); ex.: "docker exec -i pg psql -U myuser"
+  --psql "<cmd>"     opcional: usa o psql em vez do driver pg (ou env KIZUNA_PSQL); ex.: "docker exec -i pg psql -U myuser"
   --yes              responde "sim" a toda confirmação
   --no-input         falha em vez de perguntar
   --force            (install) re-materializa TODA a casca por cima do projeto

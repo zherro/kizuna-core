@@ -11,6 +11,10 @@ import type { ServiceResult } from './search-types';
 import { formatLocationLabel } from './format-location-label';
 import { serviceHref } from '../../../shared/city-routing/city-slug';
 
+// Até 6 por linha no desktop: card e imagem mais contidos em tela larga.
+const GRID_CLASS =
+  'grid grid-cols-1 gap-4 min-[500px]:grid-cols-2 min-[900px]:grid-cols-3 min-[1100px]:grid-cols-4 min-[1360px]:grid-cols-5 min-[1500px]:grid-cols-6';
+
 export type ResultsScope = 'city' | 'state' | 'related' | 'empty';
 
 type Props = {
@@ -64,7 +68,7 @@ function toCardProps(r: ServiceResult, detailConfig?: ServiceDetailConfig | null
     providerAvatarUrl: r.provider_avatar,
     rating: r.rating,
     reviewCount: r.reviews,
-    ctaLabel: isCinema ? 'Ver sessões' : 'Ver serviço',
+    ctaLabel: isCinema ? 'Onde assistir' : 'Ver serviço',
   };
 }
 
@@ -121,7 +125,7 @@ export function SearchResultsView({
         className={
           layout === 'strip'
             ? 'flex gap-3 overflow-x-auto pb-2'
-            : 'grid grid-cols-1 gap-4 min-[500px]:grid-cols-2 min-[900px]:grid-cols-3'
+            : GRID_CLASS
         }
       >
         {Array.from({ length: layout === 'strip' ? 4 : 6 }).map((_, i) => (
@@ -180,7 +184,7 @@ export function SearchResultsView({
         </h2>
         <span className="text-xs text-muted-foreground">{results.length} resultado(s)</span>
       </div>
-      <div className="grid grid-cols-1 gap-4 min-[500px]:grid-cols-2 min-[900px]:grid-cols-3 min-[1400px]:grid-cols-4">
+      <div className={GRID_CLASS}>
         {results.map((r) => card(r, 'grid'))}
       </div>
       {hasMore && onLoadMore && (

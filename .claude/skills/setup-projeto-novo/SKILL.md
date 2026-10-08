@@ -59,6 +59,10 @@ Referência de comandos: **`kizuna-core/docs/comecando/cli.md`**.
    node kizuna-core/cli db install --db-url "$DATABASE_URL"
    ```
 
+   Conecta direto com o driver `pg` do CLI (instalado sozinho em `kizuna-core/cli` na 1ª vez) —
+   não precisa de psql, igual no Windows e no Linux. Seeds próprios do projeto (ex.:
+   `db/reseed.sql`) vão por `node kizuna-core/cli db run <arquivo.sql> --db-url "$DATABASE_URL"`.
+
    Aplica `kizuna-core/sql/*` (auth, RBAC, plugin_registry) em ordem, depois cada plugin de
    `kizuna.plugins.json`. Idempotente — é um instalador do zero, não histórico de migração.
 

@@ -75,7 +75,8 @@ export function MediaResultCard({
           <h3
             className={cn(
               'text-base font-bold leading-tight',
-              titleLines === 3 ? 'line-clamp-3' : 'line-clamp-2'
+              // reserva a altura das linhas: cards lado a lado ficam alinhados com título curto ou longo
+              titleLines === 3 ? 'line-clamp-3 min-h-[3.75em]' : 'line-clamp-2 min-h-[2.5em]'
             )}
           >
             {title}

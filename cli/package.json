@@ -5,5 +5,8 @@
   "main": "index.mjs",
   "bin": {
     "kizuna": "index.mjs"
+  },
+  "devDependencies": {
+    "pg": "8.23.0"
   }
 }

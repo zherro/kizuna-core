@@ -13,6 +13,13 @@ const PAGE_HEADER_TITLE = {
   soft: { size: '2xl', weight: 'normal' },
 } as const;
 
+/**
+ * Formato das ações do cabeçalho: no mobile um botão redondo só com ícone (rótulo em
+ * `sr-only sm:not-sr-only`), a partir de `sm` ícone + rótulo. Combine com `buttonVariants(...)`.
+ */
+export const PAGE_HEADER_ACTION_CLASS =
+  'h-10 w-10 rounded-full p-0 sm:w-auto sm:rounded-[var(--ui-radius-pill,0.375rem)] sm:px-4';
+
 type PageHeaderProps = {
   eyebrow?: string;
   title: string;

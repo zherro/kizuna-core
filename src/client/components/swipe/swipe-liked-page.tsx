@@ -2,22 +2,43 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { HeartOff } from 'lucide-react';
+import { HeartOff, Search, Sparkles } from 'lucide-react';
 import { useAuth } from '../../providers/auth-provider';
 import { RequireAuthProvider, useRequireAuth } from '../auth/require-auth';
+import { PAGE_HEADER_ACTION_CLASS, PageHeader } from '../ui-better-soft/headers/page-header';
+import { SCREEN_CONTAINER_CLASS } from '../screen-engine/screen-container';
+import { ConfirmDialog } from '../ui-better-soft/overlay/confirm-dialog';
 import { fetchLiked, recordSwipe } from './swipe-api';
 import { coverUrl, priceLabel } from './swipe-card';
 import { formatLocationLabel } from '../search/format-location-label';
+import { buttonVariants } from '../ui/button';
+import { cn } from '../../../lib/utils';
 import type { LikedItem } from './swipe-types';
 
 const PAGE_SIZE = 24;
 
-type Props = { discoverHref?: string };
+type Props = {
+  discoverHref?: string;
+  searchHref?: string;
+  /**
+   * `panel` (/painel/favoritos): cabeçalho no padrão de Meus serviços (`PageHeader` com "voltar" ao
+   * painel) e botão "Remover favorito" com confirmação, para um clique sem querer não tirar o item.
+   */
+  variant?: 'public' | 'panel';
+};
+
+/** Expirado = `expires_at` no passado (ex.: evento/sessão de cinema que já aconteceu). */
+function isExpired(item: LikedItem, now: number): boolean {
+  return item.expires_at ? Date.parse(item.expires_at) <= now : false;
+}
 
 /**
  * Lista de curtidos. Cuida da própria autenticação (sem ProtectedRoute): sob o layout público a
  * sessão hidrata depois do primeiro render, e redirecionar antes disso mandava quem está logado
  * para /login. Espera `loading` do AuthProvider; anônimo vê um convite que abre o AuthModal.
+ *
+ * Os expirados (`expires_at` vencido — seguem `status = 'active'`) vão para uma seção própria no
+ * fim, separados dos ativos.
  */
 export function SwipeLikedPage(props: Props) {
   return (
@@ -27,7 +48,8 @@ export function SwipeLikedPage(props: Props) {
   );
 }
 
-function SwipeLikedInner({ discoverHref = '/descobrir' }: Props) {
+function SwipeLikedInner({ discoverHref = '/descobrir', searchHref = '/busca', variant = 'public' }: Props) {
+  const panel = variant === 'panel';
   const { user, loading: authLoading } = useAuth();
   const userId = user?.user_id ?? null;
   const requireAuth = useRequireAuth();
@@ -37,6 +59,7 @@ function SwipeLikedInner({ discoverHref = '/descobrir' }: Props) {
   const [hasMore, setHasMore] = useState(false);
   const [error, setError] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  const [confirming, setConfirming] = useState<LikedItem | null>(null);
 
   const load = useCallback(async (p: number) => {
     setLoading(true);
@@ -65,14 +88,107 @@ function SwipeLikedInner({ discoverHref = '/descobrir' }: Props) {
 
   const loadMore = () => setPage((p) => p + 1);
 
+  const now = Date.now();
+  const active = items.filter((i) => !isExpired(i, now));
+  const expired = items.filter((i) => isExpired(i, now));
+
+  // No painel: mesmo container de RenderScreen e mesmo PageHeader de Meus serviços.
+  const containerClass = panel ? SCREEN_CONTAINER_CLASS : 'mx-auto w-full max-w-5xl px-4 pb-10 pt-4';
+  const header = panel ? (
+    <PageHeader
+      title="Favoritos"
+      description="Anúncios que você favoritou. Os expirados ficam separados no fim da lista."
+      backHref="/painel"
+      backLabel="Painel"
+      className="pb-0"
+      actions={
+        <>
+          <Link
+            href={discoverHref}
+            title="Descobrir"
+            className={cn(buttonVariants({ variant: 'outline' }), PAGE_HEADER_ACTION_CLASS)}
+          >
+            <Sparkles className="h-4 w-4" />
+            <span className="sr-only sm:not-sr-only">Descobrir</span>
+          </Link>
+          <Link href={searchHref} title="Pesquisar" className={cn(buttonVariants(), PAGE_HEADER_ACTION_CLASS)}>
+            <Search className="h-4 w-4" />
+            <span className="sr-only sm:not-sr-only">Pesquisar</span>
+          </Link>
+        </>
+      }
+    />
+  ) : (
+    <h1 className="font-serif text-2xl font-bold text-foreground">Curtidos</h1>
+  );
+  const emptyMessage = panel ? 'Você ainda não tem favoritos.' : 'Você ainda não curtiu nada.';
+
+  const renderCard = (i: LikedItem, isExp: boolean) => (
+    <div
+      key={i.uid}
+      className={`relative flex flex-col overflow-hidden rounded-[var(--ui-radius-card,1rem)] border-[length:var(--ui-border-w-card,1px)] border-border shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] bg-card ${isExp ? 'opacity-70' : ''}`}
+    >
+      <Link href={`/anuncios/${i.uid}`} className="flex-1">
+        <div className="relative">
+          {coverUrl(i.cover_file_id) ? (
+            <img
+              src={coverUrl(i.cover_file_id, 'thumb')!}
+              alt={i.title}
+              className={`h-32 w-full object-cover ${isExp ? 'grayscale' : ''}`}
+              loading="lazy"
+            />
+          ) : (
+            <div className="h-32 w-full bg-muted" />
+          )}
+          {isExp ? (
+            <span className="absolute left-2 top-2 rounded-full bg-foreground/80 px-2 py-0.5 text-[11px] font-semibold text-background">
+              Expirado
+            </span>
+          ) : null}
+        </div>
+        <div className="p-3">
+          {i.category ? <p className="text-xs text-muted-foreground">{i.category}</p> : null}
+          <p className="line-clamp-2 text-sm font-semibold text-foreground">{i.title}</p>
+          <p className="mt-1 text-xs font-medium text-foreground">{priceLabel(i)}</p>
+          {formatLocationLabel(i) ? (
+            <p className="mt-0.5 truncate text-xs text-muted-foreground">{formatLocationLabel(i)}</p>
+          ) : null}
+        </div>
+      </Link>
+      {panel ? (
+        <div className="px-3 pb-3">
+          <button
+            type="button"
+            onClick={() => setConfirming(i)}
+            className="inline-flex w-full items-center justify-center gap-1.5 rounded-[var(--ui-radius-pill,0.375rem)] border border-destructive/40 px-3 py-1.5 text-xs font-semibold text-destructive transition-colors hover:bg-destructive/10"
+          >
+            <HeartOff className="h-3.5 w-3.5" />
+            Remover favorito
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          aria-label={`Descurtir ${i.title}`}
+          onClick={() => unlike(i.uid)}
+          className="absolute right-2 top-2 rounded-full bg-background/90 p-1.5 text-destructive shadow"
+        >
+          <HeartOff className="h-4 w-4" />
+        </button>
+      )}
+    </div>
+  );
+
+  const gridClass = 'grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4';
+
   if (authLoading) {
     return <div className="p-10 text-center text-sm text-muted-foreground">Carregando…</div>;
   }
 
   if (!userId) {
     return (
-      <div className="mx-auto w-full max-w-5xl px-4 pb-10 pt-4">
-        <h1 className="font-serif text-2xl font-bold text-foreground">Curtidos</h1>
+      <div className={containerClass}>
+        {header}
         <div className="mt-10 text-center">
           <p className="text-sm text-muted-foreground">Entre para ver seus curtidos.</p>
           <button
@@ -89,8 +205,8 @@ function SwipeLikedInner({ discoverHref = '/descobrir' }: Props) {
   }
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-4 pb-10 pt-4">
-      <h1 className="font-serif text-2xl font-bold text-foreground">Curtidos</h1>
+    <div className={containerClass}>
+      {header}
 
       {!loading && error ? (
         <div className="mt-10 text-center">
@@ -107,42 +223,36 @@ function SwipeLikedInner({ discoverHref = '/descobrir' }: Props) {
 
       {!loading && !error && items.length === 0 ? (
         <div className="mt-10 text-center">
-          <p className="text-sm text-muted-foreground">Você ainda não curtiu nada.</p>
-          <Link href={discoverHref} className="mt-4 inline-block rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground">
-            Descobrir
-          </Link>
+          <p className="text-sm text-muted-foreground">{emptyMessage}</p>
+          <div className="mt-4 flex flex-wrap justify-center gap-2">
+            <Link href={discoverHref} className="inline-block rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground">
+              Descobrir
+            </Link>
+            <Link href={searchHref} className="inline-block rounded-full border border-border px-5 py-2.5 text-sm font-semibold text-foreground">
+              Pesquisar
+            </Link>
+          </div>
         </div>
       ) : null}
 
-      <div className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-        {items.map((i) => (
-          <div key={i.uid} className="relative overflow-hidden rounded-[var(--ui-radius-card,1rem)] border-[length:var(--ui-border-w-card,1px)] border-border shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] bg-card">
-            <Link href={`/anuncios/${i.uid}`}>
-              {coverUrl(i.cover_file_id) ? (
-                <img src={coverUrl(i.cover_file_id, 'thumb')!} alt={i.title} className="h-32 w-full object-cover" loading="lazy" />
-              ) : (
-                <div className="h-32 w-full bg-muted" />
-              )}
-              <div className="p-3">
-                {i.category ? <p className="text-xs text-muted-foreground">{i.category}</p> : null}
-                <p className="line-clamp-2 text-sm font-semibold text-foreground">{i.title}</p>
-                <p className="mt-1 text-xs font-medium text-foreground">{priceLabel(i)}</p>
-                {formatLocationLabel(i) ? (
-                  <p className="mt-0.5 truncate text-xs text-muted-foreground">{formatLocationLabel(i)}</p>
-                ) : null}
-              </div>
-            </Link>
-            <button
-              type="button"
-              aria-label={`Descurtir ${i.title}`}
-              onClick={() => unlike(i.uid)}
-              className="absolute right-2 top-2 rounded-full bg-background/90 p-1.5 text-destructive shadow"
-            >
-              <HeartOff className="h-4 w-4" />
-            </button>
+      {active.length > 0 ? (
+        <div className={`mt-5 ${gridClass}`}>{active.map((i) => renderCard(i, false))}</div>
+      ) : null}
+
+      {expired.length > 0 ? (
+        <section aria-labelledby="liked-expired" className="mt-10">
+          <div className="flex items-center gap-3">
+            <h2 id="liked-expired" className="shrink-0 text-sm font-semibold text-muted-foreground">
+              Expirados ({expired.length})
+            </h2>
+            <div aria-hidden="true" className="h-px flex-1 bg-border" />
           </div>
-        ))}
-      </div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Já passaram da validade (ex.: eventos e sessões que já aconteceram).
+          </p>
+          <div className={`mt-4 ${gridClass}`}>{expired.map((i) => renderCard(i, true))}</div>
+        </section>
+      ) : null}
 
       {hasMore && !error ? (
         <div className="mt-6 text-center">
@@ -151,6 +261,18 @@ function SwipeLikedInner({ discoverHref = '/descobrir' }: Props) {
           </button>
         </div>
       ) : null}
+
+      <ConfirmDialog
+        open={confirming !== null}
+        title="Remover dos favoritos?"
+        description={confirming ? `"${confirming.title}" sairá da sua lista de favoritos.` : undefined}
+        confirmLabel="Remover favorito"
+        onConfirm={() => {
+          if (confirming) unlike(confirming.uid);
+          setConfirming(null);
+        }}
+        onCancel={() => setConfirming(null)}
+      />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, cleanup, within } from '@testing-library/react';
 
 const createMockItems = (count: number, startIdx: number = 0) =>
   Array.from({ length: count }, (_, i) => ({
@@ -126,6 +126,39 @@ describe('SwipeLikedPage', () => {
     expect(screen.queryByText(/Entre para ver seus curtidos/)).toBeNull();
     release();
     expect(await screen.findByText('Item 0')).toBeTruthy();
+  });
+
+  it('painel: "Remover favorito" pede confirmação antes de descurtir', async () => {
+    api.fetchLiked.mockResolvedValueOnce([
+      { uid: 'u1', title: 'Pintor', price: null, price_type: 'quote', category: 'Casa', cover_file_id: null, liked_at: '2026-09-25' },
+    ]);
+    render(<AuthProvider initialUser={null}><LikedPage variant="panel" /></AuthProvider>);
+    expect(await screen.findByText('Pintor')).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Favoritos' })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remover favorito' }));
+    expect(screen.getByRole('alertdialog')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
+    expect(api.recordSwipe).not.toHaveBeenCalled();
+    expect(screen.getByText('Pintor')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remover favorito' }));
+    const dialog = screen.getByRole('alertdialog');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Remover favorito' }));
+    expect(api.recordSwipe).toHaveBeenCalledWith(['u1'], 'unlike');
+    await waitFor(() => expect(screen.queryByText('Pintor')).toBeNull());
+  });
+
+  it('expirados vão para a seção "Expirados", abaixo dos ativos', async () => {
+    api.fetchLiked.mockResolvedValueOnce([
+      { uid: 'u1', title: 'Show antigo', price: null, price_type: 'quote', category: 'Eventos', cover_file_id: null, liked_at: '2026-09-25', expires_at: '2020-01-01T00:00:00Z' },
+      { uid: 'u2', title: 'Pintor', price: null, price_type: 'quote', category: 'Casa', cover_file_id: null, liked_at: '2026-09-24', expires_at: null },
+    ]);
+    render(<SwipeLikedPage />);
+    expect(await screen.findByText('Pintor')).toBeTruthy();
+    const section = screen.getByRole('region', { name: /Expirados/ });
+    expect(within(section).getByText('Show antigo')).toBeTruthy();
+    expect(within(section).queryByText('Pintor')).toBeNull();
   });
 
   it('anônimo: pede login sem buscar; logar pelo modal carrega a lista', async () => {

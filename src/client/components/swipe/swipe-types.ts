@@ -23,6 +23,8 @@ export type LikedItem = {
   category: string | null;
   cover_file_id: string | null;
   liked_at: string;
+  /** Validade do anúncio (`services.expires_at`); passada = expirado (ex.: evento que já aconteceu). */
+  expires_at?: string | null;
   city?: string | null;
   state?: string | null;
   address_count?: number | null;

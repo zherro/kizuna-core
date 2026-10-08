@@ -74,7 +74,7 @@ export async function run(ctx) {
 
     const dbUrl = flags.dbUrl || process.env.DATABASE_URL;
     if (dbUrl && !flags.skipDb) {
-      applyRange({ dbUrl, coreDir, plugin: name, from: 0 });
+      await applyRange({ dbUrl, coreDir, plugin: name, from: 0, psql: flags.psql });
     }
 
     applyFragment(lock, report.newLockFragment);
