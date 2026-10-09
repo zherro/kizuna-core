@@ -31,7 +31,9 @@ export function AdPhotoMosaic({ photos, alt }: { photos: string[]; alt: string }
   return (
     <>
       <div className="@container">
-        <div className={cn('grid grid-cols-1 gap-1.5', photos.length > 1 && '@[480px]:grid-cols-2')}>
+        {/* Sempre 2 colunas no container largo: com 1 foto ela fica do tamanho de um tile, não
+            ocupa a largura inteira (o que a deixava com o dobro da altura). */}
+        <div className="grid grid-cols-1 gap-1.5 @[480px]:grid-cols-2">
           <Tile src={photos[0]} alt={alt} onClick={() => setLightboxIndex(0)} />
           {photos.length > 1 && (
             <Tile
