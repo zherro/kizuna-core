@@ -56,16 +56,33 @@ O `LoginForm`, o `RegisterForm` e o `AuthModal` já mostram os botões. Não há
 2. Em **URIs de redirecionamento autorizados**, cadastre um por ambiente:
    - `http://localhost:3000/api/auth/oauth/google/callback`
    - `https://seusite.com.br/api/auth/oauth/google/callback`
-3. Na **Tela de consentimento OAuth**, use os escopos `openid`, `email` e `profile`. Nenhum deles
+3. Em **Origens JavaScript autorizadas**, cadastre a origem de cada ambiente (sem caminho). O
+   One Tap só aparece em origem cadastrada. Em localhost, cadastre as duas formas:
+   - `http://localhost` e `http://localhost:3000`
+   - `https://seusite.com.br`
+4. Na **Tela de consentimento OAuth**, use os escopos `openid`, `email` e `profile`. Nenhum deles
    é sensível, então não há revisão do Google. Publique o app para sair do modo teste, que só
    aceita os e-mails listados como testadores.
-4. No `.env`:
+5. No `.env`:
 
 ```bash
 GOOGLE_CLIENT_ID=1234-abc.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=GOCSPX-...
 APP_URL=https://seusite.com.br   # obrigatório em produção: monta o redirect_uri
+# GOOGLE_ONE_TAP=false           # opcional: desliga só o balão One Tap
 ```
+
+**Como aparece para a pessoa:**
+
+- **Botão "Continuar com Google"**: abre uma janelinha (popup) do Google por cima do site. Ao
+  terminar, a janela fecha e a página recarrega já logada. Se o navegador bloquear a janela, o
+  botão cai no redirect de página inteira. Se a pessoa cancelar, a janela fecha e nada muda.
+- **One Tap**: o balão "Fazer login em <site> com o Google" no canto da tela, para visitante que
+  já tem conta Google no navegador. Um clique e pronto. O próprio `AuthProvider` monta o
+  balão (não precisa mexer no layout) e ele não aparece para quem está logado. Para desligar num
+  provider: `<AuthProvider googleOneTap={false}>`. A rota
+  `src/app/api/auth/oauth/[provider]/onetap/route.ts` é `managed` e chega pelo `kizuna update`. Diferente do botão, aqui o id_token chega
+  pelo navegador, então o servidor confere a assinatura com as chaves públicas do Google.
 
 **Como a conta é resolvida** (`auth.fun_auth__external_login`):
 

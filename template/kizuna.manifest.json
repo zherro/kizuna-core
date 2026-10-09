@@ -23,6 +23,7 @@
     "src/app/api/auth/logout/route.ts": "managed",
     "src/app/api/auth/me/route.ts": "managed",
     "src/app/api/auth/oauth/[provider]/callback/route.ts": "managed",
+    "src/app/api/auth/oauth/[provider]/onetap/route.ts": "managed",
     "src/app/api/auth/oauth/[provider]/start/route.ts": "managed",
     "src/app/api/auth/otp/request/route.ts": "managed",
     "src/app/api/auth/otp/verify/route.ts": "managed",

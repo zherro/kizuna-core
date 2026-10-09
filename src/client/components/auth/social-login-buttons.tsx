@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { startOAuthLogin } from './oauth-client';
 
 type Provider = { id: string; label: string };
 
@@ -14,8 +15,6 @@ type SocialLoginButtonsProps = {
   /** Separador "ou" maior (texto base, semibold) — para casar com uma legenda em `text-base`. */
   large?: boolean;
 };
-
-const AUTH_PAGES = new Set(['/login', '/registre-se']);
 
 function GoogleIcon() {
   return (
@@ -55,17 +54,6 @@ function PhoneIcon() {
 
 const ICONS: Record<string, () => React.ReactElement> = { google: GoogleIcon };
 
-function resolveReturnTo(explicit?: string): string {
-  if (explicit) return explicit;
-  if (typeof window === 'undefined') return '/painel';
-  const { pathname, search } = window.location;
-  if (AUTH_PAGES.has(pathname)) {
-    const fromQuery = new URLSearchParams(search).get('returnTo');
-    return fromQuery || '/painel';
-  }
-  return `${pathname}${search}`;
-}
-
 /**
  * Botões "Continuar com <provedor>" + separador "ou". Não renderiza nada quando nenhum provedor
  * está configurado (envs ausentes), então é seguro deixar em qualquer formulário.
@@ -97,10 +85,7 @@ export function SocialLoginButtons({
   const showPhone = phoneEnabled && Boolean(onPhoneLogin);
   if (!providers.length && !showPhone) return null;
 
-  const start = (id: string) => {
-    const target = encodeURIComponent(resolveReturnTo(returnTo));
-    window.location.assign(`/api/auth/oauth/${encodeURIComponent(id)}/start?returnTo=${target}`);
-  };
+  const start = (id: string) => startOAuthLogin(id, returnTo);
 
   return (
     <div className="space-y-4">

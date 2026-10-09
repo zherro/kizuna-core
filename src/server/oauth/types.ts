@@ -34,4 +34,8 @@ export interface OAuthProvider {
   isEnabled(): boolean;
   authorizeUrl(input: OAuthAuthorizeInput): string;
   exchange(input: OAuthExchangeInput): Promise<OAuthProfile>;
+  /** Client id público para o login "One Tap" no navegador; null/ausente = provedor não tem. */
+  oneTapClientId?(): string | null;
+  /** Valida (com assinatura) um id_token recebido do navegador e devolve o perfil. */
+  verifyIdToken?(idToken: string, expected: { nonce: string }): Promise<OAuthProfile>;
 }

@@ -10,6 +10,7 @@ import {
   useState,
 } from 'react';
 import type { PermissionMap } from '../../types/auth';
+import { GoogleOneTap } from '../components/auth/google-one-tap';
 
 export interface PublicSession {
   user_id: string;
@@ -111,9 +112,15 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({
   children,
   initialUser,
+  googleOneTap = true,
 }: {
   children: React.ReactNode;
   initialUser: PublicSession | null;
+  /**
+   * Balão "Entrar com o Google" (One Tap) para visitante anônimo. Só aparece se o servidor tiver o
+   * Google configurado (e `GOOGLE_ONE_TAP` ≠ `false`). `false` desliga neste provider.
+   */
+  googleOneTap?: boolean;
 }) {
   const [user, setUserRaw] = useState<AuthUser | null>(
     initialUser ? buildAuthUser(initialUser) : null
@@ -164,7 +171,12 @@ export function AuthProvider({
 
   const value = useMemo(() => ({ user, loading, setUser, logout }), [user, loading, setUser, logout]);
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+      <GoogleOneTap active={googleOneTap && !loading && !user} />
+    </AuthContext.Provider>
+  );
 }
 
 export function useAuth(): AuthContextValue {

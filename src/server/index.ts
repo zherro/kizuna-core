@@ -28,6 +28,7 @@ export {
 export {
   createOAuthStartHandler,
   createOAuthCallbackHandler,
+  createOAuthOneTapHandlers,
   createAuthProvidersHandler,
 } from './oauth-handlers';
 export { listEnabledOAuthProviders } from './oauth/providers';

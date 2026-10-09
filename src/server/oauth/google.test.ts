@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest';
-import { validateGoogleClaims } from './google';
+import { generateKeyPairSync, sign } from 'node:crypto';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { validateGoogleClaims, verifyGoogleIdToken } from './google';
 import { sanitizeReturnTo } from '../app-url';
 
 const base = {
@@ -53,5 +54,57 @@ describe('sanitizeReturnTo', () => {
     [null, '/'],
   ])('%s → %s', (input, out) => {
     expect(sanitizeReturnTo(input as string | null)).toBe(out);
+  });
+});
+
+describe('verifyGoogleIdToken (One Tap)', () => {
+  const { privateKey, publicKey } = generateKeyPairSync('rsa', { modulusLength: 2048 });
+  const other = generateKeyPairSync('rsa', { modulusLength: 2048 });
+  let kidSeq = 0;
+
+  function mockJwks(kid: string) {
+    const jwk = { ...publicKey.export({ format: 'jwk' }), kid, alg: 'RS256', use: 'sig' };
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(JSON.stringify({ keys: [jwk] }), { status: 200 }))
+    );
+  }
+
+  function makeToken(kid: string, claims: Record<string, unknown>, key = privateKey) {
+    const enc = (o: unknown) => Buffer.from(JSON.stringify(o)).toString('base64url');
+    const body = `${enc({ alg: 'RS256', kid, typ: 'JWT' })}.${enc(claims)}`;
+    return `${body}.${sign('RSA-SHA256', Buffer.from(body), key).toString('base64url')}`;
+  }
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('aceita token assinado pela chave do Google', async () => {
+    const kid = `k${++kidSeq}`;
+    mockJwks(kid);
+    const profile = await verifyGoogleIdToken(makeToken(kid, base), expected);
+    expect(profile.subject).toBe('1098765');
+  });
+
+  it('recusa assinatura de outra chave', async () => {
+    const kid = `k${++kidSeq}`;
+    mockJwks(kid);
+    await expect(
+      verifyGoogleIdToken(makeToken(kid, base, other.privateKey), expected)
+    ).rejects.toThrow('google_invalid_signature');
+  });
+
+  it('recusa kid desconhecido', async () => {
+    mockJwks(`k${++kidSeq}`);
+    await expect(verifyGoogleIdToken(makeToken('nao-existe', base), expected)).rejects.toThrow(
+      'google_unknown_kid'
+    );
+  });
+
+  it('continua checando nonce', async () => {
+    const kid = `k${++kidSeq}`;
+    mockJwks(kid);
+    await expect(
+      verifyGoogleIdToken(makeToken(kid, { ...base, nonce: 'outro' }), expected)
+    ).rejects.toThrow('google_invalid_nonce');
   });
 });
