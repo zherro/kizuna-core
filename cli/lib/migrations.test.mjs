@@ -1,22 +1,28 @@
 import { it, expect, describe } from 'vitest';
-import { resolve } from 'node:path';
+import { readdirSync } from 'node:fs';
+import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { countMigrations, listMigrationFiles } from './migrations.mjs';
 
 const CORE = resolve(fileURLToPath(import.meta.url), '..', '..', '..');
+// Conta direto no disco: o plugin ganha migrations com o tempo e o teste não pode congelar o número.
+const sqlCount = (dir) => readdirSync(join(CORE, dir)).filter((f) => /^\d{4}_.*\.sql$/.test(f)).length;
 
 it('countMigrations contra o kizuna-core real', () => {
-  expect(countMigrations(CORE, 'agenda')).toBe(2);
-  expect(countMigrations(CORE, 'messaging')).toBe(1);
+  expect(countMigrations(CORE, 'agenda')).toBe(sqlCount('plugins/agenda'));
+  expect(countMigrations(CORE, 'agenda')).toBeGreaterThanOrEqual(2);
+  expect(countMigrations(CORE, 'messaging')).toBe(sqlCount('plugins/messaging'));
   // brief citava ">= 30"; o layout real do repo tem ~25 arquivos em sql/
   expect(countMigrations(CORE, 'core')).toBeGreaterThanOrEqual(20);
 });
 
 it('listMigrationFiles ordena 0001 antes de 0002', () => {
   const files = listMigrationFiles(CORE, 'agenda');
-  expect(files).toHaveLength(2);
+  expect(files).toHaveLength(sqlCount('plugins/agenda'));
   expect(files[0]).toMatch(/0001_/);
   expect(files[1]).toMatch(/0002_/);
+  const names = files.map((f) => f.split(/[\\/]/).pop());
+  expect(names).toEqual([...names].sort());
 });
 
 it('plugin inexistente → lista vazia', () => {
