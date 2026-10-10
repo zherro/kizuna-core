@@ -47,4 +47,6 @@ export type RpcConfig = {
   requiresAuth?: boolean;
   /** Com `requiresAuth: false`: repassa a sessão quando existir (anon continua permitido). */
   optionalAuth?: boolean;
+  /** Ajusta o body (args `p_*`) antes de chamar a RPC — ex.: incluir cidades irmãs na busca. */
+  mapParams?: (params: RecordValue) => RecordValue;
 };

@@ -4,6 +4,8 @@ import { runServiceSearch, seedFromKey } from './service-search';
 import { listLocationCities } from '../location';
 import type { RoutableCity } from '../../shared/city-routing/city-slug';
 import { pickServiceCity, type ServiceAddressLike } from './service-city';
+import { fetchServiceSiblings, type ServiceSibling } from './service-siblings';
+import { projectRegions } from '../regions';
 import type { FormSchema, FormValues } from '../../client/components/form-builder';
 import type { ServiceRecord } from '../../client/components/services/service-type';
 import type { ServiceResult } from '../../client/components/search/search-types';
@@ -46,6 +48,8 @@ export type ServiceDetailData = {
   randomServices: ServiceResult[];
   /** Cidade canônica do anúncio (URL fixa `/[cidade]/anuncio/[uid]`); `null` = sem cidade resolvível. */
   city: RoutableCity | null;
+  /** O mesmo anúncio nas cidades irmãs de `city` (`regions`) — ex.: o filme em cartaz em VG. */
+  siblings: ServiceSibling[];
 };
 
 async function fetchService(uid: string): Promise<ServiceRecord | null> {
@@ -181,6 +185,7 @@ export async function loadServiceDetail(uid: string): Promise<ServiceDetailData 
   );
 
   const city = await fetchServiceCity(service, provider);
+  const siblings = await fetchServiceSiblings(service, city?.ibge, projectRegions);
 
-  return { service, subcategoryNames, provider, extraFields, related, randomServices, city };
+  return { service, subcategoryNames, provider, extraFields, related, randomServices, city, siblings };
 }

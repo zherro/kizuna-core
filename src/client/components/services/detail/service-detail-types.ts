@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import type { ServiceRecord } from '../service-type';
 import type { ServiceExtraFields, ProviderProfile } from '../../../../server/services/service-detail-data';
+import type { ServiceSibling } from '../../../../server/services/service-siblings';
 
 export type { CategoryStyleInput, ReactionButtonConfig, ServiceDetailConfig, ServiceDetailVariant } from './category-style';
 
@@ -13,6 +14,8 @@ export type ServiceDetailVariantProps = {
   subcategoryNames: string[];
   /** Hue (0-360) de acento da categoria, resolvido via `resolveCategoryHue`. */
   hue: number;
+  /** O mesmo anúncio nas cidades irmãs (`regions`) — a variant decide se/como mostra. */
+  siblings?: ServiceSibling[];
 };
 
 export type ServiceDetailVariantComponent = (props: ServiceDetailVariantProps) => ReactNode;

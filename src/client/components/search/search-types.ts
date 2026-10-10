@@ -98,6 +98,10 @@ export type SearchAdsBody = {
    * results) — ver `ServiceDetailConfig.excludeFromMixedCategorySlugs`. Ausente/`null` = nada
    * excluído (comportamento anterior). */
   p_exclude_category_slugs?: string[] | null;
+  /** Cidades irmãs (`regions`): quando presente, o filtro de cidade vale para QUALQUER uma delas;
+   * `p_city_ibge` continua sendo a selecionada (vem primeiro na ordem). Preenchido pelo proxy
+   * (`withRegionCities`) ou por quem chama a RPC direto no servidor. */
+  p_city_ibges?: string[] | null;
 };
 
 export type TaxonomySubcategory = { id: number; name: string };

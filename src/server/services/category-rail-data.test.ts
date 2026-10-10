@@ -7,6 +7,8 @@ const { serverFetchResource, pgrstRpc } = vi.hoisted(() => ({
 
 vi.mock('../postgrest-crud', () => ({ serverFetchResource }));
 vi.mock('../postrest/conn', () => ({ pgrstRpc }));
+// `../regions` lê o kizuna.config.json do projeto (alias `@/`), que não existe aqui.
+vi.mock('../regions', () => ({ projectRegions: [], withProjectRegionCities: <T>(b: T) => b }));
 
 import {
   loadCategoryRail,
@@ -102,4 +104,24 @@ describe('loadCategoryRail', () => {
     serverFetchResource.mockRejectedValue(new Error('boom'));
     expect(await loadCategoryRail('cinema')).toBeNull();
   });
+
+  it('cidades irmãs: uma chamada só, selecionada em p_city_ibge e todas em p_city_ibges', async () => {
+    rpcReturns(rows(2));
+    await loadCategoryRail('cinema', { cityIbges: ['5108402', '5103403'] });
+
+    expect(pgrstRpc).toHaveBeenCalledTimes(1);
+    const body = pgrstRpc.mock.calls[0][1];
+    expect(body.p_city_ibge).toBe('5108402');
+    expect(body.p_city_ibges).toEqual(['5108402', '5103403']);
+  });
+
+  it('cidade sem irmãs: não manda p_city_ibges', async () => {
+    rpcReturns(rows(2));
+    await loadCategoryRail('cinema', { cityIbges: ['5103007'] });
+
+    const body = pgrstRpc.mock.calls[0][1];
+    expect(body.p_city_ibge).toBe('5103007');
+    expect(body).not.toHaveProperty('p_city_ibges');
+  });
 });
+

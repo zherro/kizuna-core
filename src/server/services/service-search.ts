@@ -1,4 +1,5 @@
 import { pgrstRpc } from '../postrest/conn';
+import { withProjectRegionCities } from '../regions';
 import { SEARCH_RPC, type SearchAdsBody, type ServiceResult } from '../../client/components/search/search-types';
 
 /** Seed determinístico em [-1, 1) pro `setseed()` da RPC, pra uma lista ficar estável entre
@@ -12,12 +13,13 @@ export function seedFromKey(key: string): number {
 }
 
 /** Roda a RPC pública de busca (`fn_search_services`, anônima) — sem filtro algum além dos
- * `overrides`. Erro de rede/HTTP vira lista vazia: quem chama é uma seção opcional da página. */
+ * `overrides` (com `p_city_ibge`, as cidades irmãs de `regions` entram junto). Erro de rede/HTTP
+ * vira lista vazia: quem chama é uma seção opcional da página. */
 export async function runServiceSearch(
   overrides: Partial<SearchAdsBody>,
   seed: number
 ): Promise<ServiceResult[]> {
-  const body: SearchAdsBody = {
+  const body: SearchAdsBody = withProjectRegionCities({
     p_state: null,
     p_city_id: null,
     p_city_ibge: null,
@@ -29,7 +31,7 @@ export async function runServiceSearch(
     p_page: 0,
     p_page_size: 12,
     ...overrides,
-  };
+  });
   const response = await pgrstRpc(SEARCH_RPC, body, { auth: null, schema: 'public' }).catch(
     () => null
   );

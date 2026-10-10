@@ -483,6 +483,11 @@ export async function serverFetchResource<T = RecordValue>(
      * `no-store` (default, sempre fresco).
      */
     revalidate?: number;
+    /**
+     * Filtros PostgREST com operador explícito (`filters` é sempre `eq`) — ex.:
+     * `{ city_ibge: 'in.(5103403,5108402)', uid: 'neq.<uid>', or: '(expires_at.is.null,...)' }`.
+     */
+    where?: Record<string, string>;
   } = {}
 ): Promise<T[]> {
   const config = getResourceConfig(resource);
@@ -492,6 +497,9 @@ export async function serverFetchResource<T = RecordValue>(
 
   for (const [field, value] of Object.entries(filters)) {
     query.set(field, `eq.${value}`);
+  }
+  for (const [field, value] of Object.entries(options.where ?? {})) {
+    query.append(field, value);
   }
 
   const orderDir = options.orderDirection ?? 'asc';
@@ -543,7 +551,8 @@ export async function executeRpcResource(resource: string, request: Request) {
     if (session?.role === 'auth_user') authHeader = await getAuthHeaderFromCookies();
   }
 
-  const params = ((await request.json().catch(() => null)) ?? {}) as RecordValue;
+  const raw = ((await request.json().catch(() => null)) ?? {}) as RecordValue;
+  const params = config.mapParams ? config.mapParams(raw) : raw;
 
   const response = await pgrstRpc(resource, params, {
     auth: authHeader,

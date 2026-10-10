@@ -111,7 +111,7 @@ export function ServiceDetailPage({
   searchHref = '/busca',
   analytics,
 }: ServiceDetailPageProps) {
-  const { service, subcategoryNames, provider, extraFields, related, randomServices } = data;
+  const { service, subcategoryNames, provider, extraFields, related, randomServices, siblings } = data;
 
   const categorySlug = service.category?.slug ?? null;
   const variantId = resolveServiceDetailVariant({ slug: categorySlug }, detailConfig);
@@ -229,6 +229,7 @@ export function ServiceDetailPage({
               extraFields={extraFields}
               subcategoryNames={subcategoryNames}
               hue={hue}
+              siblings={siblings ?? []}
             />
           </div>
 

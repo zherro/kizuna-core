@@ -40,7 +40,7 @@ export async function loadCategoryRail(
   options: {
     limit?: number;
     cityIbge?: string;
-    /** Região: busca em cada cidade e junta (a 1ª da lista — a selecionada — vem primeiro). */
+    /** Cidades irmãs (`regions`): a 1ª é a selecionada; o filtro vale para qualquer uma delas. */
     cityIbges?: string[];
   } = {}
 ): Promise<CategoryRailData | null> {
@@ -63,19 +63,17 @@ export async function loadCategoryRail(
   const poolSize = limit * CATEGORY_RAIL_POOL_FACTOR;
   const filter = kind === 'group' ? { p_group_category_slug: row.slug } : { p_category_id: id };
   const seed = Math.random() * 2 - 1;
-  const cities = options.cityIbges?.length ? options.cityIbges : [options.cityIbge ?? null];
-  const perCity = await Promise.all(
-    cities.map((city) =>
-      runServiceSearch({ ...filter, p_page_size: poolSize, p_city_ibge: city }, seed).catch(() => [])
-    )
-  );
-  const seen = new Set<string>();
-  const items = perCity.flat().filter((item) => {
-    const key = String((item as { uid?: unknown }).uid ?? '');
-    if (!key || seen.has(key)) return !key;
-    seen.add(key);
-    return true;
-  });
+  const cities = options.cityIbges?.length ? options.cityIbges : null;
+  const items = await runServiceSearch(
+    {
+      ...filter,
+      p_page_size: poolSize,
+      p_city_ibge: cities?.[0] ?? options.cityIbge ?? null,
+      // só manda quando há irmãs — sem a chave, a RPC aceita a assinatura antiga também
+      ...(cities && cities.length > 1 ? { p_city_ibges: cities } : {}),
+    },
+    seed
+  ).catch(() => []);
   if (items.length === 0) return null;
 
   return {

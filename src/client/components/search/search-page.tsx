@@ -84,8 +84,8 @@ export type SearchPageProps = {
    * assistente e deixa só a busca por texto + filtros. Padrão `true`.
    */
   aiEnabled?: boolean;
-  /** `regions` do kizuna.config.json: sugere anúncios das cidades vizinhas abaixo dos resultados
-   * da cidade selecionada (que continua sendo o filtro principal). */
+  /** `regions` do kizuna.config.json: as cidades irmãs já vêm FUNDIDAS no resultado (o proxy da
+   * RPC expande o filtro); aqui só servem para as seções de sugestão (`suggestTo`) abaixo dele. */
   regions?: RegionConfig[];
 };
 
@@ -322,7 +322,7 @@ function SearchPageInner({
         setHasMore(moreAvailable);
         setLoading(false);
 
-        // Região: mesmos filtros nas cidades vizinhas / sugeridas — seções abaixo da cidade.
+        // Sugestões (`suggestTo`): mesmos filtros nas regiões sugeridas — seções abaixo do resultado.
         const groups = regionGroupsFor(regions, base.p_city_ibge ?? base.p_city_id);
         if (groups.length > 0) {
           const loaded = await Promise.all(

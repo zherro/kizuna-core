@@ -1,11 +1,14 @@
 import type { ReactNode } from 'react';
+import Link from 'next/link';
 import {
   CalendarClock,
+  ChevronRight,
   CalendarDays,
   Clapperboard,
   Clock,
   ExternalLink,
   Film,
+  MapPin,
   Phone,
   PlayCircle,
   Ticket,
@@ -14,6 +17,8 @@ import {
 import { hueGradient } from './category-style';
 import type { ServiceDetailVariantComponent } from './service-detail-types';
 import { TrailerPlayer } from './trailer-player';
+import { serviceHref } from '../../../../shared/city-routing/city-slug';
+import type { ServiceSibling } from '../../../../server/services/service-siblings';
 
 type CinemaItem = {
   id_cinema?: string;
@@ -130,6 +135,37 @@ function Section({ title, hue, children }: { title: string; hue: number; childre
   );
 }
 
+/** "Também perto de você": o mesmo filme nas cidades irmãs (`regions`) — um link por post. */
+function NearbySiblings({ siblings }: { siblings: ServiceSibling[] }) {
+  if (siblings.length === 0) return null;
+  return (
+    <div className="mt-6">
+      <h3 className="text-sm font-bold text-muted-foreground">Também perto de você</h3>
+      <ul className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+        {siblings.map((s) => (
+          <li key={s.uid}>
+            <Link
+              href={serviceHref(s)}
+              className="group flex items-center gap-3 rounded-[var(--ui-radius-card,1rem)] border-[length:var(--ui-border-w-card,1px)] border-border bg-card px-4 py-3 transition hover:border-foreground/30"
+            >
+              <MapPin className="h-4 w-4 shrink-0 text-muted-foreground" />
+              <span className="min-w-0 flex-1">
+                <span className="block font-semibold leading-snug">{s.city ?? 'Outra cidade'}</span>
+                {s.places && s.places.length > 0 && (
+                  <span className="block truncate text-xs text-muted-foreground">
+                    {s.places.join(' · ')}
+                  </span>
+                )}
+              </span>
+              <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground transition group-hover:translate-x-0.5" />
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function CinemaCard({ cinema, until }: { cinema: CinemaItem; until: Date | null }) {
   return (
     <div className="flex flex-col gap-3 rounded-[var(--ui-radius-card,1rem)] border-[length:var(--ui-border-w-card,1px)] border-border bg-card p-4 shadow-[shadow:var(--ui-shadow-item,0_0_#0000)]">
@@ -214,7 +250,12 @@ export const ServiceDetailCinemaSidebar: ServiceDetailVariantComponent = ({
  * cartaz. Cinemas com `active: false` ou `expira_em` no passado ficam de fora. Gêneros são subcategorias e já
  * aparecem no cabeçalho da página. Ver `docs/integracoes/cinema-depara.md` no projeto consumidor.
  */
-export const ServiceDetailCinema: ServiceDetailVariantComponent = ({ service, extraFields, hue }) => {
+export const ServiceDetailCinema: ServiceDetailVariantComponent = ({
+  service,
+  extraFields,
+  hue,
+  siblings = [],
+}) => {
   const answers = extraFields?.answers ?? {};
 
   const tituloOriginal = asString(answers.detalhes_titulo_original);
@@ -310,6 +351,7 @@ export const ServiceDetailCinema: ServiceDetailVariantComponent = ({ service, ex
         ) : (
           <p className="text-sm text-muted-foreground">Nenhum cinema com este filme em cartaz no momento.</p>
         )}
+        <NearbySiblings siblings={siblings} />
       </Section>
     </>
   );

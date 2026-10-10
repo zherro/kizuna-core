@@ -135,6 +135,7 @@ export {
   type ServiceExtraFields,
   type RelatedResult,
 } from './services/service-detail-data';
+export { fetchServiceSiblings, type ServiceSibling } from './services/service-siblings';
 export {
   loadCategoryRail,
   DEFAULT_CATEGORY_RAIL_LIMIT,
