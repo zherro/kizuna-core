@@ -12,6 +12,7 @@ import { findOrphans, removeOrphans } from '../lib/prune.mjs';
 import { hashFile } from '../lib/hash.mjs';
 import { pull } from '../lib/core-git.mjs';
 import { applyRange as applyMigrations } from '../lib/migrations.mjs';
+import { resolveDbUrl } from '../lib/dotenv.mjs';
 
 function deepCopyShellFiles(plugins = {}) {
   const out = {};
@@ -78,7 +79,7 @@ export async function run(ctx) {
   });
 
   // migrations
-  const dbUrl = flags.dbUrl || process.env.DATABASE_URL;
+  const dbUrl = resolveDbUrl(flags, projectDir);
   if (dbUrl && !flags.skipDb) {
     for (const name of ['core', ...enabled]) {
       const from = lock.plugins?.[name]?.migrations ?? 0;

@@ -2,7 +2,7 @@
 // num projeto novo e escreve o kizuna.lock.
 
 import { existsSync, writeFileSync } from 'node:fs';
-import { execFileSync } from 'node:child_process';
+import { execSync } from 'node:child_process';
 import { loadManifests, DuplicateOwnerError } from '../lib/manifest.mjs';
 import { materialize } from '../lib/materialize.mjs';
 import { readEnabled, addEnabled, listAvailable } from '../lib/plugins-file.mjs';
@@ -10,6 +10,7 @@ import { readLock, writeLock } from '../lib/lockfile.mjs';
 import { buildFreshLock } from '../lib/lock-build.mjs';
 import { findOrphans, removeOrphans } from '../lib/prune.mjs';
 import { runCoreInstall } from '../lib/migrations.mjs';
+import { resolveDbUrl } from '../lib/dotenv.mjs';
 
 export async function run(ctx) {
   const { paths, prompt, flags = {} } = ctx;
@@ -70,12 +71,12 @@ export async function run(ctx) {
   });
 
   // (5) banco
-  const dbUrl = flags.dbUrl || process.env.DATABASE_URL;
+  const dbUrl = resolveDbUrl(flags, projectDir);
   if (dbUrl && !flags.skipDb) {
     await runCoreInstall({ dbUrl, coreDir, plugins: enabled, psql: flags.psql });
   } else {
     console.log(
-      'pulei o banco (sem --db-url/$DATABASE_URL ou com --skip-db) — rode depois: node kizuna-core/cli db install --db-url <url>'
+      'pulei o banco (sem DATABASE_URL no .env/--db-url, ou com --skip-db) — rode depois: node kizuna-core/cli db install'
     );
   }
 
@@ -109,9 +110,10 @@ export async function run(ctx) {
     (prompt && flags.input !== false && (await prompt.confirm('rodar npm install agora?')));
   if (wantNpm) {
     try {
-      execFileSync('npm', ['install'], { cwd: projectDir, stdio: 'inherit' });
-    } catch {
-      console.error('npm install falhou — rode manualmente');
+      // execSync (com shell): no Windows o `npm` é npm.cmd, que o execFileSync não acha.
+      execSync('npm install', { cwd: projectDir, stdio: 'inherit' });
+    } catch (err) {
+      console.error(`npm install falhou (${err.message}) — rode manualmente: npm install`);
     }
   }
 

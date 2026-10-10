@@ -10,15 +10,16 @@ import { readEnabled } from '../lib/plugins-file.mjs';
 import { readLock, writeLock, emptyLock } from '../lib/lockfile.mjs';
 import { join, isAbsolute } from 'node:path';
 import { runCoreInstall, applyRange, runFiles } from '../lib/migrations.mjs';
+import { resolveDbUrl } from '../lib/dotenv.mjs';
 
 export async function run(ctx) {
   const { paths, args, flags = {} } = ctx;
   const { projectDir, coreDir } = paths;
   const sub = args[0];
 
-  const dbUrl = flags.dbUrl || process.env.DATABASE_URL;
+  const dbUrl = resolveDbUrl(flags, projectDir);
   if (!dbUrl) {
-    console.error('defina --db-url <url> ou $DATABASE_URL');
+    console.error('defina DATABASE_URL no .env do projeto (ou --db-url <url> / $DATABASE_URL)');
     return 1;
   }
   const psql = flags.psql;

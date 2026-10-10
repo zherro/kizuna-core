@@ -3,7 +3,7 @@
 // Assinatura async: 'conflict' consulta prompt.choose, que é async.
 
 import { existsSync, readdirSync, mkdirSync, copyFileSync, readFileSync, writeFileSync } from 'node:fs';
-import { join, dirname, basename, extname } from 'node:path';
+import { join, dirname, basename, extname, resolve } from 'node:path';
 import { hashFile } from './hash.mjs';
 import { classify } from './diff3.mjs';
 import { mergePackageJson } from './pkg-merge.mjs';
@@ -35,6 +35,20 @@ function existsSameStem(target) {
   } catch {
     return false;
   }
+}
+
+/**
+ * `package.json` criado do zero pelo install: sem `name`/`version` o `next.config.ts` (que lê
+ * `version` para o rodapé) não compila, e o npm reclama. Outros alvos de merge começam vazios.
+ */
+export function newPackageJsonBase(projectPath, projectDir) {
+  if (basename(projectPath) !== 'package.json') return {};
+  const name =
+    basename(resolve(projectDir))
+      .toLowerCase()
+      .replace(/[^a-z0-9._-]+/g, '-')
+      .replace(/^[-._]+|[-._]+$/g, '') || 'app';
+  return { name, version: '0.1.0', private: true };
 }
 
 export async function materialize(manifestSet, opts) {
@@ -190,7 +204,9 @@ export async function materialize(manifestSet, opts) {
   if (direction === 'apply') {
     for (const merge of manifestSet.merges) {
       const target = join(projectDir, merge.projectPath);
-      const targetJson = existsSync(target) ? JSON.parse(readFileSync(target, 'utf8')) : {};
+      const targetJson = existsSync(target)
+        ? JSON.parse(readFileSync(target, 'utf8'))
+        : newPackageJsonBase(merge.projectPath, projectDir);
       const contribJson = JSON.parse(readFileSync(merge.contribAbsPath, 'utf8'));
       const prevOwned = lock?.packageJson?.ownedKeys ?? {};
       const merged = mergePackageJson(targetJson, contribJson, prevOwned);

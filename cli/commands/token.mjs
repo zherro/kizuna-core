@@ -3,8 +3,7 @@
 // nunca em variável NEXT_PUBLIC_*. HS256 com node:crypto — o CLI não tem dependências.
 
 import { createHmac } from 'node:crypto';
-import { existsSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { readDotEnv } from '../lib/dotenv.mjs';
 
 const base64url = (value) => Buffer.from(value).toString('base64url');
 
@@ -18,21 +17,12 @@ export function signServiceToken(secret) {
   return `${header}.${payload}.${signature}`;
 }
 
-function secretFromDotEnv(projectDir) {
-  const file = join(projectDir, '.env');
-  if (!existsSync(file)) return '';
-  const line = readFileSync(file, 'utf8')
-    .split(/\r?\n/)
-    .find((l) => l.startsWith('PGRST_JWT_SECRET='));
-  return line ? line.slice('PGRST_JWT_SECRET='.length).trim() : '';
-}
-
 export async function run(ctx) {
   if (ctx.args[0] !== 'service') {
     console.error('uso: kizuna token service');
     return 1;
   }
-  const secret = process.env.PGRST_JWT_SECRET || secretFromDotEnv(ctx.paths.projectDir);
+  const secret = process.env.PGRST_JWT_SECRET || readDotEnv(ctx.paths.projectDir, 'PGRST_JWT_SECRET');
   console.log(signServiceToken(secret));
   return 0;
 }

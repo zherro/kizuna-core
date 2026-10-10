@@ -163,13 +163,20 @@ consumidor).
 ## Fluxo — projeto novo
 
 ```bash
-mkdir meu-projeto && cd meu-projeto && git init
-git submodule add <url-do-kizuna-core> kizuna-core
-node kizuna-core/cli install          # materializa a casca; pergunta "npm install agora?"
-cp .env.example .env                  # preencher PGRST_JWT_SECRET + POSTGREST_URL
-node kizuna-core/cli db install --db-url "$DATABASE_URL"
-npm run dev                           # abrir /registre-se → 1º usuário vira is_root automaticamente
-node kizuna-core/cli db install --db-url "$DATABASE_URL"   # re-rodar: seeds que dependem de um tenant/root
+# pré-requisitos: Node >= 20, Git e Docker Desktop rodando
+mkdir meu-app && cd meu-app && git init
+git submodule add -b develop https://github.com/zherro/kizuna-core.git kizuna-core
+cp kizuna-core/starter/kizuna.plugins.json kizuna-core/starter/kizuna.config.json kizuna-core/starter/.env.example .
+
+node kizuna-core/cli install --yes              # casca + Dockerfile + docker-compose.db.yml + npm install
+cp .env.example .env                            # PGRST_JWT_SECRET (gerar abaixo) + trocar a senha nos 2 lugares
+#   gerar o secret: node -e "console.log(require('crypto').randomBytes(36).toString('base64url'))"
+docker compose -f docker-compose.db.yml up -d --wait   # Postgres :5432 + PostgREST :3001 (portas: DB_PORT/PGRST_PORT)
+node kizuna-core/cli db install                 # schema core + plugins (lê DATABASE_URL do .env). Só em banco VAZIO.
+
+npm run dev                                     # http://localhost:3000/registre-se → 1º usuário vira root
+node kizuna-core/cli db run kizuna-core/plugins/pages/0002_pages_seed.sql   # páginas sobre/termos sob o root
+node kizuna-core/cli token service              # opcional → POSTGREST_SERVICE_TOKEN no .env (só servidor)
 ```
 
 ## Fluxo — sync bidirecional

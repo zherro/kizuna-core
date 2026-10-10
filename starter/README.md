@@ -8,22 +8,23 @@ por `node kizuna-core/cli install` a partir do `kizuna-core/template/` — e da�
 ## Começar
 
 ```bash
-git clone --recurse-submodules <este-repo> meu-app && cd meu-app
-#   esqueceu --recurse-submodules? → git submodule update --init --recursive
+# pré-requisitos: Node >= 20, Git e Docker Desktop rodando
+mkdir meu-app && cd meu-app && git init
+git submodule add -b develop https://github.com/zherro/kizuna-core.git kizuna-core
+cp kizuna-core/starter/kizuna.plugins.json kizuna-core/starter/kizuna.config.json kizuna-core/starter/.env.example .
 
-# editar kizuna.plugins.json (ver kizuna-core/docs/plugins/README.md)
+node kizuna-core/cli install --yes              # casca + Dockerfile + docker-compose.db.yml + npm install
+cp .env.example .env                            # PGRST_JWT_SECRET (gerar abaixo) + trocar a senha nos 2 lugares
+#   gerar o secret: node -e "console.log(require('crypto').randomBytes(36).toString('base64url'))"
+docker compose -f docker-compose.db.yml up -d --wait   # Postgres :5432 + PostgREST :3001 (portas: DB_PORT/PGRST_PORT)
+node kizuna-core/cli db install                 # schema core + plugins (lê DATABASE_URL do .env). Só em banco VAZIO.
 
-node kizuna-core/cli install                    # materializa a casca + npm install
-cp .env.example .env                            # preencher PGRST_JWT_SECRET + POSTGREST_URL
-node kizuna-core/cli db install --db-url "postgresql://user:pass@host:5432/db"
-#   Windows:  --psql "C:\Program Files\PostgreSQL\17\bin\psql.exe"
-#   Docker:   --psql "docker exec -i <container> psql"
-
-npm run dev                                     # /registre-se → 1º usuário vira root
-node kizuna-core/cli db install --db-url "..."  # re-rodar: seeds que dependem de tenant
+npm run dev                                     # http://localhost:3000/registre-se → 1º usuário vira root
+node kizuna-core/cli db run kizuna-core/plugins/pages/0002_pages_seed.sql   # páginas sobre/termos sob o root
+node kizuna-core/cli token service              # opcional → POSTGREST_SERVICE_TOKEN no .env (só servidor)
 ```
 
-Commitar depois do install: `src/ package.json package-lock.json tsconfig*.json postcss.config.mjs next.config.ts next-env.d.ts kizuna.lock`.
+Commitar depois do install: `src/ public/ package.json package-lock.json tsconfig*.json postcss.config.mjs next.config.ts next-env.d.ts kizuna.lock kizuna.config.json kizuna.plugins.json .env.example .gitignore Dockerfile .dockerignore docker-compose*.yml` (nunca o `.env`).
 
 ## Atualizar (pegar updates do core)
 

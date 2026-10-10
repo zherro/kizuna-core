@@ -15,20 +15,20 @@ A casca do app (rotas, layout, `package.json`…) é **materializada** por
 ## Projeto novo
 
 ```bash
-git clone --recurse-submodules <repo-do-projeto> meu-app && cd meu-app
+# pré-requisitos: Node >= 20, Git e Docker Desktop rodando
+mkdir meu-app && cd meu-app && git init
+git submodule add -b develop https://github.com/zherro/kizuna-core.git kizuna-core
+cp kizuna-core/starter/kizuna.plugins.json kizuna-core/starter/kizuna.config.json kizuna-core/starter/.env.example .
 
-# 1. escolher os plugins em kizuna.plugins.json (ver Plugins)
+node kizuna-core/cli install --yes              # casca + Dockerfile + docker-compose.db.yml + npm install
+cp .env.example .env                            # PGRST_JWT_SECRET (gerar abaixo) + trocar a senha nos 2 lugares
+#   gerar o secret: node -e "console.log(require('crypto').randomBytes(36).toString('base64url'))"
+docker compose -f docker-compose.db.yml up -d --wait   # Postgres :5432 + PostgREST :3001 (portas: DB_PORT/PGRST_PORT)
+node kizuna-core/cli db install                 # schema core + plugins (lê DATABASE_URL do .env). Só em banco VAZIO.
 
-node kizuna-core/cli install                    # materializa a casca + npm install
-cp .env.example .env                            # preencher PGRST_JWT_SECRET + POSTGREST_URL
-node kizuna-core/cli db install --db-url "postgresql://user:pass@host:5432/db"
-#   conecta direto com o driver pg do CLI (JS puro, sem psql) — igual no Windows e no Linux.
-#   o banco precisa estar acessível na porta da URL (num container: publique a 5432 ou use túnel ssh).
-node kizuna-core/cli token service              # → POSTGREST_SERVICE_TOKEN no .env (só servidor)
-
-npm run dev                                     # /registre-se → 1º usuário vira root
-node kizuna-core/cli db install --db-url "..."  # re-rodar: seeds que dependem de tenant
-#   seeds próprios do projeto: node kizuna-core/cli db run <arquivo.sql> --db-url "..."
+npm run dev                                     # http://localhost:3000/registre-se → 1º usuário vira root
+node kizuna-core/cli db run kizuna-core/plugins/pages/0002_pages_seed.sql   # páginas sobre/termos sob o root
+node kizuna-core/cli token service              # opcional → POSTGREST_SERVICE_TOKEN no .env (só servidor)
 ```
 
 Depois do install, commite: `src/ package.json package-lock.json tsconfig*.json

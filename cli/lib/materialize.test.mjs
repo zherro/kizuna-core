@@ -1,4 +1,4 @@
-import { it, expect, vi } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -291,4 +291,20 @@ it('seed não customizado segue o template sozinho; customizado fica e entra em 
   await materialize(loadManifests(core, []), opts(lock, { reseed: ['app/page.tsx'] }));
   expect(readFileSync(join(proj, 'app', 'page.tsx'), 'utf8')).toContain('=> 2');
   cleanup();
+});
+
+import { newPackageJsonBase } from './materialize.mjs';
+
+describe('newPackageJsonBase', () => {
+  it('package.json novo nasce com name (da pasta), version e private', () => {
+    expect(newPackageJsonBase('package.json', '/tmp/Meu App!')).toEqual({
+      name: 'meu-app',
+      version: '0.1.0',
+      private: true,
+    });
+  });
+
+  it('outro alvo de merge começa vazio', () => {
+    expect(newPackageJsonBase('outro.json', '/tmp/x')).toEqual({});
+  });
 });

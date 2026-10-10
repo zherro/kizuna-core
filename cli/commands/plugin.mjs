@@ -8,6 +8,7 @@ import { readEnabled, addEnabled, listAvailable } from '../lib/plugins-file.mjs'
 import { readLock, writeLock, emptyLock } from '../lib/lockfile.mjs';
 import { applyFragment } from '../lib/lock-build.mjs';
 import { countMigrations, applyRange } from '../lib/migrations.mjs';
+import { resolveDbUrl } from '../lib/dotenv.mjs';
 
 export async function run(ctx) {
   const { paths, args, prompt, flags = {} } = ctx;
@@ -72,7 +73,7 @@ export async function run(ctx) {
       dryRun: false,
     });
 
-    const dbUrl = flags.dbUrl || process.env.DATABASE_URL;
+    const dbUrl = resolveDbUrl(flags, projectDir);
     if (dbUrl && !flags.skipDb) {
       await applyRange({ dbUrl, coreDir, plugin: name, from: 0, psql: flags.psql });
     }

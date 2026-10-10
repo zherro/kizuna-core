@@ -96,6 +96,14 @@
         "description": "Publique seu primeiro anuncio e ganhe o selo de anunciante.",
         "requirement": "listing_published",
         "href": "/painel/meus-servicos/novo"
+      },
+      {
+        "key": "identidade",
+        "level": 5,
+        "title": "Identidade verificada",
+        "description": "Documento + selfie para ganhar o selo de verificado e vender.",
+        "requirement": "identity_verified",
+        "enabled": false
       }
     ]
   },

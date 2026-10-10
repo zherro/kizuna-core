@@ -22,63 +22,62 @@ Referência de comandos: **`kizuna-core/docs/comecando/cli.md`**.
 
 ## Checklist
 
-1. **Submódulo.**
+Caminho testado de ponta a ponta (projeto limpo → login com root). Pré-requisitos: Node ≥ 20, Git e
+Docker Desktop rodando.
+
+1. **Submódulo + esqueleto.**
 
    ```bash
-   git clone --recurse-submodules <kizuna-starter> meu-projeto && cd meu-projeto
-   # OU, de um dir vazio:
-   git init && git submodule add <url-do-kizuna-core> kizuna-core
+   mkdir meu-app && cd meu-app && git init
+   git submodule add -b develop https://github.com/zherro/kizuna-core.git kizuna-core
+   cp kizuna-core/starter/kizuna.plugins.json kizuna-core/starter/kizuna.config.json kizuna-core/starter/.env.example .
    ```
 
-   (esqueceu `--recurse-submodules`? `git submodule update --init --recursive`).
+   (clonou um projeto existente sem `--recurse-submodules`? `git submodule update --init --recursive`).
 
 2. **Materializar a casca.**
 
    ```bash
-   node kizuna-core/cli install
+   node kizuna-core/cli install --yes
    ```
 
-   Cria `kizuna.plugins.json` (pergunta plugin a plugin se o arquivo faltar), materializa
-   `template/` (managed + seed), faz merge do `package.json` (scripts `kizuna`/`predev` + deps
-   pinadas), e no fim pergunta **"rodar `npm install` agora?"**. Sem `--db-url`/`$DATABASE_URL`
-   ele pula o banco (passo 4). Flags úteis: `--yes`, `--no-input`, `--skip-db`.
+   Materializa `template/` (managed + seed + install: inclui `Dockerfile`, `docker-compose.yml` e
+   `docker-compose.db.yml`), faz merge do `package.json` (cria com `name`/`version` se não existir),
+   escreve `kizuna.lock` e roda `npm install`. Sem `DATABASE_URL` ele pula o banco.
 
-3. **Env.**
+3. **Env.** `cp .env.example .env` e preencher:
+   - **`PGRST_JWT_SECRET`** — gerar: `node -e "console.log(require('crypto').randomBytes(36).toString('base64url'))"`.
+     O mesmo valor vai para o PostgREST (o `docker-compose.db.yml` lê do `.env`).
+   - **`POSTGRES_PASSWORD`** e a senha dentro de **`DATABASE_URL`** — trocar `troque_esta_senha` nos dois.
+   - `POSTGREST_URL` já vem `http://localhost:3001`. Porta ocupada? `DB_PORT` / `PGRST_PORT` no `.env`
+     (e ajustar `DATABASE_URL` / `POSTGREST_URL` para as mesmas portas).
+
+4. **Banco local + schema.**
 
    ```bash
-   cp .env.example .env
+   docker compose -f docker-compose.db.yml up -d --wait
+   node kizuna-core/cli db install
    ```
 
-   Preencher **`PGRST_JWT_SECRET`** (ou `JWT_SECRET` — tem que bater com o secret que o PostgREST
-   verifica) e **`POSTGREST_URL`**. Todo o resto (SMTP, TinyPNG, Gemini, `SHOWCASE_ENABLED`,
-   `DEBUG_HTTP`) é opcional.
+   O CLI lê `DATABASE_URL` do `.env` (ou `--db-url` / `$DATABASE_URL`), conecta com o driver `pg`
+   (sem psql) e aplica `sql/*` + cada plugin de `kizuna.plugins.json`, em ordem. **Só roda em banco
+   vazio** (os `CREATE TABLE` não são idempotentes) — para o que vier depois use `db migrate`/`db run`.
 
-4. **Banco.**
+5. **Primeiro usuário = root.** `npm run dev`, abrir `http://localhost:3000/registre-se` e criar o
+   primeiro usuário → `fun_auth__signup_bootstrap` vê `auth.users` vazio e marca **`is_root = true`**.
+
+6. **Seed que depende do root** (páginas `sobre`/`quem-somos`/`termos-de-uso` do plugin `pages`):
 
    ```bash
-   node kizuna-core/cli db install --db-url "$DATABASE_URL"
+   node kizuna-core/cli db run kizuna-core/plugins/pages/0002_pages_seed.sql
    ```
 
-   Conecta direto com o driver `pg` do CLI (instalado sozinho em `kizuna-core/cli` na 1ª vez) —
-   não precisa de psql, igual no Windows e no Linux. Seeds próprios do projeto (ex.:
-   `db/reseed.sql`) vão por `node kizuna-core/cli db run <arquivo.sql> --db-url "$DATABASE_URL"`.
+   Idempotente. **Não** re-rode `db install` para isso — ele falha em banco já instalado.
 
-   Aplica `kizuna-core/sql/*` (auth, RBAC, plugin_registry) em ordem, depois cada plugin de
-   `kizuna.plugins.json`. Idempotente — é um instalador do zero, não histórico de migração.
+7. **Opcional:** `node kizuna-core/cli token service` → `POSTGREST_SERVICE_TOKEN` no `.env` (excluir
+   conta, revogar sessão). Trocar nome/tema/marca em `kizuna.config.json` (vem com "Foco Total").
 
-5. **Primeiro usuário = root.** `npm run dev`, abrir `/registre-se`, criar o primeiro usuário →
-   `fun_auth__signup_bootstrap` detecta `auth.users` vazio e marca esse usuário
-   **`is_root = true`** automaticamente. Nenhum signup depois disso vira root.
-
-6. **Re-rodar o `db install`** — agora os seeds de plugin que dependem de um tenant/root existirem
-   pegam (ex.: `plugins/pages/0002_pages_seed.sql` semeia `sobre`/`quem-somos`/`termos-de-uso` sob
-   o tenant do primeiro root; era no-op silencioso antes).
-
-   ```bash
-   node kizuna-core/cli db install --db-url "$DATABASE_URL"
-   ```
-
-7. **Começar o app:** `src/lib/server/resources/` (recursos do app — skill `criar-recurso`), a nav
+8. **Começar o app:** `src/lib/server/resources/` (recursos do app — skill `criar-recurso`), a nav
    do `PanelShell`, migrations do app, `.claude/domains/` (docs de domínio). Telas novas de
    `/painel` seguem a skill `nova-tela-screen-engine`.
 
@@ -114,8 +113,8 @@ Detalhes de cada comando, do `kizuna.lock` e da regra de bump do `VERSION`: **`k
 
 ## Verificação (fim do setup)
 
-- Login funciona; primeiro usuário é root (`select is_root from auth.users`).
+- Login funciona; primeiro usuário é root (`GET /api/auth/me` → `"is_root": true`).
 - `/painel` abre; telas de `administracao` (categorias/forms/paginas) salvam.
-- `/sobre` (seed do plugin `pages`) aparece — se não, o passo 6 não rodou.
+- `GET <POSTGREST_URL>/pages?select=slug` (header `Accept-Profile: public`) lista `sobre`, `quem-somos`, `termos-de-uso` — se não, o passo 6 não rodou.
 - `node kizuna-core/cli check` → sem banner (lock == submódulo).
 - `npm run build` limpo.
