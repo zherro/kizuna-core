@@ -50,7 +50,7 @@ describe('createForgotPasswordHandler', () => {
     const { to, template } = sendEmail.mock.calls[0]![0];
     expect(to).toBe('user@mail.com');
     const token = /token=([^\s"&]+)/.exec(template.text)![1]!;
-    expect(template.text).toContain('https://app.example.com/redefinir-senha?token=');
+    expect(template.text).toContain('https://app.example.com/redefinir-senha#token=');
     // o banco recebe só o SHA-256 do token enviado
     expect(payload.p_token_hash).toBe(
       createHash('sha256').update(decodeURIComponent(token)).digest('hex')

@@ -27,7 +27,7 @@ type PgrstRpc = (name: string, payload: any, opts?: any) => Promise<Response>;
 type PgrstTable = (
   path: string,
   init?: RequestInit,
-  opts?: { auth?: string | null }
+  opts?: { auth?: string | null; schema?: string }
 ) => Promise<Response>;
 type RouteContext = { params: Promise<{ provider: string }> };
 
@@ -191,7 +191,7 @@ async function seedProfile(
           email_verified: profile.emailVerified,
         }),
       },
-      { auth: `Bearer ${sessionToken}` }
+      { auth: `Bearer ${sessionToken}`, schema: 'public' }
     );
     if (!res.ok && res.status !== 409) {
       console.warn('[auth.oauth] profile_seed_failed', { status: res.status });

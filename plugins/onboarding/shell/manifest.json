@@ -3,6 +3,7 @@
   "files": {
     "src/app/api/onboarding/progress/route.ts": "managed",
     "src/app/api/onboarding/email/verify-code/route.ts": "managed",
-    "src/app/api/onboarding/email/request-code/route.ts": "managed"
+    "src/app/api/onboarding/email/request-code/route.ts": "managed",
+    "src/app/verificar-email/page.tsx": "managed"
   }
 }

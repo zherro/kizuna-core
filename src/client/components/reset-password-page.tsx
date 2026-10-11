@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
+import { useUrlSecret } from '../hooks/use-url-secret';
 import * as Yup from 'yup';
 import { useForm } from '../hooks/use-form';
 import { Button } from './ui/button';
@@ -11,9 +12,8 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 
 /**
- * Tela aberta pelo link do email (`?token=...`): define a nova senha via
- * `POST /api/auth/reset-password`. Usa `useSearchParams` — a page do projeto deve envolver
- * este componente em `<Suspense>`.
+ * Tela aberta pelo link do email (`#token=...`; aceita `?token=` de links antigos): define a nova
+ * senha via `POST /api/auth/reset-password`. O token sai da barra de endereço assim que a tela abre.
  */
 
 interface ResetPasswordPageProps {
@@ -29,7 +29,7 @@ export function ResetPasswordPageContent({
   forgotPasswordHref = '/esqueci-senha',
 }: ResetPasswordPageProps) {
   const router = useRouter();
-  const token = useSearchParams().get('token') ?? '';
+  const { value: token, ready, clear } = useUrlSecret('token');
   const [done, setDone] = useState(false);
 
   const form = useForm({
@@ -56,6 +56,7 @@ export function ResetPasswordPageContent({
           return;
         }
 
+        clear();
         setDone(true);
         setSuccess(data.message || 'Senha redefinida. Voce ja pode entrar.');
         setTimeout(() => router.push(loginHref), 1500);
@@ -65,6 +66,8 @@ export function ResetPasswordPageContent({
     },
   });
   const { formik } = form;
+
+  if (!ready) return null;
 
   if (!token) {
     return (

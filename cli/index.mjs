@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { resolve, dirname } from 'node:path';
 import { resolvePaths } from './lib/paths.mjs';
 import { makePrompt } from './lib/prompt.mjs';
+import { ensureAppEncryptionKey } from './lib/dotenv.mjs';
 
 const COMMANDS = ['install', 'update', 'sync', 'check', 'lock', 'adopt', 'db', 'plugin', 'token'];
 
@@ -87,6 +88,16 @@ export default async function main(argv) {
   const paths = resolvePaths({ projectDirOverride: flags.project });
   const prompt = makePrompt({ yes: flags.yes === true, noInput: flags.input === false });
   const ctx = { paths, args: args.slice(1), prompt, flags };
+
+  // Chave geral de criptografia do app: criada no .env na 1ª vez que o CLI roda com ele (inclusive
+  // no `check` do predev). Nunca troca uma existente.
+  try {
+    if (ensureAppEncryptionKey(paths.projectDir)) {
+      console.log('APP_ENCRYPTION_KEY criada no .env (chave geral de criptografia do app).');
+    }
+  } catch (err) {
+    console.log(`aviso: não consegui gravar APP_ENCRYPTION_KEY no .env (${err.message})`);
+  }
 
   const mod = await import(`./commands/${cmd}.mjs`);
   return mod.run(ctx);

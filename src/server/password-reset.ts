@@ -21,6 +21,7 @@ import { isValidEmail, maskEmail } from './auth';
 import { verifyCaptcha } from './captcha';
 import { checkLockout, recordLoginFailure } from './login-lockout';
 import { sendEmail, type EmailTemplate } from './email';
+import { renderEmailLayout } from './email/layout';
 
 type PgrstRpc = (name: string, payload: any, opts?: any) => Promise<Response>;
 
@@ -81,35 +82,23 @@ function resolveTtl(opt?: number): number {
   return Number.isFinite(raw) ? Math.min(1440, Math.max(5, Math.round(raw))) : 60;
 }
 
-function escapeHtml(value: string): string {
-  return value.replace(
-    /[&<>"']/g,
-    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!
-  );
-}
-
-/** E-mail padrão de redefinição. Troque via `options.buildEmail`. */
+/** E-mail padrão de redefinição (layout do core). Troque via `options.buildEmail`. */
 export function buildPasswordResetEmail(input: PasswordResetEmailInput): EmailTemplate {
   const { resetUrl, expiresInMinutes, appName } = input;
-  const safeApp = escapeHtml(appName);
-  const safeUrl = escapeHtml(resetUrl);
-  return {
+  return renderEmailLayout({
+    appName,
     subject: `${appName} — redefinir senha`,
-    text:
-      `Recebemos um pedido para redefinir a senha da sua conta em ${appName}.\n\n` +
-      `Abra o link abaixo para criar uma nova senha (válido por ${expiresInMinutes} minutos):\n` +
-      `${resetUrl}\n\n` +
-      `Se você não pediu, ignore este e-mail — sua senha continua a mesma.`,
-    html:
-      `<div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;max-width:480px;margin:0 auto;padding:24px;color:#111">` +
-      `<h2 style="margin:0 0 16px">Redefinir senha</h2>` +
-      `<p>Recebemos um pedido para redefinir a senha da sua conta em <strong>${safeApp}</strong>.</p>` +
-      `<p style="margin:24px 0"><a href="${safeUrl}" style="background:#111;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;display:inline-block">Criar nova senha</a></p>` +
-      `<p style="font-size:13px;color:#555">O link vale por ${expiresInMinutes} minutos e só pode ser usado uma vez.</p>` +
-      `<p style="font-size:13px;color:#555">Se o botão não funcionar, copie e cole:<br><span style="word-break:break-all">${safeUrl}</span></p>` +
-      `<p style="font-size:13px;color:#555">Se você não pediu, ignore este e-mail — sua senha continua a mesma.</p>` +
-      `</div>`,
-  };
+    title: 'Vamos criar uma nova senha?',
+    intro: [
+      `Recebemos um pedido para redefinir a senha da sua conta em ${appName}.`,
+      'Toque no botão abaixo para escolher a nova senha.',
+    ],
+    action: { label: 'Criar nova senha', url: resetUrl },
+    notes: [
+      `O link vale por ${expiresInMinutes} minutos e só pode ser usado uma vez.`,
+      'Se você não pediu, ignore este e-mail — sua senha continua a mesma.',
+    ],
+  });
 }
 
 /**
@@ -198,7 +187,9 @@ export function createForgotPasswordHandler(
         return NextResponse.json({ message: GENERIC_OK_MESSAGE });
       }
 
-      const resetUrl = `${resolveAppUrl(request)}${resetPath}?token=${encodeURIComponent(token)}`;
+      // Token no `#`: o navegador não manda o fragmento ao servidor, então ele não vai para log/proxy;
+      // a página lê, tira da barra de endereço e envia no corpo do POST.
+      const resetUrl = `${resolveAppUrl(request)}${resetPath}#token=${encodeURIComponent(token)}`;
       const appName = process.env.APP_NAME || process.env.NEXT_PUBLIC_APP_NAME || 'Kizuna';
 
       try {

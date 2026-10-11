@@ -148,3 +148,13 @@ export {
   validateContactInput,
   type ContactInput,
 } from './tickets/contact-ticket';
+
+export { sealToken, openToken, generateAppEncryptionKey } from './app-crypto';
+export {
+  createEmailCodeRequestHandler,
+  resolveEmailVerificationCode,
+  buildEmailVerificationEmail,
+  buildEmailVerificationUrl,
+  EMAIL_VERIFY_PURPOSE,
+} from './email-verification';
+export type { EmailCodeRequestOptions, EmailVerificationEmailInput } from './email-verification';

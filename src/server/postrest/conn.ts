@@ -90,9 +90,17 @@ export async function pgrstRpc(
 export async function pgrstTable(
   path: string,
   init?: RequestInit,
-  opts?: { auth?: string | null }
+  /**
+   * `schema`: manda Accept-Profile/Content-Profile. Sem ele vale o 1º schema de
+   * PGRST_DB_SCHEMAS — que muda de instalação para instalação (`auth,public` vs `public,auth`).
+   */
+  opts?: { auth?: string | null; schema?: string }
 ) {
   const headers = await buildPgHeaders(init, opts);
+  if (opts?.schema) {
+    headers.set('Accept-Profile', opts.schema);
+    headers.set('Content-Profile', opts.schema);
+  }
   const url = `${PGRST}${path}`;
   const method = (init?.method || 'GET').toUpperCase();
   const body = typeof init?.body === 'string' ? init.body : undefined;

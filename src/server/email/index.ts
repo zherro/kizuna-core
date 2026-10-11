@@ -62,3 +62,6 @@ export async function sendEmail(input: SendEmailInput) {
     throw error;
   }
 }
+
+export { renderEmailLayout, escapeHtml } from './layout';
+export type { EmailLayoutInput } from './layout';
