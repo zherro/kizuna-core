@@ -182,6 +182,19 @@ a materializa num projeto e mantém projeto ↔ core alinhados. Ver **`docs/come
   degradation state machine.
 - `@kizuna/core/shared/ai-error`: `classifyAiError`, `AiUnavailableReason` — isomorphic
   (server + client) AI error classifier.
+- `@kizuna/core/server/content`: `defineCollection`, `loadEntries`, `getEntry`, `isValidSlug`,
+  `parseFrontmatter`, `FrontmatterError` + types `CollectionDef`, `FieldDef`, `FieldValue`, `Entry`,
+  `EntryData`, `EntryError`, `LoadOptions`, `LoadResult` — coleção de artigos em Markdown
+  (frontmatter validado, fotos ao lado). See `docs/arquitetura/modelo-de-conteudo.md`.
+- `@kizuna/core/shared/maps`: `directionsLinks`, `distanceKm`, `formatDistanceKm`, `osmEmbedUrl`,
+  `osmViewUrl` + types `LatLng`, `DirectionsInput`, `DirectionsLinks` — pure, no API key.
+- `@kizuna/core/client/hooks/use-current-position`: `useCurrentPosition()` →
+  `{ status: 'idle'|'asking'|'granted'|'denied'|'unavailable', position, request }` (+ types
+  `PositionStatus`, `CurrentPosition`); position only on `request()`, in memory only.
+- `@kizuna/core/client/components/content`: `ArticleLayout`, `ArticleHeader` (`formatDateBR`),
+  `ArticleBody`, `ArticleCredits`, `FactSheet`, `QuickActions`, `LocationMap`, `DirectionsCard`
+  (+ types `ArticleLayoutProps`, `ArticleHeaderProps`, `FactRow`, `QuickAction`, `DirectionsCardProps`).
+  Showcase sections: `article-layout`, `article-location`.
 - Lógica da casca genérica (importada pelos arquivos do `template/`, caminho profundo):
   `client/components/city/*` (`CityRouteMarker`, `CityInvite`, `CityCookieSync`),
   `server/location/cities` (`loadRoutableCities`, `resolveCitySlug`),

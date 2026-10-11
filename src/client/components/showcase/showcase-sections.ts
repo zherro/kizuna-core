@@ -42,7 +42,9 @@ export type ShowcaseSectionId =
   | 'fab'
   | 'page-heading'
   | 'select-popover'
-  | 'shadow-lab';
+  | 'shadow-lab'
+  | 'article-layout'
+  | 'article-location';
 
 export type ShowcaseGroupId = 'shadcn-default' | 'ui-better-soft' | 'tools';
 
@@ -1140,6 +1142,77 @@ export function HomeHighlights() {
 
 export function ShadowPlayground() {
   return <ShadowLab />;
+}`,
+  },
+  {
+    id: 'article-layout',
+    groupId: 'ui-better-soft',
+    label: 'Artigo (layout e leitura)',
+    description:
+      'Moldura de duas colunas com cabeçalho, corpo em Markdown, ficha de informações, ações rápidas e créditos.',
+    usageCode: `import { MapPin, Navigation } from 'lucide-react';
+import {
+  ArticleBody,
+  ArticleCredits,
+  ArticleHeader,
+  ArticleLayout,
+  FactSheet,
+  QuickActions,
+} from '@kizuna/core/client/components/content';
+
+export function LugarPage() {
+  return (
+    <ArticleLayout
+      header={
+        <ArticleHeader
+          kicker="Espaço cultural · Cidade Exemplo"
+          title="Casa de Exemplo"
+          summary="Um lugar fictício para mostrar o layout."
+          updatedAt="2026-10-03"
+        />
+      }
+      actions={
+        <QuickActions
+          actions={[
+            { label: 'Como chegar', href: '#mapa', icon: Navigation },
+            { label: 'Endereço', href: '#info', icon: MapPin },
+          ]}
+        />
+      }
+      aside={
+        <FactSheet
+          rows={[
+            { icon: MapPin, label: 'Endereço', value: 'Rua de Exemplo, 100' },
+            { label: 'Funcionamento', value: ['Ter a sex, das 10h às 18h', 'Sáb, das 10h às 14h'] },
+          ]}
+        />
+      }
+      footer={<ArticleCredits text="Texto: Redação Exemplo. Foto: Acervo de exemplo." />}
+    >
+      <ArticleBody markdown={'## Sobre o lugar\\n\\nTexto em **Markdown**.\\n\\n- Primeiro item\\n- Segundo item'} />
+    </ArticleLayout>
+  );
+}`,
+  },
+  {
+    id: 'article-location',
+    groupId: 'ui-better-soft',
+    label: 'Artigo (mapa e como chegar)',
+    description:
+      'Mapa do OpenStreetMap e cartão "Como chegar" com a distância pedida só sob clique.',
+    usageCode: `import { DirectionsCard, LocationMap } from '@kizuna/core/client/components/content';
+
+export function LugarOndeFica() {
+  return (
+    <div className="space-y-6">
+      <LocationMap lat={-15.601} lng={-56.097} title="Casa de Exemplo" />
+      <DirectionsCard
+        destination={{ lat: -15.601, lng: -56.097 }}
+        address="Rua de Exemplo, 100"
+        tips="Entrada pela rua lateral."
+      />
+    </div>
+  );
 }`,
   },
 ];

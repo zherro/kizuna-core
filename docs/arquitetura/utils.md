@@ -73,3 +73,35 @@ gera HTML diferente do cliente (erro de hidratação). Por isso o exemplo começ
 
 A consuming project keeps its own country/document-specific helpers (CPF/CNPJ validators, a
 query-builder, locale date formatters) in its own `src/lib/` — those are not core.
+
+## Mapas e rotas (`shared/maps`)
+
+Funções puras, sem chave de API, em `@kizuna/core/shared/maps`.
+
+| Função | Assinatura | Retorno |
+| --- | --- | --- |
+| `directionsLinks` | `directionsLinks({ destination?, address?, origin? })` | `{ google, waze }`, cada um `string` ou `null` |
+| `distanceKm` | `distanceKm(a: LatLng, b: LatLng)` | km em **linha reta** (haversine) |
+| `formatDistanceKm` | `formatDistanceKm(km: number)` | `"430 m"`, `"6,3 km"`, `"12 km"` |
+| `osmEmbedUrl` | `osmEmbedUrl({ lat, lng, span? })` | URL da incorporação do OpenStreetMap |
+| `osmViewUrl` | `osmViewUrl({ lat, lng })` | página do OpenStreetMap com o ponto |
+
+`directionsLinks` prefere coordenadas; sem elas usa o endereço. A origem só entra no link do Google
+Maps (o Waze usa o GPS do aparelho).
+
+### `useCurrentPosition`
+
+Hook em `@kizuna/core/client/hooks/use-current-position`. Pede as coordenadas do aparelho só quando
+`request()` é chamado e as guarda só em memória.
+
+```tsx
+const { status, position, request } = useCurrentPosition();
+// status: 'idle' | 'asking' | 'granted' | 'denied' | 'unavailable'
+<button onClick={request}>Ver distância a partir de você</button>
+```
+
+`denied` é a negação da permissão; `unavailable` é a ausência da API do navegador, tempo esgotado
+ou qualquer outra falha. Não confunda com `useUserLocation`, que resolve **cidade/UF** e persiste em
+`localStorage` para filtrar o site.
+
+Usado pelo bloco `DirectionsCard`; ver [Modelo de conteúdo](modelo-de-conteudo.md).

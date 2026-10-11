@@ -24,7 +24,9 @@ import {
   LayoutPanelTop,
   ListFilter,
   MapPin,
+  MapPinned,
   MousePointerClick,
+  Newspaper,
   Palette,
   PanelBottom,
   PictureInPicture2,
@@ -100,6 +102,8 @@ const ICON_BY_SECTION: Record<ShowcaseSectionId, React.ComponentType<{ className
   'page-heading': Type,
   'select-popover': ListFilter,
   'shadow-lab': Contrast,
+  'article-layout': Newspaper,
+  'article-location': MapPinned,
 };
 
 type ShowcaseShellProps = {

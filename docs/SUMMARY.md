@@ -17,6 +17,7 @@
   * [API & camada de dados](arquitetura/api.md)
   * [Auth & permissões](arquitetura/auth.md)
   * [Níveis de conta](arquitetura/niveis-de-conta.md)
+  * [Modelo de conteúdo](arquitetura/modelo-de-conteudo.md)
   * [Exemplos de schemas](arquitetura/schemas.md)
   * [Utils & helpers](arquitetura/utils.md)
 

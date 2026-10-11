@@ -7,9 +7,11 @@ import {
   Briefcase,
   CalendarOff,
   Check,
+  Clock,
   Copy,
   Home,
   MapPin,
+  Navigation,
   Palmtree,
   Pencil,
   Plus,
@@ -68,6 +70,16 @@ import { ColorChip } from '../ui-better-soft/color-chip';
 import { Fab } from '../ui-better-soft/fab';
 import { PageHeading } from '../ui-better-soft/headers/page-heading';
 import { SelectPopover } from '../ui-better-soft/select-popover';
+import {
+  ArticleBody,
+  ArticleCredits,
+  ArticleHeader,
+  ArticleLayout,
+  DirectionsCard,
+  FactSheet,
+  LocationMap,
+  QuickActions,
+} from '../content';
 import { ShadowLab } from '../shadow-lab';
 import { useForm } from '@kizuna/core';
 import * as Yup from 'yup';
@@ -1001,6 +1013,64 @@ function ShadowLabDemo() {
   return <ShadowLab />;
 }
 
+function ArticleLayoutDemo() {
+  return (
+    <div className="overflow-hidden rounded-xl border border-border">
+      <ArticleLayout
+        header={
+          <ArticleHeader
+            kicker="Espaço cultural · Cidade Exemplo"
+            title="Casa de Exemplo"
+            summary="Um lugar fictício para mostrar o layout de leitura, com ficha, ações e créditos."
+            updatedAt="2026-10-03"
+          />
+        }
+        actions={
+          <QuickActions
+            actions={[
+              { label: 'Como chegar', href: '#', icon: Navigation },
+              { label: 'Endereço', href: '#', icon: MapPin },
+            ]}
+          />
+        }
+        aside={
+          <FactSheet
+            rows={[
+              { icon: MapPin, label: 'Endereço', value: 'Rua de Exemplo, 100' },
+              {
+                icon: Clock,
+                label: 'Funcionamento',
+                value: ['Ter a sex, das 10h às 18h', 'Sáb, das 10h às 14h'],
+              },
+              { label: 'Entrada', value: 'Gratuita' },
+            ]}
+          />
+        }
+        footer={<ArticleCredits text="Texto: Redação Exemplo. Foto: Acervo de exemplo." />}
+      >
+        <ArticleBody
+          markdown={
+            '## Sobre o lugar\n\nTexto de exemplo em **Markdown**, com largura de leitura confortável.\n\n## O que esperar\n\n- Primeiro item da lista\n- Segundo item da lista\n- Terceiro item da lista'
+          }
+        />
+      </ArticleLayout>
+    </div>
+  );
+}
+
+function ArticleLocationDemo() {
+  return (
+    <div className="grid max-w-3xl gap-6 md:grid-cols-2">
+      <LocationMap lat={-15.601} lng={-56.097} title="Casa de Exemplo" />
+      <DirectionsCard
+        destination={{ lat: -15.601, lng: -56.097 }}
+        address="Rua de Exemplo, 100"
+        tips="Entrada pela rua lateral, ao lado do estacionamento."
+      />
+    </div>
+  );
+}
+
 function SectionDemo({ sectionId }: { sectionId: ShowcaseSectionId }) {
   if (sectionId === 'cards') return <CardsDemo />;
   if (sectionId === 'buttons') return <ButtonsDemo />;
@@ -1045,6 +1115,8 @@ function SectionDemo({ sectionId }: { sectionId: ShowcaseSectionId }) {
   if (sectionId === 'page-heading') return <PageHeadingDemo />;
   if (sectionId === 'select-popover') return <SelectPopoverDemo />;
   if (sectionId === 'shadow-lab') return <ShadowLabDemo />;
+  if (sectionId === 'article-layout') return <ArticleLayoutDemo />;
+  if (sectionId === 'article-location') return <ArticleLocationDemo />;
   return <UiBetterSoftDemo />;
 }
 
