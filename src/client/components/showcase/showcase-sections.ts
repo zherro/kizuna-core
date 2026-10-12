@@ -44,7 +44,13 @@ export type ShowcaseSectionId =
   | 'select-popover'
   | 'shadow-lab'
   | 'article-layout'
-  | 'article-location';
+  | 'article-header'
+  | 'article-body'
+  | 'article-credits'
+  | 'fact-sheet'
+  | 'quick-actions'
+  | 'location-map'
+  | 'directions-card';
 
 export type ShowcaseGroupId = 'shadcn-default' | 'ui-better-soft' | 'tools';
 
@@ -1147,7 +1153,7 @@ export function ShadowPlayground() {
   {
     id: 'article-layout',
     groupId: 'ui-better-soft',
-    label: 'Artigo (layout e leitura)',
+    label: 'Artigo (layout)',
     description:
       'Moldura de duas colunas com cabeçalho, corpo em Markdown, ficha de informações, ações rápidas e créditos.',
     usageCode: `import { MapPin, Navigation } from 'lucide-react';
@@ -1195,23 +1201,135 @@ export function LugarPage() {
 }`,
   },
   {
-    id: 'article-location',
+    id: 'article-header',
     groupId: 'ui-better-soft',
-    label: 'Artigo (mapa e como chegar)',
+    label: 'Artigo: cabeçalho',
     description:
-      'Mapa do OpenStreetMap e cartão "Como chegar" com a distância pedida só sob clique.',
-    usageCode: `import { DirectionsCard, LocationMap } from '@kizuna/core/client/components/content';
+      'Cabeçalho do artigo: chamada (kicker), título, resumo e data de atualização. Só o título é obrigatório; a data aceita ISO (AAAA-MM-DD) e sai em formato brasileiro.',
+    usageCode: `import { ArticleHeader } from '@kizuna/core/client/components/content';
 
-export function LugarOndeFica() {
+export function CabecalhoDoLugar() {
   return (
-    <div className="space-y-6">
-      <LocationMap lat={-15.601} lng={-56.097} title="Casa de Exemplo" />
-      <DirectionsCard
-        destination={{ lat: -15.601, lng: -56.097 }}
-        address="Rua de Exemplo, 100"
-        tips="Entrada pela rua lateral."
-      />
-    </div>
+    <ArticleHeader
+      kicker="Espaço cultural · Cidade Exemplo"
+      title="Casa de Exemplo"
+      summary="Um lugar fictício para mostrar o cabeçalho."
+      updatedAt="2026-10-03"
+    />
+  );
+}`,
+  },
+  {
+    id: 'article-body',
+    groupId: 'ui-better-soft',
+    label: 'Artigo: corpo em Markdown',
+    description:
+      'Corpo do artigo renderizado a partir de Markdown, com largura de leitura confortável. Títulos, parágrafos, negrito, links, listas e citações usam os tokens do tema.',
+    usageCode: `import { ArticleBody } from '@kizuna/core/client/components/content';
+
+const MARKDOWN = [
+  '## Sobre o lugar',
+  '',
+  'Texto de exemplo com **negrito** e um [link](https://example.com).',
+  '',
+  '- Primeiro item',
+  '- Segundo item',
+  '',
+  '> Uma citação de exemplo.',
+].join('\\n');
+
+export function CorpoDoLugar() {
+  return <ArticleBody markdown={MARKDOWN} />;
+}`,
+  },
+  {
+    id: 'article-credits',
+    groupId: 'ui-better-soft',
+    label: 'Artigo: créditos',
+    description:
+      'Linha discreta de créditos (texto, foto, fonte) para o rodapé do artigo. Não renderiza nada quando o texto está vazio.',
+    usageCode: `import { ArticleCredits } from '@kizuna/core/client/components/content';
+
+export function CreditosDoLugar() {
+  return <ArticleCredits text="Texto: Redação Exemplo. Foto: Acervo de exemplo." />;
+}`,
+  },
+  {
+    id: 'fact-sheet',
+    groupId: 'ui-better-soft',
+    label: 'Ficha de informações',
+    description:
+      'Lista de pares rótulo e valor com ícone opcional. O valor pode ser texto ou lista de linhas, e pode virar link com href. Linhas sem valor são omitidas; sem nenhuma linha visível, a ficha inteira some.',
+    usageCode: `import { Clock, MapPin, Phone } from 'lucide-react';
+import { FactSheet } from '@kizuna/core/client/components/content';
+
+export function FichaDoLugar() {
+  return (
+    <FactSheet
+      title="Informações"
+      rows={[
+        { icon: MapPin, label: 'Endereço', value: 'Rua de Exemplo, 100' },
+        {
+          icon: Clock,
+          label: 'Funcionamento',
+          value: ['Ter a sex, das 10h às 18h', 'Sáb, das 10h às 14h'],
+        },
+        { icon: Phone, label: 'Telefone', value: '(00) 0000-0000', href: 'tel:+550000000000' },
+        { label: 'Observação', value: '' },
+      ]}
+    />
+  );
+}`,
+  },
+  {
+    id: 'quick-actions',
+    groupId: 'ui-better-soft',
+    label: 'Ações rápidas',
+    description:
+      'Faixa de atalhos em forma de pílula, pensada para o celular: em tela estreita rola na horizontal, em tela larga quebra linha. Aceita ícone e link externo (abre em nova aba).',
+    usageCode: `import { Globe, MapPin, Navigation, Ticket } from 'lucide-react';
+import { QuickActions } from '@kizuna/core/client/components/content';
+
+export function AtalhosDoLugar() {
+  return (
+    <QuickActions
+      actions={[
+        { label: 'Como chegar', href: '#como-chegar', icon: Navigation },
+        { label: 'Endereço', href: '#info', icon: MapPin },
+        { label: 'Ingressos', href: '#ingressos', icon: Ticket },
+        { label: 'Site oficial', href: 'https://example.com', icon: Globe, external: true },
+      ]}
+    />
+  );
+}`,
+  },
+  {
+    id: 'location-map',
+    groupId: 'ui-better-soft',
+    label: 'Mapa',
+    description:
+      'Mapa do OpenStreetMap em iframe, montado só quando chega perto da tela (lazy), com link para abrir o mapa maior. Recebe latitude, longitude e um título acessível.',
+    usageCode: `import { LocationMap } from '@kizuna/core/client/components/content';
+
+export function MapaDoLugar() {
+  return <LocationMap lat={-15.601} lng={-56.097} title="Casa de Exemplo" height={280} />;
+}`,
+  },
+  {
+    id: 'directions-card',
+    groupId: 'ui-better-soft',
+    label: 'Como chegar',
+    description:
+      'Cartão com endereço copiável, rotas no Google Maps e no Waze, e dica de acesso. A distância em linha reta só aparece depois que a pessoa autoriza a localização, sob clique.',
+    usageCode: `import { DirectionsCard } from '@kizuna/core/client/components/content';
+
+export function ComoChegarAoLugar() {
+  return (
+    <DirectionsCard
+      destination={{ lat: -15.601, lng: -56.097 }}
+      address="Rua de Exemplo, 100"
+      tips="Entrada pela rua lateral, ao lado do estacionamento."
+    />
   );
 }`,
   },

@@ -11,6 +11,7 @@ import {
 } from 'react';
 import type { PermissionMap } from '../../types/auth';
 import { GoogleOneTap } from '../components/auth/google-one-tap';
+import { GoogleOneTapModeContext, type GoogleOneTapMode } from './google-one-tap-mode';
 
 export interface PublicSession {
   user_id: string;
@@ -117,10 +118,11 @@ export function AuthProvider({
   children: React.ReactNode;
   initialUser: PublicSession | null;
   /**
-   * Balão "Entrar com o Google" (One Tap) para visitante anônimo. Só aparece se o servidor tiver o
-   * Google configurado (e `GOOGLE_ONE_TAP` ≠ `false`). `false` desliga neste provider.
+   * Google One Tap para visitante anônimo. Só aparece se o servidor tiver o Google configurado
+   * (e `GOOGLE_ONE_TAP` ≠ `false`). `true` (padrão): só junto do formulário de login/cadastro;
+   * `'everywhere'`: em todo o site; `false`: desligado. Ver `google-one-tap-mode.ts`.
    */
-  googleOneTap?: boolean;
+  googleOneTap?: GoogleOneTapMode;
 }) {
   const [user, setUserRaw] = useState<AuthUser | null>(
     initialUser ? buildAuthUser(initialUser) : null
@@ -173,8 +175,10 @@ export function AuthProvider({
 
   return (
     <AuthContext.Provider value={value}>
-      {children}
-      <GoogleOneTap active={googleOneTap && !loading && !user} />
+      <GoogleOneTapModeContext.Provider value={googleOneTap}>
+        {children}
+        <GoogleOneTap active={googleOneTap === 'everywhere' && !loading && !user} />
+      </GoogleOneTapModeContext.Provider>
     </AuthContext.Provider>
   );
 }

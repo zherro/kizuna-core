@@ -136,8 +136,10 @@ De `@kizuna/core/client/components/content`. Só recebem dados por props e não 
 A página do projeto compõe os blocos, como o detalhe do anúncio. O Screen Engine não é usado: ele
 é do `/painel`, só para ADMIN, e seu contêiner é de coluna única.
 
-Os blocos estão demonstrados no showcase, em `/showcase/article-layout` e
-`/showcase/article-location`.
+Cada bloco tem a sua página no showcase: `/showcase/article-layout` (composição),
+`/showcase/article-header`, `/showcase/article-body`, `/showcase/article-credits`,
+`/showcase/fact-sheet`, `/showcase/quick-actions`, `/showcase/location-map` e
+`/showcase/directions-card`.
 
 ### Como chegar e a posição do usuário
 

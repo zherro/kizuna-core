@@ -9,6 +9,7 @@ import {
   Check,
   Clock,
   Copy,
+  Globe,
   Home,
   MapPin,
   Navigation,
@@ -16,9 +17,11 @@ import {
   Pencil,
   Plus,
   PlusCircle,
+  Phone,
   Save,
   Search,
   Sparkles,
+  Ticket,
   Trash2,
   UserCircle,
   Utensils,
@@ -1058,10 +1061,76 @@ function ArticleLayoutDemo() {
   );
 }
 
-function ArticleLocationDemo() {
+function ArticleHeaderDemo() {
   return (
-    <div className="grid max-w-3xl gap-6 md:grid-cols-2">
+    <ArticleHeader
+      kicker="Espaço cultural · Cidade Exemplo"
+      title="Casa de Exemplo"
+      summary="Um lugar fictício para mostrar o cabeçalho, com chamada, resumo e data."
+      updatedAt="2026-10-03"
+    />
+  );
+}
+
+function ArticleBodyDemo() {
+  return (
+    <ArticleBody
+      markdown={
+        '## Sobre o lugar\n\nTexto de exemplo com **negrito** e um [link](https://example.com).\n\n- Primeiro item da lista\n- Segundo item da lista\n\n> Uma citação de exemplo.'
+      }
+    />
+  );
+}
+
+function ArticleCreditsDemo() {
+  return <ArticleCredits text="Texto: Redação Exemplo. Foto: Acervo de exemplo." />;
+}
+
+function FactSheetDemo() {
+  return (
+    <div className="max-w-sm">
+      <FactSheet
+        rows={[
+          { icon: MapPin, label: 'Endereço', value: 'Rua de Exemplo, 100' },
+          {
+            icon: Clock,
+            label: 'Funcionamento',
+            value: ['Ter a sex, das 10h às 18h', 'Sáb, das 10h às 14h'],
+          },
+          { icon: Phone, label: 'Telefone', value: '(00) 0000-0000', href: 'tel:+550000000000' },
+          { label: 'Observação', value: '' },
+        ]}
+      />
+    </div>
+  );
+}
+
+function QuickActionsDemo() {
+  return (
+    <div className="w-72 max-w-full overflow-hidden rounded-xl border border-border bg-card p-4">
+      <QuickActions
+        actions={[
+          { label: 'Como chegar', href: '#', icon: Navigation },
+          { label: 'Endereço', href: '#', icon: MapPin },
+          { label: 'Ingressos', href: '#', icon: Ticket },
+          { label: 'Site oficial', href: 'https://example.com', icon: Globe, external: true },
+        ]}
+      />
+    </div>
+  );
+}
+
+function LocationMapDemo() {
+  return (
+    <div className="max-w-xl">
       <LocationMap lat={-15.601} lng={-56.097} title="Casa de Exemplo" />
+    </div>
+  );
+}
+
+function DirectionsCardDemo() {
+  return (
+    <div className="max-w-md">
       <DirectionsCard
         destination={{ lat: -15.601, lng: -56.097 }}
         address="Rua de Exemplo, 100"
@@ -1116,7 +1185,13 @@ function SectionDemo({ sectionId }: { sectionId: ShowcaseSectionId }) {
   if (sectionId === 'select-popover') return <SelectPopoverDemo />;
   if (sectionId === 'shadow-lab') return <ShadowLabDemo />;
   if (sectionId === 'article-layout') return <ArticleLayoutDemo />;
-  if (sectionId === 'article-location') return <ArticleLocationDemo />;
+  if (sectionId === 'article-header') return <ArticleHeaderDemo />;
+  if (sectionId === 'article-body') return <ArticleBodyDemo />;
+  if (sectionId === 'article-credits') return <ArticleCreditsDemo />;
+  if (sectionId === 'fact-sheet') return <FactSheetDemo />;
+  if (sectionId === 'quick-actions') return <QuickActionsDemo />;
+  if (sectionId === 'location-map') return <LocationMapDemo />;
+  if (sectionId === 'directions-card') return <DirectionsCardDemo />;
   return <UiBetterSoftDemo />;
 }
 

@@ -194,7 +194,8 @@ a materializa num projeto e mantém projeto ↔ core alinhados. Ver **`docs/come
 - `@kizuna/core/client/components/content`: `ArticleLayout`, `ArticleHeader` (`formatDateBR`),
   `ArticleBody`, `ArticleCredits`, `FactSheet`, `QuickActions`, `LocationMap`, `DirectionsCard`
   (+ types `ArticleLayoutProps`, `ArticleHeaderProps`, `FactRow`, `QuickAction`, `DirectionsCardProps`).
-  Showcase sections: `article-layout`, `article-location`.
+  Showcase sections: `article-layout`, `article-header`, `article-body`, `article-credits`,
+  `fact-sheet`, `quick-actions`, `location-map`, `directions-card`.
 - Lógica da casca genérica (importada pelos arquivos do `template/`, caminho profundo):
   `client/components/city/*` (`CityRouteMarker`, `CityInvite`, `CityCookieSync`),
   `server/location/cities` (`loadRoutableCities`, `resolveCitySlug`),

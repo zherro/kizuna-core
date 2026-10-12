@@ -145,6 +145,17 @@ export function createStepLocation(profiles?: StepProfiles<LocationProfile>) {
       patch({ addressComplete: complete });
     };
 
+    // Presencial com lista: diz o que falta no endereço principal (senão o botão de avançar
+    // fica desabilitado sem nenhuma explicação — ex.: endereço importado sem CEP).
+    const primaryAddress = addresses.find((a) => a.isPrimary) ?? addresses[0];
+    const missingAddressFields = isAddresses && primaryAddress
+      ? [
+          !primaryAddress.zipCode?.trim() ? 'CEP' : null,
+          !primaryAddress.street?.trim() ? 'endereço' : null,
+          !primaryAddress.number?.trim() ? 'número' : null,
+        ].filter((f): f is string => f !== null)
+      : [];
+
     const selectedHint = selected
       ? (optionMessages[selected.textKey ?? selected.value]?.hint ??
         (selected.model === 'identifier' ? t.location.remoteHint : undefined))
@@ -212,6 +223,12 @@ export function createStepLocation(profiles?: StepProfiles<LocationProfile>) {
               labels={{ search: t.location.addressSearch, ...addressesLabels }}
             />
           </div>
+        ) : null}
+
+        {missingAddressFields.length > 0 ? (
+          <StepHint tone="warning">
+            Para continuar, preencha o {missingAddressFields.join(', ')} do endereço principal.
+          </StepHint>
         ) : null}
 
         {selected?.model === 'identifier' && selectedHint ? (

@@ -41,6 +41,34 @@ cabeçalho, clima e wizards: [Configuração](configuracao.md). Captcha no login
 [Login com Google e telefone](login-social-telefone.md). Níveis de conta progressivos:
 [Níveis de conta](../arquitetura/niveis-de-conta.md).
 
+## Chave de criptografia (`APP_ENCRYPTION_KEY`)
+
+Chave AES-256 do app: sela os dados que viajam em links, como o código de verificação de e-mail.
+Precisa ser **32 bytes em base64url, ou seja, 43 caracteres**.
+
+* **Local:** deixe vazia no `.env`. O `node kizuna-core/cli install`/`update` gera a chave.
+* **Produção (Dokploy etc.):** o CLI não roda lá. Gere uma chave **própria** e cole na aba
+  Environment:
+
+  ```bash
+  node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"
+  ```
+
+* **Sem a variável:** o app deriva a chave do `PGRST_JWT_SECRET`. Mas uma variável **definida com
+  valor inválido** não cai nesse fallback: ela dá erro.
+
+{% hint style="danger" %}
+**Erro `APP_ENCRYPTION_KEY precisa ter 32 bytes em base64url (43 caracteres)`:** o valor existe,
+mas não decodifica em 32 bytes. Causas comuns: chave em hex (`openssl rand -hex 32` tem 64
+caracteres), valor truncado ou com aspas/espaço na colagem, UUID ou senha livre. Gere com o
+comando acima e reinicie o app (a chave é lida em runtime, não precisa rebuild).
+{% endhint %}
+
+{% hint style="warning" %}
+**Não troque a chave depois de publicar.** Trocar `APP_ENCRYPTION_KEY` (ou o `PGRST_JWT_SECRET`,
+quando ela é derivada dele) invalida os links de e-mail já enviados; o usuário precisa pedir outro.
+{% endhint %}
+
 ## Atualizar o core
 
 O `predev` roda `kizuna check` e **avisa** (não bloqueia) quando o core diverge do `kizuna.lock`.

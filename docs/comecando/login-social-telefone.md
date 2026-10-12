@@ -77,12 +77,20 @@ APP_URL=https://seusite.com.br   # obrigatório em produção: monta o redirect_
 - **Botão "Continuar com Google"**: abre uma janelinha (popup) do Google por cima do site. Ao
   terminar, a janela fecha e a página recarrega já logada. Se o navegador bloquear a janela, o
   botão cai no redirect de página inteira. Se a pessoa cancelar, a janela fecha e nada muda.
-- **One Tap**: o balão "Fazer login em <site> com o Google" no canto da tela, para visitante que
-  já tem conta Google no navegador. Um clique e pronto. O próprio `AuthProvider` monta o
-  balão (não precisa mexer no layout) e ele não aparece para quem está logado. Para desligar num
-  provider: `<AuthProvider googleOneTap={false}>`. A rota
+- **One Tap**: "Fazer login em <site> com o Google", para visitante que já tem conta Google no
+  navegador. Um clique e pronto. Por padrão aparece **só junto do formulário de login/cadastro**
+  (`/login`, `/registre-se` e o modal de login): os botões sociais montam o One Tap sozinhos, não
+  precisa mexer no layout. A prop `googleOneTap` do `AuthProvider` muda isso:
+  `"everywhere"` mostra em todo o site para visitante anônimo; `false` desliga. A rota
   `src/app/api/auth/oauth/[provider]/onetap/route.ts` é `managed` e chega pelo `kizuna update`. Diferente do botão, aqui o id_token chega
   pelo navegador, então o servidor confere a assinatura com as chaves públicas do Google.
+
+{% hint style="info" %}
+**No celular o One Tap não é balão.** Com FedCM (obrigatório no Google), quem desenha o prompt é
+o navegador: no desktop, balão no canto; no Chrome Android e no Safari iOS, um painel que sobe de
+baixo e escurece a página. Nenhuma configuração troca esse formato. É por isso que o padrão mostra
+o One Tap só onde a pessoa já veio para entrar, e não por cima da página que ela estava lendo.
+{% endhint %}
 
 **Como a conta é resolvida** (`auth.fun_auth__external_login`):
 

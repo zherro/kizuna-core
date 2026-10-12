@@ -10,6 +10,7 @@ import {
   CalendarClock,
   ClipboardList,
   Contrast,
+  Copyright,
   FileInput,
   FileText,
   Filter,
@@ -26,6 +27,7 @@ import {
   MapPin,
   MapPinned,
   MousePointerClick,
+  Navigation,
   Newspaper,
   Palette,
   PanelBottom,
@@ -103,7 +105,13 @@ const ICON_BY_SECTION: Record<ShowcaseSectionId, React.ComponentType<{ className
   'select-popover': ListFilter,
   'shadow-lab': Contrast,
   'article-layout': Newspaper,
-  'article-location': MapPinned,
+  'article-header': Heading,
+  'article-body': FileText,
+  'article-credits': Copyright,
+  'fact-sheet': ClipboardList,
+  'quick-actions': Zap,
+  'location-map': MapPinned,
+  'directions-card': Navigation,
 };
 
 type ShowcaseShellProps = {

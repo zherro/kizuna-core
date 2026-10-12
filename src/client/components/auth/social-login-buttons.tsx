@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { startOAuthLogin } from './oauth-client';
+import { GoogleOneTap } from './google-one-tap';
+import { useGoogleOneTapMode } from '../../providers/google-one-tap-mode';
 
 type Provider = { id: string; label: string };
 
@@ -66,6 +68,7 @@ export function SocialLoginButtons({
 }: SocialLoginButtonsProps) {
   const [providers, setProviders] = useState<Provider[]>([]);
   const [phoneEnabled, setPhoneEnabled] = useState(false);
+  const oneTapMode = useGoogleOneTapMode();
 
   useEffect(() => {
     let alive = true;
@@ -89,6 +92,11 @@ export function SocialLoginButtons({
 
   return (
     <div className="space-y-4">
+      {providers.some((p) => p.id === 'google') ? (
+        // One Tap só junto do formulário (modo padrão). No modo 'everywhere' o AuthProvider já
+        // monta o global — aqui fica inativo para não chamar o prompt duas vezes.
+        <GoogleOneTap active={oneTapMode === true} returnTo={returnTo} />
+      ) : null}
       <div className="space-y-2">
         {providers.map((p) => {
           const Icon = ICONS[p.id];

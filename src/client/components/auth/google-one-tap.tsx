@@ -41,10 +41,11 @@ function loadGsi(): Promise<GoogleIdApi> {
 }
 
 /**
- * Google One Tap: o "balãozinho" no canto da tela ("Fazer login em <site> com o Google") para quem
- * já tem conta Google no navegador. O `AuthProvider` já monta este componente com
- * `active` = visitante anônimo; só aparece quando o servidor tem o Google configurado (e
- * `GOOGLE_ONE_TAP` ≠ `false`).
+ * Google One Tap: "Fazer login em <site> com o Google" para quem já tem conta Google no navegador.
+ * Desktop: balão no canto. Celular: painel nativo do navegador (FedCM) que sobe de baixo — não dá
+ * para trocar o formato. Por isso, por padrão, quem monta é o `SocialLoginButtons` (só junto do
+ * formulário de login/cadastro); no modo `googleOneTap="everywhere"` o `AuthProvider` monta em
+ * todo o site. Só aparece com o Google configurado no servidor (e `GOOGLE_ONE_TAP` ≠ `false`).
  */
 export function GoogleOneTap({ active, returnTo }: { active: boolean; returnTo?: string }) {
   useEffect(() => {

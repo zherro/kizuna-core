@@ -59,7 +59,10 @@ core template (`template/src/app/painel/root/[slug]/page.tsx`, which fills the `
 `ShowcaseShell` (nav shell + icon map), `ShowcaseSectionPage` (renders one section's live demo +
 copyable usage code), `showcase-sections.ts` (`SHOWCASE_SECTIONS` registry: id, group, label,
 description, usage snippet). Runs at `/showcase` in the consuming project — it's the live
-reference for every `ui`/`ui-better-soft` component, not just documentation.
+reference for every `ui`/`ui-better-soft` component, not just documentation. The route is not
+shipped by the core: the consuming project must mount `src/app/showcase/layout.tsx`, `page.tsx` and
+`[section]/page.tsx` for the catalog to be reachable (see the starter's `src/app/showcase` for the
+example, gated by `SHOWCASE_ENABLED`).
 
 ## `client/hooks/*`
 

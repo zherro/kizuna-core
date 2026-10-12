@@ -41,6 +41,7 @@ await sendEmail({ to: 'user@example.com', template: buildWelcome('Ana') });
 | `SMTP_USER` | Usuário (normalmente o e-mail completo)                              |
 | `SMTP_PASS` | Senha, de preferência **senha de app** (veja cada provedor)          |
 | `SMTP_FROM` | Remetente, ex.: `"Meu App <no-reply@meuapp.com.br>"`                 |
+| `APP_ENCRYPTION_KEY` | Sela o código do link de verificação. 32 bytes base64url (43 caracteres): veja [Chave de criptografia](../comecando/README.md#chave-de-criptografia-app_encryption_key) |
 
 Com `SMTP_PORT=465` a conexão já abre criptografada (`secure: true`). Com qualquer outra porta,
 ela começa em texto e sobe para TLS via STARTTLS. Sem `SMTP_HOST`/`SMTP_USER`/`SMTP_PASS`, o app
