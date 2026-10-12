@@ -247,6 +247,8 @@ export const resourceServices: Record<string, ResourceConfig> = {
     schema: 'public',
     table: 'vw_category_service_stats',
     listRequiresAuth: false,
+    // Uma linha por categoria com anúncio; o carrossel cruza com a lista toda (teto padrão: 100).
+    maxPageSize: 1000,
     select: 'category_id,category_name,services_count',
     primaryKey: 'category_id',
     defaultOrder: 'category_name',

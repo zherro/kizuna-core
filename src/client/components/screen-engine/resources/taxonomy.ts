@@ -298,6 +298,9 @@ export const resourceTaxonomy: Record<string, ResourceConfig> = {
     schema: 'public',
     table: 'vw_category_subcategory_stats',
     listRequiresAuth: false,
+    // Uma linha por SUBcategoria: o teto padrão (100) cortava as categorias do fim do alfabeto
+    // do carrossel. O cliente pede tudo (pageSize 1000) e deduplica por categoria.
+    maxPageSize: 1000,
     select: 'category_id,category_name,category_group_id,category_icon,subcategory_id,subcategory_name,qtd',
     primaryKey: 'subcategory_id',
     defaultOrder: 'category_name',
