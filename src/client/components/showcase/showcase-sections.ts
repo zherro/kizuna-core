@@ -21,6 +21,7 @@ export type ShowcaseSectionId =
   | 'filter-stat-card'
   | 'entity-list-card'
   | 'media-result-card'
+  | 'listing-result-card'
   | 'highlight-slider'
   | 'icon-choice-grid'
   | 'chip-toggle-list'
@@ -1106,6 +1107,34 @@ export function MonthPicker() {
         { value: 10, label: 'outubro' },
       ]}
       onChange={setMes}
+    />
+  );
+}`,
+  },
+  {
+    id: 'listing-result-card',
+    groupId: 'ui-better-soft',
+    label: 'Listing Result Card',
+    description:
+      'Cartao de resultado de listagem em grade ou trilha (strip). Estilos: default (nota + preco), cinema (capa em pe, so divulga) e evento (bloco de data sobre a capa, local e preco "A partir de"/Gratuito).',
+    usageCode: `import { ListingResultCard } from '../ui-better-soft/lists/listing-result-card';
+
+// cardStyle 'evento': capa landscape com bloco de data, local e preço "A partir de"/Gratuito.
+// Em listagens reais use variantCardProps(variantId, {...}) (services/detail/event-card) para
+// obter cardStyle, ctaLabel, priceLabel, priceCaption e dateLabel a partir da variant da categoria.
+export function EventCardExample() {
+  return (
+    <ListingResultCard
+      href="/anuncios/abc"
+      title="Festival Pantanal Sertanejo"
+      cardStyle="evento"
+      tagLabel="Shows"
+      imageUrl="https://images.unsplash.com/photo-1459749411175-04bf5292ceea?auto=format&fit=crop&w=800&q=80"
+      dateLabel={{ day: '14', month: 'nov' }}
+      locationLabel="Arena Pantanal, Cuiaba"
+      priceCaption="A partir de"
+      priceLabel="R$ 40,00"
+      ctaLabel="Ver evento"
     />
   );
 }`,

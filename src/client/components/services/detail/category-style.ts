@@ -5,6 +5,8 @@
  *
  * Sem config nenhuma (ou categoria sem entrada), cai sempre no variant `"service"` (o default) e
  * no hue default — o app funciona sem exigir configuração nenhuma pra isso.
+ *
+ * Precedência: slug da categoria > slug do grupo de categorias > default > fallback.
  */
 
 export type ServiceDetailVariant = string;
@@ -23,11 +25,16 @@ export type ReactionButtonConfig = {
 
 export type ServiceDetailConfig = {
   _comment?: string;
-  /** Variant default quando a categoria não está em `variantByCategorySlug`. */
+  /** Variant default quando nem a categoria (`variantByCategorySlug`) nem o grupo
+   * (`variantByGroupSlug`) estão mapeados. */
   defaultVariant?: ServiceDetailVariant;
   /** slug da categoria (`categories.slug`) → variant registrada em `SERVICE_DETAIL_VARIANTS`. */
   variantByCategorySlug?: Record<string, ServiceDetailVariant>;
-  /** Cor de acento por slug de categoria; `default` é usada quando o slug não está mapeado. */
+  /** slug do grupo de categorias (`categories_group.slug`) → variant. Vale pra toda categoria do
+   * grupo sem entrada própria em `variantByCategorySlug` (a categoria tem precedência). */
+  variantByGroupSlug?: Record<string, ServiceDetailVariant>;
+  /** Cor de acento por slug de categoria, depois por slug do grupo; `default` é usada quando
+   * nenhum dos dois está mapeado. */
   colors?: Record<string, CategoryHueConfig>;
   /** Slugs de categoria fora dos resultados "misturados" (home, busca sem filtro, "veja também"
    * de outra categoria) — a categoria continua navegável sozinha (filtro direto por ela). Passe
@@ -42,33 +49,47 @@ const FALLBACK_HUE = 230;
 
 /**
  * Categoria mínima o bastante pra resolver estilo: aceita tanto o `category` embutido no
- * `ServiceRecord` (passthrough do PostgREST, `slug` opcional) quanto um slug solto.
+ * `ServiceRecord` (passthrough do PostgREST, `slug` opcional) quanto um slug solto. O objeto
+ * também pode trazer `groupSlug` (slug do grupo de categorias) pra escolher estilo por grupo.
  */
-export type CategoryStyleInput = { slug?: string | null } | string | null | undefined;
+export type CategoryStyleInput =
+  | { slug?: string | null; groupSlug?: string | null }
+  | string
+  | null
+  | undefined;
 
 function slugOf(input: CategoryStyleInput): string | null {
   if (input == null) return null;
   return typeof input === 'string' ? input : (input.slug ?? null);
 }
 
-/** Variant de detalhe (e card) da categoria — `"service"` se não houver config ou entrada. */
+function groupSlugOf(input: CategoryStyleInput): string | null {
+  if (input == null || typeof input === 'string') return null;
+  return input.groupSlug ?? null;
+}
+
+/** Variant de detalhe (e card): categoria > grupo > default; `"service"` se nada configurado. */
 export function resolveServiceDetailVariant(
   category: CategoryStyleInput,
   config?: ServiceDetailConfig | null
 ): ServiceDetailVariant {
   const slug = slugOf(category);
-  const fromMap = slug ? config?.variantByCategorySlug?.[slug] : undefined;
-  return fromMap ?? config?.defaultVariant ?? FALLBACK_VARIANT;
+  const groupSlug = groupSlugOf(category);
+  const bySlug = slug ? config?.variantByCategorySlug?.[slug] : undefined;
+  const byGroup = groupSlug ? config?.variantByGroupSlug?.[groupSlug] : undefined;
+  return bySlug ?? byGroup ?? config?.defaultVariant ?? FALLBACK_VARIANT;
 }
 
-/** Hue (0-360) de acento da categoria — `colors.default.hue` ou 230 se nada configurado. */
+/** Hue (0-360) de acento: `colors` da categoria > do grupo > `default`; 230 se nada configurado. */
 export function resolveCategoryHue(
   category: CategoryStyleInput,
   config?: ServiceDetailConfig | null
 ): number {
   const slug = slugOf(category);
+  const groupSlug = groupSlugOf(category);
   const bySlug = slug ? config?.colors?.[slug]?.hue : undefined;
-  return bySlug ?? config?.colors?.default?.hue ?? FALLBACK_HUE;
+  const byGroup = groupSlug ? config?.colors?.[groupSlug]?.hue : undefined;
+  return bySlug ?? byGroup ?? config?.colors?.default?.hue ?? FALLBACK_HUE;
 }
 
 /** Vivid diagonal fill pro hue resolvido — usado atrás de ícones brancos / hero sem foto. */

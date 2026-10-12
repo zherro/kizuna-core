@@ -1,6 +1,8 @@
 export { ServiceDetailPage, type ServiceDetailPageProps } from './service-detail-page';
 export { ServiceDetailDefault } from './service-detail-default';
 export { ServiceDetailCinema, ServiceDetailCinemaSidebar } from './service-detail-cinema';
+export { ServiceDetailEvento, ServiceDetailEventoSidebar, eventoHeaderTags } from './service-detail-evento';
+export { variantCardProps, type VariantCardProps } from './event-card';
 export {
   resolveServiceDetailVariant,
   resolveCategoryHue,

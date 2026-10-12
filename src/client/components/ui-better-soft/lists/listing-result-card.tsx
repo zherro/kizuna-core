@@ -24,8 +24,14 @@ export type ListingResultCardProps = {
    * valor, segue `cardStyle` (`'cinema'` já usa `'poster'` por padrão). */
   imageAspect?: 'landscape' | 'poster';
   /** `'default'` (padrão) ou `'cinema'`: sem nota/estrela, título em 3 linhas, e o rodapé mostra a
-   * localização em vez do preço (cinema não vende ingresso aqui, só divulga a sessão). */
-  cardStyle?: 'default' | 'cinema';
+   * localização em vez do preço (cinema não vende ingresso aqui, só divulga a sessão).
+   * `'evento'`: capa landscape com o bloco de data (`dateLabel`) sobre ela, sem nota/estrela, local
+   * e preço ("A partir de"/Gratuito) no rodapé. */
+  cardStyle?: 'default' | 'cinema' | 'evento';
+  /** Bloco de data sobre a capa (`cardStyle='evento'`): dia ("14") + mês abreviado ("nov"). */
+  dateLabel?: { day: string; month: string } | null;
+  /** Prefixo pequeno do preço, ex. "A partir de". Renderizado sobre `priceLabel`. */
+  priceCaption?: string | null;
   /** Badge no topo-direito (ex. categoria). */
   tagLabel?: string | null;
   /** Linha sob o título (ex. subcategoria). */
@@ -48,6 +54,39 @@ export type ListingResultCardProps = {
   variant?: 'grid' | 'strip';
   className?: string;
 };
+
+function DateBlock({ date, compact }: { date: { day: string; month: string }; compact?: boolean }) {
+  return (
+    <span
+      className={cn(
+        'flex flex-col items-center rounded-[var(--ui-radius-card-compact,0.75rem)] bg-background/95 text-center shadow',
+        compact ? 'px-2 py-1' : 'px-2.5 py-1.5'
+      )}
+    >
+      <span className={cn('font-display font-black leading-none', compact ? 'text-base' : 'text-xl')}>{date.day}</span>
+      <span className="mt-0.5 text-[10px] font-bold uppercase leading-none tracking-widest text-brand">
+        {date.month}
+      </span>
+    </span>
+  );
+}
+
+function PriceBlock({
+  label,
+  caption,
+  className,
+}: {
+  label: string;
+  caption?: string | null;
+  className: string;
+}) {
+  return (
+    <div>
+      {caption && <div className="text-[11px] text-muted-foreground">{caption}</div>}
+      <div className={className}>{label}</div>
+    </div>
+  );
+}
 
 function initials(name?: string | null): string {
   return (name ?? '').trim().slice(0, 2).toUpperCase();
@@ -145,6 +184,8 @@ export function ListingResultCard({
   imageAspect,
   cardStyle = 'default',
   tagLabel,
+  dateLabel,
+  priceCaption,
   subtitleLabel,
   imageUrl,
   locationLabel,
@@ -159,6 +200,7 @@ export function ListingResultCard({
   className,
 }: Readonly<ListingResultCardProps>) {
   const isCinema = cardStyle === 'cinema';
+  const isEvento = cardStyle === 'evento';
   const resolvedImageAspect = imageAspect ?? (isCinema ? 'poster' : 'landscape');
 
   if (variant === 'strip') {
@@ -192,6 +234,11 @@ export function ListingResultCard({
               <Sparkles className="h-3 w-3" /> {highlightLabel}
             </span>
           )}
+          {isEvento && dateLabel && (
+            <div className="absolute bottom-2 left-2">
+              <DateBlock date={dateLabel} compact />
+            </div>
+          )}
         </div>
         <div className="flex flex-1 flex-col gap-1 p-3">
           <h3
@@ -206,10 +253,12 @@ export function ListingResultCard({
           {subtitleLabel && (
             <p className="line-clamp-1 text-[11px] text-muted-foreground">{subtitleLabel}</p>
           )}
-          {!isCinema && <RatingChip rating={rating} reviewCount={reviewCount} />}
+          {!isCinema && !isEvento && <RatingChip rating={rating} reviewCount={reviewCount} />}
           {locationLabel && <LocationLine label={locationLabel} />}
           {!isCinema && priceLabel != null && (
-            <div className="mt-auto pt-1 text-sm font-black leading-none">{priceLabel}</div>
+            <div className="mt-auto pt-1">
+              <PriceBlock label={priceLabel} caption={priceCaption} className="text-sm font-black leading-none" />
+            </div>
           )}
         </div>
       </Link>
@@ -240,8 +289,11 @@ export function ListingResultCard({
           </span>
         ) : undefined
       }
+      badgeBottomLeft={isEvento && dateLabel ? <DateBlock date={dateLabel} /> : undefined}
       leading={
-        isCinema ? undefined : (
+        isCinema ? undefined : isEvento ? (
+          locationLabel ? <LocationLine label={locationLabel} /> : undefined
+        ) : (
           <div className="flex flex-col gap-2">
             <RatingChip rating={rating} reviewCount={reviewCount} />
             {locationLabel && <LocationLine label={locationLabel} />}
@@ -270,7 +322,7 @@ export function ListingResultCard({
         ) : (
           <>
             {priceLabel != null && (
-              <div className="text-lg font-black leading-none">{priceLabel}</div>
+              <PriceBlock label={priceLabel} caption={priceCaption} className="text-lg font-black leading-none" />
             )}
             <span
               className={cn(

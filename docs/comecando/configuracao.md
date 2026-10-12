@@ -146,7 +146,10 @@ ou de um grupo de categoria (`group`):
 | `limit` | number | `10`                 | Máximo de cards. Se houver **mais** que isso, a trilha termina com um card **"Ver mais"** que leva a `/busca?categoryId=<id>` (ou `/busca?group=<slug>`). |
 
 * Os cards reusam o carrossel do detalhe do anúncio (`ServiceCarouselSection`), então já seguem o
-  estilo por categoria de `serviceDetail` (ex.: cinema sem preço, cor de acento).
+  estilo por categoria de `serviceDetail` (ex.: cinema sem preço, cor de acento). O layout também
+  pode ser escolhido pelo **grupo** da categoria: `serviceDetail.variantByGroupSlug` mapeia
+  `categories_group.slug` -> variant (a entrada da categoria em `variantByCategorySlug` tem
+  precedência) e `serviceDetail.colors` aceita o slug do grupo. Requer `search` 0005.
 * Mesma base da busca (RPC `fn_search_services`): só anúncios ativos e **não expirados**, filtrados
   pela cidade da home quando houver.
 * **Ordem aleatória a cada visita.** Como a home é ISR, o servidor traz um pool de `limit × 3`

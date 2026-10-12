@@ -47,12 +47,23 @@ Além de `uid`, `title`, `price`, `price_type`, `category`, `subcategory`, `spon
 | `city`, `state` | Endereço que casou com o filtro; sem filtro, o principal. Sem endereço: cidade/UF do prestador. |
 | `address_count` | Total de endereços ativos do serviço (`0` sem endereço).                                        |
 
+| `category_slug` | `categories.slug` do anúncio (migração 0003): chave do estilo por categoria (`serviceDetail.variantByCategorySlug`). |
+| `category_group_slug` | `categories_group.slug` do anúncio (migração **0005**, plugin 1.4.0), via `services.category_group_id` com fallback para o grupo da categoria: chave do estilo por grupo (`serviceDetail.variantByGroupSlug`). |
+
 Os cartões formatam `city` e `address_count` como "Cuiabá" ou "Cuiabá +2"; sem cidade usam a UF.
 
 {% hint style="warning" %}
 A RPC nunca devolve rua nem número. As colunas novas só existem depois de aplicar a 0002; o cliente
 as trata como opcionais.
 {% endhint %}
+
+## Layout por categoria e por grupo
+
+`resolveServiceDetailVariant({ slug, groupSlug }, serviceDetail)` escolhe o layout (detalhe e card)
+na ordem: `variantByCategorySlug[slug]` > `variantByGroupSlug[groupSlug]` > `defaultVariant` >
+`"service"`. O hue de acento (`resolveCategoryHue`) segue `colors[slug]` > `colors[groupSlug]` >
+`colors.default` > 230. O cliente lê `category_slug` e `category_group_slug` do resultado; sem a
+0005 aplicada o grupo vem ausente e só a categoria vale (comportamento anterior).
 
 ## Performance
 

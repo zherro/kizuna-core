@@ -20,7 +20,7 @@ Grouped by folder:
   suffix/hint).
 - `headers/` — `PageHeader` (listing/management page header), `AdminPageReader` (admin page
   header with back link + actions).
-- `lists/` — card/list shells: `FilterStatCard`, `EntityListCard`, `MediaResultCard`,
+- `lists/` — card/list shells: `FilterStatCard`, `EntityListCard`, `MediaResultCard`, `ListingResultCard`,
   `IconChoiceGrid`, `ChipToggleList`, `EmptyStateCard`, `EntityGridList` (card/list toggle with
   localStorage persistence).
 - `overlay/` — `ModalPanel` (slide-in side panel), `ConfirmDialog`.
@@ -319,3 +319,38 @@ must equal the token's `:root` value:
 Left as is on purpose: `rounded-full`/`-sm`/`-none`, images, avatars, skeletons, icon tiles,
 coloured callouts/alerts, chat bubbles, dividers, tables, state variants (`hover:`, `focus:`,
 `dark:`), project CSS classes (`home-ink`, `wz-*`) and radii outside the table.
+
+## Service detail variants and listing card styles
+
+The service detail page (`ServiceDetailPage`) picks its "body" by category through
+`serviceDetail` in `kizuna.config.json` (`variantByCategorySlug`, or by group slug). Built-in
+variants: `service` (default), `cinema` and `evento`. Variants are plain components
+(`ServiceDetailVariantComponent`) and can be added or overridden through the `variants` / `sidebars`
+props.
+
+`evento` (`ServiceDetailEvento` + `ServiceDetailEventoSidebar` + `eventoHeaderTags`) reads
+`extraFields.answers` — every field optional, empty blocks are omitted:
+
+- facts strip: date/time, age rating, organizer, entry price ("A partir de" / "Gratuito" / "Sob
+  consulta");
+- artists as badges, "Programação" (sessions grouped by day), "Ingressos" (ticket cards + buy
+  link), "Onde comprar", "Local" (with a map link by address) and "Contato";
+- a discreet "Encerrado" badge once the last known date has passed (`isEventOver`);
+- like `cinema`, the "Quem anuncia" provider card is hidden (the listing is the event).
+
+Dates (`AAAA-MM-DD`, `AAAA-MM-DDTHH:MM`) are local, never time-zone shifted; "now" is evaluated in
+`America/Sao_Paulo`. Pure helpers live in `services/detail/evento-helpers.ts`.
+
+`ListingResultCard` takes `cardStyle`: `default` (rating + price), `cinema` (poster cover, no
+price) or `evento` (landscape cover with a date block, location, price with caption). Extra props:
+`dateLabel` (`{ day, month }`) and `priceCaption`. To map a category variant to card props:
+
+```tsx
+import { variantCardProps } from '@kizuna/core/client/components/services/detail/event-card';
+
+const extra = variantCardProps(variantId, { startingPrice, priceUnit, free, startsAt });
+// null for variants without a dedicated card -> keep the default props.
+<ListingResultCard {...base} {...(extra ?? {})} />;
+```
+
+See the "Listing Result Card" entry in the showcase.

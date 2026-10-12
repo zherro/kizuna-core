@@ -49,6 +49,7 @@ import { ConfirmDialog } from '../ui-better-soft/overlay/confirm-dialog';
 import { FilterStatCard } from '../ui-better-soft/lists/filter-stat-card';
 import { EntityListCard } from '../ui-better-soft/lists/entity-list-card';
 import { MediaResultCard } from '../ui-better-soft/lists/media-result-card';
+import { ListingResultCard } from '../ui-better-soft/lists/listing-result-card';
 import { HighlightSlider } from '../ui-better-soft/highlight-slider';
 import { BallotBoxArt } from '../ui-better-soft/ballot-box-art';
 import { IconChoiceGrid } from '../ui-better-soft/lists/icon-choice-grid';
@@ -629,6 +630,38 @@ function EntityListCardDemo() {
   );
 }
 
+function ListingResultCardDemo() {
+  const cover =
+    'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?auto=format&fit=crop&w=800&q=80';
+  return (
+    <div className="grid max-w-3xl grid-cols-1 gap-4 sm:grid-cols-2">
+      <ListingResultCard
+        href="#"
+        title="Festival Pantanal Sertanejo"
+        cardStyle="evento"
+        tagLabel="Shows"
+        imageUrl={cover}
+        dateLabel={{ day: '14', month: 'nov' }}
+        locationLabel="Arena Pantanal, Cuiaba"
+        priceCaption="A partir de"
+        priceLabel="R$ 40,00"
+        ctaLabel="Ver evento"
+      />
+      <ListingResultCard
+        href="#"
+        title="Feira de artesanato da praca"
+        cardStyle="evento"
+        tagLabel="Feiras"
+        imageUrl={cover}
+        dateLabel={{ day: '21', month: 'nov' }}
+        locationLabel="Praca da Republica"
+        priceLabel="Gratuito"
+        ctaLabel="Ver evento"
+      />
+    </div>
+  );
+}
+
 function MediaResultCardDemo() {
   return (
     <div className="max-w-xs">
@@ -1161,6 +1194,7 @@ function SectionDemo({ sectionId }: { sectionId: ShowcaseSectionId }) {
   if (sectionId === 'filter-stat-card') return <FilterStatCardDemo />;
   if (sectionId === 'entity-list-card') return <EntityListCardDemo />;
   if (sectionId === 'media-result-card') return <MediaResultCardDemo />;
+  if (sectionId === 'listing-result-card') return <ListingResultCardDemo />;
   if (sectionId === 'highlight-slider') return <HighlightSliderDemo />;
   if (sectionId === 'icon-choice-grid') return <IconChoiceGridDemo />;
   if (sectionId === 'chip-toggle-list') return <ChipToggleListDemo />;

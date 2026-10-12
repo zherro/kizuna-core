@@ -10,6 +10,7 @@ import { hueGradient, resolveCategoryHue, resolveServiceDetailVariant } from './
 import type { ServiceDetailConfig, ServiceDetailSlots, ServiceDetailVariantComponent } from './service-detail-types';
 import { ServiceDetailDefault } from './service-detail-default';
 import { ServiceDetailCinema, ServiceDetailCinemaSidebar, cinemaHeaderTags } from './service-detail-cinema';
+import { ServiceDetailEvento, ServiceDetailEventoSidebar, eventoHeaderTags } from './service-detail-evento';
 import { AdPhotoMosaic } from './ad-photo-mosaic';
 import { AdShareButton } from './ad-share-button';
 import { ServiceReactionButtons } from './service-reaction-buttons';
@@ -20,13 +21,24 @@ import type { EventRule } from '../../../../shared/analytics';
 const BUILT_IN_VARIANTS: Record<string, ServiceDetailVariantComponent> = {
   service: ServiceDetailDefault,
   cinema: ServiceDetailCinema,
+  evento: ServiceDetailEvento,
 };
 
 /** Conteúdo que substitui a caixa de preço da sidebar, por variant — variant sem entrada aqui
  * mantém a caixa de preço padrão (comportamento da `service`). */
 const BUILT_IN_SIDEBARS: Record<string, ServiceDetailVariantComponent> = {
   cinema: ServiceDetailCinemaSidebar,
+  evento: ServiceDetailEventoSidebar,
 };
+
+/** Tags extras sob o título, por variant (idiomas/formatos, classificação...). */
+const HEADER_TAGS: Record<string, (extraFields: ServiceDetailData['extraFields']) => string[]> = {
+  cinema: cinemaHeaderTags,
+  evento: eventoHeaderTags,
+};
+
+/** Variants em que o anúncio É o conteúdo (filme, evento), não um prestador: sem "Quem anuncia". */
+const HIDE_PROVIDER_CARD = new Set(['cinema', 'evento']);
 
 function ViewTracker({
   uid,
@@ -113,11 +125,11 @@ export function ServiceDetailPage({
 }: ServiceDetailPageProps) {
   const { service, subcategoryNames, provider, extraFields, related, randomServices, siblings } = data;
 
-  const categorySlug = service.category?.slug ?? null;
-  const variantId = resolveServiceDetailVariant({ slug: categorySlug }, detailConfig);
-  const hue = resolveCategoryHue({ slug: categorySlug }, detailConfig);
+  const styleInput = { slug: service.category?.slug ?? null, groupSlug: service.categoryGroup?.slug ?? null };
+  const variantId = resolveServiceDetailVariant(styleInput, detailConfig);
+  const hue = resolveCategoryHue(styleInput, detailConfig);
   const VariantContent = { ...BUILT_IN_VARIANTS, ...variants }[variantId] ?? ServiceDetailDefault;
-  const headerTags = variantId === 'cinema' ? cinemaHeaderTags(extraFields) : [];
+  const headerTags = HEADER_TAGS[variantId]?.(extraFields) ?? [];
   const SidebarContent = { ...BUILT_IN_SIDEBARS, ...sidebars }[variantId];
 
   const photos = photosFor(service);
@@ -275,8 +287,8 @@ export function ServiceDetailPage({
                 />
               </div>
 
-              {/* Cinema: o anúncio é o filme, não um prestador — não mostra "Quem anuncia". */}
-              {provider && variantId !== 'cinema' &&
+              {/* Cinema/evento: o anúncio é o filme/evento, não um prestador — sem "Quem anuncia". */}
+              {provider && !HIDE_PROVIDER_CARD.has(variantId) &&
                 (slots?.renderProviderCard?.({ provider }) ?? (
                   <div className="mt-5 flex items-center gap-3 rounded-[var(--ui-radius-card,1rem)] bg-muted/60 p-3">
                     <ProviderAvatar

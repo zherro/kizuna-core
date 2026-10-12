@@ -5,6 +5,7 @@ import { ListingResultCard } from '../ui-better-soft/lists/listing-result-card';
 import { formatCurrency } from '../../../lib/shared/currency-mask';
 import { PRICE_UNIT_LABEL } from '../services/service-labels';
 import { resolveServiceDetailVariant, type ServiceDetailConfig } from '../services/detail/category-style';
+import { variantCardProps } from '../services/detail/event-card';
 import { TrackView } from '../../analytics/track-view';
 import type { EventRule } from '../../../shared/analytics';
 import type { ServiceResult } from './search-types';
@@ -48,16 +49,15 @@ function priceLabel(r: ServiceResult): string {
 }
 
 function toCardProps(r: ServiceResult, detailConfig?: ServiceDetailConfig | null) {
-  const variant = resolveServiceDetailVariant({ slug: r.category_slug }, detailConfig);
-  // O card de cinema só divulga a sessão (não vende o ingresso) e usa capa de filme em pé —
-  // mesma variant que decide o layout de detalhe, sem config própria pro card.
-  const isCinema = variant === 'cinema';
+  const variant = resolveServiceDetailVariant({ slug: r.category_slug, groupSlug: r.category_group_slug }, detailConfig);
+  // Cada variant (cinema, evento...) tem o próprio estilo de card — a mesma que decide o detalhe.
+  const extra = variantCardProps(variant, { startingPrice: r.price, priceUnit: r.price_type });
 
   return {
     href: serviceHref(r),
     title: r.title,
-    priceLabel: isCinema ? null : priceLabel(r),
-    cardStyle: isCinema ? ('cinema' as const) : ('default' as const),
+    priceLabel: priceLabel(r),
+    cardStyle: 'default' as const,
     tagLabel: r.category,
     subtitleLabel: r.subcategory,
     imageUrl: r.cover_file_id ? `/api/public/storage/files/${r.cover_file_id}/content?size=thumb` : null,
@@ -68,7 +68,8 @@ function toCardProps(r: ServiceResult, detailConfig?: ServiceDetailConfig | null
     providerAvatarUrl: r.provider_avatar,
     rating: r.rating,
     reviewCount: r.reviews,
-    ctaLabel: isCinema ? 'Onde assistir' : 'Ver serviço',
+    ctaLabel: 'Ver serviço',
+    ...(extra ?? {}),
   };
 }
 

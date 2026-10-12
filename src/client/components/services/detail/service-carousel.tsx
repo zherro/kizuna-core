@@ -10,6 +10,7 @@ import { thumbUrl, formatServicePrice } from '../service-helpers';
 import { serviceHref } from '../../../../shared/city-routing/city-slug';
 import { formatLocationLabel } from '../../search/format-location-label';
 import { resolveServiceDetailVariant, type ServiceDetailConfig } from './category-style';
+import { variantCardProps } from './event-card';
 
 /**
  * Trilha horizontal de scroll livre com `ListingResultCard` (`variant="strip"`) — mesmo embla das
@@ -58,8 +59,13 @@ export function ServiceCarousel({
       <div className="overflow-hidden" ref={emblaRef}>
         <div className="flex gap-4">
           {services.map((service) => {
-            const isCinema =
-              resolveServiceDetailVariant({ slug: service.category_slug }, detailConfig) === 'cinema';
+            const extra = variantCardProps(
+              resolveServiceDetailVariant(
+                { slug: service.category_slug, groupSlug: service.category_group_slug },
+                detailConfig
+              ),
+              { startingPrice: service.price, priceUnit: service.price_type }
+            );
             return (
               <ListingResultCard
                 key={service.uid}
@@ -67,9 +73,11 @@ export function ServiceCarousel({
                 href={serviceHref(service)}
                 title={service.title}
                 priceLabel={
-                  isCinema ? null : formatServicePrice(Number(service.price ?? 0), service.price_type)
+                  extra ? extra.priceLabel : formatServicePrice(Number(service.price ?? 0), service.price_type)
                 }
-                cardStyle={isCinema ? 'cinema' : 'default'}
+                priceCaption={extra?.priceCaption}
+                dateLabel={extra?.dateLabel}
+                cardStyle={extra?.cardStyle ?? 'default'}
                 tagLabel={service.category}
                 subtitleLabel={service.subcategory}
                 imageUrl={service.cover_file_id ? thumbUrl(service.cover_file_id) : null}

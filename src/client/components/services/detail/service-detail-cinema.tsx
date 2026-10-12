@@ -101,7 +101,7 @@ function formatUntil(date: Date): string {
 
 /** Uma célula da faixa de facts (duração, classificação, ano, distribuidora) — mesmo estilo da
  * variant `"service"`, pra não inventar um padrão visual novo. */
-function Fact({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
+export function Fact({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
   return (
     <div className="rounded-[var(--ui-radius-card,1rem)] bg-muted/60 p-4">
       <div className="flex items-center gap-1.5 text-brand">
@@ -115,7 +115,7 @@ function Fact({ icon, label, value }: { icon: ReactNode; label: string; value: s
   );
 }
 
-function Badge({ children }: { children: ReactNode }) {
+export function Badge({ children }: { children: ReactNode }) {
   return (
     <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground">
       {children}
@@ -123,7 +123,7 @@ function Badge({ children }: { children: ReactNode }) {
   );
 }
 
-function Section({ title, hue, children }: { title: string; hue: number; children: ReactNode }) {
+export function Section({ title, hue, children }: { title: string; hue: number; children: ReactNode }) {
   return (
     <section className="mt-10 border-t border-border pt-8">
       <h2 className="flex items-center gap-3 font-display text-xl font-black tracking-tight">

@@ -19,6 +19,9 @@ export type ServiceResult = {
   /** slug da categoria — chave estável pra escolher estilo de card por categoria (ver
    * `resolveServiceDetailVariant`); ausente em RPCs antigas. */
   category_slug?: string | null;
+  /** slug do grupo de categorias do anúncio (`categories_group.slug`) — chave pra escolher layout
+   * por grupo (`serviceDetail.variantByGroupSlug`); ausente em RPCs anteriores à 0005. */
+  category_group_slug?: string | null;
   subcategory: string | null;
   sponsored: boolean;
   cover_file_id: string | null;

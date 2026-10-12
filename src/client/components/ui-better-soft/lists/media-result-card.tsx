@@ -10,6 +10,8 @@ type MediaResultCardProps = {
   badgeTopLeft?: ReactNode;
   /** e.g. a category badge. */
   badgeTopRight?: ReactNode;
+  /** e.g. a date block sobre a capa (eventos). */
+  badgeBottomLeft?: ReactNode;
   title: string;
   subtitle?: string;
   /** Row rendered between the title block and the footer — an avatar+name row, a rating, etc.
@@ -36,6 +38,7 @@ export function MediaResultCard({
   imageAlt,
   badgeTopLeft,
   badgeTopRight,
+  badgeBottomLeft,
   title,
   subtitle,
   leading,
@@ -68,6 +71,7 @@ export function MediaResultCard({
         )}
         {badgeTopLeft && <div className="absolute left-3 top-3">{badgeTopLeft}</div>}
         {badgeTopRight && <div className="absolute right-3 top-3">{badgeTopRight}</div>}
+        {badgeBottomLeft && <div className="absolute bottom-3 left-3">{badgeBottomLeft}</div>}
       </div>
 
       <div className="flex flex-1 flex-col gap-3 p-4">
