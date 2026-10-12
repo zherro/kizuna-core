@@ -33,6 +33,10 @@ export type ServiceDetailConfig = {
   /** slug do grupo de categorias (`categories_group.slug`) → variant. Vale pra toda categoria do
    * grupo sem entrada própria em `variantByCategorySlug` (a categoria tem precedência). */
   variantByGroupSlug?: Record<string, ServiceDetailVariant>;
+  /** Só o CARD (busca, carrosséis): slug da categoria → variant do card, sem mudar a tela de
+   * detalhe (ex. teatro com card de cinema e detalhe de evento). Sem entrada: o card segue a
+   * variant do detalhe. */
+  cardVariantByCategorySlug?: Record<string, ServiceDetailVariant>;
   /** Cor de acento por slug de categoria, depois por slug do grupo; `default` é usada quando
    * nenhum dos dois está mapeado. */
   colors?: Record<string, CategoryHueConfig>;
@@ -78,6 +82,16 @@ export function resolveServiceDetailVariant(
   const bySlug = slug ? config?.variantByCategorySlug?.[slug] : undefined;
   const byGroup = groupSlug ? config?.variantByGroupSlug?.[groupSlug] : undefined;
   return bySlug ?? byGroup ?? config?.defaultVariant ?? FALLBACK_VARIANT;
+}
+
+/** Variant do CARD: `cardVariantByCategorySlug` da categoria > a mesma do detalhe. */
+export function resolveServiceCardVariant(
+  category: CategoryStyleInput,
+  config?: ServiceDetailConfig | null
+): ServiceDetailVariant {
+  const slug = slugOf(category);
+  const byCard = slug ? config?.cardVariantByCategorySlug?.[slug] : undefined;
+  return byCard ?? resolveServiceDetailVariant(category, config);
 }
 
 /** Hue (0-360) de acento: `colors` da categoria > do grupo > `default`; 230 se nada configurado. */

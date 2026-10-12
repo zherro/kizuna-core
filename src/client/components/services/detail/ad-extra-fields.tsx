@@ -6,11 +6,24 @@ import {
   type FormValues,
 } from '../../form-builder';
 
-function formatValue(value: unknown): string {
-  if (value == null || value === '') return '—';
-  if (Array.isArray(value)) return value.length ? value.join(', ') : '—';
+function formatScalar(value: unknown): string {
+  if (value == null || value === '') return '';
   if (typeof value === 'boolean') return value ? 'Sim' : 'Não';
+  if (typeof value === 'object') {
+    // item de lista (sessão, ingresso…): os valores preenchidos, na ordem do formulário
+    return Object.values(value as Record<string, unknown>)
+      .map(formatScalar)
+      .filter(Boolean)
+      .join(' · ');
+  }
   return String(value);
+}
+
+/** Uma linha por item: listas de objetos (sessões, ingressos) não cabem numa vírgula só. */
+function formatValue(value: unknown): string[] {
+  const list = Array.isArray(value) ? value : [value];
+  const lines = list.map(formatScalar).filter(Boolean);
+  return lines.length ? lines : ['—'];
 }
 
 /**
@@ -35,7 +48,11 @@ export function AdExtraFields({ schema, answers }: { schema: FormSchema; answers
         return (
           <div key={field.id}>
             <div className="text-xs text-muted-foreground">{field.label || key}</div>
-            <div className="text-sm font-medium">{formatValue(answers[key])}</div>
+            <div className="text-sm font-medium">
+              {formatValue(answers[key]).map((line, i) => (
+                <div key={i}>{line}</div>
+              ))}
+            </div>
           </div>
         );
       })}

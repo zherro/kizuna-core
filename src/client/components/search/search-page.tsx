@@ -25,7 +25,7 @@ import { AssistantIcon } from './assistant-icon';
 import { LocationGate } from './location-gate';
 import { SearchChat } from './search-chat';
 import { SearchFiltersPanel } from './search-filters-panel';
-import { SearchResultsView, type ResultsScope } from './search-results-view';
+import { SearchResultsView, type RelaxedFrom, type ResultsScope } from './search-results-view';
 import { regionGroupsFor, type RegionConfig, type RegionGroup } from '../../../shared/regions';
 import type { ServiceDetailConfig } from '../services/detail/category-style';
 import type { EventRule } from '../../../shared/analytics';
@@ -163,6 +163,7 @@ function SearchPageInner({
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(false);
   const [scope, setScope] = useState<ResultsScope>('city');
+  const [relaxedFrom, setRelaxedFrom] = useState<RelaxedFrom | null>(null);
   const [regionResults, setRegionResults] = useState<Array<RegionGroup & { items: ServiceResult[] }>>([]);
   // corpo do RPC que "venceu" a cascata + seed dessa busca — a paginação continua da MESMA
   // consulta/ordem (novo seed a cada página traria duplicatas e ordem inconsistente).
@@ -267,6 +268,7 @@ function SearchPageInner({
         let items = await runSearch(effective, controller.signal);
         // A cidade do topo é fixa: os fallbacks abaixo afrouxam categoria/texto, nunca a cidade.
         let nextScope: ResultsScope = base.p_city_id ? 'city' : 'state';
+        let nextRelaxed: RelaxedFrom | null = null;
 
         // 2) mesma cidade + texto (larga grupo/categoria/subcategoria)
         if (
@@ -281,6 +283,7 @@ function SearchPageInner({
           };
           items = await runSearch(effective, controller.signal);
           nextScope = 'related';
+          nextRelaxed = 'category';
         }
         // 3) larga também o texto — mostra o que houver na cidade
         if (items.length === 0 && base.p_query) {
@@ -293,6 +296,8 @@ function SearchPageInner({
           };
           items = await runSearch(effective, controller.signal);
           nextScope = 'related';
+          // com categoria e texto, quem não achou nada foi a combinação: o aviso cita a categoria
+          nextRelaxed = nextRelaxed ?? 'query';
         }
         if (items.length === 0) nextScope = 'empty';
 
@@ -319,6 +324,7 @@ function SearchPageInner({
 
         setRawResults(allItems);
         setScope(nextScope);
+        setRelaxedFrom(nextScope === 'related' ? nextRelaxed : null);
         setHasMore(moreAvailable);
         setLoading(false);
 
@@ -698,6 +704,8 @@ function SearchPageInner({
           results={results}
           loading={loading}
           scope={scope}
+          relaxedFrom={relaxedFrom}
+          relaxedLabel={relaxedFrom === 'category' ? activeCategoryName : filters.query}
           stateName={location.state}
           cityName={location.cityName}
           layout="strip"
@@ -744,6 +752,8 @@ function SearchPageInner({
               results={results}
               loading={loading}
               scope={scope}
+              relaxedFrom={relaxedFrom}
+              relaxedLabel={relaxedFrom === 'category' ? activeCategoryName : filters.query}
               stateName={location.state}
               cityName={location.cityName}
               layout="grid"

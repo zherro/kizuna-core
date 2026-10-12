@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   resolveCategoryHue,
+  resolveServiceCardVariant,
   resolveServiceDetailVariant,
   type ServiceDetailConfig,
 } from './category-style';
@@ -60,5 +61,20 @@ describe('resolveCategoryHue', () => {
     expect(resolveCategoryHue({ groupSlug: 'eventos' }, config)).toBe(25);
     expect(resolveCategoryHue({ slug: 'a', groupSlug: 'b' }, config)).toBe(100);
     expect(resolveCategoryHue('cinema', config)).toBe(268);
+  });
+});
+
+describe('resolveServiceCardVariant', () => {
+  const withCard: ServiceDetailConfig = { ...config, cardVariantByCategorySlug: { teatro: 'cinema' } };
+
+  it('cardVariantByCategorySlug muda só o card', () => {
+    const teatro = { slug: 'teatro', groupSlug: 'eventos' };
+    expect(resolveServiceCardVariant(teatro, withCard)).toBe('cinema');
+    expect(resolveServiceDetailVariant(teatro, withCard)).toBe('evento');
+  });
+
+  it('sem entrada de card, segue a variant do detalhe', () => {
+    expect(resolveServiceCardVariant({ slug: 'show', groupSlug: 'eventos' }, withCard)).toBe('evento');
+    expect(resolveServiceCardVariant('cinema', withCard)).toBe('cinema');
   });
 });

@@ -5,6 +5,7 @@ export { ServiceDetailEvento, ServiceDetailEventoSidebar, eventoHeaderTags } fro
 export { variantCardProps, type VariantCardProps } from './event-card';
 export {
   resolveServiceDetailVariant,
+  resolveServiceCardVariant,
   resolveCategoryHue,
   hueGradient,
   type ServiceDetailConfig,

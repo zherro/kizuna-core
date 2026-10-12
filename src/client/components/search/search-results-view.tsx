@@ -4,7 +4,7 @@ import { MapPin, SearchX } from 'lucide-react';
 import { ListingResultCard } from '../ui-better-soft/lists/listing-result-card';
 import { formatCurrency } from '../../../lib/shared/currency-mask';
 import { PRICE_UNIT_LABEL } from '../services/service-labels';
-import { resolveServiceDetailVariant, type ServiceDetailConfig } from '../services/detail/category-style';
+import { resolveServiceCardVariant, type ServiceDetailConfig } from '../services/detail/category-style';
 import { variantCardProps } from '../services/detail/event-card';
 import { TrackView } from '../../analytics/track-view';
 import type { EventRule } from '../../../shared/analytics';
@@ -12,11 +12,14 @@ import type { ServiceResult } from './search-types';
 import { formatLocationLabel } from './format-location-label';
 import { serviceHref } from '../../../shared/city-routing/city-slug';
 
-// Até 6 por linha no desktop: card e imagem mais contidos em tela larga.
+// Até 5 por linha no desktop: card e imagem mais contidos em tela larga.
 const GRID_CLASS =
-  'grid grid-cols-1 gap-4 min-[500px]:grid-cols-2 min-[900px]:grid-cols-3 min-[1100px]:grid-cols-4 min-[1360px]:grid-cols-5 min-[1500px]:grid-cols-6';
+  'grid grid-cols-1 gap-4 min-[500px]:grid-cols-2 min-[900px]:grid-cols-3 min-[1100px]:grid-cols-4 min-[1360px]:grid-cols-5';
 
 export type ResultsScope = 'city' | 'state' | 'related' | 'empty';
+
+/** O que a busca afrouxou para cair em `related`: a categoria/grupo ou o texto digitado. */
+export type RelaxedFrom = 'category' | 'query';
 
 type Props = {
   results: ServiceResult[];
@@ -39,6 +42,10 @@ type Props = {
   impressionRule?: EventRule | null;
   /** Título da lista no lugar do padrão por escopo (ex.: seção de região). */
   heading?: string;
+  /** Com `scope="related"`: o filtro que não teve resultado (mostra o aviso "nada em X"). */
+  relaxedFrom?: RelaxedFrom | null;
+  /** Nome do que não teve resultado: a categoria ou o texto buscado. */
+  relaxedLabel?: string | null;
 };
 
 function priceLabel(r: ServiceResult): string {
@@ -49,7 +56,7 @@ function priceLabel(r: ServiceResult): string {
 }
 
 function toCardProps(r: ServiceResult, detailConfig?: ServiceDetailConfig | null) {
-  const variant = resolveServiceDetailVariant({ slug: r.category_slug, groupSlug: r.category_group_slug }, detailConfig);
+  const variant = resolveServiceCardVariant({ slug: r.category_slug, groupSlug: r.category_group_slug }, detailConfig);
   // Cada variant (cinema, evento...) tem o próprio estilo de card — a mesma que decide o detalhe.
   const extra = variantCardProps(variant, { startingPrice: r.price, priceUnit: r.price_type });
 
@@ -80,7 +87,7 @@ function scopeHeading(scope: ResultsScope, stateName: string, cityName: string |
     case 'state':
       return `Em todo o ${stateName}`;
     case 'related':
-      return 'Poucos resultados por perto — veja opções relacionadas';
+      return cityName ? `Outros conteúdos em ${cityName}` : `Outros conteúdos em ${stateName}`;
     case 'empty':
       return 'Nenhum resultado';
   }
@@ -101,6 +108,8 @@ export function SearchResultsView({
   serviceDetailConfig,
   impressionRule = null,
   heading,
+  relaxedFrom = null,
+  relaxedLabel = null,
 }: Props) {
   const card = (r: ServiceResult, variant: 'strip' | 'grid') => {
     const item = <ListingResultCard key={r.uid} {...toCardProps(r, serviceDetailConfig)} variant={variant} />;
@@ -129,7 +138,7 @@ export function SearchResultsView({
             : GRID_CLASS
         }
       >
-        {Array.from({ length: layout === 'strip' ? 4 : 6 }).map((_, i) => (
+        {Array.from({ length: layout === 'strip' ? 4 : 5 }).map((_, i) => (
           <div
             key={i}
             className={
@@ -169,16 +178,56 @@ export function SearchResultsView({
     );
   }
 
+  // Busca sem resultado no filtro pedido: avisa com clareza antes de mostrar outros conteúdos,
+  // para a lista não parecer o resultado da categoria/texto.
+  const place = cityName || stateName;
+  const notice =
+    scope === 'related' && relaxedFrom ? (
+      <div
+        role="status"
+        className="mb-6 flex flex-wrap items-center gap-x-4 gap-y-3 rounded-[var(--ui-radius-card,1rem)] bg-muted/60 px-4 py-3.5"
+      >
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-background text-muted-foreground">
+          <SearchX className="h-4 w-4" />
+        </span>
+        <div className="min-w-0 flex-1 basis-56">
+          <p className="text-sm font-semibold text-foreground">
+            {relaxedFrom === 'category'
+              ? relaxedLabel
+                ? `Ainda não tem nada em ${relaxedLabel} em ${place}`
+                : `Ainda não tem nada nesta categoria em ${place}`
+              : relaxedLabel
+                ? `Nada encontrado para “${relaxedLabel}” em ${place}`
+                : `Nada encontrado em ${place}`}
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Enquanto isso, veja abaixo outros conteúdos da cidade.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onClearFilters}
+          className="rounded-[var(--ui-radius-pill,0.375rem)] border border-border bg-background px-3 py-1.5 text-sm font-medium hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          Limpar filtros
+        </button>
+      </div>
+    ) : null;
+
   if (layout === 'strip') {
     return (
-      <div className="flex gap-3 overflow-x-auto pb-2">
-        {results.map((r) => card(r, 'strip'))}
+      <div>
+        {notice}
+        <div className="flex gap-3 overflow-x-auto pb-2">
+          {results.map((r) => card(r, 'strip'))}
+        </div>
       </div>
     );
   }
 
   return (
     <div>
+      {notice}
       <div className="mb-3 flex items-baseline justify-between gap-2">
         <h2 className="text-sm font-semibold text-muted-foreground">
           {heading ?? scopeHeading(scope, stateName, cityName)}

@@ -9,7 +9,7 @@ import type { ServiceResult } from '../../search/search-types';
 import { thumbUrl, formatServicePrice } from '../service-helpers';
 import { serviceHref } from '../../../../shared/city-routing/city-slug';
 import { formatLocationLabel } from '../../search/format-location-label';
-import { resolveServiceDetailVariant, type ServiceDetailConfig } from './category-style';
+import { resolveServiceCardVariant, type ServiceDetailConfig } from './category-style';
 import { variantCardProps } from './event-card';
 
 /**
@@ -60,7 +60,7 @@ export function ServiceCarousel({
         <div className="flex gap-4">
           {services.map((service) => {
             const extra = variantCardProps(
-              resolveServiceDetailVariant(
+              resolveServiceCardVariant(
                 { slug: service.category_slug, groupSlug: service.category_group_slug },
                 detailConfig
               ),

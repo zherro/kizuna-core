@@ -150,6 +150,10 @@ ou de um grupo de categoria (`group`):
   pode ser escolhido pelo **grupo** da categoria: `serviceDetail.variantByGroupSlug` mapeia
   `categories_group.slug` -> variant (a entrada da categoria em `variantByCategorySlug` tem
   precedência) e `serviceDetail.colors` aceita o slug do grupo. Requer `search` 0005.
+* **Só o card com outro estilo:** `serviceDetail.cardVariantByCategorySlug` mapeia slug da
+  categoria -> variant do **card** (busca e carrosséis), sem mudar a tela de detalhe. Ex.:
+  `{ "teatro": "cinema" }` dá ao teatro o card de cinema (capa em pé, sem preço) e mantém o
+  detalhe de evento, que tem sessões e ingressos.
 * Mesma base da busca (RPC `fn_search_services`): só anúncios ativos e **não expirados**, filtrados
   pela cidade da home quando houver.
 * **Ordem aleatória a cada visita.** Como a home é ISR, o servidor traz um pool de `limit × 3`
