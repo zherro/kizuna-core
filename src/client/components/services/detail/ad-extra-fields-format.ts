@@ -312,6 +312,9 @@ export function buildExtraFieldBlocks(
   }
   flush();
 
-  // Cabeçalho do schema sem nada embaixo (ou seguido de outro cabeçalho) some.
-  return blocks.filter((b, i) => b.kind !== 'heading' || (blocks[i + 1] && blocks[i + 1].kind !== 'heading'));
+  // Cabeçalho do schema sem nada embaixo (ou seguido de outro cabeçalho) some; o 1º (ex. "Evento")
+  // só repetiria o título da seção.
+  return blocks.filter(
+    (b, i) => b.kind !== 'heading' || (i > 0 && blocks[i + 1] && blocks[i + 1].kind !== 'heading')
+  );
 }

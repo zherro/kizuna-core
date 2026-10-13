@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { CopyValueButton } from './copy-value-button';
 import {
   CalendarDays,
   Clapperboard,
@@ -306,38 +307,50 @@ export const ServiceDetailEvento: ServiceDetailVariantComponent = ({ service, ex
 
       {(hasContact || siteUrl) && (
         <Section title="Contato" hue={hue}>
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-0.5 text-sm">
+          <ul className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
             {telefone && (
-              <a href={telHref(telefone)} className="inline-flex items-center gap-1.5 py-1.5 font-semibold text-muted-foreground hover:text-foreground">
-                <Phone className="h-4 w-4" /> {telefone}
-              </a>
+              <li className="flex items-center justify-between gap-2 rounded-[var(--ui-radius-card,1rem)] bg-muted/60 py-1 pl-4 pr-1.5">
+                <a href={telHref(telefone)} className="inline-flex min-w-0 items-center gap-1.5 py-1.5 font-semibold hover:text-brand">
+                  <Phone className="h-4 w-4 shrink-0" /> <span className="truncate">{telefone}</span>
+                </a>
+                <CopyValueButton value={telefone} label="telefone" />
+              </li>
             )}
             {whatsapp && (
-              <a
-                href={whatsappHref(whatsapp)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 py-1.5 font-semibold text-muted-foreground hover:text-foreground"
-              >
-                <MessageCircle className="h-4 w-4" /> WhatsApp {whatsapp}
-              </a>
+              <li className="flex items-center justify-between gap-2 rounded-[var(--ui-radius-card,1rem)] bg-muted/60 py-1 pl-4 pr-1.5">
+                <a
+                  href={whatsappHref(whatsapp)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex min-w-0 items-center gap-1.5 py-1.5 font-semibold hover:text-brand"
+                >
+                  <MessageCircle className="h-4 w-4 shrink-0" /> <span className="truncate">WhatsApp {whatsapp}</span>
+                </a>
+                <CopyValueButton value={whatsapp} label="WhatsApp" />
+              </li>
             )}
             {email && (
-              <a href={`mailto:${email}`} className="inline-flex items-center gap-1.5 py-1.5 font-semibold text-muted-foreground hover:text-foreground">
-                <Mail className="h-4 w-4" /> {email}
-              </a>
+              <li className="flex items-center justify-between gap-2 rounded-[var(--ui-radius-card,1rem)] bg-muted/60 py-1 pl-4 pr-1.5">
+                <a href={`mailto:${email}`} className="inline-flex min-w-0 items-center gap-1.5 py-1.5 font-semibold hover:text-brand">
+                  <Mail className="h-4 w-4 shrink-0" /> <span className="truncate" title={email}>{email}</span>
+                </a>
+                <CopyValueButton value={email} label="e-mail" />
+              </li>
             )}
             {siteUrl && (
-              <a
-                href={siteUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 py-1.5 font-semibold text-muted-foreground hover:text-foreground"
-              >
-                <ExternalLink className="h-4 w-4" /> Site do evento
-              </a>
+              <li className="flex items-center justify-between gap-2 rounded-[var(--ui-radius-card,1rem)] bg-muted/60 py-1 pl-4 pr-1.5">
+                <a
+                  href={siteUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex min-w-0 items-center gap-1.5 py-1.5 font-semibold hover:text-brand"
+                >
+                  <ExternalLink className="h-4 w-4 shrink-0" /> <span className="truncate">Site do evento</span>
+                </a>
+                <CopyValueButton value={siteUrl} label="link do site" />
+              </li>
             )}
-          </div>
+          </ul>
         </Section>
       )}
     </>

@@ -149,8 +149,8 @@ describe('buildExtraFieldBlocks', () => {
   const blocks = buildExtraFieldBlocks(schema, answers, NOW);
 
   it('mantém a ordem do schema, sem campos vazios/ocultos nem cabeçalho sem conteúdo', () => {
-    expect(blocks.map((b) => b.kind)).toEqual(['heading', 'fields', 'chips', 'entries', 'entries']);
-    const fields = blocks[1];
+    expect(blocks.map((b) => b.kind)).toEqual(['fields', 'chips', 'entries', 'entries']);
+    const fields = blocks[0];
     if (fields.kind !== 'fields') throw new Error('esperava fields');
     expect(fields.items.map((i) => [i.label, i.value.text])).toEqual([
       ['Início', 'sáb, 17 de out · 20:00'],
@@ -160,12 +160,12 @@ describe('buildExtraFieldBlocks', () => {
   });
 
   it('lista de um campo só vira fichas', () => {
-    const chips = blocks[2];
+    const chips = blocks[1];
     expect(chips.kind === 'chips' && chips.items).toEqual(['Banda A', 'Banda B']);
   });
 
   it('sessão: dia na linha principal e horários rotulados', () => {
-    const b = blocks[3];
+    const b = blocks[2];
     if (b.kind !== 'entries') throw new Error('esperava entries');
     expect(b.entries[0].lead).toBe('sáb, 17 de out');
     expect(b.entries[0].facts.map((f) => `${f.label} ${f.value.text}`)).toEqual([
@@ -176,7 +176,7 @@ describe('buildExtraFieldBlocks', () => {
   });
 
   it('ingresso: título, valor à direita, meta sem rótulo e sem o "Comprar"', () => {
-    const b = blocks[4];
+    const b = blocks[3];
     if (b.kind !== 'entries') throw new Error('esperava entries');
     const e = b.entries[0];
     expect(e.lead).toBe('Pista');

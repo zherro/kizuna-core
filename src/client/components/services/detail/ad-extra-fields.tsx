@@ -1,4 +1,5 @@
 import { ExternalLink } from 'lucide-react';
+import { CopyValueButton } from './copy-value-button';
 import type { FormSchema, FormValues } from '../../form-builder';
 import {
   buildExtraFieldBlocks,
@@ -13,9 +14,10 @@ const CARD_CLASS =
 const LINK_CLASS =
   'inline-flex max-w-full items-center gap-1 font-semibold text-brand underline decoration-brand/40 underline-offset-4 hover:decoration-brand';
 
-function Value({ value }: { value: FormattedValue }) {
+function Value({ value, label }: { value: FormattedValue; label?: string }) {
   if (!value.href) return <>{value.text}</>;
-  return (
+  const copyable = /^(tel|mailto):/i.test(value.href);
+  const link = (
     <a
       href={value.href}
       className={LINK_CLASS}
@@ -26,6 +28,13 @@ function Value({ value }: { value: FormattedValue }) {
       </span>
       {value.external && <ExternalLink className="h-3.5 w-3.5 shrink-0" />}
     </a>
+  );
+  if (!copyable) return link;
+  return (
+    <span className="inline-flex max-w-full items-center gap-2">
+      {link}
+      <CopyValueButton value={value.text} label={label ?? 'contato'} />
+    </span>
   );
 }
 
