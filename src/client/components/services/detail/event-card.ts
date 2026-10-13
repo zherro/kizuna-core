@@ -1,7 +1,7 @@
 import { eventDateParts, formatEventWhen } from './evento-helpers';
 
 export type VariantCardProps = {
-  cardStyle: 'cinema' | 'evento';
+  cardStyle: 'cinema' | 'evento' | 'lugar';
   ctaLabel: string;
   /** Valor já formatado ("R$ 40,00" / "Gratuito" / "Sob consulta"); `null` omite o preço (cinema). */
   priceLabel: string | null;
@@ -38,6 +38,10 @@ export function variantCardProps(
 ): VariantCardProps | null {
   if (variantId === 'cinema') {
     return { cardStyle: 'cinema', ctaLabel: 'Onde assistir', priceLabel: null, priceCaption: null, dateLabel: null, whenLabel: null };
+  }
+  if (variantId === 'lugar') {
+    // Lugar: sem preço nem "gratuito/pago" — o card só apresenta o lugar.
+    return { cardStyle: 'lugar', ctaLabel: 'Ver lugar', priceLabel: null, priceCaption: null, dateLabel: null, whenLabel: null };
   }
   if (variantId === 'evento') {
     // O card do evento mostra a data, não o valor (o valor está no detalhe).

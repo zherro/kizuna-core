@@ -27,7 +27,7 @@ export type ListingResultCardProps = {
    * localização em vez do preço (cinema não vende ingresso aqui, só divulga a sessão).
    * `'evento'`: capa landscape com o bloco de data (`dateLabel`) sobre ela, sem nota/estrela, local
    * e preço ("A partir de"/Gratuito) no rodapé. */
-  cardStyle?: 'default' | 'cinema' | 'evento';
+  cardStyle?: 'default' | 'cinema' | 'evento' | 'lugar';
   /** Bloco de data sobre a capa (`cardStyle='evento'`): dia ("14") + mês abreviado ("nov"). */
   dateLabel?: { day: string; month: string } | null;
   /** `'evento'`: data por extenso ("sáb., 14 de nov. · 20:00"), no lugar do valor. */
@@ -204,6 +204,8 @@ export function ListingResultCard({
 }: Readonly<ListingResultCardProps>) {
   const isCinema = cardStyle === 'cinema';
   const isEvento = cardStyle === 'evento';
+  // Lugar: como o default, mas sem preço (vem null do chamador) e sem o "@anunciante".
+  const isLugar = cardStyle === 'lugar';
   // Evento usa o mesmo modelo de capa (e a mesma altura) do cinema: capa inteira, `object-contain`.
   const isPosterCard = isCinema || isEvento;
   const resolvedImageAspect = imageAspect ?? (isPosterCard ? 'poster' : 'landscape');
@@ -314,7 +316,7 @@ export function ListingResultCard({
           <div className="flex flex-col gap-2">
             <RatingChip rating={rating} reviewCount={reviewCount} />
             {locationLabel && <LocationLine label={locationLabel} />}
-            <ProviderRow providerName={providerName} providerAvatarUrl={providerAvatarUrl} />
+            {!isLugar && <ProviderRow providerName={providerName} providerAvatarUrl={providerAvatarUrl} />}
           </div>
         )
       }

@@ -4,6 +4,7 @@ import {
   categoriesOfGroup,
   groupChangePatch,
   groupsWithCategories,
+  resolveListings,
   resolveActiveGroup,
   selectedFirst,
   subcategoryBlocks,
@@ -86,6 +87,80 @@ describe('buildFilterTaxonomy', () => {
     expect(s.groups[0].id).toBe(1);
     expect(s.categories[0]).toMatchObject({ id: 5, groupId: 1 });
     expect(s.categories[0].subs).toEqual([{ id: 9, name: 'S' }]);
+  });
+});
+
+describe('buildFilterTaxonomy · só com anúncio (listings)', () => {
+  const build = (extra: Parameters<typeof buildFilterTaxonomy>[0]) =>
+    buildFilterTaxonomy({ groups: GROUPS, categories: CATEGORIES, stats: STATS, ...extra });
+
+  it('com listings, descarta categoria sem anúncio publicado', () => {
+    const r = build({
+      listings: [
+        { categoryId: 10, servicesCount: 3 },
+        { categoryId: 11, servicesCount: 0 },
+      ],
+    });
+    expect(r.categories.map((c) => c.id)).toEqual([10]);
+  });
+
+  it('grupo sem categoria com anúncio some do painel', () => {
+    const r = build({ listings: [{ categoryId: 20, servicesCount: 1 }] });
+    expect(groupsWithCategories(r).map((g) => g.slug)).toEqual(['servicos']);
+  });
+
+  it('categoria com anúncio aparece também no grupo extra', () => {
+    const r = build({ listings: [{ categoryId: 10, servicesCount: 2 }] });
+    expect(categoriesOfGroup(r, 1).map((c) => c.id)).toEqual([10]);
+    expect(categoriesOfGroup(r, 2).map((c) => c.id)).toEqual([10]);
+    expect(groupsWithCategories(r).map((g) => g.slug)).toEqual(['eventos', 'servicos']);
+  });
+
+  it('listings null (flag desligada ou fonte falhou) não filtra', () => {
+    expect(build({ listings: null })).toEqual(t);
+    expect(build({}).categories).toEqual(t.categories);
+  });
+
+  it('listings vazio filtra tudo (tenant sem anúncios)', () => {
+    const r = build({ listings: [] });
+    expect(r.categories).toEqual([]);
+    expect(groupsWithCategories(r)).toEqual([]);
+  });
+
+  it('aceita ids e contagens como string (PostgREST bigint)', () => {
+    const r = build({ listings: [{ categoryId: '11', servicesCount: '4' }] });
+    expect(r.categories.map((c) => c.id)).toEqual([11]);
+  });
+
+  it('keepCategoryIds mantém a categoria marcada na URL mesmo sem anúncio', () => {
+    const r = build({ listings: [{ categoryId: 20, servicesCount: 1 }], keepCategoryIds: [11] });
+    expect(r.categories.map((c) => c.id)).toEqual([20, 11]);
+    expect(categoriesOfGroup(r, 1).map((c) => c.id)).toEqual([11]);
+  });
+
+  it('keepCategoryIds não ressuscita categoria inativa', () => {
+    const r = build({ listings: [], keepCategoryIds: [50] });
+    expect(r.categories).toEqual([]);
+  });
+});
+
+describe('resolveListings', () => {
+  const rows = [{ categoryId: 10, servicesCount: 1 }];
+  it('flag desligada → null', () => {
+    expect(resolveListings({ enabled: false, rows })).toBeNull();
+  });
+  it('fonte com erro → null (não esvazia o filtro)', () => {
+    expect(resolveListings({ enabled: true, rows: [], error: 'Erro de conexão' })).toBeNull();
+    const r = buildFilterTaxonomy({
+      groups: GROUPS,
+      categories: CATEGORIES,
+      stats: STATS,
+      listings: resolveListings({ enabled: true, rows: [], error: 'x' }),
+    });
+    expect(r.categories).toEqual(t.categories);
+  });
+  it('flag ligada e fonte ok → as linhas', () => {
+    expect(resolveListings({ enabled: true, rows })).toBe(rows);
   });
 });
 

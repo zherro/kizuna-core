@@ -7,6 +7,7 @@
  * - `categories_group_public` → grupos (id, name, slug, icon, sortOrder, active)
  * - `categories_public`       → categorias (icon, categoryGroupId, extraGroupIds, active)
  * - `category_stats`          → 1 linha por subcategoria ativa (categoryId, subcategoryId…)
+ * - `category_service_stats`  → anúncios publicados por categoria (opcional — ver `listings`)
  *
  * Regra herdada do `CategoryCarousel`: só aparece categoria com ao menos uma subcategoria ativa.
  * Por isso a lista de categorias nasce das linhas de `category_stats` e `categories_public` só
@@ -91,10 +92,34 @@ function cleanIcon(value: string | null | undefined): string | null {
 
 // ─── Montagem ──────────────────────────────────────────────────────────────────────────────
 
+/** Linha de `category_service_stats` (anúncios publicados e não vencidos por categoria). */
+export type ListingRow = { categoryId?: Id; servicesCount?: number | string | null };
+
+/**
+ * Decide se a contagem de anúncios entra no filtro: só com a flag ligada E a fonte sem erro.
+ * Falha da contagem devolve `null` (não filtra) — nunca esvazia o painel por causa dela.
+ */
+export function resolveListings(input: {
+  enabled: boolean;
+  rows: ListingRow[] | null | undefined;
+  error?: string | null;
+}): ListingRow[] | null {
+  if (!input.enabled || input.error || !input.rows) return null;
+  return input.rows;
+}
+
 export function buildFilterTaxonomy(input: {
   groups?: GroupRow[] | null;
   categories?: CategoryRow[] | null;
   stats?: StatRow[] | null;
+  /**
+   * Contagem de anúncios por categoria. Presente → descarta categoria sem anúncio (e, por
+   * consequência, o grupo que ficou sem categoria). `null`/ausente (flag desligada ou fonte
+   * falhou) → não filtra: o filtro nunca esvazia por falha da contagem.
+   */
+  listings?: ListingRow[] | null;
+  /** Categorias que continuam na lista mesmo sem anúncio (as marcadas na URL, p/ poder limpar). */
+  keepCategoryIds?: number[];
 }): FilterTaxonomy {
   const groups: FilterGroup[] = [];
   const seenGroups = new Set<number>();
@@ -123,10 +148,21 @@ export function buildFilterTaxonomy(input: {
     if (id !== null) extra.set(id, row);
   }
 
+  const withListings = input.listings
+    ? new Set(
+        input.listings
+          .filter((r) => Number(r.servicesCount ?? 0) > 0)
+          .map((r) => toId(r.categoryId))
+          .filter((id): id is number => id !== null)
+      )
+    : null;
+  const keep = new Set(input.keepCategoryIds ?? []);
+
   const categories = new Map<number, FilterCategory>();
   for (const row of input.stats ?? []) {
     const categoryId = toId(row.categoryId);
     if (categoryId === null) continue;
+    if (withListings && !withListings.has(categoryId) && !keep.has(categoryId)) continue;
     const enrich = extra.get(categoryId);
     if (enrich?.active === false) continue;
 

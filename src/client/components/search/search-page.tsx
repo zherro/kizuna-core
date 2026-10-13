@@ -708,6 +708,7 @@ function SearchPageInner({
                 resetFilters={resetFilters}
                 effectiveCityIds={effectiveCityIds}
                 defaultCityIds={defaultCityIds}
+                onlyWithListings={categoryCarousel?.onlyWithListings === true}
                 hideTitle
               />
             </div>
@@ -774,13 +775,14 @@ function SearchPageInner({
               chat some com o espaço), vira botão flutuante (ver abaixo) pra não empurrar/disputar
               layout com o chat. */}
           <aside className={`hidden lg:block ${desktopChatOpen ? 'xl:hidden' : ''}`}>
-            <div className="sticky top-4 rounded-[var(--ui-radius-card,1rem)] border-[length:var(--ui-border-w-card,1px)] border-border shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] bg-card p-4">
+            <div className="sticky top-[calc(var(--kz-header-h,4.5rem)+1rem)] max-h-[calc(100dvh-var(--kz-header-h,4.5rem)-2rem)] overflow-y-auto overscroll-contain [scrollbar-gutter:stable] rounded-[var(--ui-radius-card,1rem)] border-[length:var(--ui-border-w-card,1px)] border-border shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] bg-card p-4">
               <SearchFiltersPanel
                 filters={filters}
                 setFilters={setFilters}
                 resetFilters={resetFilters}
                 effectiveCityIds={effectiveCityIds}
                 defaultCityIds={defaultCityIds}
+                onlyWithListings={categoryCarousel?.onlyWithListings === true}
               />
             </div>
           </aside>
@@ -932,6 +934,7 @@ function SearchPageInner({
                 resetFilters={resetFilters}
                 effectiveCityIds={effectiveCityIds}
                 defaultCityIds={defaultCityIds}
+                onlyWithListings={categoryCarousel?.onlyWithListings === true}
                 hideTitle
               />
             </div>

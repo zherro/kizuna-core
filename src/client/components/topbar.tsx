@@ -2,9 +2,10 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState, type ReactNode } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { Home, LayoutDashboard, LogIn, LogOut, Moon, Sun, X } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { useHeaderHeightVar } from '../hooks/use-header-height-var';
 import { useAppPreferences } from '../providers/app-preferences-provider';
 import { useAuth } from '../providers/auth-provider';
 import { Button, buttonVariants } from './ui/button';
@@ -60,6 +61,8 @@ export function Topbar({
   actions,
 }: TopbarProps = {}) {
   const pathname = usePathname();
+  const headerRef = useRef<HTMLElement>(null);
+  useHeaderHeightVar(headerRef);
   const [locationOpen, setLocationOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [logoutLoading, setLogoutLoading] = useState(false);
@@ -87,7 +90,7 @@ export function Topbar({
 
   return (
     <>
-      <header className="sticky top-0 z-40 border-b border-border/70 bg-background/90 backdrop-blur-sm">
+      <header ref={headerRef} className="sticky top-0 z-40 border-b border-border/70 bg-background/90 backdrop-blur-sm">
         <div className="mx-auto w-full max-w-[1600px]">
           <div className="mx-auto flex items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
             <Link href="/" className="flex items-center gap-2.5">

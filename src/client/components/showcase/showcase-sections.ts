@@ -1415,7 +1415,7 @@ export function MioloDoEvento({ data }) {
     groupId: 'ui-better-soft',
     label: 'Filtro da busca',
     description:
-      'Blocos do painel de filtros da busca publica, no estilo OLX: grupo como link em destaque, lista de grupos, categorias com multi-selecao, especialidades em chips e cidades com mini-seletor. Recebem dados prontos por props; o SearchFiltersPanel os compoe e busca a taxonomia.',
+      'Blocos do painel de filtros da busca publica, no estilo OLX: grupo como link em destaque, lista de grupos, categorias com multi-selecao, especialidades em chips e cidades com mini-seletor. Recebem dados prontos por props; o SearchFiltersPanel os compoe e busca a taxonomia. Com onlyWithListings (home.categoriesOnlyWithListings) mostra so grupos e categorias com anuncio publicado, cruzando category_service_stats; se a contagem falhar, nao filtra.',
     usageCode: `import {
   buildFilterTaxonomy,
   categoriesOfGroup,

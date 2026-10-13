@@ -9,6 +9,7 @@ import type { ServiceDetailData } from '../../../../server/services/service-deta
 import { hueGradient, resolveCategoryHue, resolveSectionTitles, resolveServiceDetailVariant } from './category-style';
 import type { ServiceDetailConfig, ServiceDetailSlots, ServiceDetailVariantComponent } from './service-detail-types';
 import { ServiceDetailDefault } from './service-detail-default';
+import { ServiceDetailLugar, ServiceDetailLugarSidebar } from './service-detail-lugar';
 import { ServiceDetailCinema, ServiceDetailCinemaSidebar, cinemaHeaderTags } from './service-detail-cinema';
 import { ServiceDetailEvento, ServiceDetailEventoSidebar, eventoHeaderTags } from './service-detail-evento';
 import { ServiceLocationSection } from './service-location-section';
@@ -23,6 +24,7 @@ const BUILT_IN_VARIANTS: Record<string, ServiceDetailVariantComponent> = {
   service: ServiceDetailDefault,
   cinema: ServiceDetailCinema,
   evento: ServiceDetailEvento,
+  lugar: ServiceDetailLugar,
 };
 
 /** Conteúdo que substitui a caixa de preço da sidebar, por variant — variant sem entrada aqui
@@ -30,6 +32,7 @@ const BUILT_IN_VARIANTS: Record<string, ServiceDetailVariantComponent> = {
 const BUILT_IN_SIDEBARS: Record<string, ServiceDetailVariantComponent> = {
   cinema: ServiceDetailCinemaSidebar,
   evento: ServiceDetailEventoSidebar,
+  lugar: ServiceDetailLugarSidebar,
 };
 
 /** Tags extras sob o título, por variant (idiomas/formatos, classificação...). */
@@ -38,8 +41,8 @@ const HEADER_TAGS: Record<string, (extraFields: ServiceDetailData['extraFields']
   evento: eventoHeaderTags,
 };
 
-/** Variants em que o anúncio É o conteúdo (filme, evento), não um prestador: sem "Quem anuncia". */
-const HIDE_PROVIDER_CARD = new Set(['cinema', 'evento']);
+/** Variants em que o anúncio É o conteúdo (filme, evento, lugar), não um prestador: sem "Quem anuncia". */
+const HIDE_PROVIDER_CARD = new Set(['cinema', 'evento', 'lugar']);
 
 function ViewTracker({
   uid,

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState, type ReactNode } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import {
   LayoutDashboard,
   LogIn,
@@ -14,6 +14,7 @@ import {
   UserRound,
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { useHeaderHeightVar } from '../hooks/use-header-height-var';
 import { useAppPreferences } from '../providers/app-preferences-provider';
 import { useAuth } from '../providers/auth-provider';
 import { Button, buttonVariants } from './ui/button';
@@ -60,6 +61,8 @@ export function TopbarCompact({
   accountHref = '/painel',
 }: TopbarCompactProps = {}) {
   const pathname = usePathname();
+  const headerRef = useRef<HTMLElement>(null);
+  useHeaderHeightVar(headerRef);
   const [menuOpen, setMenuOpen] = useState(false);
   const [logoutLoading, setLogoutLoading] = useState(false);
   const { resolvedTheme, setTheme, messages } = useAppPreferences();
@@ -78,7 +81,7 @@ export function TopbarCompact({
   }
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur-md">
+    <header ref={headerRef} className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur-md">
       {/* mesmo container do Topbar classic (max-w-[1600px]) */}
       <div className="mx-auto flex h-14 w-full max-w-[1600px] items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
         {brandLogo ? (

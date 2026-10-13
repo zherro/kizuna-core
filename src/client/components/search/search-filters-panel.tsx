@@ -38,6 +38,8 @@ type Props = {
   defaultCityIds: string[];
   /** Esconde o título "Filtros" (o Sheet do mobile já tem o próprio) e deixa só o resumo. */
   hideTitle?: boolean;
+  /** só grupos/categorias com anúncio publicado (mesma chave do carrossel: `home.categoriesOnlyWithListings`) */
+  onlyWithListings?: boolean;
 };
 
 /** O que o painel mostra "na hora", antes de a URL (fonte de verdade) devolver os novos filtros. */
@@ -59,8 +61,13 @@ export function SearchFiltersPanel({
   effectiveCityIds,
   defaultCityIds,
   hideTitle = false,
+  onlyWithListings = false,
 }: Props) {
-  const { taxonomy, loading, error, retry } = useFilterTaxonomy();
+  // Categorias marcadas na URL ficam na lista mesmo vazias (link antigo): o usuário consegue limpar.
+  const { taxonomy, loading, error, retry } = useFilterTaxonomy({
+    onlyWithListings,
+    keepCategoryIds: filters.categoryIds,
+  });
   const { cities, loading: citiesLoading, error: citiesError } = useFilterCities();
   const ready = useMountedFlag();
 

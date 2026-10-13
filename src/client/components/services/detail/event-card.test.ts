@@ -25,6 +25,16 @@ describe('variantCardProps', () => {
     });
   });
 
+  it('lugar: sem preço, sem data, CTA "Ver lugar"', () => {
+    expect(variantCardProps('lugar', { startingPrice: 40, priceUnit: 'unit' })).toMatchObject({
+      cardStyle: 'lugar',
+      ctaLabel: 'Ver lugar',
+      priceLabel: null,
+      priceCaption: null,
+      dateLabel: null,
+    });
+  });
+
   it('cinema: sem preço; demais variants: null', () => {
     expect(variantCardProps('cinema')).toMatchObject({
       cardStyle: 'cinema',
