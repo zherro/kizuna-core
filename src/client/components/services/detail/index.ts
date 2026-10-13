@@ -7,11 +7,15 @@ export {
   resolveServiceDetailVariant,
   resolveServiceCardVariant,
   resolveCategoryHue,
+  resolveSectionTitles,
+  DEFAULT_SERVICE_DETAIL_LABELS,
   hueGradient,
   type ServiceDetailConfig,
   type ServiceDetailVariant,
   type CategoryHueConfig,
   type CategoryStyleInput,
+  type SectionTitlesConfig,
+  type ServiceDetailLabels,
 } from './category-style';
 export type {
   ServiceDetailVariantProps,
@@ -21,6 +25,7 @@ export type {
 export { AdPhotoMosaic } from './ad-photo-mosaic';
 export { AdShareButton } from './ad-share-button';
 export { AdExtraFields } from './ad-extra-fields';
+export { AdDescription } from './ad-description';
 export { ServiceCarousel } from './service-carousel';
 export { ServiceCarouselSection } from './service-carousel-section';
 export {

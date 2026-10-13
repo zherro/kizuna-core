@@ -150,6 +150,9 @@ ou de um grupo de categoria (`group`):
   pode ser escolhido pelo **grupo** da categoria: `serviceDetail.variantByGroupSlug` mapeia
   `categories_group.slug` -> variant (a entrada da categoria em `variantByCategorySlug` tem
   precedência) e `serviceDetail.colors` aceita o slug do grupo. Requer `search` 0005.
+* **Títulos de seção do detalhe:** `serviceDetail.sectionTitles` mapeia slug da categoria (depois o
+  do grupo, depois `default`) -> `{ about, details }`; o padrão é "Sobre o serviço" / "Detalhes do
+  serviço". Ex.: `{ "eventos": { "about": "Sobre o evento", "details": "Informações do evento" } }`.
 * **Só o card com outro estilo:** `serviceDetail.cardVariantByCategorySlug` mapeia slug da
   categoria -> variant do **card** (busca e carrosséis), sem mudar a tela de detalhe. Ex.:
   `{ "teatro": "cinema" }` dá ao teatro o card de cinema (capa em pé, sem preço) e mantém o

@@ -52,6 +52,61 @@ export type ServiceDetailData = {
   siblings: ServiceSibling[];
 };
 
+type CategoryTaxonomyRow = { id: number | string; slug?: string; categoryGroupId?: number | string | null };
+type GroupTaxonomyRow = { id: number | string; name: string; slug: string; active?: boolean; icon?: string };
+
+/**
+ * `services.category_group_id` pode estar nulo (anúncio importado só com a categoria): sem o grupo
+ * a variant por grupo (`variantByGroupSlug`) nunca casa. Deriva então o grupo pela categoria
+ * (`categories.category_group_id` -> `categories_group`), na memória — mesmo fallback da RPC de
+ * busca (`category_group_slug`). Também completa o slug da categoria se o embed veio sem ele.
+ * Falha de rede/recurso nunca derruba a página: segue com o que já havia.
+ */
+export async function ensureServiceTaxonomy(service: ServiceRecord): Promise<ServiceRecord> {
+  const hasGroupSlug = Boolean(service.categoryGroup?.slug);
+  const hasCategorySlug = Boolean(service.category?.slug);
+  if (hasGroupSlug && hasCategorySlug) return service;
+  const categoryId = Number(service.categoryId);
+  if (!Number.isFinite(categoryId)) return service;
+
+  const categories = await serverFetchResource<CategoryTaxonomyRow>(
+    'categories_public',
+    { id: String(categoryId) },
+    { auth: null, limit: 1 }
+  ).catch(() => []);
+  const category = categories[0];
+  if (!category) return service;
+
+  if (!hasCategorySlug && category.slug) {
+    service.category = {
+      ...(service.category ?? { id: String(category.id), name: '' }),
+      slug: category.slug,
+    };
+  }
+  if (hasGroupSlug) return service;
+
+  const rawGroupId = category.categoryGroupId ?? service.categoryGroupId;
+  const groupId = rawGroupId == null || rawGroupId === '' ? NaN : Number(rawGroupId);
+  if (!Number.isFinite(groupId)) return service;
+  const groups = await serverFetchResource<GroupTaxonomyRow>(
+    'categories_group',
+    { id: String(groupId) },
+    { auth: null, limit: 1 }
+  ).catch(() => []);
+  const group = groups[0];
+  if (!group?.slug) return service;
+
+  service.categoryGroup = {
+    id: String(group.id),
+    name: group.name,
+    slug: group.slug,
+    active: group.active,
+    icon: group.icon,
+  };
+  service.categoryGroupId = String(group.id);
+  return service;
+}
+
 async function fetchService(uid: string): Promise<ServiceRecord | null> {
   const services = await serverFetchResource<ServiceRecord>(
     'services',
@@ -170,8 +225,9 @@ async function fetchServiceCity(
 }
 
 export async function loadServiceDetail(uid: string): Promise<ServiceDetailData | null> {
-  const service = await fetchService(uid);
-  if (!service) return null;
+  const fetched = await fetchService(uid);
+  if (!fetched) return null;
+  const service = await ensureServiceTaxonomy(fetched);
 
   const [subcategoryNames, provider, extraFields, related] = await Promise.all([
     fetchSubcategoryNames(service),

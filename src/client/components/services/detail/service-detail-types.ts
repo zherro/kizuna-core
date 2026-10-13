@@ -1,9 +1,10 @@
 import type { ReactNode } from 'react';
+import type { ServiceDetailLabels } from './category-style';
 import type { ServiceRecord } from '../service-type';
 import type { ServiceExtraFields, ProviderProfile } from '../../../../server/services/service-detail-data';
 import type { ServiceSibling } from '../../../../server/services/service-siblings';
 
-export type { CategoryStyleInput, ReactionButtonConfig, ServiceDetailConfig, ServiceDetailVariant } from './category-style';
+export type { CategoryStyleInput, SectionTitlesConfig, ServiceDetailLabels, ReactionButtonConfig, ServiceDetailConfig, ServiceDetailVariant } from './category-style';
 
 /** O que uma variant de conteúdo (`service`, `cinema`, ...) recebe — só o essencial pra desenhar o
  * "miolo" da página (facts strip + seções); hero, título, sidebar e carrosséis são comuns e ficam
@@ -14,6 +15,8 @@ export type ServiceDetailVariantProps = {
   subcategoryNames: string[];
   /** Hue (0-360) de acento da categoria, resolvido via `resolveCategoryHue`. */
   hue: number;
+  /** Títulos de seção resolvidos por categoria/grupo (`serviceDetail.sectionTitles`). */
+  labels: ServiceDetailLabels;
   /** O mesmo anúncio nas cidades irmãs (`regions`) — a variant decide se/como mostra. */
   siblings?: ServiceSibling[];
 };

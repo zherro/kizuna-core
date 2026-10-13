@@ -51,7 +51,9 @@ export type ShowcaseSectionId =
   | 'fact-sheet'
   | 'quick-actions'
   | 'location-map'
-  | 'directions-card';
+  | 'directions-card'
+  | 'ad-extra-fields'
+  | 'service-detail-evento';
 
 export type ShowcaseGroupId = 'shadcn-default' | 'ui-better-soft' | 'tools';
 
@@ -1358,6 +1360,51 @@ export function ComoChegarAoLugar() {
       destination={{ lat: -15.601, lng: -56.097 }}
       address="Rua de Exemplo, 100"
       tips="Entrada pela rua lateral, ao lado do estacionamento."
+    />
+  );
+}`,
+  },
+  {
+    id: 'ad-extra-fields',
+    groupId: 'ui-better-soft',
+    label: 'Informacoes do anuncio',
+    description:
+      'Descricao em Markdown (HTML legado sanitizado) e quadro de informacoes do formulario da categoria: datas pt-BR, moeda, labels de opcao, links; campo vazio some e listas (sessoes, ingressos) viram um cartao por item.',
+    usageCode: `import {
+  AdDescription,
+  AdExtraFields,
+} from '@kizuna/core/client/components/services/detail';
+
+// schema/answers: formulario da categoria e respostas do anuncio
+// (loadServiceDetail -> extraFields)
+export function InfoDoAnuncio({ description, schema, answers }) {
+  return (
+    <>
+      <AdDescription text={description} />
+      <AdExtraFields schema={schema} answers={answers} />
+    </>
+  );
+}`,
+  },
+  {
+    id: 'service-detail-evento',
+    groupId: 'ui-better-soft',
+    label: 'Detalhe do evento',
+    description:
+      'Miolo da variant evento do detalhe do anuncio: facts, atracoes, programacao por dia, ingressos, onde comprar, local e contato, com dados de exemplo.',
+    usageCode: `import {
+  ServiceDetailEvento,
+} from '@kizuna/core/client/components/services/detail';
+
+// Normalmente montado pelo ServiceDetailPage (variant "evento").
+export function MioloDoEvento({ data }) {
+  return (
+    <ServiceDetailEvento
+      service={data.service}
+      extraFields={data.extraFields}
+      subcategoryNames={data.subcategoryNames}
+      hue={25}
+      labels={{ about: 'Sobre o evento', details: 'Informacoes do evento' }}
     />
   );
 }`,

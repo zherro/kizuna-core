@@ -114,6 +114,8 @@ const ICON_BY_SECTION: Record<ShowcaseSectionId, React.ComponentType<{ className
   'quick-actions': Zap,
   'location-map': MapPinned,
   'directions-card': Navigation,
+  'ad-extra-fields': ClipboardList,
+  'service-detail-evento': Ticket,
 };
 
 type ShowcaseShellProps = {
@@ -136,7 +138,7 @@ export function ShowcaseShell({ children }: ShowcaseShellProps) {
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_hsl(var(--primary)/0.14),_transparent_44%),radial-gradient(circle_at_bottom_right,_hsl(var(--accent)/0.25),_transparent_48%)] px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mx-auto grid w-full max-w-7xl gap-6 lg:grid-cols-[260px_1fr]">
+      <div className="mx-auto grid w-full max-w-7xl grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[260px_minmax(0,1fr)]">
         <aside className="h-fit rounded-2xl border border-border bg-card/90 p-4 shadow-sm backdrop-blur lg:sticky lg:top-6">
           <div className="mb-4 border-b border-border pb-4">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
@@ -193,7 +195,7 @@ export function ShowcaseShell({ children }: ShowcaseShellProps) {
           </div>
         </aside>
 
-        <section className="space-y-6">{children}</section>
+        <section className="min-w-0 space-y-6">{children}</section>
       </div>
     </div>
   );

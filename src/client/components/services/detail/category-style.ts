@@ -16,6 +16,16 @@ export type CategoryHueConfig = {
   hue: number;
 };
 
+export type SectionTitlesConfig = {
+  /** Seção da descrição (ex. "Sobre o evento"). */
+  about?: string;
+  /** Seção do quadro de informações do formulário da categoria (ex. "Informações do evento"). */
+  details?: string;
+};
+
+/** Rótulos já resolvidos que as variants recebem (`ServiceDetailVariantProps.labels`). */
+export type ServiceDetailLabels = { about: string; details: string };
+
 export type ReactionButtonConfig = {
   /** Nome de ícone lucide-react (ex. "Heart"); inválido cai no ícone padrão do botão. */
   icon?: string;
@@ -44,12 +54,20 @@ export type ServiceDetailConfig = {
    * de outra categoria) — a categoria continua navegável sozinha (filtro direto por ela). Passe
    * pra `fn_search_services` como `p_exclude_category_slugs` só quando não há `p_category_id`. */
   excludeFromMixedCategorySlugs?: string[];
+  /** Títulos das seções do detalhe por slug de categoria, depois por slug do grupo; `default` vale
+   * pra quem não tem entrada própria. Cada chave resolve sozinha (`about` pode vir da categoria e
+   * `details` do grupo). Sem entrada: "Sobre o serviço" / "Detalhes do serviço". */
+  sectionTitles?: Record<string, SectionTitlesConfig>;
   /** Botões Gostei/Favoritar do detalhe (plugin swipe); remova um bloco para esconder o botão. */
   reactions?: { like?: ReactionButtonConfig; favorite?: ReactionButtonConfig };
 };
 
 const FALLBACK_VARIANT = 'service';
 const FALLBACK_HUE = 230;
+export const DEFAULT_SERVICE_DETAIL_LABELS: ServiceDetailLabels = {
+  about: 'Sobre o serviço',
+  details: 'Detalhes do serviço',
+};
 
 /**
  * Categoria mínima o bastante pra resolver estilo: aceita tanto o `category` embutido no
@@ -104,6 +122,26 @@ export function resolveCategoryHue(
   const bySlug = slug ? config?.colors?.[slug]?.hue : undefined;
   const byGroup = groupSlug ? config?.colors?.[groupSlug]?.hue : undefined;
   return bySlug ?? byGroup ?? config?.colors?.default?.hue ?? FALLBACK_HUE;
+}
+
+/** Títulos de seção: por chave, categoria > grupo > `default` > "Sobre o serviço"/"Detalhes do serviço". */
+export function resolveSectionTitles(
+  category: CategoryStyleInput,
+  config?: ServiceDetailConfig | null
+): ServiceDetailLabels {
+  const slug = slugOf(category);
+  const groupSlug = groupSlugOf(category);
+  const titles = config?.sectionTitles;
+  const pick = (key: keyof ServiceDetailLabels): string => {
+    const candidates = [
+      slug ? titles?.[slug]?.[key] : undefined,
+      groupSlug ? titles?.[groupSlug]?.[key] : undefined,
+      titles?.default?.[key],
+    ];
+    const found = candidates.find((v) => typeof v === 'string' && v.trim());
+    return found?.trim() ?? DEFAULT_SERVICE_DETAIL_LABELS[key];
+  };
+  return { about: pick('about'), details: pick('details') };
 }
 
 /** Vivid diagonal fill pro hue resolvido — usado atrás de ícones brancos / hero sem foto. */

@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { MapPin, Receipt, Wallet, Zap } from 'lucide-react';
 import { hueGradient } from './category-style';
 import { AdExtraFields } from './ad-extra-fields';
+import { AdDescription } from './ad-description';
 import type { ServiceDetailVariantComponent } from './service-detail-types';
 import {
   PRICE_UNIT_LABEL,
@@ -40,13 +41,14 @@ function Section({ title, hue, children }: { title: string; hue: number; childre
 
 /**
  * Variant `"service"` — o layout default (e fallback de toda categoria sem variant configurada):
- * faixa de facts (preço/cobrança/atendimento/urgência), descrição em HTML e as respostas do
+ * faixa de facts (preço/cobrança/atendimento/urgência), descrição (Markdown ou HTML legado) e as respostas do
  * formulário dinâmico da categoria, se houver.
  */
 export const ServiceDetailDefault: ServiceDetailVariantComponent = ({
   service,
   extraFields,
   hue,
+  labels,
 }) => {
   const priceLabel =
     service.priceUnit === 'quote' || !service.startingPrice
@@ -78,16 +80,13 @@ export const ServiceDetailDefault: ServiceDetailVariantComponent = ({
       </div>
 
       {service.description && (
-        <Section title="Sobre o serviço" hue={hue}>
-          <div
-            className="text-sm leading-relaxed text-muted-foreground [&_a]:text-primary [&_a]:underline [&_li]:ml-4 [&_ol]:mb-2 [&_ol]:list-decimal [&_p]:mb-2 [&_strong]:font-semibold [&_ul]:mb-2 [&_ul]:list-disc"
-            dangerouslySetInnerHTML={{ __html: service.description }}
-          />
+        <Section title={labels.about} hue={hue}>
+          <AdDescription text={service.description} />
         </Section>
       )}
 
       {extraFields && (
-        <Section title="Detalhes do serviço" hue={hue}>
+        <Section title={labels.details} hue={hue}>
           <AdExtraFields schema={extraFields.schema} answers={extraFields.answers} />
         </Section>
       )}

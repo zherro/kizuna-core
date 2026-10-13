@@ -49,6 +49,16 @@ import { ConfirmDialog } from '../ui-better-soft/overlay/confirm-dialog';
 import { FilterStatCard } from '../ui-better-soft/lists/filter-stat-card';
 import { EntityListCard } from '../ui-better-soft/lists/entity-list-card';
 import { MediaResultCard } from '../ui-better-soft/lists/media-result-card';
+import { AdDescription } from '../services/detail/ad-description';
+import { AdExtraFields } from '../services/detail/ad-extra-fields';
+import { ServiceDetailEvento } from '../services/detail/service-detail-evento';
+import {
+  EVENT_FIXTURE_ANSWERS,
+  EVENT_FIXTURE_DESCRIPTION,
+  EVENT_FIXTURE_LABELS,
+  EVENT_FIXTURE_SCHEMA,
+  EVENT_FIXTURE_SERVICE,
+} from './service-detail-fixture';
 import { ListingResultCard } from '../ui-better-soft/lists/listing-result-card';
 import { HighlightSlider } from '../ui-better-soft/highlight-slider';
 import { BallotBoxArt } from '../ui-better-soft/ballot-box-art';
@@ -1173,6 +1183,29 @@ function DirectionsCardDemo() {
   );
 }
 
+function AdExtraFieldsDemo() {
+  return (
+    <div className="max-w-3xl space-y-6">
+      <AdDescription text={EVENT_FIXTURE_DESCRIPTION} />
+      <AdExtraFields schema={EVENT_FIXTURE_SCHEMA} answers={EVENT_FIXTURE_ANSWERS} />
+    </div>
+  );
+}
+
+function ServiceDetailEventoDemo() {
+  return (
+    <div className="max-w-4xl">
+      <ServiceDetailEvento
+        service={EVENT_FIXTURE_SERVICE}
+        extraFields={{ schema: EVENT_FIXTURE_SCHEMA, answers: EVENT_FIXTURE_ANSWERS }}
+        subcategoryNames={[]}
+        hue={25}
+        labels={EVENT_FIXTURE_LABELS}
+      />
+    </div>
+  );
+}
+
 function SectionDemo({ sectionId }: { sectionId: ShowcaseSectionId }) {
   if (sectionId === 'cards') return <CardsDemo />;
   if (sectionId === 'buttons') return <ButtonsDemo />;
@@ -1226,6 +1259,8 @@ function SectionDemo({ sectionId }: { sectionId: ShowcaseSectionId }) {
   if (sectionId === 'quick-actions') return <QuickActionsDemo />;
   if (sectionId === 'location-map') return <LocationMapDemo />;
   if (sectionId === 'directions-card') return <DirectionsCardDemo />;
+  if (sectionId === 'ad-extra-fields') return <AdExtraFieldsDemo />;
+  if (sectionId === 'service-detail-evento') return <ServiceDetailEventoDemo />;
   return <UiBetterSoftDemo />;
 }
 

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   resolveCategoryHue,
+  resolveSectionTitles,
   resolveServiceCardVariant,
   resolveServiceDetailVariant,
   type ServiceDetailConfig,
@@ -76,5 +77,45 @@ describe('resolveServiceCardVariant', () => {
   it('sem entrada de card, segue a variant do detalhe', () => {
     expect(resolveServiceCardVariant({ slug: 'show', groupSlug: 'eventos' }, withCard)).toBe('evento');
     expect(resolveServiceCardVariant('cinema', withCard)).toBe('cinema');
+  });
+});
+
+describe('resolveSectionTitles', () => {
+  const titles: ServiceDetailConfig = {
+    sectionTitles: {
+      default: { about: 'Sobre o anúncio' },
+      eventos: { about: 'Sobre o evento', details: 'Informações do evento' },
+      teatro: { details: 'Ficha do espetáculo' },
+    },
+  };
+
+  it('cai nos textos de "serviço" sem config', () => {
+    expect(resolveSectionTitles('x')).toEqual({ about: 'Sobre o serviço', details: 'Detalhes do serviço' });
+    expect(resolveSectionTitles({ slug: 'x', groupSlug: 'y' }, {})).toEqual({
+      about: 'Sobre o serviço',
+      details: 'Detalhes do serviço',
+    });
+  });
+
+  it('usa o grupo quando a categoria não tem entrada', () => {
+    expect(resolveSectionTitles({ slug: 'shows', groupSlug: 'eventos' }, titles)).toEqual({
+      about: 'Sobre o evento',
+      details: 'Informações do evento',
+    });
+  });
+
+  it('categoria > grupo > default, chave a chave', () => {
+    expect(resolveSectionTitles({ slug: 'teatro', groupSlug: 'eventos' }, titles)).toEqual({
+      about: 'Sobre o evento',
+      details: 'Ficha do espetáculo',
+    });
+    expect(resolveSectionTitles({ slug: 'outra', groupSlug: 'nada' }, titles)).toEqual({
+      about: 'Sobre o anúncio',
+      details: 'Detalhes do serviço',
+    });
+  });
+
+  it('ignora texto vazio', () => {
+    expect(resolveSectionTitles('a', { sectionTitles: { a: { about: '  ' } } }).about).toBe('Sobre o serviço');
   });
 });

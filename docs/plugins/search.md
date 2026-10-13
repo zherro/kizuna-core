@@ -65,6 +65,27 @@ na ordem: `variantByCategorySlug[slug]` > `variantByGroupSlug[groupSlug]` > `def
 `colors.default` > 230. O cliente lê `category_slug` e `category_group_slug` do resultado; sem a
 0005 aplicada o grupo vem ausente e só a categoria vale (comportamento anterior).
 
+Na tela de detalhe, se `services.category_group_id` estiver nulo, o loader (`loadServiceDetail`)
+deriva o grupo pela categoria (`categories.category_group_id` -> `categories_group`), então a
+variant por grupo vale mesmo para anúncio importado só com a categoria.
+
+### Títulos das seções
+
+`serviceDetail.sectionTitles` troca os textos "Sobre o serviço" (descrição, chave `about`) e
+"Detalhes do serviço" (quadro de informações do formulário da categoria, chave `details`). A chave do
+mapa é o slug da categoria, depois o slug do grupo, depois `default`; cada texto (`about`,
+`details`) resolve sozinho (`resolveSectionTitles`). Sem entrada, ficam os textos acima. O layout de
+cinema mantém "Sinopse" e "Onde assistir".
+
+```json
+"sectionTitles": {
+  "eventos": { "about": "Sobre o evento", "details": "Informações do evento" }
+}
+```
+
+A descrição do anúncio é lida como **Markdown** (negrito, listas, links http/https); HTML legado de
+editor segue aceito, mas é sanitizado (lista fechada de tags, sem atributos).
+
 ## Performance
 
 * O filtro usa os índices parciais de `service_addresses` (`(state, city_ibge)` e `(city_ibge)`).

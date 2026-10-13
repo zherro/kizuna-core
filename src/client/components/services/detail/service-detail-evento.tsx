@@ -14,6 +14,8 @@ import {
   Wallet,
 } from 'lucide-react';
 import { Badge, Fact, Section } from './service-detail-cinema';
+import { AdDescription } from './ad-description';
+import { humanizeSlug } from './ad-extra-fields-format';
 import type { ServiceDetailVariantComponent } from './service-detail-types';
 import {
   eventClassification,
@@ -143,12 +145,13 @@ export const ServiceDetailEventoSidebar: ServiceDetailVariantComponent = ({ serv
  * e contato. Todo campo de `answers` é opcional: bloco sem dado some. Ver
  * `docs/integracoes/eventos-depara.md` no projeto consumidor.
  */
-export const ServiceDetailEvento: ServiceDetailVariantComponent = ({ service, extraFields, hue }) => {
+export const ServiceDetailEvento: ServiceDetailVariantComponent = ({ service, extraFields, hue, labels }) => {
   const answers = extraFields?.answers ?? {};
 
   const when = formatEventWhen(answers);
   const classificacao = eventClassification(answers);
-  const realizador = textField(answers.realizador);
+  const realizadorRaw = textField(answers.realizador);
+  const realizador = realizadorRaw ? humanizeSlug(realizadorRaw) : null;
   const tickets = parseTickets(answers.ingressos);
   const price = eventPriceInfo({
     free: isFreeEvent(answers),
@@ -208,13 +211,11 @@ export const ServiceDetailEvento: ServiceDetailVariantComponent = ({ service, ex
         </div>
       )}
 
-      {/* Descrição: só no mobile — no desktop a sidebar já mostra título/data/local. */}
+      {/* A sidebar (lg+) mostra só título/data/local/preço: a descrição fica aqui em todos os tamanhos. */}
       {service.description && (
-        <div className="lg:hidden">
-          <Section title="Sobre o evento" hue={hue}>
-            <p className="text-sm leading-relaxed text-muted-foreground">{service.description}</p>
-          </Section>
-        </div>
+        <Section title={labels.about} hue={hue}>
+          <AdDescription text={service.description} />
+        </Section>
       )}
 
       {sessionDays.length > 0 && (
@@ -295,7 +296,7 @@ export const ServiceDetailEvento: ServiceDetailVariantComponent = ({ service, ex
               href={mapsSearchUrl(endereco)}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground"
+              className="inline-flex items-center gap-1.5 self-start py-2 text-xs font-semibold text-muted-foreground hover:text-foreground"
             >
               <ExternalLink className="h-3.5 w-3.5" /> Ver no mapa
             </a>
@@ -305,9 +306,9 @@ export const ServiceDetailEvento: ServiceDetailVariantComponent = ({ service, ex
 
       {(hasContact || siteUrl) && (
         <Section title="Contato" hue={hue}>
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-0.5 text-sm">
             {telefone && (
-              <a href={telHref(telefone)} className="inline-flex items-center gap-1.5 font-semibold text-muted-foreground hover:text-foreground">
+              <a href={telHref(telefone)} className="inline-flex items-center gap-1.5 py-1.5 font-semibold text-muted-foreground hover:text-foreground">
                 <Phone className="h-4 w-4" /> {telefone}
               </a>
             )}
@@ -316,13 +317,13 @@ export const ServiceDetailEvento: ServiceDetailVariantComponent = ({ service, ex
                 href={whatsappHref(whatsapp)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 font-semibold text-muted-foreground hover:text-foreground"
+                className="inline-flex items-center gap-1.5 py-1.5 font-semibold text-muted-foreground hover:text-foreground"
               >
                 <MessageCircle className="h-4 w-4" /> WhatsApp {whatsapp}
               </a>
             )}
             {email && (
-              <a href={`mailto:${email}`} className="inline-flex items-center gap-1.5 font-semibold text-muted-foreground hover:text-foreground">
+              <a href={`mailto:${email}`} className="inline-flex items-center gap-1.5 py-1.5 font-semibold text-muted-foreground hover:text-foreground">
                 <Mail className="h-4 w-4" /> {email}
               </a>
             )}
@@ -331,7 +332,7 @@ export const ServiceDetailEvento: ServiceDetailVariantComponent = ({ service, ex
                 href={siteUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 font-semibold text-muted-foreground hover:text-foreground"
+                className="inline-flex items-center gap-1.5 py-1.5 font-semibold text-muted-foreground hover:text-foreground"
               >
                 <ExternalLink className="h-4 w-4" /> Site do evento
               </a>

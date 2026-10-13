@@ -6,7 +6,7 @@ import { ReviewSummary } from '../../reviews';
 import { photosFor, formatServicePrice } from '../service-helpers';
 import { PRICE_UNIT_LABEL } from '../service-labels';
 import type { ServiceDetailData } from '../../../../server/services/service-detail-data';
-import { hueGradient, resolveCategoryHue, resolveServiceDetailVariant } from './category-style';
+import { hueGradient, resolveCategoryHue, resolveSectionTitles, resolveServiceDetailVariant } from './category-style';
 import type { ServiceDetailConfig, ServiceDetailSlots, ServiceDetailVariantComponent } from './service-detail-types';
 import { ServiceDetailDefault } from './service-detail-default';
 import { ServiceDetailCinema, ServiceDetailCinemaSidebar, cinemaHeaderTags } from './service-detail-cinema';
@@ -128,6 +128,7 @@ export function ServiceDetailPage({
   const styleInput = { slug: service.category?.slug ?? null, groupSlug: service.categoryGroup?.slug ?? null };
   const variantId = resolveServiceDetailVariant(styleInput, detailConfig);
   const hue = resolveCategoryHue(styleInput, detailConfig);
+  const labels = resolveSectionTitles(styleInput, detailConfig);
   const VariantContent = { ...BUILT_IN_VARIANTS, ...variants }[variantId] ?? ServiceDetailDefault;
   const headerTags = HEADER_TAGS[variantId]?.(extraFields) ?? [];
   const SidebarContent = { ...BUILT_IN_SIDEBARS, ...sidebars }[variantId];
@@ -241,6 +242,7 @@ export function ServiceDetailPage({
               extraFields={extraFields}
               subcategoryNames={subcategoryNames}
               hue={hue}
+              labels={labels}
               siblings={siblings ?? []}
             />
           </div>
@@ -254,6 +256,7 @@ export function ServiceDetailPage({
                     extraFields={extraFields}
                     subcategoryNames={subcategoryNames}
                     hue={hue}
+                    labels={labels}
                   />
                 </div>
               ) : (

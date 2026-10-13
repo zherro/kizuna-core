@@ -1,3 +1,4 @@
+import { AdDescription } from './ad-description';
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 import {
@@ -237,9 +238,7 @@ export const ServiceDetailCinemaSidebar: ServiceDetailVariantComponent = ({
       </div>
     )}
     {service.description && (
-      <p className="mt-3 line-clamp-[8] text-base leading-relaxed text-muted-foreground">
-        {service.description}
-      </p>
+      <AdDescription text={service.description} className="mt-3 line-clamp-[8] !text-base" />
     )}
   </>
 );
@@ -336,7 +335,7 @@ export const ServiceDetailCinema: ServiceDetailVariantComponent = ({
       {service.description && (
         <div className="lg:hidden">
           <Section title="Sinopse" hue={hue}>
-            <p className="text-sm leading-relaxed text-muted-foreground">{service.description}</p>
+            <AdDescription text={service.description} />
           </Section>
         </div>
       )}
