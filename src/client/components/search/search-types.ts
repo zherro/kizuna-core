@@ -24,6 +24,8 @@ export type ServiceResult = {
   category_group_slug?: string | null;
   /** Início do evento (`answers.data_inicio`, AAAA-MM-DDTHH:MM local) — só anúncios com formulário de evento; ausente em RPCs antigas. */
   event_start?: string | null;
+  /** Nome do local do endereço (`service_addresses.label`, ex. "Arena Pantanal"); ausente em RPCs antigas. */
+  venue?: string | null;
   subcategory: string | null;
   sponsored: boolean;
   cover_file_id: string | null;

@@ -9,6 +9,14 @@ describe('variantCardProps', () => {
     expect(p?.whenLabel).toMatch(/14 de nov.*20:00/);
   });
 
+  it('evento: local sempre com a cidade ("Local · Cidade")', () => {
+    expect(variantCardProps('evento', { venue: 'Arena Pantanal', place: 'Cuiabá' })?.locationLabel).toBe(
+      'Arena Pantanal · Cuiabá'
+    );
+    expect(variantCardProps('evento', { place: 'Cuiabá +2' })?.locationLabel).toBe('Cuiabá +2');
+    expect(variantCardProps('evento', {})).not.toHaveProperty('locationLabel');
+  });
+
   it('evento: sem data de início não mostra data nem valor', () => {
     expect(variantCardProps('evento', { free: true, startingPrice: 40 })).toMatchObject({
       priceLabel: null,

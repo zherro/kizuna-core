@@ -52,7 +52,10 @@ function toCardProps(r: ServiceResult, detailConfig?: ServiceDetailConfig | null
   const variant = resolveServiceCardVariant({ slug: r.category_slug, groupSlug: r.category_group_slug }, detailConfig);
   // Cada variant (cinema, evento...) tem o próprio estilo de card — a mesma que decide o detalhe.
   const price = cardPriceParts(r.price, r.price_type);
-  const extra = variantCardProps(variant, { startingPrice: r.price, priceUnit: r.price_type, startsAt: r.event_start });
+  const extra = variantCardProps(variant, { startingPrice: r.price, priceUnit: r.price_type, startsAt: r.event_start,
+    venue: r.venue,
+    place: formatLocationLabel(r),
+  });
 
   return {
     href: serviceHref(r),

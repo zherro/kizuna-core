@@ -667,7 +667,7 @@ function ListingResultCardDemo() {
       imageUrl={cover}
       dateLabel={{ day: '14', month: 'nov' }}
       whenLabel="sáb., 14 de nov. · 20:00"
-      locationLabel="Arena Pantanal, Cuiabá"
+      locationLabel="Arena Pantanal · Cuiabá"
       ctaLabel="Ver evento"
     />,
   ];

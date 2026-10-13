@@ -11,6 +11,8 @@ export type VariantCardProps = {
   dateLabel: { day: string; month: string } | null;
   /** Data por extenso do evento ("sáb., 14 de nov. · 20:00"); `null` sem data. */
   whenLabel: string | null;
+  /** "Local · Cidade" do evento (sempre com a cidade); omitido quando não há nenhum dos dois. */
+  locationLabel?: string;
 };
 
 /**
@@ -28,6 +30,10 @@ export function variantCardProps(
     priceUnit?: string | null;
     free?: boolean;
     startsAt?: string | null;
+    /** Nome do local (`service_addresses.label`). */
+    venue?: string | null;
+    /** Cidade já formatada (`formatLocationLabel`). */
+    place?: string | null;
   } = {}
 ): VariantCardProps | null {
   if (variantId === 'cinema') {
@@ -35,7 +41,9 @@ export function variantCardProps(
   }
   if (variantId === 'evento') {
     // O card do evento mostra a data, não o valor (o valor está no detalhe).
+    const where = [input.venue?.trim(), input.place?.trim()].filter(Boolean).join(' · ');
     return {
+      ...(where ? { locationLabel: where } : {}),
       cardStyle: 'evento',
       ctaLabel: 'Ver evento',
       priceLabel: null,

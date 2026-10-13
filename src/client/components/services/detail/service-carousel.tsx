@@ -65,7 +65,10 @@ export function ServiceCarousel({
                 { slug: service.category_slug, groupSlug: service.category_group_slug },
                 detailConfig
               ),
-              { startingPrice: service.price, priceUnit: service.price_type, startsAt: service.event_start }
+              { startingPrice: service.price, priceUnit: service.price_type, startsAt: service.event_start,
+                venue: service.venue,
+                place: formatLocationLabel(service),
+              }
             );
             return (
               <ListingResultCard
@@ -83,7 +86,7 @@ export function ServiceCarousel({
                 tagLabel={service.category}
                 subtitleLabel={service.subcategory}
                 imageUrl={service.cover_file_id ? thumbUrl(service.cover_file_id) : null}
-                locationLabel={showCity ? formatLocationLabel(service) : null}
+                locationLabel={extra?.locationLabel ?? (showCity ? formatLocationLabel(service) : null)}
                 highlighted={service.sponsored}
                 highlightLabel="Patrocinado"
               />
