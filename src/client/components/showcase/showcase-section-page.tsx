@@ -78,6 +78,7 @@ import { RpcTester } from '../rpc-tester';
 import { MobileTabBar } from '../ui-better-soft/mobile-tab-bar';
 import { LocationTrigger, LocationModal } from '../location-modal';
 import { FormBuilderShowcaseDemo } from '../form-builder/showcase-demo';
+import { SearchFilterBlocksDemo } from '../search/filters/showcase-demo';
 import { FormsShowcaseDemo } from '../forms/showcase-demo';
 import { PagesAdminShowcaseDemo } from '../pages/showcase-demo';
 import { ColorChip } from '../ui-better-soft/color-chip';
@@ -1268,6 +1269,7 @@ function SectionDemo({ sectionId }: { sectionId: ShowcaseSectionId }) {
   if (sectionId === 'directions-card') return <DirectionsCardDemo />;
   if (sectionId === 'ad-extra-fields') return <AdExtraFieldsDemo />;
   if (sectionId === 'service-detail-evento') return <ServiceDetailEventoDemo />;
+  if (sectionId === 'search-filter-blocks') return <SearchFilterBlocksDemo />;
   return <UiBetterSoftDemo />;
 }
 

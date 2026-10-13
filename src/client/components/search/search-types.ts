@@ -50,8 +50,14 @@ export type SearchFilters = {
   cityId: number | null;
   cityName: string | null;
   groupSlug: string | null;
-  categoryId: number | null;
+  /** Categorias marcadas (todas do mesmo grupo). Vazio = sem filtro de categoria. */
+  categoryIds: number[];
   subcategoryIds: number[];
+  /**
+   * Cidades escolhidas no filtro (códigos IBGE). `null` = o padrão: a cidade do cabeçalho + as
+   * irmãs da região. `[]` = o usuário tirou todas → o estado inteiro.
+   */
+  cityIds: string[] | null;
   query: string | null;
   priceMin: number | null;
   priceMax: number | null;
@@ -96,6 +102,8 @@ export type SearchAdsBody = {
   p_city_ibge: string | null;
   p_group_category_slug: string | null;
   p_category_id: number | null;
+  /** Várias categorias (mesmo grupo) — `fn_search_services` 0006. Convive com `p_category_id`. */
+  p_category_ids?: number[] | null;
   p_subcategories: number[] | null;
   p_query: string | null;
   p_seed: number;

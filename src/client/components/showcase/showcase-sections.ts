@@ -53,7 +53,8 @@ export type ShowcaseSectionId =
   | 'location-map'
   | 'directions-card'
   | 'ad-extra-fields'
-  | 'service-detail-evento';
+  | 'service-detail-evento'
+  | 'search-filter-blocks';
 
 export type ShowcaseGroupId = 'shadcn-default' | 'ui-better-soft' | 'tools';
 
@@ -1406,6 +1407,38 @@ export function MioloDoEvento({ data }) {
       hue={25}
       labels={{ about: 'Sobre o evento', details: 'Informacoes do evento' }}
     />
+  );
+}`,
+  },
+  {
+    id: 'search-filter-blocks',
+    groupId: 'ui-better-soft',
+    label: 'Filtro da busca',
+    description:
+      'Blocos do painel de filtros da busca publica, no estilo OLX: grupo como link em destaque, lista de grupos, categorias com multi-selecao, especialidades em chips e cidades com mini-seletor. Recebem dados prontos por props; o SearchFiltersPanel os compoe e busca a taxonomia.',
+    usageCode: `import {
+  buildFilterTaxonomy,
+  categoriesOfGroup,
+  toggleCategory,
+} from '@kizuna/core/client/components/search/filters/filter-taxonomy';
+import { FilterGroupLink } from '@kizuna/core/client/components/search/filters/filter-group-link';
+import { FilterCategoryList } from '@kizuna/core/client/components/search/filters/filter-category-list';
+
+const taxonomy = buildFilterTaxonomy({ groups, categories, stats });
+
+export function CategoriasDoGrupo({ group, categoryIds, subcategoryIds, onChange }) {
+  return (
+    <>
+      <FilterGroupLink name={group.name} icon={group.icon} onClick={() => {}} />
+      <FilterCategoryList
+        categories={categoriesOfGroup(taxonomy, group.id)}
+        selectedIds={categoryIds}
+        groupLabel={group.name}
+        onToggle={(id) =>
+          onChange(toggleCategory(taxonomy, { categoryIds, subcategoryIds }, id))
+        }
+      />
+    </>
   );
 }`,
   },

@@ -150,6 +150,26 @@ export const resourceTaxonomy: Record<string, ResourceConfig> = {
       updatedAt: record.updated_at ?? record.updatedAt,
     }),
   },
+  // Leitura pública dos grupos (filtro da /busca lista os grupos no cliente). `categories_group` é
+  // o recurso do painel (gravação); este só lê os ativos, sem exigir login.
+  categories_group_public: {
+    schema: 'public',
+    table: 'categories_group',
+    listRequiresAuth: false,
+    select: 'id,name,slug,icon,sort_order,active',
+    primaryKey: 'id',
+    defaultOrder: 'sort_order',
+    searchableColumns: ['name', 'slug'],
+    maxPageSize: 100,
+    mapOutput: (record) => ({
+      id: record.id,
+      name: record.name,
+      slug: record.slug,
+      icon: record.icon ?? null,
+      sortOrder: Number(record.sort_order ?? record.sortOrder ?? 0),
+      active: parseActive(record.active),
+    }),
+  },
   subcategories: {
     schema: 'public',
     table: 'categories_sub',
@@ -232,6 +252,8 @@ export const resourceTaxonomy: Record<string, ResourceConfig> = {
     schema: 'public',
     table: 'categories',
     listRequiresAuth: false,
+    // o filtro da /busca lê todas (ícone + grupos extras); o teto padrão (100) cortava a lista
+    maxPageSize: 1000,
     select:
       'id,name,slug,description,icon,request_form_key,category_group_id,active,created_at,updated_at,categories_group_link(category_group_id)',
     primaryKey: 'id',

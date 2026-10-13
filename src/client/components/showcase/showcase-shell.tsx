@@ -35,6 +35,7 @@ import {
   Presentation,
   Play,
   Smartphone,
+  SlidersHorizontal,
   Plus,
   Radio,
   Rows3,
@@ -116,6 +117,7 @@ const ICON_BY_SECTION: Record<ShowcaseSectionId, React.ComponentType<{ className
   'directions-card': Navigation,
   'ad-extra-fields': ClipboardList,
   'service-detail-evento': Ticket,
+  'search-filter-blocks': SlidersHorizontal,
 };
 
 type ShowcaseShellProps = {

@@ -136,11 +136,15 @@ function SearchPageInner({
     [stored]
   );
 
-  const { filters, setFilters, resetFilters, applyAgentFilter, toSearchAdsBody } = useSearchFilters(
-    location,
-    basePath,
-    excludeFromMixedCategorySlugs
-  );
+  const {
+    filters,
+    setFilters,
+    resetFilters,
+    applyAgentFilter,
+    toSearchAdsBody,
+    defaultCityIds,
+    effectiveCityIds,
+  } = useSearchFilters(location, basePath, excludeFromMixedCategorySlugs, regions);
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -207,6 +211,8 @@ function SearchPageInner({
       b.p_city_ibge,
       b.p_group_category_slug,
       b.p_category_id,
+      b.p_category_ids,
+      b.p_city_ibges,
       b.p_subcategories,
       b.p_query,
     ]);
@@ -273,12 +279,16 @@ function SearchPageInner({
         // 2) mesma cidade + texto (larga grupo/categoria/subcategoria)
         if (
           items.length === 0 &&
-          (base.p_group_category_slug || base.p_category_id || base.p_subcategories)
+          (base.p_group_category_slug ||
+            base.p_category_id ||
+            base.p_category_ids ||
+            base.p_subcategories)
         ) {
           effective = {
             ...base,
             p_group_category_slug: null,
             p_category_id: null,
+            p_category_ids: null,
             p_subcategories: null,
           };
           items = await runSearch(effective, controller.signal);
@@ -291,6 +301,7 @@ function SearchPageInner({
             ...base,
             p_group_category_slug: null,
             p_category_id: null,
+            p_category_ids: null,
             p_subcategories: null,
             p_query: null,
           };
@@ -329,14 +340,26 @@ function SearchPageInner({
         setLoading(false);
 
         // Sugestões (`suggestTo`): mesmos filtros nas regiões sugeridas — seções abaixo do resultado.
-        const groups = regionGroupsFor(regions, base.p_city_ibge ?? base.p_city_id);
+        // Só com a seleção de cidades no padrão: se a pessoa escolheu as cidades, ela já controla
+        // onde busca e a sugestão só repetiria o que ela pode adicionar no filtro.
+        const groups =
+          filters.cityIds == null
+            ? regionGroupsFor(regions, base.p_city_ibge ?? base.p_city_id)
+            : [];
         if (groups.length > 0) {
           const loaded = await Promise.all(
             groups.map(async (group) => {
               const perCity = await Promise.all(
                 group.cities.map((city) =>
                   runSearch(
-                    { ...base, p_city_id: Number(city), p_city_ibge: city, p_page: 0, p_page_size: REGION_PAGE_SIZE },
+                    {
+                      ...base,
+                      p_city_id: Number(city),
+                      p_city_ibge: city,
+                      p_city_ibges: [city],
+                      p_page: 0,
+                      p_page_size: REGION_PAGE_SIZE,
+                    },
                     controller.signal
                   )
                 )
@@ -360,7 +383,7 @@ function SearchPageInner({
     // direto/inicial. Se entrasse na dependência, o próprio `updatePageParam` do "carregar mais"
     // (que também escreve em `searchParams`) disparava esse efeito de novo a cada página.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bodyKey, runSearch, toSearchAdsBody, location.state, regions]);
+  }, [bodyKey, runSearch, toSearchAdsBody, location.state, regions, filters.cityIds]);
 
   const loadMore = useCallback(async () => {
     const body = effectiveBodyRef.current;
@@ -442,16 +465,25 @@ function SearchPageInner({
     categoryId: string | number;
     categoryName?: string;
   }>({ resource: 'category_stats' });
-  const activeCategoryName = useMemo(
+  // Categorias marcadas, na ordem em que foram escolhidas, com o nome (o chip do hero tira uma).
+  const activeCategories = useMemo(
     () =>
-      (categoryRows ?? []).find((row) => Number(row.categoryId) === filters.categoryId)
-        ?.categoryName ?? null,
-    [categoryRows, filters.categoryId]
+      filters.categoryIds.map((id) => ({
+        id,
+        name:
+          (categoryRows ?? []).find((row) => Number(row.categoryId) === id)?.categoryName ??
+          'Categoria',
+      })),
+    [categoryRows, filters.categoryIds]
   );
+  const activeCategoryName = activeCategories.length
+    ? activeCategories.map((c) => c.name).join(', ')
+    : null;
   const carouselHref = useCallback(
     (item: CategoryCarouselItem) => {
       const sp = new URLSearchParams(searchParams.toString());
-      sp.set('categoryId', String(item.id));
+      sp.set('categoryIds', String(item.id));
+      sp.delete('categoryId');
       sp.delete('subcategoryIds');
       sp.delete('page');
       return `${basePath}?${sp.toString()}`;
@@ -517,7 +549,7 @@ function SearchPageInner({
           ) : null}
 
           {pageMode === 'demanda' && requestMode ? (
-            requestMode.render({ categoryId: filters.categoryId ?? null })
+            requestMode.render({ categoryId: filters.categoryIds[0] ?? null })
           ) : (
             <>
               <Typography.H4 font="display" className="text-muted-foreground">
@@ -588,16 +620,24 @@ function SearchPageInner({
                 inert={!hideCarousel}
               >
                 <div className="overflow-hidden">
-                  <div className="pt-3">
-                    <button
-                      type="button"
-                      onClick={() => setFilters({ categoryId: null, subcategoryIds: [] })}
-                      aria-label={`Remover a categoria ${activeCategoryName ?? ''} e escolher outra`}
-                      className="inline-flex items-center gap-1.5 rounded-full border border-primary bg-primary/10 px-3 py-1.5 text-sm font-medium text-primary"
-                    >
-                      {activeCategoryName ?? 'Categoria'}
-                      <X className="h-3.5 w-3.5" />
-                    </button>
+                  <div className="flex flex-wrap justify-center gap-2 pt-3">
+                    {activeCategories.map((c) => (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() =>
+                          setFilters({
+                            categoryIds: filters.categoryIds.filter((id) => id !== c.id),
+                            subcategoryIds: [],
+                          })
+                        }
+                        aria-label={`Remover a categoria ${c.name}`}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-primary bg-primary/10 px-3 py-1.5 text-sm font-medium text-primary"
+                      >
+                        {c.name}
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -666,6 +706,9 @@ function SearchPageInner({
                 filters={filters}
                 setFilters={setFilters}
                 resetFilters={resetFilters}
+                effectiveCityIds={effectiveCityIds}
+                defaultCityIds={defaultCityIds}
+                hideTitle
               />
             </div>
             <div className="px-4 pb-8">
@@ -736,6 +779,8 @@ function SearchPageInner({
                 filters={filters}
                 setFilters={setFilters}
                 resetFilters={resetFilters}
+                effectiveCityIds={effectiveCityIds}
+                defaultCityIds={defaultCityIds}
               />
             </div>
           </aside>
@@ -800,7 +845,7 @@ function SearchPageInner({
           location={location}
           filtrosAtuais={{
             groupSlug: filters.groupSlug,
-            categoryId: filters.categoryId,
+            categoryId: filters.categoryIds[0] ?? null,
             subcategoryIds: filters.subcategoryIds,
             query: filters.query,
           }}
@@ -885,6 +930,9 @@ function SearchPageInner({
                 filters={filters}
                 setFilters={setFilters}
                 resetFilters={resetFilters}
+                effectiveCityIds={effectiveCityIds}
+                defaultCityIds={defaultCityIds}
+                hideTitle
               />
             </div>
             <div className="px-4 pb-8">
@@ -922,7 +970,7 @@ function SearchPageInner({
             location={location}
             filtrosAtuais={{
               groupSlug: filters.groupSlug,
-              categoryId: filters.categoryId,
+              categoryId: filters.categoryIds[0] ?? null,
               subcategoryIds: filters.subcategoryIds,
               query: filters.query,
             }}

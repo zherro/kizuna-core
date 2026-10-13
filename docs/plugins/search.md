@@ -1,5 +1,5 @@
 ---
-description: Plugin search — RPC fn_search_services, filtro de local por endereço do serviço, colunas retornadas e notas de performance.
+description: Plugin search — RPC fn_search_services, filtro de local por endereço do serviço, painel de filtros da /busca, colunas retornadas e notas de performance.
 ---
 
 # Plugin `search`
@@ -91,6 +91,53 @@ cinema mantém "Sinopse" e "Onde assistir".
 
 A descrição do anúncio é lida como **Markdown** (negrito, listas, links http/https); HTML legado de
 editor segue aceito, mas é sanitizado (lista fechada de tags, sem atributos).
+
+## Painel de filtros da busca
+
+O painel (`SearchFiltersPanel`, em `src/client/components/search`) tem o jeito de um filtro de classificados: o usuário sempre sabe em que grupo está e troca com um toque. A página só monta o painel; quem o compõe são os blocos de `search/filters/`:
+
+| Bloco | O que faz |
+| --- | --- |
+| `filter-taxonomy.ts` | Lógica pura (testada sem DOM): monta grupos, categorias e especialidades a partir das linhas dos recursos, deduz o grupo em vigor, ordena marcadas primeiro e calcula as mudanças (marcar, desmarcar, trocar de grupo). |
+| `use-filter-taxonomy.ts` | Busca os recursos `categories_group_public`, `categories_public` e `category_stats` e devolve a taxonomia pronta. |
+| `FilterGroupLink` | O grupo atual como link grande no topo (ícone, nome e "Trocar de grupo"). Sem grupo mostra "Todas as categorias". |
+| `FilterGroupList` | A visão de troca: "Todas as categorias" e os grupos, com ícone e seta. |
+| `FilterCategoryList` | Categorias do grupo com multi-seleção (cada item é um checkbox acessível). As marcadas sobem para o topo com fundo e barra na cor primária; a troca de lugar desliza. |
+| `FilterSubcategoryChips` | Especialidades das categorias marcadas, em chips que alternam. O nome da categoria só aparece acima de cada bloco quando há mais de uma marcada. |
+| `FilterCityChips` | Cidades em vigor como chips com botão de remover e mini-seletor "Adicionar cidade" (busca sem acento, até 8 resultados, as já escolhidas ficam de fora). |
+
+### Como o painel se comporta
+
+1. **Grupo em destaque.** Clicar no link do grupo troca a visão para a lista de grupos; escolher um grupo volta às categorias dele e zera categorias e especialidades. "Todas as categorias" limpa o grupo.
+2. **Categorias do grupo.** Pertencem ao grupo a categoria cujo grupo primário é ele e as ligadas por vínculo extra (`categories_group_link`). Só aparece categoria com ao menos uma subcategoria ativa (a mesma regra do carrossel de categorias).
+3. **Grupo deduzido.** Sem `group` na URL e com categorias marcadas (link do carrossel com `categoryIds`), o painel mostra o grupo primário da primeira categoria marcada. É só exibição: o `groupSlug` não é gravado na URL.
+4. **Sem grupo e sem categoria** o painel mostra os grupos como links, não uma lista longa de categorias. Projeto sem grupos cadastrados cai numa lista simples de categorias.
+5. **Especialidades.** Desmarcar uma categoria remove também as especialidades dela (o patch leva `subcategoryIds` explícito).
+6. **Localização.** Os chips vêm de `effectiveCityIds`; os nomes são resolvidos por `GET /api/location/cities` (uma requisição só, cache em módulo). Remover todas vira "Estado inteiro" com o atalho "voltar ao padrão" (`cityIds` nulo). O seletor inline NÃO usa o `LocationModal`, que troca a cidade do cabeçalho.
+7. **Resposta imediata.** Marcar categoria, grupo ou cidade aparece na hora; o painel só devolve o controle aos filtros da URL quando eles chegam.
+8. **Depois**: ordenar por, busca por texto e faixa de preço, e o botão "Limpar filtros", que só aparece quando há filtro ativo (`countActiveFilters`).
+
+### Props
+
+```ts
+type Props = {
+  filters: SearchFilters;
+  setFilters: (patch: SearchFilterPatch) => void;
+  resetFilters: () => void;
+  /** cidades em vigor (IBGE): filters.cityIds ?? defaultCityIds */
+  effectiveCityIds: string[];
+  /** padrão: cidade do cabeçalho + irmãs da região (IBGE) */
+  defaultCityIds: string[];
+};
+```
+
+`useSearchFilters` já devolve `effectiveCityIds` e `defaultCityIds`; todo ponto que monta o painel (busca, deck do swipe) precisa repassar os dois.
+
+### Dados e acessibilidade
+
+* `categories_public` limita a 100 linhas por página no servidor. A lista de categorias nasce de `category_stats` (que aceita 1000) e `categories_public` só acrescenta ícone e vínculos extras, então o corte não some com categorias; só perde esses extras além da linha 100.
+* Há um resumo `aria-live` ("3 filtros aplicados"), o foco acompanha a troca de visão e os alvos de toque têm ao menos 44 px no mobile. Movimento respeita `prefers-reduced-motion`.
+* Os blocos estão no showcase (`/showcase/search-filter-blocks`) com dados de exemplo.
 
 ## Performance
 

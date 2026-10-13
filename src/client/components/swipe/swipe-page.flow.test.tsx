@@ -13,7 +13,7 @@ vi.mock('./swipe-api', () => api);
 vi.mock('../search/location-gate', () => ({ LocationGate: (p: { children: React.ReactNode }) => <>{p.children}</> }));
 vi.mock('../search/search-filters-panel', () => ({ SearchFiltersPanel: () => null }));
 vi.mock('../search/use-search-filters', () => {
-  const filters = { groupSlug: null, categoryId: null, subcategoryIds: [], query: null, priceMin: null, priceMax: null };
+  const filters = { groupSlug: null, categoryIds: [], subcategoryIds: [], query: null, priceMin: null, priceMax: null };
   const toSearchAdsBody = () => ({ p_state: 'PR', p_city_id: null, p_city_ibge: null, p_group_category_slug: null,
     p_category_id: null, p_subcategories: null, p_query: null, p_seed: 0, p_page: 0, p_page_size: 24 });
   return { useSearchFilters: () => ({ filters, setFilters: vi.fn(), resetFilters: vi.fn(), toSearchAdsBody }) };

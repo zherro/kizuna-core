@@ -42,7 +42,8 @@ function SwipePageInner({ basePath = '/descobrir', likedHref = '/curtidos' }: Pr
     }),
     [stored]
   );
-  const { filters, setFilters, resetFilters, toSearchAdsBody } = useSearchFilters(location, basePath);
+  const { filters, setFilters, resetFilters, toSearchAdsBody, defaultCityIds, effectiveCityIds } =
+    useSearchFilters(location, basePath);
   const { user } = useAuth();
   const requireAuth = useRequireAuth();
   const router = useRouter();
@@ -113,7 +114,7 @@ function SwipePageInner({ basePath = '/descobrir', likedHref = '/curtidos' }: Pr
 
   const activeFilters =
     (filters.groupSlug ? 1 : 0) +
-    (filters.categoryId ? 1 : 0) +
+    filters.categoryIds.length +
     filters.subcategoryIds.length +
     (filters.query ? 1 : 0) +
     (filters.priceMin != null || filters.priceMax != null ? 1 : 0);
@@ -297,7 +298,13 @@ function SwipePageInner({ basePath = '/descobrir', likedHref = '/curtidos' }: Pr
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <SearchFiltersPanel filters={filters} setFilters={setFilters} resetFilters={resetFilters} />
+            <SearchFiltersPanel
+              filters={filters}
+              setFilters={setFilters}
+              resetFilters={resetFilters}
+              effectiveCityIds={effectiveCityIds}
+              defaultCityIds={defaultCityIds}
+            />
           </div>
         </div>
       ) : null}

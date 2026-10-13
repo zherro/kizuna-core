@@ -19,7 +19,7 @@ vi.mock('./use-swipe-deck', () => ({
 }));
 vi.mock('../search/location-gate', () => ({ LocationGate: (p: { children: React.ReactNode }) => <>{p.children}</> }));
 vi.mock('../search/search-filters-panel', () => ({ SearchFiltersPanel: () => null }));
-const noFilters = { groupSlug: null, categoryId: null, subcategoryIds: [], query: null, priceMin: null, priceMax: null };
+const noFilters = { groupSlug: null, categoryIds: [], subcategoryIds: [], query: null, priceMin: null, priceMax: null };
 let mockFilters: Record<string, unknown> = noFilters;
 vi.mock('../search/use-search-filters', () => ({
   useSearchFilters: () => ({
