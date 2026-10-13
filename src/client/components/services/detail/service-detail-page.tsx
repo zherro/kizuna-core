@@ -11,6 +11,7 @@ import type { ServiceDetailConfig, ServiceDetailSlots, ServiceDetailVariantCompo
 import { ServiceDetailDefault } from './service-detail-default';
 import { ServiceDetailCinema, ServiceDetailCinemaSidebar, cinemaHeaderTags } from './service-detail-cinema';
 import { ServiceDetailEvento, ServiceDetailEventoSidebar, eventoHeaderTags } from './service-detail-evento';
+import { ServiceLocationSection } from './service-location-section';
 import { AdPhotoMosaic } from './ad-photo-mosaic';
 import { AdShareButton } from './ad-share-button';
 import { ServiceReactionButtons } from './service-reaction-buttons';
@@ -123,7 +124,7 @@ export function ServiceDetailPage({
   searchHref = '/busca',
   analytics,
 }: ServiceDetailPageProps) {
-  const { service, subcategoryNames, provider, extraFields, related, randomServices, siblings } = data;
+  const { service, subcategoryNames, provider, extraFields, related, randomServices, siblings, location } = data;
 
   const styleInput = { slug: service.category?.slug ?? null, groupSlug: service.categoryGroup?.slug ?? null };
   const variantId = resolveServiceDetailVariant(styleInput, detailConfig);
@@ -245,6 +246,11 @@ export function ServiceDetailPage({
               labels={labels}
               siblings={siblings ?? []}
             />
+
+            {/* Cinema/evento têm tratamento próprio de local — a seção é só da variant `service`. */}
+            {variantId === 'service' && (
+              <ServiceLocationSection location={location ?? null} title={service.title} hue={hue} />
+            )}
           </div>
 
           <aside>

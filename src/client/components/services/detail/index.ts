@@ -22,6 +22,7 @@ export type {
   ServiceDetailVariantComponent,
   ServiceDetailSlots,
 } from './service-detail-types';
+export { ServiceLocationSection } from './service-location-section';
 export { AdPhotoMosaic } from './ad-photo-mosaic';
 export { AdShareButton } from './ad-share-button';
 export { AdExtraFields } from './ad-extra-fields';

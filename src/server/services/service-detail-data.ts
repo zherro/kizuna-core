@@ -39,6 +39,14 @@ export type ServiceExtraFields = { schema: FormSchema; answers: FormValues } | n
 
 export type RelatedResult = { items: ServiceResult[]; scope: 'category' | 'group' };
 
+/** Local do endereço primário do anúncio (JSON-serializável). `address` é texto pronto pra exibir. */
+export type ServiceLocation = {
+  address: string;
+  lat: number | null;
+  lng: number | null;
+  label: string | null;
+};
+
 export type ServiceDetailData = {
   service: ServiceRecord;
   subcategoryNames: string[];
@@ -50,6 +58,8 @@ export type ServiceDetailData = {
   city: RoutableCity | null;
   /** O mesmo anúncio nas cidades irmãs de `city` (`regions`) — ex.: o filme em cartaz em VG. */
   siblings: ServiceSibling[];
+  /** Endereço primário e ativo (texto + coordenadas); `null` = sem endereço utilizável. */
+  location: ServiceLocation | null;
 };
 
 type CategoryTaxonomyRow = { id: number | string; slug?: string; categoryGroupId?: number | string | null };
@@ -199,13 +209,71 @@ async function fetchRandomServices(
   return rows.filter((row) => row.uid !== service.uid && !excludeUids.has(row.uid)).slice(0, 8);
 }
 
-/** Endereços + lista de cidades atendidas → cidade canônica (ver `pickServiceCity`). */
-async function fetchServiceCity(
+/** Linha de `service_addresses` com as colunas de endereço (camelCase via mapOutput ou snake_case cru). */
+type ServiceAddressRow = ServiceAddressLike & {
+  street?: string | null;
+  number?: string | null;
+  complement?: string | null;
+  neighborhood?: string | null;
+  city?: string | null;
+  state?: string | null;
+  label?: string | null;
+  latitude?: number | string | null;
+  longitude?: number | string | null;
+  active?: boolean | string | null;
+};
+
+const clean = (value: unknown): string => String(value ?? '').trim();
+
+/** Número finito dentro da faixa, aceitando string numérica; senão `null`. */
+function coordOf(value: unknown, limit: number): number | null {
+  if (value == null || value === '') return null;
+  const n = typeof value === 'number' ? value : Number(value);
+  return Number.isFinite(n) && Math.abs(n) <= limit ? n : null;
+}
+
+/**
+ * Local do anúncio a partir de `service_addresses`: o endereço primário e ativo (senão o primeiro
+ * ativo). `address` junta rua, número, complemento, bairro e cidade - UF, omitindo partes vazias.
+ * Sem texto de endereço utilizável (nem coordenadas) → `null`. Coordenadas só se ambas válidas.
+ */
+export function buildServiceLocation(addresses: ServiceAddressRow[]): ServiceLocation | null {
+  const active = addresses.filter((a) => a.active == null || a.active === true || a.active === 'true');
+  const isPrimary = (a: ServiceAddressRow) => Boolean(a.isPrimary ?? a.is_primary);
+  const chosen = active.find(isPrimary) ?? active[0];
+  if (!chosen) return null;
+
+  const cityState = [clean(chosen.city), clean(chosen.state)].filter(Boolean).join(' - ');
+  const address = [
+    clean(chosen.street),
+    clean(chosen.number),
+    clean(chosen.complement),
+    clean(chosen.neighborhood),
+    cityState,
+  ]
+    .filter(Boolean)
+    .join(', ');
+
+  const lat = coordOf(chosen.latitude, 90);
+  const lng = coordOf(chosen.longitude, 180);
+  const hasCoords = lat != null && lng != null;
+  if (!address && !hasCoords) return null;
+
+  return {
+    address,
+    lat: hasCoords ? lat : null,
+    lng: hasCoords ? lng : null,
+    label: clean(chosen.label) || null,
+  };
+}
+
+/** Endereços + lista de cidades atendidas → cidade canônica (ver `pickServiceCity`) e local. */
+async function fetchServiceCityAndLocation(
   service: ServiceRecord,
   provider: ProviderProfile | null
-): Promise<RoutableCity | null> {
+): Promise<{ city: RoutableCity | null; location: ServiceLocation | null }> {
   const [addresses, cities] = await Promise.all([
-    serverFetchResource<ServiceAddressLike>(
+    serverFetchResource<ServiceAddressRow>(
       'service_addresses',
       { service_id: service.id, active: 'true' },
       { auth: null, limit: 50, orderBy: 'is_primary', orderDirection: 'desc' }
@@ -221,7 +289,10 @@ async function fetchServiceCity(
       )
       .catch(() => []),
   ]);
-  return pickServiceCity(addresses, provider, cities);
+  return {
+    city: pickServiceCity(addresses, provider, cities),
+    location: buildServiceLocation(addresses),
+  };
 }
 
 export async function loadServiceDetail(uid: string): Promise<ServiceDetailData | null> {
@@ -240,8 +311,18 @@ export async function loadServiceDetail(uid: string): Promise<ServiceDetailData 
     new Set(related.items.map((item) => item.uid))
   );
 
-  const city = await fetchServiceCity(service, provider);
+  const { city, location } = await fetchServiceCityAndLocation(service, provider);
   const siblings = await fetchServiceSiblings(service, city?.ibge, projectRegions);
 
-  return { service, subcategoryNames, provider, extraFields, related, randomServices, city, siblings };
+  return {
+    service,
+    subcategoryNames,
+    provider,
+    extraFields,
+    related,
+    randomServices,
+    city,
+    siblings,
+    location,
+  };
 }

@@ -70,6 +70,13 @@ Só `no_estabelecimento` exige **ao menos 1** endereço; `no_cliente` e `remoto`
 O perfil `addresses` do passo `location` está em [Wizard](../interface/wizard.md). O recurso
 `service_addresses` é exposto em `/api/resources/service_addresses` (filtro `?filter.service_id=`).
 
+### Na página de detalhe
+
+A página de detalhe do anúncio mostra a **Localização** do endereço primário e ativo (senão o primeiro
+ativo): o endereço em texto, o mapa quando há coordenadas e os atalhos de "Como chegar", conforme os
+blocos de [Conteúdo](../arquitetura/modelo-de-conteudo.md). Aparece só na variant padrão (`service`);
+cinema e evento tratam o local por conta própria.
+
 ## Moderação
 
 `fn_service_moderate` insere a decisão em `service_moderations` e deriva `services.status`
