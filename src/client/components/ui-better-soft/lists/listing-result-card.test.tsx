@@ -26,33 +26,45 @@ describe('ListingResultCard cardStyle="evento"', () => {
     priceLabel: 'R$ 40,00',
     priceCaption: 'A partir de',
     dateLabel: { day: '14', month: 'nov' },
+    whenLabel: 'sáb., 14 de nov. · 20:00',
     locationLabel: 'Arena Pantanal',
     ctaLabel: 'Ver evento',
     rating: 4.5,
     reviewCount: 3,
   };
 
-  it.each(['grid', 'strip'] as const)('mostra data, local e preço com legenda (%s)', (variant) => {
+  it.each(['grid', 'strip'] as const)('mostra data e local, sem preço (%s)', (variant) => {
     render(<ListingResultCard {...evento} variant={variant} />);
     expect(screen.getByText('14')).toBeTruthy();
     expect(screen.getByText('nov')).toBeTruthy();
-    expect(screen.getByText('Arena Pantanal')).toBeTruthy();
-    expect(screen.getByText('A partir de')).toBeTruthy();
-    expect(screen.getByText('R$ 40,00')).toBeTruthy();
+    expect(screen.getByText(/14 de nov./)).toBeTruthy();
+    expect(screen.queryByText('R$ 40,00')).toBeNull();
+    expect(screen.queryByText('A partir de')).toBeNull();
   });
 
-  it('grid: CTA do evento e sem nota', () => {
+  it('grid: local, CTA do evento e sem nota', () => {
     render(<ListingResultCard {...evento} />);
+    expect(screen.getByText('Arena Pantanal')).toBeTruthy();
     expect(screen.getByText('Ver evento')).toBeTruthy();
     expect(screen.queryByText('4,5')).toBeNull();
     expect(screen.queryByText('Novo')).toBeNull();
   });
 
-  it('sem dateLabel não renderiza bloco de data; Gratuito sem legenda', () => {
-    render(<ListingResultCard {...evento} dateLabel={null} priceLabel="Gratuito" priceCaption={null} />);
+  it.each(['grid', 'strip'] as const)('capa no mesmo modelo do cinema: inteira (%s)', (variant) => {
+    const props = { imageUrl: '/c.jpg', title: 'T' };
+    const { container: ev } = render(<ListingResultCard {...evento} {...props} variant={variant} />);
+    const evClass = ev.querySelector('img')?.className;
+    cleanup();
+    const { container: ci } = render(
+      <ListingResultCard {...base} {...props} cardStyle="cinema" variant={variant} />
+    );
+    expect(evClass).toContain('object-contain');
+    expect(evClass).toBe(ci.querySelector('img')?.className);
+  });
+
+  it('sem dateLabel não renderiza bloco de data', () => {
+    render(<ListingResultCard {...evento} dateLabel={null} whenLabel={null} />);
     expect(screen.queryByText('nov')).toBeNull();
-    expect(screen.getByText('Gratuito')).toBeTruthy();
-    expect(screen.queryByText('A partir de')).toBeNull();
   });
 
   it('default ignora dateLabel', () => {

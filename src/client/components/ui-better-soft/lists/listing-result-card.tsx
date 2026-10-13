@@ -204,7 +204,9 @@ export function ListingResultCard({
 }: Readonly<ListingResultCardProps>) {
   const isCinema = cardStyle === 'cinema';
   const isEvento = cardStyle === 'evento';
-  const resolvedImageAspect = imageAspect ?? (isCinema ? 'poster' : 'landscape');
+  // Evento usa o mesmo modelo de capa (e a mesma altura) do cinema: capa inteira, `object-contain`.
+  const isPosterCard = isCinema || isEvento;
+  const resolvedImageAspect = imageAspect ?? (isPosterCard ? 'poster' : 'landscape');
 
   if (variant === 'strip') {
     return (
@@ -248,7 +250,7 @@ export function ListingResultCard({
             className={cn(
               'text-sm font-bold leading-tight',
               // cinema reserva as 2 linhas: título curto não deixa o card mais baixo que os vizinhos
-              isCinema ? 'line-clamp-2 min-h-[2.5em]' : 'line-clamp-1'
+              isPosterCard ? 'line-clamp-2 min-h-[2.5em]' : 'line-clamp-1'
             )}
           >
             {title}
@@ -256,15 +258,23 @@ export function ListingResultCard({
           {subtitleLabel && (
             <p className="line-clamp-1 text-[11px] text-muted-foreground">{subtitleLabel}</p>
           )}
-          {!isCinema && !isEvento && <RatingChip rating={rating} reviewCount={reviewCount} />}
-          {locationLabel && <LocationLine label={locationLabel} />}
-          {isEvento && whenLabel && (
-            <span className="mt-auto inline-flex items-center gap-1 pt-1 text-[11px] font-semibold text-foreground">
-              <CalendarDays className="h-3 w-3 shrink-0" />
-              <span className="truncate">{whenLabel}</span>
-            </span>
+          {!isPosterCard && <RatingChip rating={rating} reviewCount={reviewCount} />}
+          {isPosterCard ? (
+            // linha de informação com altura reservada: cinema e evento têm o mesmo tamanho de card
+            <div className="mt-auto min-h-4 pt-1">
+              {isEvento && whenLabel ? (
+                <span className="inline-flex max-w-full items-center gap-1 text-[11px] font-semibold text-foreground">
+                  <CalendarDays className="h-3 w-3 shrink-0" />
+                  <span className="truncate">{whenLabel}</span>
+                </span>
+              ) : (
+                locationLabel && <LocationLine label={locationLabel} />
+              )}
+            </div>
+          ) : (
+            locationLabel && <LocationLine label={locationLabel} />
           )}
-          {!isCinema && priceLabel != null && (
+          {!isPosterCard && priceLabel != null && (
             <div className="mt-auto pt-1">
               <PriceBlock label={priceLabel} caption={priceCaption} className="text-sm font-black leading-none" />
             </div>
@@ -300,9 +310,7 @@ export function ListingResultCard({
       }
       badgeBottomLeft={isEvento && dateLabel ? <DateBlock date={dateLabel} /> : undefined}
       leading={
-        isCinema ? undefined : isEvento ? (
-          locationLabel ? <LocationLine label={locationLabel} /> : undefined
-        ) : (
+        isPosterCard ? undefined : (
           <div className="flex flex-col gap-2">
             <RatingChip rating={rating} reviewCount={reviewCount} />
             {locationLabel && <LocationLine label={locationLabel} />}
@@ -311,31 +319,32 @@ export function ListingResultCard({
         )
       }
       footer={
-        isCinema ? (
-          <>
-            {locationLabel ? (
-              <span
-                className="inline-flex min-w-0 items-center gap-1 truncate text-xs font-medium text-muted-foreground"
-                title={locationLabel}
-              >
-                <MapPin className="h-3.5 w-3.5 shrink-0" />
-                <span className="truncate">{locationLabel}</span>
-              </span>
-            ) : (
-              <span />
-            )}
+        isPosterCard ? (
+          // mesma altura e mesma disposição para cinema e evento: info à esquerda, CTA à direita
+          <div className="flex min-h-8 w-full items-end justify-between gap-2">
+            <div className="flex min-w-0 flex-col justify-end">
+              {isEvento && whenLabel && (
+                <span className="inline-flex min-w-0 items-center gap-1 text-xs font-semibold leading-4 text-foreground">
+                  <CalendarDays className="h-3.5 w-3.5 shrink-0 text-brand" />
+                  <span className="truncate">{whenLabel}</span>
+                </span>
+              )}
+              {locationLabel && (
+                <span
+                  className="inline-flex min-w-0 items-center gap-1 text-xs font-medium leading-4 text-muted-foreground"
+                  title={locationLabel}
+                >
+                  <MapPin className="h-3.5 w-3.5 shrink-0" />
+                  <span className="truncate">{locationLabel}</span>
+                </span>
+              )}
+            </div>
             <span className="ml-auto inline-flex shrink-0 items-center rounded-[var(--ui-radius-pill,0.375rem)] bg-brand px-3 py-1.5 text-xs font-semibold text-brand-foreground transition group-hover:bg-brand/90">
               {ctaLabel}
             </span>
-          </>
+          </div>
         ) : (
           <>
-            {isEvento && whenLabel && (
-              <span className="inline-flex min-w-0 items-center gap-1.5 text-xs font-semibold text-foreground">
-                <CalendarDays className="h-3.5 w-3.5 shrink-0 text-brand" />
-                <span className="truncate">{whenLabel}</span>
-              </span>
-            )}
             {priceLabel != null && (
               <PriceBlock label={priceLabel} caption={priceCaption} className="text-lg font-black leading-none" />
             )}

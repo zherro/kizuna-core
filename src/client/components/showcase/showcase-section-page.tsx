@@ -643,31 +643,38 @@ function EntityListCardDemo() {
 function ListingResultCardDemo() {
   const cover =
     'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?auto=format&fit=crop&w=800&q=80';
+  const cards = (variant: 'grid' | 'strip') => [
+    <ListingResultCard
+      key="cinema"
+      variant={variant}
+      href="#"
+      title="Duna: Parte Dois"
+      cardStyle="cinema"
+      tagLabel="Cinema"
+      subtitleLabel="Ficção científica"
+      imageUrl={cover}
+      locationLabel="Cuiabá +2"
+      ctaLabel="Onde assistir"
+    />,
+    <ListingResultCard
+      key="evento"
+      variant={variant}
+      href="#"
+      title="Festival Pantanal Sertanejo"
+      cardStyle="evento"
+      tagLabel="Shows"
+      subtitleLabel="Shows ao vivo"
+      imageUrl={cover}
+      dateLabel={{ day: '14', month: 'nov' }}
+      whenLabel="sáb., 14 de nov. · 20:00"
+      locationLabel="Arena Pantanal, Cuiabá"
+      ctaLabel="Ver evento"
+    />,
+  ];
   return (
-    <div className="grid max-w-3xl grid-cols-1 gap-4 sm:grid-cols-2">
-      <ListingResultCard
-        href="#"
-        title="Festival Pantanal Sertanejo"
-        cardStyle="evento"
-        tagLabel="Shows"
-        imageUrl={cover}
-        dateLabel={{ day: '14', month: 'nov' }}
-        locationLabel="Arena Pantanal, Cuiaba"
-        priceCaption="A partir de"
-        priceLabel="R$ 40,00"
-        ctaLabel="Ver evento"
-      />
-      <ListingResultCard
-        href="#"
-        title="Feira de artesanato da praca"
-        cardStyle="evento"
-        tagLabel="Feiras"
-        imageUrl={cover}
-        dateLabel={{ day: '21', month: 'nov' }}
-        locationLabel="Praca da Republica"
-        priceLabel="Gratuito"
-        ctaLabel="Ver evento"
-      />
+    <div className="space-y-6">
+      <div className="grid max-w-3xl grid-cols-1 items-start gap-4 sm:grid-cols-2">{cards('grid')}</div>
+      <div className="flex gap-3 overflow-x-auto pb-2">{cards('strip')}</div>
     </div>
   );
 }

@@ -80,6 +80,16 @@ describe('sessões', () => {
 });
 
 describe('ingressos e preço', () => {
+  it('parseTickets ordena do maior para o menor valor (sem valor por último)', () => {
+    const t = parseTickets([
+      { titulo: 'Meia', valor: 80 },
+      { titulo: 'Sem valor', setor: 'X' },
+      { titulo: 'Camarote', valor: 1600 },
+      { titulo: 'Inteira', valor: 160 },
+    ]);
+    expect(t.map((x) => x.titulo)).toEqual(['Camarote', 'Inteira', 'Meia', 'Sem valor']);
+  });
+
   it('parseTickets descarta vazios e normaliza', () => {
     const t = parseTickets([{ titulo: 'Pista', setor: 'A', valor: 50, pessoas: 1 }, {}, null, { valor: 'x' }]);
     expect(t).toHaveLength(1);

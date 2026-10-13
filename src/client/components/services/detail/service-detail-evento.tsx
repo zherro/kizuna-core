@@ -283,28 +283,6 @@ export const ServiceDetailEvento: ServiceDetailVariantComponent = ({ service, ex
         </Section>
       )}
 
-      {place && endereco && (
-        <Section title="Local" hue={hue}>
-          <div className={`flex flex-col gap-3 p-4 ${CARD_CLASS}`}>
-            <div className="flex items-start gap-3">
-              <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-brand" />
-              <div className="min-w-0">
-                <div className="font-bold leading-snug">{place.name}</div>
-                {place.rest && <div className="mt-0.5 text-sm text-muted-foreground">{place.rest}</div>}
-              </div>
-            </div>
-            <a
-              href={mapsSearchUrl(endereco)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 self-start py-2 text-xs font-semibold text-muted-foreground hover:text-foreground"
-            >
-              <ExternalLink className="h-3.5 w-3.5" /> Ver no mapa
-            </a>
-          </div>
-        </Section>
-      )}
-
       {(hasContact || siteUrl) && (
         <Section title="Contato" hue={hue}>
           <ul className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
@@ -353,6 +331,29 @@ export const ServiceDetailEvento: ServiceDetailVariantComponent = ({ service, ex
           </ul>
         </Section>
       )}
+
+      {place && endereco && (
+        <Section title="Local" hue={hue}>
+          <div className={`flex flex-col gap-3 p-4 ${CARD_CLASS}`}>
+            <div className="flex items-start gap-3">
+              <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-brand" />
+              <div className="min-w-0">
+                <div className="font-bold leading-snug">{place.name}</div>
+                {place.rest && <div className="mt-0.5 text-sm text-muted-foreground">{place.rest}</div>}
+              </div>
+            </div>
+            <a
+              href={mapsSearchUrl(endereco)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 self-start py-2 text-xs font-semibold text-muted-foreground hover:text-foreground"
+            >
+              <ExternalLink className="h-3.5 w-3.5" /> Ver no mapa
+            </a>
+          </div>
+        </Section>
+      )}
+
     </>
   );
 };

@@ -139,8 +139,9 @@ export function parseNames(raw: unknown): string[] {
     .filter((n): n is string => n != null);
 }
 
+/** Ingressos do maior para o menor valor (sem valor por último; empate mantém a ordem do formulário). */
 export function parseTickets(raw: unknown): EventTicket[] {
-  return objects(raw)
+  const tickets = objects(raw)
     .map((t) => ({
       titulo: str(t.titulo),
       setor: str(t.setor),
@@ -151,6 +152,10 @@ export function parseTickets(raw: unknown): EventTicket[] {
       comprar: str(t.comprar),
     }))
     .filter((t) => t.titulo || t.setor || t.tipo || t.valor != null);
+  return tickets
+    .map((t, i) => ({ t, i }))
+    .sort((a, b) => (b.t.valor ?? -Infinity) - (a.t.valor ?? -Infinity) || a.i - b.i)
+    .map(({ t }) => t);
 }
 
 /** Sessões agrupadas por dia (ordenadas); horários de cada dia ordenados por início. Sem `data`, cai em `fallbackDate` (data_inicio). */

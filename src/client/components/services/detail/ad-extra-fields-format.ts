@@ -172,6 +172,8 @@ export type ExtraListEntry = {
   lead: string | null;
   /** Valor em destaque à direita (campo `currency`). */
   amount: string | null;
+  /** Valor numérico de `amount` (para ordenar do maior ao menor). */
+  amountValue?: number | null;
   /** Textos curtos sob o lead, sem rótulo (setor, tipo, lote). */
   meta: string[];
   /** Pares "rótulo valor" (horários, quantidades). */
@@ -217,6 +219,8 @@ export function buildListEntry(
 
     if (sub.type === 'currency' && entry.amount == null) {
       entry.amount = formatted.text;
+      const n = Number(item[fieldKey(sub)]);
+      entry.amountValue = Number.isFinite(n) ? n : null;
     } else if ((sub.type === 'date' || sub.type === 'datetime') && entry.lead == null) {
       entry.lead = formatted.text;
     } else if (sub.type === 'textarea') {
@@ -287,6 +291,11 @@ export function buildExtraFieldBlocks(
         .filter((it): it is Record<string, unknown> => !!it && typeof it === 'object' && !Array.isArray(it))
         .map((it) => buildListEntry(subs, it, now))
         .filter((e): e is ExtraListEntry => e !== null);
+      // Itens com valor (ingressos) vêm do maior para o menor; listas por data seguem cronológicas.
+      const byDate = subs.some((s) => s.type === 'date' || s.type === 'datetime');
+      if (!byDate && entries.some((e) => e.amountValue != null)) {
+        entries.sort((a, b) => (b.amountValue ?? -Infinity) - (a.amountValue ?? -Infinity));
+      }
       if (entries.length === 0) continue;
       // Lista de um campo só (artistas, pontos de venda): fichas curtas, não cartões.
       const onlyLeads = entries.every(
