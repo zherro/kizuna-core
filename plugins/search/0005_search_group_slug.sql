@@ -14,9 +14,7 @@
 -- aparece no carrossel/busca do grupo da categoria dele.
 -- Também devolve `event_start` (`form_results.answers->>'data_inicio'`, AAAA-MM-DDTHH:MM local):
 -- o card do evento mostra a data do evento, e ela só existe nas respostas do formulário. Lido só
--- para a página de resultados (depois do LIMIT), nunca para todos os candidatos. `venue` é o nome
--- do local do endereço escolhido (`service_addresses.label`, ex. "Arena Pantanal"): o card do evento
--- mostra "Local · Cidade".
+-- para a página de resultados (depois do LIMIT), nunca para todos os candidatos.
 
 DROP FUNCTION IF EXISTS public.fn_search_services(character varying, integer, character varying, bigint, jsonb, text, double precision, integer, integer, text, text[], text[]);
 
@@ -52,8 +50,7 @@ RETURNS TABLE(
   city text,
   state text,
   address_count integer,
-  event_start character varying,
-  venue character varying
+  event_start character varying
 )
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -266,8 +263,7 @@ BEGIN
     COALESCE(ad.a_city, pg.provider_city)::text,
     COALESCE(ad.a_state, pg.provider_state)::text,
     COALESCE(ad.cnt, 0)::integer,
-    ev.event_start,
-    ad.a_label::character varying
+    ev.event_start
   FROM page pg
   LEFT JOIN LATERAL (
     SELECT NULLIF(fr.answers->>'data_inicio', '')::character varying AS event_start
@@ -277,7 +273,7 @@ BEGIN
     LIMIT 1
   ) ev ON true
   LEFT JOIN LATERAL (
-    SELECT a.city AS a_city, a.state AS a_state, a.label AS a_label, count(*) OVER () AS cnt
+    SELECT a.city AS a_city, a.state AS a_state, count(*) OVER () AS cnt
     FROM public.service_addresses a
     WHERE a.service_id = pg.service_id
       AND a.active
