@@ -93,7 +93,15 @@ function cleanIcon(value: string | null | undefined): string | null {
 // ─── Montagem ──────────────────────────────────────────────────────────────────────────────
 
 /** Linha de `category_service_stats` (anúncios publicados e não vencidos por categoria). */
-export type ListingRow = { categoryId?: Id; servicesCount?: number | string | null };
+export type ListingRow = {
+  categoryId?: Id;
+  servicesCount?: number | string | null;
+  /** subcategorias com anúncio vivo (`vw_category_service_stats.subcategory_ids`) */
+  subcategoryIds?: Id[] | null;
+  /** grupo primário e grupos (primário + extras) da categoria */
+  categoryGroupId?: Id;
+  groupIds?: Id[] | null;
+};
 
 /**
  * Decide se a contagem de anúncios entra no filtro: só com a flag ligada E a fonte sem erro.
@@ -148,14 +156,12 @@ export function buildFilterTaxonomy(input: {
     if (id !== null) extra.set(id, row);
   }
 
-  const withListings = input.listings
-    ? new Set(
-        input.listings
-          .filter((r) => Number(r.servicesCount ?? 0) > 0)
-          .map((r) => toId(r.categoryId))
-          .filter((id): id is number => id !== null)
-      )
-    : null;
+  // categoria com anúncio → subcategorias com anúncio (null = a fonte não informou: não filtra) e grupos
+  const withListings = input.listings ? new Map<number, ListingRow>() : null;
+  for (const r of input.listings ?? []) {
+    const id = toId(r.categoryId);
+    if (id !== null && Number(r.servicesCount ?? 0) > 0) withListings!.set(id, r);
+  }
   const keep = new Set(input.keepCategoryIds ?? []);
 
   const categories = new Map<number, FilterCategory>();
@@ -168,7 +174,9 @@ export function buildFilterTaxonomy(input: {
 
     let entry = categories.get(categoryId);
     if (!entry) {
-      const groupId = toId(enrich?.categoryGroupId) ?? toId(row.categoryGroupId);
+      const listed = withListings?.get(categoryId);
+      const groupId =
+        toId(enrich?.categoryGroupId) ?? toId(row.categoryGroupId) ?? toId(listed?.categoryGroupId);
       entry = {
         id: categoryId,
         name:
@@ -178,7 +186,7 @@ export function buildFilterTaxonomy(input: {
         groupId,
         extraGroupIds: [
           ...new Set(
-            (enrich?.extraGroupIds ?? [])
+            (enrich?.extraGroupIds ?? listed?.groupIds ?? [])
               .map(toId)
               .filter((g): g is number => g !== null && g !== groupId)
           ),
@@ -190,12 +198,18 @@ export function buildFilterTaxonomy(input: {
 
     const subId = toId(row.subcategoryId);
     const subName = String(row.subcategoryName ?? '').trim();
+    // só subcategoria com anúncio vivo (quando a fonte informa a lista)
+    const liveSubs = withListings?.get(categoryId)?.subcategoryIds;
+    if (liveSubs && !liveSubs.some((x) => toId(x) === subId)) continue;
     if (subId !== null && subName && !entry.subs.some((s) => s.id === subId)) {
       entry.subs.push({ id: subId, name: subName });
     }
   }
 
-  const list = [...categories.values()].filter((c) => c.subs.length > 0);
+  // categoria com anúncio mas sem subcategoria marcada continua navegável (só sem chips)
+  const list = [...categories.values()].filter(
+    (c) => c.subs.length > 0 || (withListings?.has(c.id) ?? false)
+  );
   for (const c of list) c.subs.sort(byName);
   list.sort(byName);
   return { groups, categories: list };

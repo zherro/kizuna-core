@@ -144,6 +144,40 @@ describe('buildFilterTaxonomy · só com anúncio (listings)', () => {
   });
 });
 
+describe('buildFilterTaxonomy · subcategorias e grupos da view', () => {
+  const build = (listings: Parameters<typeof buildFilterTaxonomy>[0]['listings']) =>
+    buildFilterTaxonomy({ groups: GROUPS, categories: CATEGORIES, stats: STATS, listings });
+
+  it('esconde subcategoria sem anúncio vivo', () => {
+    const r = build([{ categoryId: 10, servicesCount: 3, subcategoryIds: [102] }]);
+    expect(r.categories.find((c) => c.id === 10)?.subs.map((s) => s.name)).toEqual(['Rock']);
+  });
+
+  it('categoria com anúncio e sem subcategoria marcada continua listada, sem chips', () => {
+    const r = build([{ categoryId: 11, servicesCount: 1, subcategoryIds: [] }]);
+    const teatro = r.categories.find((c) => c.id === 11);
+    expect(teatro).toBeDefined();
+    expect(teatro?.subs).toEqual([]);
+  });
+
+  it('fonte sem subcategoryIds (view antiga) não filtra subcategorias', () => {
+    const r = build([{ categoryId: 10, servicesCount: 3 }]);
+    expect(r.categories.find((c) => c.id === 10)?.subs).toHaveLength(2);
+  });
+
+  it('sem categories_public, grupos vêm da view', () => {
+    const r = buildFilterTaxonomy({
+      groups: GROUPS,
+      categories: null,
+      stats: [{ ...STATS[0], categoryGroupId: null }],
+      listings: [{ categoryId: 10, servicesCount: 1, categoryGroupId: 1, groupIds: [1, 2] }],
+    });
+    const c = r.categories[0];
+    expect(c.groupId).toBe(1);
+    expect(c.extraGroupIds).toEqual([2]);
+  });
+});
+
 describe('resolveListings', () => {
   const rows = [{ categoryId: 10, servicesCount: 1 }];
   it('flag desligada → null', () => {

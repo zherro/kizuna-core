@@ -249,7 +249,7 @@ export const resourceServices: Record<string, ResourceConfig> = {
     listRequiresAuth: false,
     // Uma linha por categoria com anúncio; o carrossel cruza com a lista toda (teto padrão: 100).
     maxPageSize: 1000,
-    select: 'category_id,category_name,services_count',
+    select: 'category_id,category_name,services_count,subcategory_ids,category_group_id,group_ids',
     primaryKey: 'category_id',
     defaultOrder: 'category_name',
     searchableColumns: ['category_name'],
@@ -258,6 +258,10 @@ export const resourceServices: Record<string, ResourceConfig> = {
       categoryId: record.category_id,
       name: record.category_name,
       servicesCount: Number(record.services_count ?? 0),
+      // subcategorias com anúncio vivo, grupo primário e grupos (primário + extras) — migração 0013
+      subcategoryIds: Array.isArray(record.subcategory_ids) ? record.subcategory_ids : [],
+      categoryGroupId: record.category_group_id ?? null,
+      groupIds: Array.isArray(record.group_ids) ? record.group_ids : [],
     }),
   },
 };
