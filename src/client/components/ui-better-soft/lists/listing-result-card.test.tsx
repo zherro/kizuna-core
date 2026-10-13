@@ -72,3 +72,22 @@ describe('ListingResultCard cardStyle="evento"', () => {
     expect(screen.queryByText('nov')).toBeNull();
   });
 });
+
+describe('ListingResultCard cardStyle="lugar"', () => {
+  const lugar = { ...base, cardStyle: 'lugar' as const, priceLabel: null, ctaLabel: 'Ver lugar' };
+
+  it.each(['grid', 'strip'] as const)('sem avaliações não mostra o selo "Novo" (%s)', (variant) => {
+    render(<ListingResultCard {...lugar} variant={variant} rating={null} reviewCount={0} />);
+    expect(screen.queryByText('Novo')).toBeNull();
+  });
+
+  it('com avaliações mostra a nota', () => {
+    render(<ListingResultCard {...lugar} rating={4.5} reviewCount={3} />);
+    expect(screen.getByText('4,5')).toBeTruthy();
+  });
+
+  it('default continua com "Novo" sem avaliações', () => {
+    render(<ListingResultCard {...base} />);
+    expect(screen.getByText('Novo')).toBeTruthy();
+  });
+});

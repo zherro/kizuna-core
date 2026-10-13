@@ -5,6 +5,7 @@ import {
   groupChangePatch,
   groupsWithCategories,
   resolveListings,
+  mergeListingFacets,
   resolveActiveGroup,
   selectedFirst,
   subcategoryBlocks,
@@ -175,6 +176,21 @@ describe('buildFilterTaxonomy · subcategorias e grupos da view', () => {
     const c = r.categories[0];
     expect(c.groupId).toBe(1);
     expect(c.extraGroupIds).toEqual([2]);
+  });
+});
+
+describe('mergeListingFacets', () => {
+  const rows = [{ categoryId: 10, servicesCount: 2 }];
+  it('acrescenta subcategorias e grupos da view', () => {
+    const r = mergeListingFacets(rows, [
+      { categoryId: '10', subcategoryIds: [101], categoryGroupId: 1, groupIds: [1, 2] },
+    ]);
+    expect(r?.[0]).toMatchObject({ categoryId: 10, subcategoryIds: [101], groupIds: [1, 2] });
+  });
+  it('sem facetas (migração pendente/erro) devolve as linhas intactas', () => {
+    expect(mergeListingFacets(rows, null)).toBe(rows);
+    expect(mergeListingFacets(rows, [])).toBe(rows);
+    expect(mergeListingFacets(null, [{ categoryId: 10 }])).toBeNull();
   });
 });
 

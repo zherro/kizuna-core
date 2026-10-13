@@ -25,6 +25,7 @@
 
 * [Visão geral](interface/README.md)
   * [Componentes & hooks](interface/componentes.md)
+  * [Blocos da home](interface/blocos-da-home.md)
   * [Screen Engine](interface/screen-engine.md)
   * [Wizard](interface/wizard.md)
   * [Formulários dinâmicos](interface/formularios-dinamicos.md)

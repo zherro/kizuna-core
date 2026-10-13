@@ -206,6 +206,8 @@ export function ListingResultCard({
   const isEvento = cardStyle === 'evento';
   // Lugar: como o default, mas sem preço (vem null do chamador) e sem o "@anunciante".
   const isLugar = cardStyle === 'lugar';
+  // Lugar não tem "idade": sem avaliações, nada de selo "Novo"; com avaliações, mostra a nota.
+  const showRating = !isLugar || (rating != null && reviewCount > 0);
   // Evento usa o mesmo modelo de capa (e a mesma altura) do cinema: capa inteira, `object-contain`.
   const isPosterCard = isCinema || isEvento;
   const resolvedImageAspect = imageAspect ?? (isPosterCard ? 'poster' : 'landscape');
@@ -260,7 +262,7 @@ export function ListingResultCard({
           {subtitleLabel && (
             <p className="line-clamp-1 text-[11px] text-muted-foreground">{subtitleLabel}</p>
           )}
-          {!isPosterCard && <RatingChip rating={rating} reviewCount={reviewCount} />}
+          {!isPosterCard && showRating && <RatingChip rating={rating} reviewCount={reviewCount} />}
           {isPosterCard ? (
             // linha de informação com altura reservada: cinema e evento têm o mesmo tamanho de card
             <div className="mt-auto min-h-4 pt-1">
@@ -314,7 +316,7 @@ export function ListingResultCard({
       leading={
         isPosterCard ? undefined : (
           <div className="flex flex-col gap-2">
-            <RatingChip rating={rating} reviewCount={reviewCount} />
+            {showRating && <RatingChip rating={rating} reviewCount={reviewCount} />}
             {locationLabel && <LocationLine label={locationLabel} />}
             {!isLugar && <ProviderRow providerName={providerName} providerAvatarUrl={providerAvatarUrl} />}
           </div>

@@ -9,6 +9,7 @@ import { useHeaderHeightVar } from '../hooks/use-header-height-var';
 import { useAppPreferences } from '../providers/app-preferences-provider';
 import { useAuth } from '../providers/auth-provider';
 import { Button, buttonVariants } from './ui/button';
+import { HeaderAvatarLink } from './header-avatar-link';
 import { MobileMenuButton } from './mobile-menu-button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from './ui/sheet';
 import { LocationModal, LocationTrigger } from './location-modal';
@@ -175,17 +176,7 @@ export function Topbar({
                     </>
                   ))}
 
-                {user && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleLogout}
-                    disabled={logoutLoading}
-                    className="h-auto px-3 py-1.5 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                  >
-                    {logoutLoading ? 'Saindo...' : 'Sair'}
-                  </Button>
-                )}
+                {user && <HeaderAvatarLink />}
               </div>
 
               <MobileMenuButton

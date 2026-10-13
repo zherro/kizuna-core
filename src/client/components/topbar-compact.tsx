@@ -11,13 +11,13 @@ import {
   Moon,
   Search,
   Sun,
-  UserRound,
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useHeaderHeightVar } from '../hooks/use-header-height-var';
 import { useAppPreferences } from '../providers/app-preferences-provider';
 import { useAuth } from '../providers/auth-provider';
 import { Button, buttonVariants } from './ui/button';
+import { HeaderAvatarLink } from './header-avatar-link';
 import { MobileMenuButton } from './mobile-menu-button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from './ui/sheet';
 import type { TopbarNavLink } from './topbar';
@@ -58,7 +58,7 @@ export function TopbarCompact({
   actions,
   searchHref = '/busca',
   accountLabel = 'Minha conta',
-  accountHref = '/painel',
+  accountHref = '/painel/minha-conta',
 }: TopbarCompactProps = {}) {
   const pathname = usePathname();
   const headerRef = useRef<HTMLElement>(null);
@@ -189,28 +189,8 @@ export function TopbarCompact({
               </div>
             ))}
 
-          {user && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleLogout}
-              disabled={logoutLoading}
-              className="hidden h-9 px-3 text-sm text-muted-foreground hover:text-foreground md:inline-flex"
-            >
-              {logoutLoading ? 'Saindo...' : 'Sair'}
-            </Button>
-          )}
-
-          {/* Mobile: atalho de conta ao lado do menu — Entrar (deslogado) ou
-              Minha conta (logado), este com fundo suave de "botão reverso". */}
           {user ? (
-            <Link
-              href={accountHref}
-              className="inline-flex h-9 items-center gap-1.5 rounded-full bg-primary/10 px-3 text-sm font-medium text-primary transition-colors hover:bg-primary/15 active:bg-primary/20 md:hidden"
-            >
-              <UserRound className="h-4 w-4" />
-              {accountLabel}
-            </Link>
+            <HeaderAvatarLink href={accountHref} label={accountLabel} />
           ) : (
             <Link
               href={loginHref}
@@ -233,7 +213,7 @@ export function TopbarCompact({
       </div>
 
       <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
-        <SheetContent side="right" className="w-72">
+        <SheetContent side="right" className="w-full min-[400px]:w-72">
           <SheetHeader>
             <SheetTitle>{messages.nav.openMenu}</SheetTitle>
           </SheetHeader>

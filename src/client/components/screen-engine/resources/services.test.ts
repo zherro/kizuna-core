@@ -2,8 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { resourceServices } from './services';
 
 describe('resourceServices', () => {
-  it('expõe as cinco chaves', () => {
+  it('expõe as seis chaves', () => {
     expect(Object.keys(resourceServices).sort()).toEqual([
+      'category_service_facets',
       'category_service_stats',
       'service_addresses',
       'service_categories_sub',

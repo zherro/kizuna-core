@@ -9,6 +9,7 @@ import {
   type GroupRow,
   type ListingRow,
   resolveListings,
+  mergeListingFacets,
   type StatRow,
 } from './filter-taxonomy';
 
@@ -58,6 +59,13 @@ export function useFilterTaxonomy({
     enabled: enabled && onlyWithListings,
   });
 
+  // Facetas opcionais (subcategorias/grupos, migração 0013): falha não derruba a contagem.
+  const facets = useResourceOptions<ListingRow & { id: string | number }>({
+    resource: 'category_service_facets',
+    pageSize: 1000,
+    enabled: enabled && onlyWithListings,
+  });
+
   const keepKey = keepCategoryIds.join(',');
   const taxonomy = useMemo(
     () =>
@@ -65,15 +73,18 @@ export function useFilterTaxonomy({
         groups: groups.options,
         categories: categories.options,
         stats: stats.options,
-        listings: resolveListings({
-          enabled: onlyWithListings,
-          rows: listings.options,
-          error: listings.error,
-        }),
+        listings: mergeListingFacets(
+          resolveListings({
+            enabled: onlyWithListings,
+            rows: listings.options,
+            error: listings.error,
+          }),
+          facets.error ? null : facets.options
+        ),
         keepCategoryIds,
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [groups.options, categories.options, stats.options, listings.options, listings.error, onlyWithListings, keepKey]
+    [groups.options, categories.options, stats.options, listings.options, listings.error, facets.options, facets.error, onlyWithListings, keepKey]
   );
 
   // Recarrega desligando/ligando o `enabled` dos três recursos.
@@ -84,7 +95,7 @@ export function useFilterTaxonomy({
 
   return {
     taxonomy,
-    loading: !enabled || stats.loading || groups.loading || categories.loading || listings.loading,
+    loading: !enabled || stats.loading || groups.loading || categories.loading || listings.loading || facets.loading,
     error: stats.error,
     retry,
   };

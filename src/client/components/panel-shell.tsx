@@ -270,7 +270,7 @@ export function PanelShellBase({
         className={cn(
           'fixed inset-y-0 left-0 z-50 flex border-r border-border bg-background transition-transform duration-200',
           !overlayOnly && 'lg:fixed lg:translate-x-0',
-          'w-72',
+          'w-full min-[400px]:w-72',
           collapsed && 'lg:w-24',
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         )}

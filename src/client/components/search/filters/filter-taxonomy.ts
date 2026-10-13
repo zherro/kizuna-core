@@ -116,6 +116,33 @@ export function resolveListings(input: {
   return input.rows;
 }
 
+/**
+ * Junta as facetas (subcategorias/grupos da migração 0013) à contagem por categoria. Facetas
+ * ausentes ou com erro → as linhas seguem como estão (sem filtrar subcategorias).
+ */
+export function mergeListingFacets(
+  rows: ListingRow[] | null,
+  facets: ListingRow[] | null | undefined
+): ListingRow[] | null {
+  if (!rows || !facets || facets.length === 0) return rows;
+  const byCategory = new Map<number, ListingRow>();
+  for (const f of facets) {
+    const id = toId(f.categoryId);
+    if (id !== null) byCategory.set(id, f);
+  }
+  return rows.map((r) => {
+    const f = byCategory.get(toId(r.categoryId) ?? -1);
+    return f
+      ? {
+          ...r,
+          subcategoryIds: f.subcategoryIds,
+          categoryGroupId: f.categoryGroupId,
+          groupIds: f.groupIds,
+        }
+      : r;
+  });
+}
+
 export function buildFilterTaxonomy(input: {
   groups?: GroupRow[] | null;
   categories?: CategoryRow[] | null;

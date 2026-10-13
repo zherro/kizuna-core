@@ -40,6 +40,8 @@ type Props = {
   hideTitle?: boolean;
   /** só grupos/categorias com anúncio publicado (mesma chave do carrossel: `home.categoriesOnlyWithListings`) */
   onlyWithListings?: boolean;
+  /** chamado depois que o USUÁRIO aplica um filtro (não na seleção automática) — a página rola aos resultados */
+  onApplied?: () => void;
 };
 
 /** O que o painel mostra "na hora", antes de a URL (fonte de verdade) devolver os novos filtros. */
@@ -62,6 +64,7 @@ export function SearchFiltersPanel({
   defaultCityIds,
   hideTitle = false,
   onlyWithListings = false,
+  onApplied,
 }: Props) {
   // Categorias marcadas na URL ficam na lista mesmo vazias (link antigo): o usuário consegue limpar.
   const { taxonomy, loading, error, retry } = useFilterTaxonomy({
@@ -79,7 +82,7 @@ export function SearchFiltersPanel({
   const view: SearchFilters = override ? { ...filters, ...override } : filters;
 
   const apply = useCallback(
-    (patch: SearchFilterPatch) => {
+    (patch: SearchFilterPatch, silent = false) => {
       const next: Override = {};
       if (patch.groupSlug !== undefined) next.groupSlug = patch.groupSlug;
       if (patch.categoryIds !== undefined) next.categoryIds = patch.categoryIds;
@@ -87,8 +90,9 @@ export function SearchFiltersPanel({
       if (patch.cityIds !== undefined) next.cityIds = patch.cityIds;
       if (Object.keys(next).length > 0) setOverride((prev) => ({ ...prev, ...next }));
       setFilters(patch);
+      if (!silent) onApplied?.();
     },
-    [setFilters]
+    [setFilters, onApplied]
   );
 
   // ─── visão: categorias do grupo × lista de grupos ───────────────────────────────────────
@@ -100,10 +104,13 @@ export function SearchFiltersPanel({
   const focusPending = useRef(false);
 
   const resolved = resolveActiveGroup(taxonomy, view);
-  const activeGroup =
-    resolved.group ?? (view.groupSlug ? null : findGroupBySlug(taxonomy, stickySlug));
   const visibleGroups = useMemo(() => groupsWithCategories(taxonomy), [taxonomy]);
   const hasGroups = visibleGroups.length > 0;
+  // Um único grupo visível não é escolha: vale como grupo em vigor (só na exibição, fora da URL).
+  const soleGroup = !view.groupSlug && visibleGroups.length === 1 ? visibleGroups[0] : null;
+  const activeGroup =
+    resolved.group ??
+    (view.groupSlug ? null : (findGroupBySlug(taxonomy, stickySlug) ?? soleGroup));
   const showGroups =
     hasGroups && (picking || (!activeGroup && view.categoryIds.length === 0));
 
@@ -150,6 +157,25 @@ export function SearchFiltersPanel({
     return [...base, ...extra];
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [taxonomy, activeGroup, hasGroups, view.categoryIds.join(',')]);
+
+  // Uma única categoria disponível não é escolha: já vem marcada (uma vez; "desmarcar" respeita).
+  const soleCategory = !loading && categoryList.length === 1 ? categoryList[0] : null;
+  const autoPicked = useRef<number | null>(null);
+  useEffect(() => {
+    if (!soleCategory || view.categoryIds.length > 0) return;
+    if (autoPicked.current === soleCategory.id) return;
+    autoPicked.current = soleCategory.id;
+    // repete o grupo da visão: o `filters` da URL ainda pode estar um ciclo atrás da escolha do grupo
+    apply(
+      {
+        ...(view.groupSlug ? { groupSlug: view.groupSlug } : {}),
+        categoryIds: [soleCategory.id],
+        subcategoryIds: [],
+      },
+      true
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [soleCategory?.id, view.categoryIds.length]);
 
   const rememberGroupIfEmptied = (nextCategoryIds: number[]) => {
     if (nextCategoryIds.length === 0 && resolved.deduced && resolved.group) {
@@ -254,7 +280,7 @@ export function SearchFiltersPanel({
               name={activeGroup?.name ?? null}
               icon={activeGroup?.icon ?? null}
               fallbackLabel={hasGroups ? 'Todas as categorias' : 'Categorias'}
-              onClick={hasGroups ? goToGroups : undefined}
+              onClick={visibleGroups.length > 1 ? goToGroups : undefined}
             />
             {categoryList.length > 0 ? (
               <FilterCategoryList

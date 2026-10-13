@@ -7,6 +7,7 @@ import {
   AlertTriangle,
   Bell,
   Boxes,
+  Building2,
   CalendarClock,
   ClipboardList,
   Contrast,
@@ -118,6 +119,8 @@ const ICON_BY_SECTION: Record<ShowcaseSectionId, React.ComponentType<{ className
   'ad-extra-fields': ClipboardList,
   'service-detail-evento': Ticket,
   'search-filter-blocks': SlidersHorizontal,
+  'place-highlights': Building2,
+  'news-highlights': Newspaper,
 };
 
 type ShowcaseShellProps = {

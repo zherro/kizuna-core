@@ -54,6 +54,12 @@ routes — `/painel/root/[slug]` and `/painel/security/[slug]` — shipped as `m
 core template (`template/src/app/painel/root/[slug]/page.tsx`, which fills the `configuracoes` and
 `ia` slots).
 
+## `client/components/home/*` — blocos da home
+
+`DiscoverCta` (banner de chamada) e `PlaceHighlights` (lugares da cidade: destaque + índice,
+chapéu com cor por grupo via `placeTone`). Recebem dados prontos por props — ver
+[Blocos da home](blocos-da-home.md).
+
 ## `client/components/showcase/*` — visual catalog
 
 `ShowcaseShell` (nav shell + icon map), `ShowcaseSectionPage` (renders one section's live demo +

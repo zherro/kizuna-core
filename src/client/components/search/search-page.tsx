@@ -173,6 +173,39 @@ function SearchPageInner({
   // consulta/ordem (novo seed a cada página traria duplicatas e ordem inconsistente).
   const effectiveBodyRef = useRef<SearchAdsBody | null>(null);
   const pageRef = useRef(0);
+  const resultsRef = useRef<HTMLDivElement>(null);
+  /** Trava a altura da área de resultados enquanto recarrega: sem isso a página encolhe, o scroll
+   * é "clampado" e dá um tranco quando os resultados voltam. */
+  const [holdHeight, setHoldHeight] = useState<number | null>(null);
+  const holdAt = useRef(0);
+
+  // Solta a altura travada quando a nova busca terminou (e a rolagem suave já andou).
+  useEffect(() => {
+    if (holdHeight === null || loading) return;
+    const wait = Math.max(150, 700 - (Date.now() - holdAt.current));
+    const timer = setTimeout(() => setHoldHeight(null), wait);
+    return () => clearTimeout(timer);
+  }, [holdHeight, loading]);
+
+  /** Depois de aplicar um filtro, leva suavemente o topo dos resultados à vista (sem pular). */
+  const scrollToResults = useCallback(() => {
+    const el = resultsRef.current;
+    if (!el || typeof window === 'undefined') return;
+    holdAt.current = Date.now();
+    setHoldHeight(el.offsetHeight);
+    const css = getComputedStyle(document.documentElement);
+    const rem = parseFloat(css.fontSize) || 16;
+    const headerRaw = css.getPropertyValue('--kz-header-h').trim();
+    const header = headerRaw
+      ? headerRaw.endsWith('rem')
+        ? parseFloat(headerRaw) * rem
+        : parseFloat(headerRaw)
+      : 4.5 * rem;
+    const top = el.getBoundingClientRect().top + window.scrollY - (header || 4.5 * rem) - 16;
+    if (window.scrollY <= top + 8) return; // já está no topo dos resultados (ou acima)
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    window.scrollTo({ top: Math.max(0, top), behavior: reduce ? 'auto' : 'smooth' });
+  }, []);
   const [heroInput, setHeroInput] = useState(filters.query ?? '');
   const [isLocationOpen, setLocationOpen] = useState(false);
   const [chatCollapsed, setChatCollapsed] = useState(true);
@@ -709,6 +742,7 @@ function SearchPageInner({
                 effectiveCityIds={effectiveCityIds}
                 defaultCityIds={defaultCityIds}
                 onlyWithListings={categoryCarousel?.onlyWithListings === true}
+                onApplied={scrollToResults}
                 hideTitle
               />
             </div>
@@ -783,12 +817,17 @@ function SearchPageInner({
                 effectiveCityIds={effectiveCityIds}
                 defaultCityIds={defaultCityIds}
                 onlyWithListings={categoryCarousel?.onlyWithListings === true}
+                onApplied={scrollToResults}
               />
             </div>
           </aside>
 
           {/* Resultados: a cidade selecionada primeiro; depois a região (vizinhas e sugestões). */}
-          <div className="min-w-0 space-y-10">
+          <div
+            ref={resultsRef}
+            className="min-w-0 space-y-10"
+            style={holdHeight !== null ? { minHeight: holdHeight } : undefined}
+          >
             {cityEmptyWithRegion ? (
               <p className="rounded-[var(--ui-radius-card-sm,0.5rem)] border-[length:var(--ui-border-w-card,1px)] border-dashed border-border bg-card px-4 py-3 text-sm text-muted-foreground">
                 Nada em <span className="font-medium text-foreground">{locationLabel}</span> com
@@ -935,6 +974,7 @@ function SearchPageInner({
                 effectiveCityIds={effectiveCityIds}
                 defaultCityIds={defaultCityIds}
                 onlyWithListings={categoryCarousel?.onlyWithListings === true}
+                onApplied={scrollToResults}
                 hideTitle
               />
             </div>

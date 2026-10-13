@@ -54,7 +54,9 @@ export type ShowcaseSectionId =
   | 'directions-card'
   | 'ad-extra-fields'
   | 'service-detail-evento'
-  | 'search-filter-blocks';
+  | 'search-filter-blocks'
+  | 'place-highlights'
+  | 'news-highlights';
 
 export type ShowcaseGroupId = 'shadcn-default' | 'ui-better-soft' | 'tools';
 
@@ -1439,6 +1441,62 @@ export function CategoriasDoGrupo({ group, categoryIds, subcategoryIds, onChange
         }
       />
     </>
+  );
+}`,
+  },
+  {
+    id: 'place-highlights',
+    groupId: 'ui-better-soft',
+    label: 'Lugares da cidade',
+    description:
+      'Bloco de home com o primeiro lugar em destaque (foto inteira, gradiente, chapeu, titulo e resumo) e os demais num indice: carrossel com scroll-snap no celular, grade no tablet e lista com miniatura no desktop. O chapeu (kicker) tem a cor do grupo, escolhida de forma deterministica pelo texto (placeTone). Sem foto, mostra o gradiente do grupo com um pino. Contrato puro de dados; sem itens, nao renderiza nada.',
+    usageCode: `import { PlaceHighlights } from '@kizuna/core/client/components/home/place-highlights';
+
+export function LugaresDaHome() {
+  return (
+    <PlaceHighlights
+      title="Lugares da cidade"
+      moreHref="/cuiaba-mt/lugares"
+      items={[
+        {
+          href: '/cuiaba-mt/lugares/arena-pantanal',
+          title: 'Arena Pantanal',
+          kicker: 'Estádio e arenas',
+          summary: 'Estádio da cidade, com jogos, shows e visita guiada.',
+          image: '/lugares/arena-pantanal/01.jpg',
+          meta: 'Av. Agrícola Paes de Barros, s/n',
+        },
+        { href: '/cuiaba-mt/lugares/pantanal-shopping', title: 'Pantanal Shopping', kicker: 'Shopping' },
+      ]}
+    />
+  );
+}`,
+  },
+  {
+    id: 'news-highlights',
+    groupId: 'ui-better-soft',
+    label: 'Noticias',
+    description:
+      'Bloco de home com linguagem de portal: manchete grande (foto + tira sobreposta com chapeu, titulo, resumo e tempo) ao lado de uma lista numerada das seguintes, com miniatura. O chapeu tem cor deterministica pelo texto (kickerTone), misturada com --foreground para ler bem no claro e no escuro. Tempo relativo sem hydration mismatch: o servidor renderiza a data absoluta e o cliente troca por "ha X h". Sem itens, nao renderiza nada.',
+    usageCode: `import { NewsHighlights } from '@kizuna/core/client/components/home/news-highlights';
+
+export function NoticiasDaHome() {
+  return (
+    <NewsHighlights
+      title="Notícias"
+      moreHref="/busca?group=noticias"
+      items={[
+        {
+          href: '/cuiaba-mt/anuncio/1',
+          title: 'Câmara aprova novo plano de mobilidade para o centro',
+          kicker: 'Política',
+          summary: 'Projeto prevê faixas exclusivas de ônibus e ciclovias na região central.',
+          image: '/noticias/camara.jpg',
+          publishedAt: '2026-10-13T14:30:00Z',
+        },
+        { href: '/cuiaba-mt/anuncio/2', title: 'Cuiabá vence e sobe na tabela', kicker: 'Esportes' },
+      ]}
+    />
   );
 }`,
   },

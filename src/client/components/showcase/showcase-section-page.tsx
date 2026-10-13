@@ -79,6 +79,8 @@ import { MobileTabBar } from '../ui-better-soft/mobile-tab-bar';
 import { LocationTrigger, LocationModal } from '../location-modal';
 import { FormBuilderShowcaseDemo } from '../form-builder/showcase-demo';
 import { SearchFilterBlocksDemo } from '../search/filters/showcase-demo';
+import { PlaceHighlights, type PlaceHighlightItem } from '../home/place-highlights';
+import { NewsHighlights, type NewsHighlightItem } from '../home/news-highlights';
 import { FormsShowcaseDemo } from '../forms/showcase-demo';
 import { PagesAdminShowcaseDemo } from '../pages/showcase-demo';
 import { ColorChip } from '../ui-better-soft/color-chip';
@@ -1214,6 +1216,72 @@ function ServiceDetailEventoDemo() {
   );
 }
 
+const PLACE_HIGHLIGHTS_DEMO: PlaceHighlightItem[] = [
+  {
+    href: '#arena',
+    title: 'Arena do Centro',
+    kicker: 'Estádio e arenas',
+    summary: 'Estádio da cidade, com jogos, shows e visita guiada com agendamento às terças e quintas.',
+    meta: 'Av. Principal, s/n, Centro',
+  },
+  { href: '#shopping', title: 'Shopping das Palmeiras', kicker: 'Shopping', meta: 'Av. das Palmeiras, 500' },
+  { href: '#festas', title: 'Espaço Jardim Festas', kicker: 'Casa de festas', meta: 'Rua das Flores, 77' },
+  { href: '#noturna', title: 'Casa Lua Cheia', kicker: 'Casa noturna', meta: 'Rua do Porto, 12' },
+];
+
+function PlaceHighlightsDemo() {
+  return <PlaceHighlights items={PLACE_HIGHLIGHTS_DEMO} moreHref="#todos" contained={false} />;
+}
+
+/* Datas fixas (não `Date.now()`): o texto do servidor e o da hidratação precisam bater. */
+const NEWS_HIGHLIGHTS_DEMO: NewsHighlightItem[] = [
+  {
+    href: '#manchete',
+    title: 'Câmara aprova plano que leva faixas de ônibus e ciclovias ao centro histórico',
+    kicker: 'Política',
+    summary:
+      'O projeto prevê obras em etapas a partir de março, com prioridade para as avenidas que ligam o Porto à Prainha. A prefeitura tem 90 dias para apresentar o cronograma.',
+    image: '/lugares/arena-pantanal/01.jpg',
+    publishedAt: '2026-10-13T14:30:00Z',
+  },
+  {
+    href: '#esporte',
+    title: 'Cuiabá vence clássico na Arena e volta ao G-4 do estadual',
+    kicker: 'Esportes',
+    image: '/lugares/arena-pantanal/02.jpg',
+    publishedAt: '2026-10-13T12:10:00Z',
+  },
+  {
+    href: '#clima',
+    title: 'Frente fria derruba temperatura e traz chuva para o fim de semana',
+    kicker: 'Meio Ambiente & Clima',
+    publishedAt: '2026-10-13T09:00:00Z',
+  },
+  {
+    href: '#cultura',
+    title: 'Festival de cururu e siriri abre inscrições para grupos da Baixada',
+    kicker: 'Cultura & Entretenimento',
+    image: '/imagem-que-nao-existe.jpg',
+    publishedAt: '2026-10-12T20:45:00Z',
+  },
+  {
+    href: '#cidade',
+    title: 'Linha de ônibus nova liga o CPA ao Coxipó a partir de segunda',
+    kicker: 'Cidade',
+    publishedAt: '2026-10-11T16:00:00Z',
+  },
+  {
+    href: '#historia',
+    title: 'Os 307 anos da Igreja do Rosário contados por quem cresceu ao lado dela',
+    kicker: 'História',
+    publishedAt: '2026-10-06T10:00:00Z',
+  },
+];
+
+function NewsHighlightsDemo() {
+  return <NewsHighlights items={NEWS_HIGHLIGHTS_DEMO} moreHref="#todas" contained={false} />;
+}
+
 function SectionDemo({ sectionId }: { sectionId: ShowcaseSectionId }) {
   if (sectionId === 'cards') return <CardsDemo />;
   if (sectionId === 'buttons') return <ButtonsDemo />;
@@ -1270,6 +1338,8 @@ function SectionDemo({ sectionId }: { sectionId: ShowcaseSectionId }) {
   if (sectionId === 'ad-extra-fields') return <AdExtraFieldsDemo />;
   if (sectionId === 'service-detail-evento') return <ServiceDetailEventoDemo />;
   if (sectionId === 'search-filter-blocks') return <SearchFilterBlocksDemo />;
+  if (sectionId === 'place-highlights') return <PlaceHighlightsDemo />;
+  if (sectionId === 'news-highlights') return <NewsHighlightsDemo />;
   return <UiBetterSoftDemo />;
 }
 
