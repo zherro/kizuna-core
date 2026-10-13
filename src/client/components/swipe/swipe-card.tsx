@@ -2,15 +2,12 @@
 
 import { Star } from 'lucide-react';
 import type { ServiceResult } from '../search/search-types';
-import { formatCurrency } from '../../../lib/shared/currency-mask';
 import { formatLocationLabel } from '../search/format-location-label';
-import { PRICE_UNIT_LABEL } from '../services/service-labels';
+import { cardPriceParts } from '../services/service-helpers';
 
 export function priceLabel(r: { price: number | null; price_type: string }): string {
-  const isQuote = r.price_type === 'quote' || r.price == null || Number(r.price) <= 0;
-  if (isQuote) return 'Sob consulta';
-  const unit = PRICE_UNIT_LABEL[r.price_type] ?? '';
-  return `${formatCurrency(Number(r.price))}${unit ? ` ${unit}` : ''}`;
+  const { amount, caption } = cardPriceParts(r.price, r.price_type);
+  return caption ? `${caption} ${amount}` : amount;
 }
 
 /** Capa do item. O card do swipe ocupa quase a tela: imagem grande; listas pequenas usam `'thumb'`. */

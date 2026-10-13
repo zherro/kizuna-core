@@ -8,6 +8,13 @@
 -- coluna o cliente só teria o slug da categoria. Parâmetros e comportamento idênticos aos da 0004;
 -- a coluna é a única mudança. Como o `RETURNS TABLE` muda, faz `DROP FUNCTION` da assinatura
 -- anterior (12 parâmetros) e refaz o `GRANT`.
+--
+-- Filtro por grupo (`p_group_category_slug`) aceita também o grupo PRINCIPAL da categoria
+-- (`categories.category_group_id`): anúncio sem grupo gravado, ou de categoria que mudou de grupo,
+-- aparece no carrossel/busca do grupo da categoria dele.
+-- Também devolve `event_start` (`form_results.answers->>'data_inicio'`, AAAA-MM-DDTHH:MM local):
+-- o card do evento mostra a data do evento, e ela só existe nas respostas do formulário. Lido só
+-- para a página de resultados (depois do LIMIT), nunca para todos os candidatos.
 
 DROP FUNCTION IF EXISTS public.fn_search_services(character varying, integer, character varying, bigint, jsonb, text, double precision, integer, integer, text, text[], text[]);
 
@@ -42,7 +49,8 @@ RETURNS TABLE(
   reviews integer,
   city text,
   state text,
-  address_count integer
+  address_count integer,
+  event_start character varying
 )
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -173,6 +181,9 @@ BEGIN
       AND (
         v_group_id IS NULL
         OR s.category_group_id = v_group_id
+        -- grupo principal da categoria: anúncio sem grupo gravado (ou com um grupo antigo, de
+        -- antes de a categoria mudar de grupo) continua aparecendo no grupo da categoria dele
+        OR c.category_group_id = v_group_id
         OR EXISTS (
           SELECT 1
           FROM public.categories_group_link cgl
@@ -251,8 +262,16 @@ BEGIN
     pg.reviews::integer,
     COALESCE(ad.a_city, pg.provider_city)::text,
     COALESCE(ad.a_state, pg.provider_state)::text,
-    COALESCE(ad.cnt, 0)::integer
+    COALESCE(ad.cnt, 0)::integer,
+    ev.event_start
   FROM page pg
+  LEFT JOIN LATERAL (
+    SELECT NULLIF(fr.answers->>'data_inicio', '')::character varying AS event_start
+    FROM public.form_results fr
+    WHERE fr.domain = 'service'
+      AND fr.reference_id = pg.service_id::text
+    LIMIT 1
+  ) ev ON true
   LEFT JOIN LATERAL (
     SELECT a.city AS a_city, a.state AS a_state, count(*) OVER () AS cnt
     FROM public.service_addresses a

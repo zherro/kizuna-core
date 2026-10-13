@@ -47,3 +47,20 @@ export function formatServicePrice(startingPrice: number, priceUnit: string) {
   const unitLabel = PRICE_UNIT_LABEL[priceUnit] ?? priceUnit;
   return `${amount} · ${unitLabel}`;
 }
+
+/**
+ * Preço de card/listagem em duas partes. `unit` ("por unidade") não diz nada ao leitor — o valor
+ * do anúncio é sempre o menor preço —, então vira legenda pequena "A partir de" sobre o valor.
+ * Demais unidades mantêm o sufixo ("por hora"...); sem preço, "Sob consulta".
+ */
+export function cardPriceParts(
+  price: number | null | undefined,
+  priceType: string | null | undefined
+): { amount: string; caption: string | null } {
+  const value = Number(price ?? 0);
+  if (priceType === 'quote' || !(value > 0)) return { amount: 'Sob consulta', caption: null };
+  const amount = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+  if (priceType === 'unit') return { amount, caption: 'A partir de' };
+  const unit = PRICE_UNIT_LABEL[priceType ?? ''] ?? '';
+  return { amount: unit ? `${amount} ${unit}` : amount, caption: null };
+}

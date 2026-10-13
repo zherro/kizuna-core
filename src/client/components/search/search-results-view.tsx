@@ -2,8 +2,7 @@
 
 import { MapPin, SearchX } from 'lucide-react';
 import { ListingResultCard } from '../ui-better-soft/lists/listing-result-card';
-import { formatCurrency } from '../../../lib/shared/currency-mask';
-import { PRICE_UNIT_LABEL } from '../services/service-labels';
+import { cardPriceParts } from '../services/service-helpers';
 import { resolveServiceCardVariant, type ServiceDetailConfig } from '../services/detail/category-style';
 import { variantCardProps } from '../services/detail/event-card';
 import { TrackView } from '../../analytics/track-view';
@@ -48,22 +47,18 @@ type Props = {
   relaxedLabel?: string | null;
 };
 
-function priceLabel(r: ServiceResult): string {
-  const isQuote = r.price_type === 'quote' || r.price == null || Number(r.price) <= 0;
-  if (isQuote) return 'Sob consulta';
-  const unit = PRICE_UNIT_LABEL[r.price_type] ?? '';
-  return `${formatCurrency(Number(r.price))}${unit ? ` ${unit}` : ''}`;
-}
 
 function toCardProps(r: ServiceResult, detailConfig?: ServiceDetailConfig | null) {
   const variant = resolveServiceCardVariant({ slug: r.category_slug, groupSlug: r.category_group_slug }, detailConfig);
   // Cada variant (cinema, evento...) tem o próprio estilo de card — a mesma que decide o detalhe.
-  const extra = variantCardProps(variant, { startingPrice: r.price, priceUnit: r.price_type });
+  const price = cardPriceParts(r.price, r.price_type);
+  const extra = variantCardProps(variant, { startingPrice: r.price, priceUnit: r.price_type, startsAt: r.event_start });
 
   return {
     href: serviceHref(r),
     title: r.title,
-    priceLabel: priceLabel(r),
+    priceLabel: price.amount,
+    priceCaption: price.caption,
     cardStyle: 'default' as const,
     tagLabel: r.category,
     subtitleLabel: r.subcategory,

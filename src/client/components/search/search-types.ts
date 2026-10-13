@@ -22,6 +22,8 @@ export type ServiceResult = {
   /** slug do grupo de categorias do anúncio (`categories_group.slug`) — chave pra escolher layout
    * por grupo (`serviceDetail.variantByGroupSlug`); ausente em RPCs anteriores à 0005. */
   category_group_slug?: string | null;
+  /** Início do evento (`answers.data_inicio`, AAAA-MM-DDTHH:MM local) — só anúncios com formulário de evento; ausente em RPCs antigas. */
+  event_start?: string | null;
   subcategory: string | null;
   sponsored: boolean;
   cover_file_id: string | null;

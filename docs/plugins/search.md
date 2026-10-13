@@ -15,6 +15,12 @@ devolvem as mesmas colunas de local.
 `p_query`, `p_seed`, `p_page`, `p_page_size` e **`p_city_ibge`** (texto). O filtro de cidade usa
 `p_city_ibge`; `p_city_id` continua na assinatura por compatibilidade.
 
+`p_group_category_slug` (busca por grupo e carrossel de grupo da home) aceita o anúncio quando o
+grupo bate em qualquer um destes: o grupo gravado no anúncio (`services.category_group_id`), o grupo
+principal da categoria (`categories.category_group_id`, migração **0005**) ou um vínculo secundário
+(`categories_group_link`). Assim, um carrossel de grupo pega todas as categorias do grupo, mesmo
+anúncio sem grupo gravado ou de categoria que mudou de grupo.
+
 ## Busca com IA (liga/desliga)
 
 `search.ai` no `kizuna.config.json` (padrão `true`). Com `false`, a `/busca` não mostra o assistente Naví (botões, chat, balão) nem o título "Buscar com IA": fica só a busca por texto + filtros. A página repassa o valor via `aiEnabled` do `SearchPage`.

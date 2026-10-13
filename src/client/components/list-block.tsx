@@ -20,6 +20,8 @@ import { Input } from './ui/input';
 import { EmptyStateCard } from './ui-better-soft/lists/empty-state-card';
 import { GatedCreateLink } from './gated-create-link';
 import { useTable } from '../hooks';
+import { useResourceOptions } from '../hooks/use-resource-options';
+import { SearchableSelect } from './ui/searchable-select';
 import type { ResourceConfig } from '../../types/resource';
 import { postgrestResources } from '@/lib/server/resources';
 import { cn } from '../../lib/utils';
@@ -88,6 +90,20 @@ export type FieldDisplayConfig = {
   format: FieldFormat;
 };
 
+export type ListSelectFilter = {
+  /** Coluna do recurso listado que recebe o `eq` (ex.: `category_group_id`). */
+  field: string;
+  /** Texto da opção "todos" (ex.: "Todos os grupos"); também é o rótulo acessível. */
+  label: string;
+  /** Recurso que fornece as opções (`id` = valor). */
+  resource: string;
+  /** Campo do item de opção usado como texto. Padrão `name`. */
+  labelField?: string;
+  /** Restringe as opções pelo valor de outro filtro: `filter` = `field` do filtro pai,
+   * `optionField` = coluna do recurso de opções (ex.: `category_group_id` em `categories`). */
+  dependsOn?: { filter: string; optionField: string };
+};
+
 export type ListBlockConfig = {
   resource: string;
   pageSize?: number;
@@ -126,6 +142,16 @@ export type ListBlockConfig = {
    * `"$session.xxx"` in the screen config rather than hardcoding it — see `context.ts`.
    */
   fixedFilters?: Record<string, string>;
+  /**
+   * Filtros de seleção (dropdown) sobre colunas do recurso listado, com opções vindas de outro
+   * recurso — ex.: grupo de categoria e categoria em /painel/meus-servicos. `dependsOn` encadeia:
+   * as opções deste filtro são restritas pelo valor escolhido em outro (e ele limpa quando o pai
+   * muda). Dado puro (cruza Server → Client), sem funções.
+   */
+  selectFilters?: ListSelectFilter[];
+  /** Coluna de ordenação (padrão: `defaultOrder` do recurso) e direção (padrão: `desc`). */
+  orderBy?: string;
+  orderDirection?: 'asc' | 'desc';
   createAction?: { href: string; label: string };
   /**
    * `message`/`description` cobrem "nada cadastrado ainda"; sem eles o texto é montado com
@@ -265,26 +291,39 @@ export function ListBlock({ config }: { config: ListBlockConfig }) {
   const ActionIcon = config.action.icon && ICON_MAP[ACTION_ICON_MAP[config.action.icon]];
 
   const [statusFilter, setStatusFilter] = useState(config.statusFilter?.defaultValue ?? '');
+  const [selectValues, setSelectValues] = useState<Record<string, string>>({});
+  const selectFilters = config.selectFilters ?? [];
+  const setSelectValue = (field: string, value: string) =>
+    setSelectValues((prev) => {
+      const next = { ...prev, [field]: value };
+      // filho de um filtro que mudou volta para "todos" (a opção dele pode não existir mais)
+      for (const f of selectFilters) if (f.dependsOn?.filter === field) next[f.field] = '';
+      return next;
+    });
   const fixedFilters = config.fixedFilters;
   const filters = useMemo(() => {
     const merged: Record<string, string> = {};
     for (const [field, value] of Object.entries(fixedFilters ?? {})) {
       if (value) merged[field] = value;
     }
+    for (const [field, value] of Object.entries(selectValues)) {
+      if (value) merged[field] = value;
+    }
     if (statusFilter) merged.status = statusFilter;
     return Object.keys(merged).length > 0 ? merged : undefined;
-  }, [statusFilter, fixedFilters]);
+  }, [statusFilter, fixedFilters, selectValues]);
+  const hasSelectFilter = Object.values(selectValues).some(Boolean);
 
   const { items, loading, search, setSearch, page, total, totalPages, goToPage, submitSearch } =
     useTable({
       resource: config.resource,
       pageSize: config.pageSize ?? 10,
-      orderBy: resourceConfig.defaultOrder ?? 'created_at',
-      orderDirection: 'desc',
+      orderBy: config.orderBy ?? resourceConfig.defaultOrder ?? 'created_at',
+      orderDirection: config.orderDirection ?? 'desc',
       filters,
     });
 
-  const isUnfiltered = !statusFilter && !search;
+  const isUnfiltered = !statusFilter && !search && !hasSelectFilter;
   // Nada cadastrado ainda (sem busca/filtro): a tela vira só o estado vazio — contagem "0 registros"
   // e barra de busca não ajudam em nada aqui e só poluem, principalmente no mobile.
   const isPristineEmpty = !loading && total === 0 && isUnfiltered;
@@ -361,6 +400,20 @@ export function ListBlock({ config }: { config: ListBlockConfig }) {
               <span className="hidden sm:inline">Buscar</span>
             </Button>
           </form>
+
+          {selectFilters.length > 0 ? (
+            <div className="grid gap-2 sm:grid-cols-2">
+              {selectFilters.map((f) => (
+                <ListSelectFilterField
+                  key={f.field}
+                  filter={f}
+                  value={selectValues[f.field] ?? ''}
+                  parentValue={f.dependsOn ? (selectValues[f.dependsOn.filter] ?? '') : undefined}
+                  onChange={(value) => setSelectValue(f.field, value)}
+                />
+              ))}
+            </div>
+          ) : null}
         </>
       )}
 
@@ -510,5 +563,45 @@ export function ListBlock({ config }: { config: ListBlockConfig }) {
         </>
       )}
     </div>
+  );
+}
+
+/** Um dropdown de `selectFilters`: opções do recurso, com "todos" (valor vazio) no topo. */
+function ListSelectFilterField({
+  filter,
+  value,
+  parentValue,
+  onChange,
+}: {
+  filter: ListSelectFilter;
+  value: string;
+  parentValue?: string;
+  onChange: (value: string) => void;
+}) {
+  const labelField = filter.labelField ?? 'name';
+  const { options } = useResourceOptions({
+    resource: filter.resource,
+    labelField,
+    filter:
+      filter.dependsOn && parentValue ? { [filter.dependsOn.optionField]: parentValue } : undefined,
+  });
+  const selectOptions = useMemo(
+    () => [
+      { value: '', label: filter.label },
+      ...options
+        .map((o) => ({ value: String(o.id), label: String(o[labelField] ?? o.id) }))
+        .sort((a, b) => a.label.localeCompare(b.label, 'pt-BR')),
+    ],
+    [options, labelField, filter.label]
+  );
+
+  return (
+    <SearchableSelect
+      value={value}
+      onChange={onChange}
+      options={selectOptions}
+      placeholder={filter.label}
+      searchable={selectOptions.length > 8}
+    />
   );
 }

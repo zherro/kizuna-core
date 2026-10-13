@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { ListingResultCard } from '../../ui-better-soft/lists/listing-result-card';
 import type { ServiceResult } from '../../search/search-types';
-import { thumbUrl, formatServicePrice } from '../service-helpers';
+import { thumbUrl, cardPriceParts } from '../service-helpers';
 import { serviceHref } from '../../../../shared/city-routing/city-slug';
 import { formatLocationLabel } from '../../search/format-location-label';
 import { resolveServiceCardVariant, type ServiceDetailConfig } from './category-style';
@@ -59,12 +59,13 @@ export function ServiceCarousel({
       <div className="overflow-hidden" ref={emblaRef}>
         <div className="flex gap-4">
           {services.map((service) => {
+            const price = cardPriceParts(service.price, service.price_type);
             const extra = variantCardProps(
               resolveServiceCardVariant(
                 { slug: service.category_slug, groupSlug: service.category_group_slug },
                 detailConfig
               ),
-              { startingPrice: service.price, priceUnit: service.price_type }
+              { startingPrice: service.price, priceUnit: service.price_type, startsAt: service.event_start }
             );
             return (
               <ListingResultCard
@@ -73,10 +74,11 @@ export function ServiceCarousel({
                 href={serviceHref(service)}
                 title={service.title}
                 priceLabel={
-                  extra ? extra.priceLabel : formatServicePrice(Number(service.price ?? 0), service.price_type)
+                  extra ? extra.priceLabel : price.amount
                 }
-                priceCaption={extra?.priceCaption}
+                priceCaption={extra ? extra.priceCaption : price.caption}
                 dateLabel={extra?.dateLabel}
+                whenLabel={extra?.whenLabel}
                 cardStyle={extra?.cardStyle ?? 'default'}
                 tagLabel={service.category}
                 subtitleLabel={service.subcategory}

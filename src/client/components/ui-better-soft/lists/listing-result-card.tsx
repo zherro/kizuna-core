@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { MapPin, Sparkles, Star } from 'lucide-react';
+import { CalendarDays, MapPin, Sparkles, Star } from 'lucide-react';
 import { cn } from '../../../../lib/utils';
 import { MediaResultCard } from './media-result-card';
 
@@ -30,6 +30,8 @@ export type ListingResultCardProps = {
   cardStyle?: 'default' | 'cinema' | 'evento';
   /** Bloco de data sobre a capa (`cardStyle='evento'`): dia ("14") + mês abreviado ("nov"). */
   dateLabel?: { day: string; month: string } | null;
+  /** `'evento'`: data por extenso ("sáb., 14 de nov. · 20:00"), no lugar do valor. */
+  whenLabel?: string | null;
   /** Prefixo pequeno do preço, ex. "A partir de". Renderizado sobre `priceLabel`. */
   priceCaption?: string | null;
   /** Badge no topo-direito (ex. categoria). */
@@ -185,6 +187,7 @@ export function ListingResultCard({
   cardStyle = 'default',
   tagLabel,
   dateLabel,
+  whenLabel,
   priceCaption,
   subtitleLabel,
   imageUrl,
@@ -255,6 +258,12 @@ export function ListingResultCard({
           )}
           {!isCinema && !isEvento && <RatingChip rating={rating} reviewCount={reviewCount} />}
           {locationLabel && <LocationLine label={locationLabel} />}
+          {isEvento && whenLabel && (
+            <span className="mt-auto inline-flex items-center gap-1 pt-1 text-[11px] font-semibold text-foreground">
+              <CalendarDays className="h-3 w-3 shrink-0" />
+              <span className="truncate">{whenLabel}</span>
+            </span>
+          )}
           {!isCinema && priceLabel != null && (
             <div className="mt-auto pt-1">
               <PriceBlock label={priceLabel} caption={priceCaption} className="text-sm font-black leading-none" />
@@ -321,6 +330,12 @@ export function ListingResultCard({
           </>
         ) : (
           <>
+            {isEvento && whenLabel && (
+              <span className="inline-flex min-w-0 items-center gap-1.5 text-xs font-semibold text-foreground">
+                <CalendarDays className="h-3.5 w-3.5 shrink-0 text-brand" />
+                <span className="truncate">{whenLabel}</span>
+              </span>
+            )}
             {priceLabel != null && (
               <PriceBlock label={priceLabel} caption={priceCaption} className="text-lg font-black leading-none" />
             )}

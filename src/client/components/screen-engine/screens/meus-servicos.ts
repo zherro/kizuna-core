@@ -47,6 +47,18 @@ const listConfig: ListBlockConfig = {
   action: { label: 'Editar', hrefBase: '/painel/meus-servicos', icon: 'edit' },
   statusFilter: {},
   fixedFilters: { tenant_id: '$session.tenantId' },
+  // Grupo e categoria (a categoria se restringe ao grupo escolhido); mais recentes primeiro.
+  selectFilters: [
+    { field: 'category_group_id', label: 'Todos os grupos', resource: 'categories_group' },
+    {
+      field: 'category_id',
+      label: 'Todas as categorias',
+      resource: 'categories_public',
+      dependsOn: { filter: 'category_group_id', optionField: 'category_group_id' },
+    },
+  ],
+  orderBy: 'created_at',
+  orderDirection: 'desc',
   // "Novo serviço" é ação do cabeçalho (page-header.createAction, abaixo), não da lista.
   // Gates "Novo servico"/the empty-state CTA behind onboarding completion — a service's detail
   // page shows the advertiser's own profile data, so there must be a completed profile to show.
