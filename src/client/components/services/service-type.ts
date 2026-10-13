@@ -97,6 +97,13 @@ export type ServiceWizardState = {
   addresses: ServiceAddress[];
   /** Transient: último conjunto sabidamente gravado no banco — base do diff do `persist`. */
   addressesSnapshot?: ServiceAddress[];
+  /** Passo `links` (só com a permissão `services.link`): `extras.codigo`, `extras.tags` (texto
+   * separado por vírgula) e `extras.vinculosTitulo`. */
+  codigo?: string;
+  tagsText?: string;
+  vinculosTitulo?: string;
+  /** Transient: o que estava gravado ao carregar — base do diff do passo `links`. */
+  linksSnapshot?: { codigo: string; tags: string[]; vinculosTitulo: string };
 };
 
 /** Endereço de atendimento do serviço (linha de `service_addresses`). `id` só existe depois de

@@ -4,8 +4,8 @@ description: Plugin services — anúncios de serviço, subcategorias, endereço
 
 # Plugin `services`
 
-Domínio marketplace de serviços: o anúncio de um prestador. Versão atual: **1.3.0**
-(`plugins/services/0001` a `0004`). O cadastro usa o [wizard](../interface/wizard.md); a busca
+Domínio marketplace de serviços: o anúncio de um prestador. Versão atual: **1.7.0**
+(`plugins/services/0001` a `0012`). O cadastro usa o [wizard](../interface/wizard.md); a busca
 pública está em [Plugin `search`](search.md).
 
 ## Tabelas
@@ -76,6 +76,104 @@ A página de detalhe do anúncio mostra a **Localização** do endereço primár
 ativo): o endereço em texto, o mapa quando há coordenadas e os atalhos de "Como chegar", conforme os
 blocos de [Conteúdo](../arquitetura/modelo-de-conteudo.md). Aparece só na variant padrão (`service`);
 cinema e evento tratam o local por conta própria.
+
+## Tags (`extras.tags`, migração 0011)
+
+`services.extras.tags` é um array JSON de strings que agrupa anúncios além da taxonomia: um local e
+os eventos que acontecem nele, todos os shoppings, todas as casas de festas. Convenção:
+
+* minúsculas, sem acento, kebab-case: `casas-de-festas`, `shoppings`;
+* `:` separa um prefixo: `local:<slug-do-local>` liga o local aos anúncios que acontecem nele.
+
+```json
+{ "tags": ["casas-de-festas", "local:espaco-x"] }
+```
+
+A migração 0011 só cria índices parciais: o GIN `services_extras_tags` sobre `(extras->'tags')`, nos
+anúncios publicados (`active AND status = 'active'`). Não há constraint: linha sem `tags`, ou com
+`tags` fora do padrão, continua válida. O índice atende `?|`, `?` e `@>`.
+
+Quem lê: a busca (`fn_search_services(p_tags => ...)`) e os carrosséis por tag (`ServiceTagRail`,
+`tagRails` da tela de detalhe). Detalhes em [search](search.md), seção "Filtro por tag".
+
+{% hint style="warning" %}
+O painel ainda não edita `extras.tags`: hoje elas vêm de importadores (de-para) ou de SQL direto.
+O wizard do anúncio preserva as chaves de `extras` que não conhece (`persistExtras` mescla com o
+registro carregado, `src/client/components/wizard/persist-resource.ts`), então editar o anúncio no
+painel não apaga as tags.
+{% endhint %}
+
+### Código, organizador e vinculados (`extras.codigo`)
+
+Um anúncio pode ter um **código** próprio; os outros o citam em `extras.tags`. A tela de detalhe usa
+isso nos dois sentidos, sem campo novo no banco (tudo vive em `extras`).
+
+| Chave em `extras` | O que é | Quem grava | Onde é lida |
+|---|---|---|---|
+| `codigo` | string, o código do anúncio (ex.: `espaco-art-festas-e-eventos`) | quem tem a permissão `services.link` (seção "Vínculos" do wizard), o importador de lugares ou SQL | `fetchOrganizer` e `fetchTagRails` (`service-detail-data.ts`) |
+| `tags` | array de strings; para referenciar outro anúncio, o `codigo` dele | quem tem `services.link`, importadores (de-para de eventos e de lugares) | busca (`p_tags`), carrosséis por tag e `fetchOrganizer` |
+| `vinculosTitulo` | string opcional, título do carrossel de vinculados (1 a 60 caracteres; senão ignorada) | quem tem `services.link`, importador (lugares, frontmatter `vinculos_titulo`) ou SQL | `linkedRailTitle` (`src/shared/service-tags.ts`) |
+
+- **Quem organiza** (pai): o anúncio ativo (`active` e `status = 'active'`) cujo `extras.codigo` é
+  igual a uma das tags do anúncio aberto, exceto ele mesmo. Das tags (normalizadas, até 3, formato
+  `[a-z0-9:._-]`, em ordem) faz uma única consulta `extras->>codigo=in.(...)` pelo `where` de
+  `serverFetchResource` (leitura pública, `auth: null`, `order=created_at.asc`). Vence a primeira tag
+  da lista que tiver dono. A variant `evento` mostra "Organizado por <título>" com link no lugar do
+  texto de `realizador`. Dado: `ServiceDetailData.organizer?: { uid, title, href } | null`; ausente,
+  `null` ou erro de rede = comportamento antigo.
+- **Vinculados** (filhos): se o anúncio aberto tem `extras.codigo`, o carrossel de vinculados lista os
+  anúncios ativos com esse código em `extras.tags` (RPC de busca com `p_tags = [codigo]`, sem o
+  próprio), ACIMA dos carrosséis por tag compartilhada e fora do limite de 2 deles. Título:
+  `extras.vinculosTitulo` ou "Vinculados". O mapeamento `local:` para "Neste local" vale só para as
+  tags compartilhadas (convenção antiga).
+- **Unicidade:** o `codigo` é único entre os anúncios não arquivados, no banco todo (índice UNIQUE
+  parcial `services_extras_codigo_uniq`, migração 0012; global porque a busca do organizador e o
+  carrossel de vinculados não filtram por tenant). Um segundo anúncio não consegue tomar um código
+  que já existe; anúncio arquivado pode repetir. Anúncio pausado ou arquivado não é achado como
+  organizador: o link some e o texto volta.
+- **Link:** `/<cidade>/anuncio/<uid>` com a cidade do anúncio se o endereço do organizador for da
+  mesma cidade; senão cidade e UF do endereço dele; senão `/anuncios/<uid>`, que redireciona.
+- **Índice:** btree parcial `services_extras_codigo` sobre `(extras->>'codigo')`, restrito a
+  `active AND status = 'active' AND (extras->>'codigo') IS NOT NULL` (migração 0011). A igualdade
+  implica o `IS NOT NULL`, então a consulta usa o índice (conferido com EXPLAIN em 50 mil anúncios).
+- **Custo:** 1 consulta a mais por página de detalhe, só quando o anúncio tem tags (mais 1 pelos
+  endereços do organizador quando ele é achado) e 1 chamada da RPC de busca para os vinculados, só
+  quando o anúncio tem `codigo`. Entram no mesmo cache da página.
+
+### Permissão `services.link` e validação no banco (migração 0012)
+
+Código e vínculos mudam o que aparece nas páginas dos outros anúncios, então escrever
+`extras.codigo`, `extras.tags` e `extras.vinculosTitulo` exige a permissão `services.link`
+("Definir código e vínculos do anúncio"):
+
+- **Quem pode hoje:** root (o `fun_auth_has_perm` já libera root) e sessões de sistema, ou seja,
+  importação e robôs que rodam como superusuário sem JWT (sem `user_id`). Papel `anon`/`auth_user`
+  sem usuário não passa. A migração NÃO concede a permissão a nenhum papel.
+- **Conceder depois, sem código:** no painel de acesso (RBAC), marque `services` / `link` no papel ou
+  no usuário; ela entra no `perms` do JWT no próximo login. A seção "Vínculos" do wizard aparece
+  para quem a tem (`user.hasPerm('services', 'link')`); sem ela o passo some e o payload nunca leva
+  essas chaves.
+- **Onde é barrado:** trigger `trg_services_extras_links_guard` em `public.services` (BEFORE INSERT
+  OR UPDATE OF extras). Compara cada chave com o valor antigo (ausente, `null`, texto vazio e `[]`
+  contam como vazio). Mudou sem permissão: erro `42501`. Reenviar os mesmos valores, como faz o
+  wizard ao mesclar `extras`, e editar outras colunas ou chaves passa normalmente.
+- **Formato (vale para todos, inclusive root e sistema; erro `22023`):** `codigo` com
+  `[a-z0-9][a-z0-9._-]{0,59}`; `tags` lista de até 10 itens, cada um `[a-z0-9][a-z0-9:._-]{0,59}`;
+  `vinculosTitulo` texto de até 60 caracteres. Só o valor que mudou é validado, então dado antigo
+  fora do padrão não trava edições não relacionadas. As mesmas regras estão em
+  `src/shared/service-tags.ts` (`CODIGO_PATTERN`, `TAG_PATTERN`) e validam o formulário.
+- **Unicidade:** ver acima. Se a migração achar `codigo` repetido, não cria o índice: emite um
+  WARNING com a consulta para listar os repetidos. Depois de corrigir, EXECUTE O ARQUIVO DE NOVO
+  (`db migrate` não o reexecuta, a versão do plugin já foi atualizada); o `pendentes_services_tags.sql`
+  termina com um SELECT que mostra se o índice existe.
+- **Efeito da concessão:** conceder `services.link` só vale depois que o usuário renovar o token
+  (as permissões são lidas do JWT): novo login ou renovação da sessão.
+- **Regra para código futuro:** nenhuma RPC SECURITY DEFINER exposta a `anon`/`auth_user` pode copiar
+  `codigo`, `tags` ou `vinculosTitulo` de entrada do usuário para `services.extras`: dentro de uma
+  função SECURITY DEFINER a sessão é de sistema e o trigger deixaria passar.
+- **Outros caminhos que gravam `extras`:** moderação (`fn_service_moderate`) só muda `status`;
+  likes só `like_count`; revisão por IA só `description`; exclusão de conta só `active`: nenhum
+  dispara o trigger. O wizard lê e mescla `extras` inteiro, preservando as chaves.
 
 ## Moderação
 

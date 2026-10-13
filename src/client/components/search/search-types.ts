@@ -117,6 +117,10 @@ export type SearchAdsBody = {
    * `p_city_ibge` continua sendo a selecionada (vem primeiro na ordem). Preenchido pelo proxy
    * (`withRegionCities`) ou por quem chama a RPC direto no servidor. */
   p_city_ibges?: string[] | null;
+  /** Tags de `services.extras.tags` (`fn_search_services` 0008, semântica ANY: o anúncio tem pelo
+   * menos uma). Ausente/`null`/`[]` = sem filtro. Só mande quando houver tags — sem a chave, a RPC
+   * anterior à 0008 continua aceitando a chamada. */
+  p_tags?: string[] | null;
 };
 
 export type TaxonomySubcategory = { id: number; name: string };

@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import Link from 'next/link';
 import { CopyValueButton } from './copy-value-button';
 import {
   CalendarDays,
@@ -146,7 +147,7 @@ export const ServiceDetailEventoSidebar: ServiceDetailVariantComponent = ({ serv
  * e contato. Todo campo de `answers` é opcional: bloco sem dado some. Ver
  * `docs/integracoes/eventos-depara.md` no projeto consumidor.
  */
-export const ServiceDetailEvento: ServiceDetailVariantComponent = ({ service, extraFields, hue, labels }) => {
+export const ServiceDetailEvento: ServiceDetailVariantComponent = ({ service, extraFields, hue, labels, organizer }) => {
   const answers = extraFields?.answers ?? {};
 
   const when = formatEventWhen(answers);
@@ -172,11 +173,25 @@ export const ServiceDetailEvento: ServiceDetailVariantComponent = ({ service, ex
   const email = textField(answers.contato_email);
   const over = isEventOver(answers, service.expiresAt);
 
-  type FactItem = { icon: ReactNode; label: string; value: string };
+  type FactItem = { icon: ReactNode; label: string; value: ReactNode };
+  // Casa resolvida pela tag `local:<slug>` → "Organizado por <casa>" (link); senão o `realizador` texto.
+  const organizerFact: FactItem | null =
+    organizer?.href && organizer.title
+      ? {
+          icon: <Users className="h-4 w-4" />,
+          label: 'Organizado por',
+          value: (
+            <Link href={organizer.href} className="underline-offset-2 hover:text-brand hover:underline">
+              {organizer.title}
+            </Link>
+          ),
+        }
+      : null;
   const factsRaw: (FactItem | null)[] = [
     when ? { icon: <CalendarDays className="h-4 w-4" />, label: 'Data', value: when } : null,
     classificacao ? { icon: <Clapperboard className="h-4 w-4" />, label: 'Classificação', value: classificacao } : null,
-    realizador ? { icon: <Users className="h-4 w-4" />, label: 'Realização', value: realizador } : null,
+    organizerFact ??
+      (realizador ? { icon: <Users className="h-4 w-4" />, label: 'Realização', value: realizador } : null),
     {
       icon: <Wallet className="h-4 w-4" />,
       label: 'Entrada',

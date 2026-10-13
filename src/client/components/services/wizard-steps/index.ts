@@ -14,6 +14,7 @@ import { StepImages } from './step-images';
 import { StepDescription } from './step-description';
 import { StepDynamicForm, dynamicFormCategory, getDynamicFormHolder } from './step-dynamic-form';
 import { StepModeration } from './step-moderation';
+import { linksStep } from './step-links';
 import { syncServiceSubcategories } from './sync-service-subcategories';
 import { moderateService } from './moderate-service';
 
@@ -133,6 +134,9 @@ export const SERVICE_WIZARD_STEPS: Record<string, WizardStep<ServiceWizardState>
     },
   },
 
+  // Opcional e só com a permissão `services.link` (ver step-links.tsx).
+  links: linksStep,
+
   moderation: {
     key: 'moderation',
     label: 'Status',
@@ -160,5 +164,6 @@ export { StepImages } from './step-images';
 export { StepDescription } from './step-description';
 export { StepDynamicForm } from './step-dynamic-form';
 export { StepModeration } from './step-moderation';
+export { StepLinks } from './step-links';
 export { moderateService, type ModerateServiceArgs } from './moderate-service';
 export { syncServiceSubcategories } from './sync-service-subcategories';

@@ -6,6 +6,8 @@ export type PermissionActions = {
   manage?: boolean;
   /** Ações de plugins (ex.: ai_review.review) vêm do mesmo mapa. */
   review?: boolean;
+  /** `services.link`: definir código e vínculos (`extras.codigo/tags/vinculosTitulo`) do anúncio. */
+  link?: boolean;
 };
 export type PermissionMap = Record<string, PermissionActions>;
 

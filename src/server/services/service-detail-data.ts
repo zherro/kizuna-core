@@ -6,6 +6,16 @@ import type { RoutableCity } from '../../shared/city-routing/city-slug';
 import { pickServiceCity, type ServiceAddressLike } from './service-city';
 import { fetchServiceSiblings, type ServiceSibling } from './service-siblings';
 import { projectRegions } from '../regions';
+import { buildTagSearchParams } from './tag-rail-data';
+import {
+  codigoCandidates,
+  codigoOf,
+  linkedRailTitle,
+  orderTagsForRails,
+  serviceTagRailTitle,
+  serviceTagsOf,
+} from '../../shared/service-tags';
+import { cityPath, serviceHref } from '../../shared/city-routing/city-slug';
 import type { FormSchema, FormValues } from '../../client/components/form-builder';
 import type { ServiceRecord } from '../../client/components/services/service-type';
 import type { ServiceResult } from '../../client/components/search/search-types';
@@ -39,6 +49,12 @@ export type ServiceExtraFields = { schema: FormSchema; answers: FormValues } | n
 
 export type RelatedResult = { items: ServiceResult[]; scope: 'category' | 'group' };
 
+/** Carrossel "por tag" da tela de detalhe: outros anúncios com a tag `tag` (`extras.tags`). */
+export type ServiceTagRailResult = { tag: string; title: string; items: ServiceResult[] };
+
+/** No máximo quantos carrosséis por tag a tela de detalhe mostra. */
+export const MAX_DETAIL_TAG_RAILS = 2;
+
 /** Local do endereço primário do anúncio (JSON-serializável). `address` é texto pronto pra exibir. */
 export type ServiceLocation = {
   address: string;
@@ -47,12 +63,21 @@ export type ServiceLocation = {
   label: string | null;
 };
 
+/** Serviço cujo `extras.codigo` o anúncio cita em `extras.tags` — quem organiza (ex.: a casa do evento). JSON-serializável. */
+export type ServiceOrganizer = { uid: string; title: string; href: string };
+
 export type ServiceDetailData = {
   service: ServiceRecord;
   subcategoryNames: string[];
   provider: ProviderProfile | null;
   extraFields: ServiceExtraFields;
   related: RelatedResult;
+  /** Carrosséis por tag, acima dos relacionados: primeiro o de vinculados (anúncios que citam o
+   * `extras.codigo` deste serviço; título `extras.vinculosTitulo` ou "Vinculados"), depois os das
+   * tags compartilhadas (`extras.tags`; `local:*` primeiro, no máximo `MAX_DETAIL_TAG_RAILS`), sem
+   * repetir anúncio entre eles. Opcional: dado em cache gerado
+   * antes deste campo não o tem (trate ausente como `[]`). */
+  tagRails?: ServiceTagRailResult[];
   randomServices: ServiceResult[];
   /** Cidade canônica do anúncio (URL fixa `/[cidade]/anuncio/[uid]`); `null` = sem cidade resolvível. */
   city: RoutableCity | null;
@@ -60,6 +85,8 @@ export type ServiceDetailData = {
   siblings: ServiceSibling[];
   /** Endereço primário e ativo (texto + coordenadas); `null` = sem endereço utilizável. */
   location: ServiceLocation | null;
+  /** Serviço ativo cujo `extras.codigo` é uma das `extras.tags` do anúncio (quem organiza). Opcional: cache gerado antes deste campo não o tem (trate ausente como `null`). */
+  organizer?: ServiceOrganizer | null;
 };
 
 type CategoryTaxonomyRow = { id: number | string; slug?: string; categoryGroupId?: number | string | null };
@@ -177,10 +204,13 @@ async function fetchExtraFields(serviceUid: string): Promise<ServiceExtraFields>
 /** Outros anúncios ativos pra mostrar abaixo — mesma categoria primeiro, alargando pro grupo só
  * quando a categoria sozinha estiver rala. Reusa a mesma RPC pública da busca (`/busca`), então os
  * cards mostram preço/prestador/imagem reais. */
-async function fetchRelatedServices(service: ServiceRecord): Promise<RelatedResult> {
+async function fetchRelatedServices(
+  service: ServiceRecord,
+  excludeUids: ReadonlySet<string> = new Set()
+): Promise<RelatedResult> {
   const seed = seedFromKey(service.uid);
   const exclude = (rows: ServiceResult[]) =>
-    rows.filter((row) => row.uid !== service.uid).slice(0, 8);
+    rows.filter((row) => row.uid !== service.uid && !excludeUids.has(row.uid)).slice(0, 8);
 
   const categoryId = Number(service.categoryId);
   const byCategory = Number.isFinite(categoryId)
@@ -195,6 +225,46 @@ async function fetchRelatedServices(service: ServiceRecord): Promise<RelatedResu
   }
 
   return { items: byCategory, scope: 'category' };
+}
+
+/** Carrosséis por tag: um por tag do anúncio (`local:*` primeiro), no máximo
+ * `MAX_DETAIL_TAG_RAILS` com itens. Cada um exclui o próprio anúncio e o que um carrossel de tag
+ * anterior já mostrou; tag sem outros anúncios não vira carrossel (passa para a próxima). Seed
+ * estável por anúncio+tag, como os relacionados. */
+export async function fetchTagRails(service: ServiceRecord): Promise<ServiceTagRailResult[]> {
+  const code = codigoOf(service);
+  const rails: ServiceTagRailResult[] = [];
+  const shown = new Set<string>([service.uid]);
+
+  // Vinculados: anúncios que citam o `codigo` deste serviço em `tags`. Vêm ANTES dos carrosséis por
+  // tag compartilhada e não contam no limite deles; o que mostram não repete nos de baixo.
+  if (code) {
+    const params = buildTagSearchParams([code], { pageSize: 8 + shown.size });
+    const rows = params
+      ? await runServiceSearch(params, seedFromKey(`${service.uid}:vinculados`)).catch(() => [])
+      : [];
+    const items = rows.filter((row) => !shown.has(row.uid)).slice(0, 8);
+    if (items.length > 0) {
+      items.forEach((item) => shown.add(item.uid));
+      rails.push({ tag: code, title: linkedRailTitle(service), items });
+    }
+  }
+
+  // o próprio código nas tags (anúncio que cita a si mesmo) já é o carrossel de vinculados
+  const tags = orderTagsForRails(serviceTagsOf(service)).filter((t) => t !== code);
+  let shared = 0;
+  for (const tag of tags) {
+    if (shared >= MAX_DETAIL_TAG_RAILS) break;
+    const params = buildTagSearchParams([tag], { pageSize: 8 + shown.size });
+    if (!params) continue;
+    const rows = await runServiceSearch(params, seedFromKey(`${service.uid}:tag:${tag}`));
+    const items = rows.filter((row) => !shown.has(row.uid)).slice(0, 8);
+    if (items.length === 0) continue;
+    items.forEach((item) => shown.add(item.uid));
+    rails.push({ tag, title: serviceTagRailTitle(tag), items });
+    shared += 1;
+  }
+  return rails;
 }
 
 /** Segunda trilha, sem relação com a categoria — exclui o próprio anúncio e o que a 1ª trilha já
@@ -295,24 +365,93 @@ async function fetchServiceCityAndLocation(
   };
 }
 
+/** No máximo quantas tags do anúncio são procuradas como `codigo` (numa única consulta). */
+const MAX_ORGANIZER_TAGS = 3;
+
+/**
+ * "Quem organiza": o serviço ATIVO (`active` + `status='active'`) cujo `extras.codigo` é igual a uma
+ * tag do anúncio, exceto o próprio. Convenção: um serviço tem um código (`extras.codigo`) e os
+ * outros o citam em `extras.tags`. Nenhum prefixo é fixo.
+ *
+ * Uma consulta só, PostgREST: `extras->>codigo=in.(t1,t2,t3)&active=eq.true&status=eq.active&
+ * uid=neq.<uid>&order=created_at.asc` (via `where`; usa o índice parcial `services_extras_codigo`).
+ * Vence a primeira tag da lista do anúncio que tiver dono; código repetido entre ativos → o mais
+ * antigo (`created_at`). Link canônico: cidade do anúncio se o endereço do organizador for da mesma
+ * cidade; senão cidade/UF do endereço dele; senão o legado `/anuncios/<uid>` (redireciona). Erro →
+ * `null` (bloco opcional). Organizador pausado/arquivado não é achado: o link some.
+ */
+export async function fetchOrganizer(
+  service: ServiceRecord,
+  eventCity: RoutableCity | null
+): Promise<ServiceOrganizer | null> {
+  const tags = codigoCandidates(serviceTagsOf(service), MAX_ORGANIZER_TAGS);
+  if (tags.length === 0) return null;
+  try {
+    const rows = await serverFetchResource<ServiceRecord>(
+      'services',
+      { active: 'true', status: 'active' },
+      {
+        auth: null,
+        limit: tags.length * 2,
+        orderBy: 'created_at',
+        orderDirection: 'asc',
+        where: {
+          'extras->>codigo': `in.(${tags.join(',')})`,
+          uid: `neq.${service.uid}`,
+        },
+      }
+    );
+    for (const tag of tags) {
+      const page = rows.find((r) => r?.uid && r.uid !== service.uid && r.title && codigoOf(r) === tag);
+      if (page) return { uid: page.uid, title: page.title, href: await organizerHref(page, eventCity) };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+async function organizerHref(house: ServiceRecord, eventCity: RoutableCity | null): Promise<string> {
+  const addresses = await serverFetchResource<ServiceAddressRow>(
+    'service_addresses',
+    { service_id: house.id, active: 'true' },
+    { auth: null, limit: 5, orderBy: 'is_primary', orderDirection: 'desc' }
+  ).catch(() => [] as ServiceAddressRow[]);
+  const ibgeOf = (a: ServiceAddressRow) => String(a.cityIbge ?? a.city_ibge ?? '').trim();
+  if (eventCity && addresses.some((a) => ibgeOf(a) === eventCity.ibge)) {
+    return cityPath(eventCity, `/anuncio/${house.uid}`);
+  }
+  const named = addresses.find((a) => clean(a.city) && /^[A-Za-z]{2}$/.test(clean(a.state)));
+  return serviceHref({ uid: house.uid, city: named?.city ?? null, state: named?.state ?? null });
+}
+
 export async function loadServiceDetail(uid: string): Promise<ServiceDetailData | null> {
   const fetched = await fetchService(uid);
   if (!fetched) return null;
   const service = await ensureServiceTaxonomy(fetched);
 
-  const [subcategoryNames, provider, extraFields, related] = await Promise.all([
+  // relacionados esperam só os carrosséis por tag (pra não repetir card); sem tag, saem na hora
+  const tagRailsPromise = fetchTagRails(service);
+  const uidsOf = (rails: ServiceTagRailResult[]) =>
+    new Set(rails.flatMap((rail) => rail.items.map((item) => item.uid)));
+  const [subcategoryNames, provider, extraFields, tagRails, related] = await Promise.all([
     fetchSubcategoryNames(service),
     fetchProviderProfile(service.uid),
     fetchExtraFields(service.uid),
-    fetchRelatedServices(service),
+    tagRailsPromise,
+    tagRailsPromise.then((rails) => fetchRelatedServices(service, uidsOf(rails))),
   ]);
+  const tagUids = uidsOf(tagRails);
   const randomServices = await fetchRandomServices(
     service,
-    new Set(related.items.map((item) => item.uid))
+    new Set([...tagUids, ...related.items.map((item) => item.uid)])
   );
 
   const { city, location } = await fetchServiceCityAndLocation(service, provider);
-  const siblings = await fetchServiceSiblings(service, city?.ibge, projectRegions);
+  const [siblings, organizer] = await Promise.all([
+    fetchServiceSiblings(service, city?.ibge, projectRegions),
+    fetchOrganizer(service, city),
+  ]);
 
   return {
     service,
@@ -320,9 +459,11 @@ export async function loadServiceDetail(uid: string): Promise<ServiceDetailData 
     provider,
     extraFields,
     related,
+    tagRails,
     randomServices,
     city,
     siblings,
     location,
+    organizer,
   };
 }

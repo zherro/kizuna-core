@@ -134,6 +134,8 @@ export {
   type ProviderProfile,
   type ServiceExtraFields,
   type RelatedResult,
+  type ServiceTagRailResult,
+  MAX_DETAIL_TAG_RAILS,
 } from './services/service-detail-data';
 export { fetchServiceSiblings, type ServiceSibling } from './services/service-siblings';
 export {
@@ -142,6 +144,12 @@ export {
   type CategoryRailData,
   type CategoryRailTarget,
 } from './services/category-rail-data';
+export {
+  loadServicesByTags,
+  buildTagSearchParams,
+  type ServiceTagRailData,
+  type LoadServicesByTagsOptions,
+} from './services/tag-rail-data';
 export { createContactHandler } from './tickets/contact-handler';
 export {
   createContactTicket,

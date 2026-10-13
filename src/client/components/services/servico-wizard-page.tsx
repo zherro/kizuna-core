@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useResourceOptions } from '../../hooks/use-resource-options';
 import { useAppPreferences } from '../../providers/app-preferences-provider';
+import { useAuth } from '../../providers/auth-provider';
+import { serviceLinksOf } from '../../../shared/service-tags';
 import {
   Wizard,
   createWizardFromJson,
@@ -92,6 +94,9 @@ export function ServicoWizardPage({
   useConversation,
 }: ServicoWizardPageProps) {
   const { messages } = useAppPreferences();
+  const { user } = useAuth();
+  // Seção "Vínculos" (código/tags/título dos vinculados): só com a permissão `services.link`.
+  const canLinkService = user?.hasPerm?.('services', 'link') === true;
   const t = messages.wizard.page;
   const { config, layoutProps, assistantEnabled } = useMemo(
     () => createWizardFromJson<ServiceWizardState>(
@@ -183,8 +188,10 @@ export function ServicoWizardPage({
       categoriesLoading,
       subcategoriesLoading,
       serviceSubcategoryLinks: links,
+      canLinkService,
     }),
     [
+      canLinkService,
       groups,
       categories,
       subcategories,
@@ -198,6 +205,15 @@ export function ServicoWizardPage({
   const initialState = useMemo<ServiceWizardState>(() => {
     if (mode === 'create' || !record) return EMPTY_STATE;
     const savedImages = record.extras?.images;
+    const saved = serviceLinksOf(record.extras);
+    const linksState = canLinkService
+      ? {
+          codigo: saved.codigo,
+          tagsText: saved.tags.join(', '),
+          vinculosTitulo: saved.vinculosTitulo,
+          linksSnapshot: saved,
+        }
+      : {};
     const addresses: ServiceAddress[] = addressRecords.map((a) => ({
       ...a,
       clientId: `addr-${a.id}`,
@@ -223,8 +239,9 @@ export function ServicoWizardPage({
       addressComplete: addresses.some(isAddressComplete),
       addresses,
       addressesSnapshot: addresses,
+      ...linksState,
     };
-  }, [mode, record, links, addressRecords]);
+  }, [mode, record, links, addressRecords, canLinkService]);
 
   // Naví conversacional é `create`-only e opt-in pelo JSON (`assistant: true`). O hook, quando
   // fornecido, roda sempre (regra de hooks) — só não é passado fora do create.

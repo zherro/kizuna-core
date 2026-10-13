@@ -23,12 +23,13 @@ if (typeof window !== 'undefined' && !window.matchMedia) {
 }
 
 describe('SERVICE_WIZARD_STEPS', () => {
-  it('tem as 8 chaves', () => {
+  it('tem as 9 chaves', () => {
     expect(Object.keys(SERVICE_WIZARD_STEPS).sort()).toEqual([
       'category',
       'description',
       'dynamic-form',
       'images',
+      'links',
       'location',
       'moderation',
       'price',

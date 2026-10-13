@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import type { ServiceDetailLabels } from './category-style';
 import type { ServiceRecord } from '../service-type';
-import type { ServiceExtraFields, ProviderProfile } from '../../../../server/services/service-detail-data';
+import type { ServiceExtraFields, ProviderProfile, ServiceOrganizer } from '../../../../server/services/service-detail-data';
 import type { ServiceSibling } from '../../../../server/services/service-siblings';
 
 export type { CategoryStyleInput, SectionTitlesConfig, ServiceDetailLabels, ReactionButtonConfig, ServiceDetailConfig, ServiceDetailVariant } from './category-style';
@@ -19,6 +19,8 @@ export type ServiceDetailVariantProps = {
   labels: ServiceDetailLabels;
   /** O mesmo anúncio nas cidades irmãs (`regions`) — a variant decide se/como mostra. */
   siblings?: ServiceSibling[];
+  /** Casa/local que organiza o anúncio (tag `local:<slug>`), quando resolvida — usada pelo evento. */
+  organizer?: ServiceOrganizer | null;
 };
 
 export type ServiceDetailVariantComponent = (props: ServiceDetailVariantProps) => ReactNode;

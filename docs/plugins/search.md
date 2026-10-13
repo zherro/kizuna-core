@@ -5,14 +5,15 @@ description: Plugin search — RPC fn_search_services, filtro de local por ender
 # Plugin `search`
 
 Busca pública de serviços: RPC `fn_search_services` (`SECURITY DEFINER`, chamável por `anon`) e a
-página `/busca`. Versão atual: **1.1.0** (`plugins/search/0002_search_addresses.sql`). Depende de
+página `/busca`. Versão atual: **1.7.0** (`plugins/search/0008_search_tags.sql`). Depende de
 [`services`](services.md) 1.2.0 ou superior. o deck do plugin `swipe`
 devolvem as mesmas colunas de local.
 
 ## Parâmetros de filtro
 
 `p_state`, `p_city_id`, `p_group_category_slug`, `p_category_id`, `p_subcategories` (jsonb),
-`p_query`, `p_seed`, `p_page`, `p_page_size` e **`p_city_ibge`** (texto). O filtro de cidade usa
+`p_query`, `p_seed`, `p_page`, `p_page_size`, **`p_city_ibge`** (texto), `p_exclude_category_slugs`,
+`p_city_ibges`, `p_category_ids` e `p_tags` (ver "Filtro por tag"). O filtro de cidade usa
 `p_city_ibge`; `p_city_id` continua na assinatura por compatibilidade.
 
 `p_group_category_slug` (busca por grupo e carrossel de grupo da home) aceita o anúncio quando o
@@ -20,6 +21,55 @@ grupo bate em qualquer um destes: o grupo gravado no anúncio (`services.categor
 principal da categoria (`categories.category_group_id`, migração **0005**) ou um vínculo secundário
 (`categories_group_link`). Assim, um carrossel de grupo pega todas as categorias do grupo, mesmo
 anúncio sem grupo gravado ou de categoria que mudou de grupo.
+
+## Filtro por tag (`p_tags`, migração 0008)
+
+`p_tags jsonb` (último parâmetro, default `NULL`) filtra pelas tags de `services.extras.tags`
+(convenção e índice em [services](services.md)). Semântica **ANY**: o
+anúncio entra se tiver pelo menos uma das tags pedidas. `NULL`, `[]`, um valor que não é array ou
+só strings vazias não filtram nada. As tags pedidas são normalizadas (`btrim` + minúsculas); as
+gravadas são comparadas como estão, por isso grave-as já no formato da convenção.
+
+Combina com todos os outros filtros (categoria, grupo, cidade e irmãs, texto). Exemplo:
+
+```sql
+SELECT title FROM public.fn_search_services(NULL, NULL, NULL,
+  p_city_ibge => '5103403', p_tags => '["local:espaco-x", "casas-de-festas"]');
+```
+
+Pela API: `POST /api/resources/fn_search_services` com `"p_tags": ["local:espaco-x"]`. No servidor,
+`runServiceSearch({ p_tags: tags }, seed)`. Só mande a chave quando houver tags: assim a mesma
+chamada funciona num banco ainda sem a 0008.
+
+O filtro é uma pré-seleção de ids (`(extras->'tags') ?| ...` com o mesmo predicado do índice
+parcial) feita antes da consulta principal. Assim o índice GIN serve mesmo quando o PL/pgSQL troca
+para o plano genérico. Em tabela pequena o planner pode preferir varredura sequencial, o que é
+esperado.
+
+### Carrossel por tag (`ServiceTagRail`)
+
+* `loadServicesByTags(tags, { limit, cityIbge, cityIbges, excludeUid, excludeUids, seed })`
+  (`src/server/services/tag-rail-data.ts`, exportado por `@kizuna/core/server`): mesma RPC, mesmo
+  pool/`hasMore` do `loadCategoryRail`. Devolve `null` sem tag válida ou sem itens.
+* `ServiceTagRail` (`src/client/components/services/detail/service-tag-rail.tsx`): Server
+  Component assíncrono que chama o loader e desenha com `ShuffledServiceCarouselSection` (padrão)
+  ou `ServiceCarouselSection` (`shuffle={false}`). Some sozinho sem itens. Título padrão: "Neste
+  local" para tag `local:*`, senão "Mais em" seguido da tag humanizada. Não está no barrel
+  `services/detail` (importa código de servidor): importe pelo caminho do arquivo, só em Server
+  Components. Fica fora do showcase pelo mesmo motivo (o showcase é client e não faz fetch).
+
+```tsx
+import { ServiceTagRail } from '@kizuna/core/client/components/services/detail/service-tag-rail';
+
+<ServiceTagRail tags={['local:espaco-x']} excludeUid={service.uid} limit={10} />
+```
+
+* Tela de detalhe: `loadServiceDetail` preenche `tagRails` (no máximo `MAX_DETAIL_TAG_RAILS` = 2,
+  tags `local:*` primeiro, sem o próprio anúncio e sem repetir card entre os carrosséis) e a
+  `ServiceDetailPage` mostra esses carrosséis acima de "Também pode te interessar", que também
+  deixa de repetir os cards deles. `tagRails` é opcional: dado em cache de antes do campo vira `[]`.
+* Funções puras em `src/shared/service-tags.ts`: `normalizeServiceTags`, `serviceTagsOf`,
+  `humanizeServiceTag`, `serviceTagRailTitle`, `orderTagsForRails`.
 
 ## Busca com IA (liga/desliga)
 
@@ -142,6 +192,7 @@ type Props = {
 ## Performance
 
 * O filtro usa os índices parciais de `service_addresses` (`(state, city_ibge)` e `(city_ibge)`).
+* O filtro por tag usa o índice GIN parcial `services_extras_tags` (plugin `services` 0011).
 * `city`, `state` e `address_count` são calculados por `LATERAL` **depois** do `LIMIT`/`OFFSET`,
   apenas para as linhas da página.
 * No cliente, `p_city_ibge` faz parte da chave que dispara nova busca; não há requisição extra.

@@ -102,7 +102,7 @@ function formatUntil(date: Date): string {
 
 /** Uma célula da faixa de facts (duração, classificação, ano, distribuidora) — mesmo estilo da
  * variant `"service"`, pra não inventar um padrão visual novo. */
-export function Fact({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
+export function Fact({ icon, label, value }: { icon: ReactNode; label: string; value: ReactNode }) {
   return (
     <div className="rounded-[var(--ui-radius-card,1rem)] bg-muted/60 p-4">
       <div className="flex items-center gap-1.5 text-brand">

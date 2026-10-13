@@ -124,7 +124,7 @@ export function ServiceDetailPage({
   searchHref = '/busca',
   analytics,
 }: ServiceDetailPageProps) {
-  const { service, subcategoryNames, provider, extraFields, related, randomServices, siblings, location } = data;
+  const { service, subcategoryNames, provider, extraFields, related, tagRails, randomServices, siblings, location } = data;
 
   const styleInput = { slug: service.category?.slug ?? null, groupSlug: service.categoryGroup?.slug ?? null };
   const variantId = resolveServiceDetailVariant(styleInput, detailConfig);
@@ -245,6 +245,7 @@ export function ServiceDetailPage({
               hue={hue}
               labels={labels}
               siblings={siblings ?? []}
+              organizer={data.organizer ?? null}
             />
 
             {/* Cinema/evento têm tratamento próprio de local — a seção é só da variant `service`. */}
@@ -318,6 +319,15 @@ export function ServiceDetailPage({
           </aside>
         </div>
 
+        {(tagRails ?? []).map((rail) => (
+          <ServiceCarouselSection
+            key={rail.tag}
+            title={rail.title}
+            services={rail.items}
+            hue={hue}
+            detailConfig={detailConfig}
+          />
+        ))}
         <ServiceCarouselSection
           title="Também pode te interessar"
           subtitleLabel={relatedScopeLabel}
