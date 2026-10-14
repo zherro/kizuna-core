@@ -14,7 +14,7 @@ vi.mock('./analytics-api', () => ({
 
 import { useOwnerStats } from './use-owner-stats';
 
-const stats = { days: 7, from: 'a', to: 'b', metrics: {}, series: [], sources: [], entities: [] };
+const stats = { days: 7, from: 'a', to: 'b', metrics: {}, series: [], sources: [], bySource: [], byCategory: [], entities: [], truncated: false, empty: true };
 
 beforeEach(() => {
   calls.length = 0;

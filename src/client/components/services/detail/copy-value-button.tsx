@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Check, Copy } from 'lucide-react';
+import { useTrackContact } from '../../../analytics/ad-tracking';
 
 /**
  * Botão compacto "copiar" para um valor de contato (telefone, WhatsApp, e-mail, site). Só ícone,
@@ -9,6 +10,7 @@ import { Check, Copy } from 'lucide-react';
  */
 export function CopyValueButton({ value, label }: { value: string; label: string }) {
   const [copied, setCopied] = useState(false);
+  const trackContact = useTrackContact();
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => () => {
@@ -16,6 +18,7 @@ export function CopyValueButton({ value, label }: { value: string; label: string
   }, []);
 
   async function copy() {
+    trackContact();
     try {
       await navigator.clipboard.writeText(value);
       setCopied(true);

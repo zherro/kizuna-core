@@ -84,8 +84,8 @@ export function PlaceHighlights({
       <div
         className={
           rest.length > 0
-            ? 'grid gap-5 lg:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)] lg:gap-8'
-            : 'grid'
+            ? 'grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)] lg:gap-8'
+            : 'grid grid-cols-1'
         }
       >
         <FeaturedPlace item={featured} />

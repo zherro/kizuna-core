@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { CopyValueButton } from './copy-value-button';
+import { TrackedContactLink } from '../../../analytics/ad-tracking';
 import {
   CalendarDays,
   Clapperboard,
@@ -133,9 +134,9 @@ export const ServiceDetailEventoSidebar: ServiceDetailVariantComponent = ({ serv
       </div>
 
       {buyUrl && !over && (
-        <a href={buyUrl} target="_blank" rel="noopener noreferrer" className={`mt-4 ${BUY_LINK_CLASS}`}>
+        <TrackedContactLink href={buyUrl} target="_blank" rel="noopener noreferrer" className={`mt-4 ${BUY_LINK_CLASS}`}>
           <Ticket className="h-3.5 w-3.5" /> Comprar ingresso
-        </a>
+        </TrackedContactLink>
       )}
     </>
   );
@@ -273,14 +274,14 @@ export const ServiceDetailEvento: ServiceDetailVariantComponent = ({ service, ex
             </ul>
           )}
           {buyUrl && (
-            <a
+            <TrackedContactLink
               href={buyUrl}
               target="_blank"
               rel="noopener noreferrer"
               className={`${tickets.length > 0 ? 'mt-4 ' : ''}${BUY_LINK_CLASS}`}
             >
               <Ticket className="h-3.5 w-3.5" /> Comprar ingresso
-            </a>
+            </TrackedContactLink>
           )}
         </Section>
       )}
@@ -303,43 +304,43 @@ export const ServiceDetailEvento: ServiceDetailVariantComponent = ({ service, ex
           <ul className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
             {telefone && (
               <li className="flex items-center justify-between gap-2 rounded-[var(--ui-radius-card,1rem)] bg-muted/60 py-1 pl-4 pr-1.5">
-                <a href={telHref(telefone)} className="inline-flex min-w-0 items-center gap-1.5 py-1.5 font-semibold hover:text-brand">
+                <TrackedContactLink href={telHref(telefone)} className="inline-flex min-w-0 items-center gap-1.5 py-1.5 font-semibold hover:text-brand">
                   <Phone className="h-4 w-4 shrink-0" /> <span className="truncate">{telefone}</span>
-                </a>
+                </TrackedContactLink>
                 <CopyValueButton value={telefone} label="telefone" />
               </li>
             )}
             {whatsapp && (
               <li className="flex items-center justify-between gap-2 rounded-[var(--ui-radius-card,1rem)] bg-muted/60 py-1 pl-4 pr-1.5">
-                <a
+                <TrackedContactLink
                   href={whatsappHref(whatsapp)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex min-w-0 items-center gap-1.5 py-1.5 font-semibold hover:text-brand"
                 >
                   <MessageCircle className="h-4 w-4 shrink-0" /> <span className="truncate">WhatsApp {whatsapp}</span>
-                </a>
+                </TrackedContactLink>
                 <CopyValueButton value={whatsapp} label="WhatsApp" />
               </li>
             )}
             {email && (
               <li className="flex items-center justify-between gap-2 rounded-[var(--ui-radius-card,1rem)] bg-muted/60 py-1 pl-4 pr-1.5">
-                <a href={`mailto:${email}`} className="inline-flex min-w-0 items-center gap-1.5 py-1.5 font-semibold hover:text-brand">
+                <TrackedContactLink href={`mailto:${email}`} className="inline-flex min-w-0 items-center gap-1.5 py-1.5 font-semibold hover:text-brand">
                   <Mail className="h-4 w-4 shrink-0" /> <span className="truncate" title={email}>{email}</span>
-                </a>
+                </TrackedContactLink>
                 <CopyValueButton value={email} label="e-mail" />
               </li>
             )}
             {siteUrl && (
               <li className="flex items-center justify-between gap-2 rounded-[var(--ui-radius-card,1rem)] bg-muted/60 py-1 pl-4 pr-1.5">
-                <a
+                <TrackedContactLink
                   href={siteUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex min-w-0 items-center gap-1.5 py-1.5 font-semibold hover:text-brand"
                 >
                   <ExternalLink className="h-4 w-4 shrink-0" /> <span className="truncate">Site do evento</span>
-                </a>
+                </TrackedContactLink>
                 <CopyValueButton value={siteUrl} label="link do site" />
               </li>
             )}

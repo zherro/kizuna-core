@@ -106,7 +106,7 @@ function SwipePageInner({ basePath = '/descobrir', likedHref = '/curtidos' }: Pr
     if (pending?.startsWith('like:')) {
       const uid = pending.slice('like:'.length);
       recordSwipe([uid], 'like').catch((err) => console.warn('[swipe] falha ao gravar curtida pendente', err));
-      trackEvent({ entityType: 'service', entityId: uid, event: 'favorite' });
+      trackEvent({ entityType: 'service', entityId: uid, event: 'favorite', source: 'other' });
       const card = drop(uid);
       if (card) setLiked((prev) => [...prev, card]);
     }

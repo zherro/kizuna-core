@@ -1,6 +1,8 @@
+import type { ReactNode } from 'react';
 import type { ServiceResult } from '../../search/search-types';
 import { hueGradient, type ServiceDetailConfig } from './category-style';
 import { ServiceCarousel } from './service-carousel';
+import type { AnalyticsSource, EventRule } from '../../../../shared/analytics';
 
 /**
  * Trilha "veja também" — Server Component: recebe os resultados já buscados pela página e só
@@ -17,7 +19,12 @@ export function ServiceCarouselSection({
   moreHref,
   moreLabel,
   showCity,
+  impressionRule,
+  source,
+  adSlot,
 }: {
+  /** Card patrocinado opcional dentro da trilha (ver `ServiceCarousel`). */
+  adSlot?: ReactNode;
   title: string;
   subtitleLabel?: string;
   services: ServiceResult[];
@@ -32,6 +39,10 @@ export function ServiceCarouselSection({
   moreLabel?: string;
   /** Mostra a cidade nos cards (listas globais). Default: esconde. */
   showCity?: boolean;
+  /** Plugin analytics: regra da impressão por card. */
+  impressionRule?: EventRule | null;
+  /** Origem do clique (`?src=`). Default 'home'. */
+  source?: AnalyticsSource;
 }) {
   if (services.length === 0) return null;
 
@@ -54,6 +65,9 @@ export function ServiceCarouselSection({
         moreHref={moreHref}
         moreLabel={moreLabel}
         showCity={showCity}
+        impressionRule={impressionRule}
+        source={source}
+        adSlot={adSlot}
       />
     </section>
   );

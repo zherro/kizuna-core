@@ -83,10 +83,24 @@ describe('buildOwnerStats', () => {
     expect(stats.metrics.uniques.value).toBe(3); // a, b, c
   });
 
-  it('métricas sem fonte saem nulas', () => {
-    for (const id of ['conversations', 'rating', 'responseTime', 'credits']) {
-      expect(stats.metrics[id]).toEqual({ value: null, delta: 0 });
+  it('métricas sem fonte não existem', () => {
+    for (const id of ['conversations', 'responseTime', 'credits']) {
+      expect(stats.metrics[id]).toBeUndefined();
     }
+  });
+
+  it('rating: sem avaliações = null; com avaliações = média ponderada e nota por anúncio', () => {
+    expect(stats.metrics.rating).toEqual({ value: null, delta: 0 });
+    expect(stats.ratingCount).toBe(0);
+    const s = buildOwnerStats({
+      days: 3,
+      bounds,
+      rows,
+      ratings: { [A]: { average: 5, count: 1 }, [B]: { average: 4, count: 3 }, other: { average: 1, count: 0 } },
+    });
+    expect(s.metrics.rating).toEqual({ value: 4.3, delta: 0 });
+    expect(s.ratingCount).toBe(4);
+    expect(s.entities.find((e) => e.entityId === B)).toMatchObject({ rating: 4, ratingCount: 3 });
   });
 
   it('série tem um item por dia, zerado quando vazio', () => {
@@ -97,11 +111,52 @@ describe('buildOwnerStats', () => {
     ]);
   });
 
-  it('origens com participação percentual (só views)', () => {
+  it('sources (compat): participação só das views', () => {
     expect(stats.sources).toEqual([
       { source: 'search', total: 3, share: 75 },
       { source: 'home', total: 1, share: 25 },
     ]);
+  });
+
+  it('bySource agrega impressões, views e contatos por origem', () => {
+    const search = stats.bySource.find((s) => s.source === 'search')!;
+    expect(search).toMatchObject({ impressions: 8, views: 3, contacts: 1, favorites: 1 });
+    expect(search.ctr).toBe(37.5);
+    expect(search.contactRate).toBe(33.3);
+    const home = stats.bySource.find((s) => s.source === 'home')!;
+    expect(home).toMatchObject({ impressions: 0, views: 1, contacts: 0, ctr: null, contactRate: 0 });
+  });
+
+  it('byCategory agrega pelo meta do anúncio; sem meta = Sem categoria', () => {
+    const s = buildOwnerStats({
+      days: 3,
+      bounds,
+      rows,
+      meta: { [A]: { title: 'A', categoryKey: '1', categoryLabel: 'Pets' } },
+    });
+    expect(s.byCategory.map((c) => [c.label, c.views, c.impressions, c.contacts]).sort()).toEqual([
+      ['Pets', 2, 4, 0],
+      ['Sem categoria', 2, 4, 1],
+    ]);
+    expect(s.entities.find((e) => e.entityId === A)).toMatchObject({ title: 'A', category: 'Pets' });
+  });
+
+  it('CTR nunca passa de 100% e sem impressões é null', () => {
+    const s = buildOwnerStats({
+      days: 3,
+      bounds,
+      rows: [row('2026-09-28', 'impression', A, 'a'), row('2026-09-28', 'view', A, 'a'), row('2026-09-28', 'view', A, 'b')],
+    });
+    expect(s.metrics.ctr.value).toBe(100);
+    const none = buildOwnerStats({ days: 3, bounds, rows: [row('2026-09-28', 'view', A, 'a')] });
+    expect(none.metrics.ctr.value).toBeNull();
+  });
+
+  it('propaga truncated e marca empty', () => {
+    expect(buildOwnerStats({ days: 3, bounds, rows, truncated: true }).truncated).toBe(true);
+    expect(stats.truncated).toBe(false);
+    expect(stats.empty).toBe(false);
+    expect(buildOwnerStats({ days: 3, bounds, rows: [] }).empty).toBe(true);
   });
 
   it('anúncios ordenados por views', () => {
@@ -113,7 +168,8 @@ describe('buildOwnerStats', () => {
 
   it('sem linhas não quebra nem divide por zero', () => {
     const s = buildOwnerStats({ days: 3, bounds, rows: [] });
-    expect(s.metrics.ctr).toEqual({ value: 0, delta: 0 });
+    expect(s.metrics.ctr).toEqual({ value: null, delta: 0 });
+    expect(s.byCategory).toEqual([]);
     expect(s.sources).toEqual([]);
     expect(s.entities).toEqual([]);
     expect(s.series).toHaveLength(3);

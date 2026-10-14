@@ -1,5 +1,5 @@
 ---
-description: Blocos prontos para montar a home (DiscoverCta, PlaceHighlights, NewsHighlights) — contrato de dados, visual e como ligar.
+description: Blocos prontos para montar a home (DiscoverCta, PlaceHighlights, NewsHighlights) e a home do painel (PainelWelcome) — contrato de dados, visual e como ligar.
 ---
 
 # Blocos da home
@@ -14,9 +14,10 @@ e quem decide se o bloco aparece é a página da home.
 | `DiscoverCta`     | `discover-cta.tsx`      | Banner de chamada com o gradiente da cor primária.              |
 | `PlaceHighlights` | `place-highlights.tsx`  | "Lugares da cidade": um lugar em destaque e os demais num índice. |
 | `NewsHighlights`  | `news-highlights.tsx`   | "Notícias": manchete grande e lista numerada das seguintes.     |
+| `PainelWelcome`   | `painel-welcome/painel-welcome.tsx` | Home do painel para quem navega: descoberta, favoritos, atalhos e convite a anunciar. |
 
-`PlaceHighlights` e `NewsHighlights` aparecem no showcase (`/showcase/place-highlights` e
-`/showcase/news-highlights`).
+`PlaceHighlights`, `NewsHighlights` e `PainelWelcome` aparecem no showcase
+(`/showcase/place-highlights`, `/showcase/news-highlights` e `/showcase/painel-welcome`).
 
 ## PlaceHighlights
 
@@ -193,3 +194,83 @@ ordena só dentro dele. Com muito mais notícias que isso no grupo, a mais recen
 ficar de fora. A data vem de uma chamada a `fn_get_public_service_form_answers` por notícia do
 conjunto; o custo é absorvido pelo ISR da home.
 {% endhint %}
+
+## PainelWelcome
+
+Topo da home do painel (`/painel`) pensado para quem **não** anuncia, que é a maioria: visitante
+logado. Em vez de métricas de anúncio, a primeira dobra convida a descobrir e retoma o que a pessoa
+já salvou. Fica em `src/client/components/painel-welcome/` e se importa por
+`@kizuna/core/client/components/painel-welcome`.
+
+De cima para baixo:
+
+1. **Hero de descoberta**: o único bloco com gradiente da tela e dono do `h1` ("Bora, Maria?";
+   sem nome, "Bora descobrir?"). Só o primeiro nome entra na saudação. Botões "Descobrir no swipe"
+   e "Pesquisar". A partir de `sm`, um baralho de três cartões levemente rotacionados: usa as
+   capas dos três favoritos mais recentes, ou cartões com gradiente e ícone enquanto não há
+   favoritos. Há um único movimento, na carga: os cartões assentam da rotação aberta para a final
+   em cerca de 600ms. Com movimento reduzido, já nascem na posição final.
+2. **Seus favoritos**: faixa horizontal com scroll-snap (até 12 itens). Cada item é um link para
+   `/anuncios/{uid}` com capa em miniatura, título (2 linhas) e categoria. Enquanto carrega, mostra
+   um esqueleto do mesmo tamanho (sem salto de layout). Sem favoritos, um convite curto com botão
+   para o swipe.
+3. **Atalhos**: três tiles (favoritos, busca, perfil).
+4. **Convite a anunciar**: só com `advertise`. Faixa neutra e tracejada, de propósito: parece uma
+   oportunidade, não um anúncio.
+
+```ts
+type PainelWelcomeProps = {
+  name?: string | null;      // nome de exibição; só o primeiro nome é usado
+  discoverHref?: string;     // default "/descobrir"
+  likedHref?: string;        // default "/painel/favoritos"
+  searchHref?: string;       // default "/busca"
+  accountHref?: string;      // default "/painel/minha-conta"
+  advertise?: {              // null/omitido: não mostra o convite
+    href: string;
+    label: string;           // texto do botão (ex.: a frase "Novo anúncio" do vocabulário)
+    title?: string;          // default "Tem um negócio, evento ou serviço?"
+    text?: string;           // default "Divulgue para quem está procurando na cidade."
+  } | null;
+  headingAs?: 'h1' | 'h2';   // default "h1"; use "h2" se a página já tem um h1
+  fetchLikedItems?: (page: number, pageSize: number) => Promise<LikedItem[]>; // default fetchLiked
+  className?: string;
+};
+```
+
+### Dados e falhas
+
+Os favoritos vêm de `fetchLiked(1, 12)` (`swipe/swipe-api`) **no navegador**, depois da hidratação.
+Resposta 401 ou qualquer erro viram lista vazia: o bloco nunca quebra a tela, apenas mostra o
+estado vazio. `fetchLikedItems` existe para o showcase e para testes entregarem dados sem rede.
+
+A URL da capa vem de `coverUrl` em `swipe/swipe-cover.ts`, módulo sem dependências que o
+`swipe-card` reexporta; assim o bloco não puxa o card do swipe.
+
+### Acessibilidade e movimento
+
+* O componente é dono do único `h1` do hero; as demais seções são `h2`. Quando a página já tem um
+  `h1`, passe `headingAs="h2"`.
+* O baralho é decorativo (`aria-hidden`); as capas não têm `alt`, pois o título do favorito está no
+  próprio link da faixa.
+* Todos os links têm no mínimo 44px de altura e foco visível com o anel do tema.
+* O assentamento do baralho e o zoom da capa no hover só acontecem com `prefers-reduced-motion`
+  liberado; o esqueleto não pulsa com movimento reduzido.
+
+### Montar na home do painel
+
+No starter, `src/app/painel/page.tsx` só monta o bloco e deixa nível da conta, destaques e métricas
+numa seção abaixo ("Sua conta e seus anúncios"). O `PainelHero` desce para `h2` com `headingAs`:
+
+```tsx
+import { PainelWelcome } from '@kizuna/core/client/components/painel-welcome';
+import { PainelHero, PainelStats } from '@kizuna/core/client/components/analytics/painel-home';
+import { vocabulary } from '@/lib/vocabulary';
+
+<PainelWelcome
+  name={session?.display_name}
+  advertise={{ href: '/painel/meus-servicos/novo', label: vocabulary.phrases.new }}
+/>
+
+<PainelHero headingAs="h2" />
+<PainelStats />
+```

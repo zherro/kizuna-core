@@ -132,7 +132,7 @@ function NewsImage({
 
 function Lead({ item, timeZone }: { item: NewsHighlightItem; timeZone: string }) {
   return (
-    <article className="@4xl:col-span-7">
+    <article className="min-w-0 @4xl:col-span-7">
       <Link
         href={item.href}
         className="group block rounded-3xl outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-4 focus-visible:ring-offset-background"
@@ -234,10 +234,10 @@ export function NewsHighlights({
         ) : null}
       </div>
 
-      <div className="grid gap-8 @4xl:grid-cols-12 @4xl:gap-10">
+      <div className="grid grid-cols-1 gap-8 @4xl:grid-cols-12 @4xl:gap-10">
         <Lead item={lead} timeZone={timeZone} />
         {list.length > 0 ? (
-          <nav aria-label={`Mais ${title.toLowerCase()}`} className="@4xl:col-span-5">
+          <nav aria-label={`Mais ${title.toLowerCase()}`} className="min-w-0 @4xl:col-span-5">
             <ol className="@2xl:grid @2xl:grid-cols-2 @2xl:gap-x-8 @4xl:block">
               {list.map((item, i) => (
                 <Row key={`${item.href}-${i}`} item={item} index={i + 1} timeZone={timeZone} />

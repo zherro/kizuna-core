@@ -1,4 +1,5 @@
 import { AdDescription } from './ad-description';
+import { TrackedContactLink } from '../../../analytics/ad-tracking';
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 import {
@@ -183,32 +184,32 @@ function CinemaCard({ cinema, until }: { cinema: CinemaItem; until: Date | null 
       {(cinema.link_ingresso || cinema.telefone || cinema.site) && (
         <div className="mt-auto flex flex-wrap items-center gap-x-4 gap-y-2 pt-1 text-sm">
           {cinema.link_ingresso && (
-            <a
+            <TrackedContactLink
               href={cinema.link_ingresso}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 rounded-full bg-brand px-3.5 py-1.5 text-xs font-bold text-brand-foreground transition hover:opacity-90"
             >
               <Ticket className="h-3.5 w-3.5" /> Comprar ingresso
-            </a>
+            </TrackedContactLink>
           )}
           {cinema.telefone && (
-            <a
+            <TrackedContactLink
               href={`tel:${cinema.telefone.replace(/[^\d+]/g, '')}`}
               className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground"
             >
               <Phone className="h-3.5 w-3.5" /> {cinema.telefone}
-            </a>
+            </TrackedContactLink>
           )}
           {cinema.site && (
-            <a
+            <TrackedContactLink
               href={cinema.site}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground"
             >
               <ExternalLink className="h-3.5 w-3.5" /> Site do cinema
-            </a>
+            </TrackedContactLink>
           )}
         </div>
       )}

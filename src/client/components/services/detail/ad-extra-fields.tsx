@@ -1,5 +1,6 @@
 import { ExternalLink } from 'lucide-react';
 import { CopyValueButton } from './copy-value-button';
+import { TrackedContactLink } from '../../../analytics/ad-tracking';
 import type { FormSchema, FormValues } from '../../form-builder';
 import {
   buildExtraFieldBlocks,
@@ -18,7 +19,7 @@ function Value({ value, label }: { value: FormattedValue; label?: string }) {
   if (!value.href) return <>{value.text}</>;
   const copyable = /^(tel|mailto):/i.test(value.href);
   const link = (
-    <a
+    <TrackedContactLink
       href={value.href}
       className={LINK_CLASS}
       {...(value.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
@@ -27,7 +28,7 @@ function Value({ value, label }: { value: FormattedValue; label?: string }) {
         {value.text}
       </span>
       {value.external && <ExternalLink className="h-3.5 w-3.5 shrink-0" />}
-    </a>
+    </TrackedContactLink>
   );
   if (!copyable) return link;
   return (

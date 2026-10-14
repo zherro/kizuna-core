@@ -121,6 +121,7 @@ const ICON_BY_SECTION: Record<ShowcaseSectionId, React.ComponentType<{ className
   'search-filter-blocks': SlidersHorizontal,
   'place-highlights': Building2,
   'news-highlights': Newspaper,
+  'painel-welcome': Sparkles,
 };
 
 type ShowcaseShellProps = {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { Fragment, useCallback, useEffect, useState, type ReactNode } from 'react';
 import useEmblaCarousel from 'embla-carousel-react';
 import Link from 'next/link';
 import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -11,6 +11,9 @@ import { serviceHref } from '../../../../shared/city-routing/city-slug';
 import { formatLocationLabel } from '../../search/format-location-label';
 import { resolveServiceCardVariant, type ServiceDetailConfig } from './category-style';
 import { variantCardProps } from './event-card';
+import { TrackView } from '../../../analytics/track-view';
+import { withSource } from '../../../analytics/source';
+import type { AnalyticsSource, EventRule } from '../../../../shared/analytics';
 
 /**
  * Trilha horizontal de scroll livre com `ListingResultCard` (`variant="strip"`) — mesmo embla das
@@ -25,13 +28,22 @@ export function ServiceCarousel({
   moreHref,
   moreLabel = 'Ver mais',
   showCity = false,
+  impressionRule = null,
+  source = 'home',
+  adSlot = null,
 }: {
+  /** Card patrocinado opcional (ex.: `<AdSlot>`), inserido após o 2º item. Colapsa se vazio. */
+  adSlot?: ReactNode;
   services: ServiceResult[];
   detailConfig?: ServiceDetailConfig | null;
   moreHref?: string;
   moreLabel?: string;
   /** Mostra a cidade no card (use em listas globais; dentro de `/[cidade]` ela já está no topo). */
   showCity?: boolean;
+  /** Plugin analytics: regra da impressão; cada card conta ao ficar visível. */
+  impressionRule?: EventRule | null;
+  /** Origem propagada no link (`?src=`) e na impressão. Default 'home'. */
+  source?: AnalyticsSource;
 }) {
   const [emblaRef, emblaApi] = useEmblaCarousel({ align: 'start', dragFree: true });
   const [canPrev, setCanPrev] = useState(false);
@@ -58,7 +70,7 @@ export function ServiceCarousel({
     <div className="group relative">
       <div className="overflow-hidden" ref={emblaRef}>
         <div className="flex gap-4">
-          {services.map((service) => {
+          {services.map((service, index) => {
             const price = cardPriceParts(service.price, service.price_type);
             const extra = variantCardProps(
               resolveServiceCardVariant(
@@ -70,11 +82,11 @@ export function ServiceCarousel({
                 place: formatLocationLabel(service),
               }
             );
-            return (
+            const card = (
               <ListingResultCard
                 key={service.uid}
                 variant="strip"
-                href={serviceHref(service)}
+                href={withSource(serviceHref(service), source)}
                 title={service.title}
                 priceLabel={
                   extra ? extra.priceLabel : price.amount
@@ -91,10 +103,40 @@ export function ServiceCarousel({
                 highlightLabel="Patrocinado"
               />
             );
+            const adAfter =
+              adSlot && index === Math.min(1, services.length - 1) ? (
+                <div className="w-[260px] shrink-0 empty:hidden">{adSlot}</div>
+              ) : null;
+            if (!impressionRule) {
+              return adAfter ? (
+                <Fragment key={service.uid}>
+                  {card}
+                  {adAfter}
+                </Fragment>
+              ) : (
+                card
+              );
+            }
+            return (
+              <Fragment key={service.uid}>
+              <TrackView
+                key={service.uid}
+                entityType="service"
+                entityId={service.uid}
+                event="impression"
+                rule={impressionRule}
+                source={source}
+                className="shrink-0"
+              >
+                {card}
+              </TrackView>
+              {adAfter}
+              </Fragment>
+            );
           })}
           {moreHref ? (
             <Link
-              href={moreHref}
+              href={withSource(moreHref, source)}
               className="group/more flex w-[260px] shrink-0 flex-col items-center justify-center gap-3 rounded-[var(--ui-radius-card-compact,0.75rem)] border-[length:var(--ui-border-w-card,1px)] border-dashed border-border bg-muted/40 p-6 text-center text-foreground transition hover:-translate-y-0.5 hover:bg-muted hover:shadow-md"
             >
               <span className="flex h-11 w-11 items-center justify-center rounded-full border border-border bg-background transition group-hover/more:border-primary group-hover/more:text-primary">

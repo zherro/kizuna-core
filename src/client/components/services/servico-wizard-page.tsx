@@ -12,6 +12,7 @@ import {
   type WizardConversationAdapter,
 } from '../wizard';
 import { SERVICE_WIZARD_STEPS } from './wizard-steps';
+import { filterCreatable, unknownCreatableSlugs } from './wizard-steps/creatable';
 import { buildServiceWizardRegistry } from './wizard-steps/build-registry';
 import { isAddressComplete } from './wizard-steps/service-addresses';
 import type { PriceTableRow } from './wizard-steps/price-options';
@@ -105,11 +106,11 @@ export function ServicoWizardPage({
       ),
     [wizardConfig],
   );
-  const { options: groups, loading: groupsLoading } = useResourceOptions<ServiceGroup>({
+  const { options: allGroups, loading: groupsLoading } = useResourceOptions<ServiceGroup>({
     resource: 'categories_group',
     filter: ACTIVE_ONLY,
   });
-  const { options: categories, loading: categoriesLoading } = useResourceOptions<ServiceCategory>({
+  const { options: allCategories, loading: categoriesLoading } = useResourceOptions<ServiceCategory>({
     resource: 'categories',
     filter: ACTIVE_ONLY,
   });
@@ -178,6 +179,34 @@ export function ServicoWizardPage({
       active = false;
     };
   }, [mode, serviceId, t.loadError]);
+
+  // `wizardConfig.creatable` restringe onde se CRIA anúncio (só aqui; busca/detalhe não mudam).
+  // Root e a moderação (`review`) veem tudo; em edição o grupo/categoria já gravados continuam.
+  const creatable = wizardConfig.creatable;
+  const bypassCreatable = user?.is_root === true || mode === 'review';
+  const keepGroupId = record?.categoryGroupId;
+  const keepCategoryId = record?.categoryId;
+  const { groups, categories } = useMemo(
+    () =>
+      filterCreatable({
+        groups: allGroups,
+        categories: allCategories,
+        creatable,
+        bypass: bypassCreatable,
+        keep: { groupId: keepGroupId, categoryId: keepCategoryId },
+      }),
+    [allGroups, allCategories, creatable, bypassCreatable, keepGroupId, keepCategoryId],
+  );
+
+  useEffect(() => {
+    if (!creatable || groupsLoading || categoriesLoading) return;
+    const unknown = unknownCreatableSlugs({ groups: allGroups, categories: allCategories, creatable });
+    if (unknown.groups.length || unknown.categories.length) {
+      console.warn(
+        `wizards.servicos.creatable: slug(s) fora da taxonomia — grupos: [${unknown.groups.join(', ')}], categorias: [${unknown.categories.join(', ')}]`,
+      );
+    }
+  }, [creatable, allGroups, allCategories, groupsLoading, categoriesLoading]);
 
   const entities = useMemo(
     () => ({

@@ -6,6 +6,7 @@ import { Button } from '../../ui/button';
 import { useToast } from '../../../hooks/use-toast';
 import { useAuth } from '../../../providers/auth-provider';
 import { trackEvent } from '../../../analytics/analytics-api';
+import { useAdSource } from '../../../analytics/ad-tracking';
 import { resolveLucideIcon } from '../../../../lib/lucide-icon';
 import { RequireAuthProvider, useRequireAuth } from '../../auth/require-auth';
 import { fetchReaction, saveReaction, type Reaction } from './reaction-api';
@@ -25,6 +26,7 @@ function Inner({ serviceUid, likeCount, config, trackUid }: Props) {
   const { user } = useAuth();
   const requireAuth = useRequireAuth();
   const toast = useToast();
+  const source = useAdSource();
   const [state, setState] = useState<Reaction>(NONE);
   const [count, setCount] = useState(likeCount);
   const busy = useRef(false);
@@ -52,7 +54,7 @@ function Inner({ serviceUid, likeCount, config, trackUid }: Props) {
       const saved = await saveReaction(serviceUid, next);
       setState(saved);
       if (next.favorite && !prev.favorite && trackUid) {
-        trackEvent({ entityType: 'service', entityId: trackUid, event: 'favorite' });
+        trackEvent({ entityType: 'service', entityId: trackUid, event: 'favorite', source });
       }
     } catch {
       setState(prev);

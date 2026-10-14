@@ -69,6 +69,8 @@ export type SearchPageProps = {
   serviceDetailConfig?: ServiceDetailConfig | null;
   /** Plugin analytics: regra da impressão dos cards (`resolveEventRule`, calculada no servidor). */
   impressionRule?: EventRule | null;
+  /** Item patrocinado (ex.: `<AdSlot slot="busca-patrocinado">`) inserido na lista de resultados. */
+  sponsoredSlot?: ReactNode;
   /**
    * Segundo modo da página (ex.: "Pedir um serviço" — criar demanda). Quando informado, aparece um
    * toggle no topo e `?modo=pedir` troca a busca pelo conteúdo de `render`. O plugin `search` não
@@ -119,6 +121,7 @@ function SearchPageInner({
   excludeFromMixedCategorySlugs = [],
   serviceDetailConfig,
   impressionRule,
+  sponsoredSlot,
   aiEnabled = true,
   regions = [],
 }: SearchPageProps) {
@@ -493,6 +496,12 @@ function SearchPageInner({
   const activeFilterCount = countActiveFilters(filters);
   // Carrossel de categorias sob a busca: some (com transição) só com categoria + mais um filtro.
   const hideCarousel = shouldHideCategoryCarousel(filters);
+  // Filtro de categoria/grupo/subcategoria sem texto livre = navegação por categoria.
+  const listSource: 'category' | 'search' =
+    (filters.groupSlug || filters.categoryIds.length > 0 || filters.subcategoryIds.length > 0) && !filters.query
+      ? 'category'
+      : 'search';
+
   const { options: categoryRows } = useResourceOptions<{
     id: string | number;
     categoryId: string | number;
@@ -791,6 +800,7 @@ function SearchPageInner({
           onChangeLocation={() => setLocationOpen(true)}
           serviceDetailConfig={serviceDetailConfig}
           impressionRule={impressionRule}
+          source={listSource}
         />
       </section>
 
@@ -850,6 +860,8 @@ function SearchPageInner({
               onLoadMore={loadMore}
               serviceDetailConfig={serviceDetailConfig}
               impressionRule={impressionRule}
+          source={listSource}
+              sponsoredSlot={sponsoredSlot}
             />
             )}
             {regionResults.map((group) => (
@@ -866,6 +878,7 @@ function SearchPageInner({
                 onChangeLocation={() => setLocationOpen(true)}
                 serviceDetailConfig={serviceDetailConfig}
                 impressionRule={impressionRule}
+          source={listSource}
               />
             ))}
           </div>

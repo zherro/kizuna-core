@@ -56,7 +56,8 @@ export type ShowcaseSectionId =
   | 'service-detail-evento'
   | 'search-filter-blocks'
   | 'place-highlights'
-  | 'news-highlights';
+  | 'news-highlights'
+  | 'painel-welcome';
 
 export type ShowcaseGroupId = 'shadcn-default' | 'ui-better-soft' | 'tools';
 
@@ -1496,6 +1497,25 @@ export function NoticiasDaHome() {
         },
         { href: '/cuiaba-mt/anuncio/2', title: 'Cuiabá vence e sobe na tabela', kicker: 'Esportes' },
       ]}
+    />
+  );
+}`,
+  },
+  {
+    id: 'painel-welcome',
+    groupId: 'ui-better-soft',
+    label: 'Boas-vindas do painel',
+    description:
+      'Home do painel para quem navega, nao so para quem anuncia: hero de descoberta com saudacao pelo primeiro nome e baralho de capas (as 3 mais recentes dos favoritos), faixa horizontal "Seus favoritos" com scroll-snap, tres atalhos e um convite discreto a anunciar. Os favoritos sao buscados no navegador (fetchLikedItems, padrao fetchLiked); erro ou 401 viram lista vazia. So o hero tem gradiente e um unico movimento na carga, que respeita prefers-reduced-motion.',
+    usageCode: `import { PainelWelcome } from '@kizuna/core/client/components/painel-welcome';
+
+export default async function PainelPage() {
+  const session = await getSession();
+
+  return (
+    <PainelWelcome
+      name={session?.display_name}
+      advertise={{ href: '/painel/meus-servicos/novo', label: 'Novo anúncio' }}
     />
   );
 }`,

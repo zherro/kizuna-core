@@ -1,12 +1,14 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import { MapPin, SearchX } from 'lucide-react';
 import { ListingResultCard } from '../ui-better-soft/lists/listing-result-card';
 import { cardPriceParts } from '../services/service-helpers';
 import { resolveServiceCardVariant, type ServiceDetailConfig } from '../services/detail/category-style';
 import { variantCardProps } from '../services/detail/event-card';
 import { TrackView } from '../../analytics/track-view';
-import type { EventRule } from '../../../shared/analytics';
+import type { AnalyticsSource, EventRule } from '../../../shared/analytics';
+import { withSource } from '../../analytics/source';
 import type { ServiceResult } from './search-types';
 import { formatLocationLabel } from './format-location-label';
 import { serviceHref } from '../../../shared/city-routing/city-slug';
@@ -45,6 +47,10 @@ type Props = {
   relaxedFrom?: RelaxedFrom | null;
   /** Nome do que não teve resultado: a categoria ou o texto buscado. */
   relaxedLabel?: string | null;
+  /** Origem propagada no link (`?src=`) e nas impressões. Default 'search'. */
+  source?: AnalyticsSource;
+  /** Item patrocinado opcional (ex.: `<AdSlot>`), inserido após o 3º resultado do grid. Colapsa se vazio. */
+  sponsoredSlot?: ReactNode;
 };
 
 
@@ -108,9 +114,11 @@ export function SearchResultsView({
   heading,
   relaxedFrom = null,
   relaxedLabel = null,
+  source = 'search',
+  sponsoredSlot = null,
 }: Props) {
   const card = (r: ServiceResult, variant: 'strip' | 'grid') => {
-    const item = <ListingResultCard key={r.uid} {...toCardProps(r, serviceDetailConfig)} variant={variant} />;
+    const item = <ListingResultCard key={r.uid} {...toCardProps(r, serviceDetailConfig)} href={withSource(serviceHref(r), source)} variant={variant} />;
     if (!impressionRule) return item;
     return (
       <TrackView
@@ -119,7 +127,7 @@ export function SearchResultsView({
         entityId={r.uid}
         event="impression"
         rule={impressionRule}
-        source="search"
+        source={source}
         className={variant === 'strip' ? 'shrink-0' : 'h-full'}
       >
         {item}
@@ -233,7 +241,9 @@ export function SearchResultsView({
         <span className="text-xs text-muted-foreground">{results.length} resultado(s)</span>
       </div>
       <div className={GRID_CLASS}>
-        {results.map((r) => card(r, 'grid'))}
+        {results.slice(0, 3).map((r) => card(r, 'grid'))}
+        {sponsoredSlot ? <div className="empty:hidden">{sponsoredSlot}</div> : null}
+        {results.slice(3).map((r) => card(r, 'grid'))}
       </div>
       {hasMore && onLoadMore && (
         <div className="mt-6 flex justify-center">

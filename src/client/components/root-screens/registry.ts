@@ -1,5 +1,6 @@
 import type { ComponentType } from 'react';
 import { RolesManagerScreen } from '../rbac/roles-manager';
+import { AdsScreen } from './ads-screen';
 import { PluginsScreen } from './plugins-screen';
 import { RootAccessLogScreen } from './root-access-log-screen';
 import { StorageScreen } from './storage-screen';
@@ -34,6 +35,7 @@ export const ROOT_SCREEN_REGISTRY: Record<string, RootScreenEntry> = {
   // Slot: o app passa `AiAdminScreen` (core, components/ai-review) via slotComponents.
   ia: { title: 'Inteligência artificial', group: 'root', component: null },
   storage: { title: 'Storage e imagens', group: 'root', component: StorageScreen },
+  ads: { title: 'Publicidade', group: 'root', component: AdsScreen },
   'root-access-log': {
     title: 'Log de acesso root',
     group: 'security',

@@ -17,7 +17,7 @@ import { AdPhotoMosaic } from './ad-photo-mosaic';
 import { AdShareButton } from './ad-share-button';
 import { ServiceReactionButtons } from './service-reaction-buttons';
 import { ServiceCarouselSection } from './service-carousel-section';
-import { TrackView } from '../../../analytics/track-view';
+import { AdTrackingProvider, SourcedTrackView } from '../../../analytics/ad-tracking';
 import type { EventRule } from '../../../../shared/analytics';
 
 const BUILT_IN_VARIANTS: Record<string, ServiceDetailVariantComponent> = {
@@ -55,10 +55,15 @@ function ViewTracker({
 }) {
   if (!rule) return <>{children}</>;
   return (
-    <TrackView entityType="service" entityId={uid} event="view" rule={rule}>
+    <SourcedTrackView uid={uid} event="view" rule={rule}>
       {children}
-    </TrackView>
+    </SourcedTrackView>
   );
+}
+
+function MaybeTracking({ uid, children }: { uid: string | null; children: ReactNode }) {
+  if (!uid) return <>{children}</>;
+  return <AdTrackingProvider uid={uid}>{children}</AdTrackingProvider>;
 }
 
 function ProviderAvatar({ url, name, className }: { url: string | null; name: string; className: string }) {
@@ -154,6 +159,7 @@ export function ServiceDetailPage({
   const heroGradient = hueGradient(hue);
 
   return (
+    <MaybeTracking uid={analytics ? service.uid : null}>
     <main className="relative min-h-screen bg-background pb-16">
       <div
         className="pointer-events-none absolute inset-x-0 top-0 h-[420px]"
@@ -346,5 +352,6 @@ export function ServiceDetailPage({
         />
       </div>
     </main>
+    </MaybeTracking>
   );
 }

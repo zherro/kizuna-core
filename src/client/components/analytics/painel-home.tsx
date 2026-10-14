@@ -56,7 +56,12 @@ const slides: Slide[] = [
 
 const AUTOPLAY_MS = 5000;
 
-export function PainelHero() {
+type PainelHeroProps = {
+  /** Tag do título de cada slide. Default `h1`; use `h2` quando a página já tem um `h1`. */
+  headingAs?: 'h1' | 'h2';
+};
+
+export function PainelHero({ headingAs: Heading = 'h1' }: PainelHeroProps = {}) {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
 
@@ -105,9 +110,9 @@ export function PainelHero() {
                 <p className="text-xs font-medium uppercase tracking-[0.22em] text-primary">
                   {slide.eyebrow}
                 </p>
-                <h1 className="mt-3 text-2xl font-semibold tracking-tight md:text-3xl">
+                <Heading className="mt-3 text-2xl font-semibold tracking-tight md:text-3xl">
                   {slide.title}
-                </h1>
+                </Heading>
                 <p className="mt-3 max-w-xl text-sm text-muted-foreground">{slide.text}</p>
                 {slide.progress ? (
                   <div className="mt-4 max-w-xs">
@@ -193,16 +198,25 @@ export function PainelHero() {
 
 export function PainelStats() {
   const { stats } = useOwnerStats(30);
+  // Avaliação é snapshot: sem avaliações o cartão some em vez de mostrar "—".
+  const cards = FEATURED_METRICS.filter(
+    (m) => m.id !== 'rating' || (stats?.metrics.rating?.value ?? null) !== null,
+  );
   return (
     <section aria-label="Resumo dos últimos 30 dias" className="flex flex-col gap-3">
       <div className="flex items-baseline justify-between">
         <h2 className="text-sm font-semibold">Resumo · últimos 30 dias</h2>
-        <Link href="/painel/metricas" className="text-xs font-medium text-primary hover:underline">
+        <Link href="/painel/metricas" className="-my-2 py-2 text-xs font-medium text-primary hover:underline">
           Ver todas as métricas
         </Link>
       </div>
-      <div className="grid grid-cols-3 gap-2 sm:gap-3 lg:grid-cols-6">
-        {FEATURED_METRICS.map((metric) => {
+      <div
+        className={cn(
+          'grid grid-cols-3 gap-2 sm:gap-3',
+          cards.length > 6 ? 'lg:grid-cols-7' : 'lg:grid-cols-6',
+        )}
+      >
+        {cards.map((metric) => {
           const Icon = metric.icon;
           const { value, delta } = stats?.metrics[metric.id] ?? { value: null, delta: 0 };
           const up = delta > 0;
@@ -235,7 +249,7 @@ export function PainelStats() {
                 <p className="text-xl font-semibold tracking-tight sm:text-2xl">
                   {value === null ? '—' : formatMetric(metric.format, value)}
                 </p>
-                <p className="truncate text-[11px] text-muted-foreground sm:text-xs">
+                <p className="line-clamp-2 text-[11px] leading-tight text-muted-foreground sm:text-xs">
                   {metric.label}
                 </p>
               </div>

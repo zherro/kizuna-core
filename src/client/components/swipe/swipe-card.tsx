@@ -4,17 +4,13 @@ import { Star } from 'lucide-react';
 import type { ServiceResult } from '../search/search-types';
 import { formatLocationLabel } from '../search/format-location-label';
 import { cardPriceParts } from '../services/service-helpers';
+import { coverUrl } from './swipe-cover';
+
+export { coverUrl };
 
 export function priceLabel(r: { price: number | null; price_type: string }): string {
   const { amount, caption } = cardPriceParts(r.price, r.price_type);
   return caption ? `${caption} ${amount}` : amount;
-}
-
-/** Capa do item. O card do swipe ocupa quase a tela: imagem grande; listas pequenas usam `'thumb'`. */
-export function coverUrl(fileId: string | null, size: 'full' | 'thumb' = 'full'): string | null {
-  if (!fileId) return null;
-  const base = `/api/public/storage/files/${fileId}/content`;
-  return size === 'thumb' ? `${base}?size=thumb` : base;
 }
 
 type Props = {

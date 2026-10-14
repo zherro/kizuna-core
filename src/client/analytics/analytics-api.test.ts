@@ -97,6 +97,65 @@ describe('fetchOwnerStats', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1); // último item já é anterior à janela
   });
 
+  it('marca truncated ao esgotar as páginas dentro da janela', async () => {
+    const full = Array.from({ length: 1000 }, (_, i) => ({
+      entity_id: ID, visitor_hash: String(i).padStart(32, '0'), day: today, event_type: 'view', source: 'search',
+    }));
+    fetchMock.mockImplementation(async () => page(full));
+    const stats = await fetchOwnerStats(7);
+    expect(fetchMock).toHaveBeenCalledTimes(20);
+    expect(stats.truncated).toBe(true);
+  });
+
+  it('com tenantId pagina services e agrega por categoria', async () => {
+    const svc = (n: number) =>
+      Array.from({ length: n }, (_, i) => ({ uid: i === 0 ? ID : `s${i}`, title: `T${i}`, categoryId: '7', category: { name: 'Pets' } }));
+    fetchMock.mockImplementation(async (url: string) => {
+      if (String(url).includes('/services?')) {
+        return String(url).includes('page=1') ? page(svc(100)) : page(svc(3));
+      }
+      return page([{ entity_id: ID, visitor_hash: 'a'.repeat(32), day: today, event_type: 'view', source: 'home' }]);
+    });
+    const stats = await fetchOwnerStats(7, undefined, { tenantId: 'tt' });
+    const svcCalls = fetchMock.mock.calls.filter((c) => String(c[0]).includes('/services?'));
+    expect(svcCalls).toHaveLength(2);
+    expect(String(svcCalls[0]![0])).toContain('filter.tenant_id=tt');
+    expect(stats.byCategory[0]).toMatchObject({ label: 'Pets', views: 1 });
+    expect(stats.bySource[0]).toMatchObject({ source: 'home', views: 1 });
+  });
+
+  it('com tenantId lê review_stats e expõe a nota média (id do serviço -> uid)', async () => {
+    fetchMock.mockImplementation(async (url: string) => {
+      const u = String(url);
+      if (u.includes('/services?')) return page([{ id: 42, uid: ID, title: 'T', categoryId: '7', category: { name: 'Pets' } }]);
+      if (u.includes('/review_stats?')) {
+        return page([
+          { referenceId: '42', totalReviews: 3, averageRating: 4.67 },
+          { referenceId: '99', totalReviews: 5, averageRating: 1 },
+        ]);
+      }
+      return page([{ entity_id: ID, visitor_hash: 'a'.repeat(32), day: today, event_type: 'view', source: 'home' }]);
+    });
+    const stats = await fetchOwnerStats(7, undefined, { tenantId: 'tt' });
+    const call = fetchMock.mock.calls.find((c) => String(c[0]).includes('/review_stats?'))!;
+    expect(String(call[0])).toContain('filter.domain=service');
+    expect(String(call[0])).toContain('filter.tenant_id=tt');
+    expect(stats.metrics.rating).toEqual({ value: 4.7, delta: 0 });
+    expect(stats.ratingCount).toBe(3);
+    expect(stats.entities[0]).toMatchObject({ rating: 4.7, ratingCount: 3 });
+  });
+
+  it('review_stats com erro não derruba: rating null', async () => {
+    fetchMock.mockImplementation(async (url: string) => {
+      const u = String(url);
+      if (u.includes('/review_stats?')) return new Response('x', { status: 500 });
+      if (u.includes('/services?')) return page([{ id: 1, uid: ID, title: 'T' }]);
+      return page([]);
+    });
+    const stats = await fetchOwnerStats(7, undefined, { tenantId: 'tt' });
+    expect(stats.metrics.rating).toEqual({ value: null, delta: 0 });
+  });
+
   it('erro HTTP lança', async () => {
     fetchMock.mockResolvedValue(new Response('x', { status: 500 }));
     await expect(fetchOwnerStats(30)).rejects.toThrow();

@@ -43,6 +43,27 @@ trackEvent({ entityType: 'service', entityId: uid, event: 'contact_click' });
 
 A regra padrão de `view` exige `minVisibleRatio` 0.5 do elemento embrulhado: embrulhe só o bloco de cabeçalho/hero (menor que a altura da tela), nunca a página inteira — uma página mais alta que duas telas de celular nunca atinge a fração e a view não dispara.
 
+## Origem (source) e contato
+
+Toda ação carrega uma origem, gravada em `analytics_events.source`:
+
+| Origem | Quando |
+| --- | --- |
+| `search` | clique num card da busca por texto |
+| `category` | busca filtrada por grupo, categoria ou subcategoria sem texto livre |
+| `home` | trilhas da home e do detalhe (valor padrão de `ServiceCarousel`) |
+| `share` | link compartilhado (quem compartilha gera o link com a origem `share`) |
+| `direct` | sem parâmetro, sem referrer interno |
+| `other` | referrer interno desconhecido ou ação sem contexto (ex.: swipe) |
+
+Como propagar:
+
+- O link gerado por uma lista usa `withSource(href, origem)` (de `client/analytics`), que acrescenta o parâmetro `src` preservando query e hash e ignora URL absoluta.
+- O detalhe lê `src` no client com `resolveAdSource(uid)`: parâmetro, depois valor guardado em sessionStorage, depois referrer interno, por fim `direct`. Cliques seguintes na mesma página reutilizam a origem guardada.
+- `ServiceDetailPage` envolve a página em `AdTrackingProvider` quando recebe `analytics`; dentro dele, `useAdSource()`, `useTrackContact()` e `TrackedContactLink` dão origem e uid sem props.
+- Links e botões de contato (WhatsApp, telefone, e-mail, site, ingresso, copiar valor) disparam o evento `contact_click` via `TrackedContactLink` ou `CopyValueButton`.
+- Impressões em listas: `TrackView` (também exportado como `ImpressionTrack`) com a prop `source`; `ServiceCarousel` e `SearchResultsView` aceitam `impressionRule` e `source`.
+
 ## Decisões e limites
 
 - **Uma função só:** `createResource` exige login e a maioria dos visitantes é anônima; por isso a

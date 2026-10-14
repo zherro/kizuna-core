@@ -81,6 +81,8 @@ import { FormBuilderShowcaseDemo } from '../form-builder/showcase-demo';
 import { SearchFilterBlocksDemo } from '../search/filters/showcase-demo';
 import { PlaceHighlights, type PlaceHighlightItem } from '../home/place-highlights';
 import { NewsHighlights, type NewsHighlightItem } from '../home/news-highlights';
+import { PainelWelcome } from '../painel-welcome';
+import type { LikedItem } from '../swipe/swipe-types';
 import { FormsShowcaseDemo } from '../forms/showcase-demo';
 import { PagesAdminShowcaseDemo } from '../pages/showcase-demo';
 import { ColorChip } from '../ui-better-soft/color-chip';
@@ -1282,6 +1284,25 @@ function NewsHighlightsDemo() {
   return <NewsHighlights items={NEWS_HIGHLIGHTS_DEMO} moreHref="#todas" contained={false} />;
 }
 
+const PAINEL_WELCOME_DEMO_ITEMS: LikedItem[] = [
+  { uid: 'demo-1', title: 'Festival de Cururu e Siriri na Praça', price: null, price_type: 'free', category: 'Eventos', cover_file_id: null, liked_at: '2026-10-12T10:00:00Z' },
+  { uid: 'demo-2', title: 'Aulão de forró com banda ao vivo', price: 30, price_type: 'fixed', category: 'Aulas', cover_file_id: null, liked_at: '2026-10-11T10:00:00Z' },
+  { uid: 'demo-3', title: 'Bike tour pelo Porto Geral', price: null, price_type: 'quote', category: 'Passeios', cover_file_id: null, liked_at: '2026-10-10T10:00:00Z' },
+  { uid: 'demo-4', title: 'Feira de artesanato do centro histórico', price: null, price_type: 'free', category: 'Feiras', cover_file_id: null, liked_at: '2026-10-09T10:00:00Z' },
+  { uid: 'demo-5', title: 'Chef em casa: jantar para oito pessoas', price: 480, price_type: 'fixed', category: 'Gastronomia', cover_file_id: null, liked_at: '2026-10-08T10:00:00Z' },
+];
+
+function PainelWelcomeDemo() {
+  return (
+    <PainelWelcome
+      name="Maria da Silva"
+      headingAs="h2"
+      advertise={{ href: '#novo', label: 'Novo anúncio' }}
+      fetchLikedItems={async () => PAINEL_WELCOME_DEMO_ITEMS}
+    />
+  );
+}
+
 function SectionDemo({ sectionId }: { sectionId: ShowcaseSectionId }) {
   if (sectionId === 'cards') return <CardsDemo />;
   if (sectionId === 'buttons') return <ButtonsDemo />;
@@ -1340,6 +1361,7 @@ function SectionDemo({ sectionId }: { sectionId: ShowcaseSectionId }) {
   if (sectionId === 'search-filter-blocks') return <SearchFilterBlocksDemo />;
   if (sectionId === 'place-highlights') return <PlaceHighlightsDemo />;
   if (sectionId === 'news-highlights') return <NewsHighlightsDemo />;
+  if (sectionId === 'painel-welcome') return <PainelWelcomeDemo />;
   return <UiBetterSoftDemo />;
 }
 

@@ -4,6 +4,7 @@ import { Share2 } from 'lucide-react';
 import { Button } from '../../ui/button';
 import { useToast } from '../../../hooks/use-toast';
 import { trackEvent } from '../../../analytics/analytics-api';
+import { useAdSource } from '../../../analytics/ad-tracking';
 
 /**
  * Usa a Web Share API quando o browser expõe uma (mobile e a maioria dos desktops hoje); cai pra
@@ -22,10 +23,11 @@ export function AdShareButton({
   trackUid?: string;
 }) {
   const toast = useToast();
+  const source = useAdSource();
 
   async function handleShare() {
     const url = `${window.location.origin}${path}`;
-    if (trackUid) trackEvent({ entityType: 'service', entityId: trackUid, event: 'share' });
+    if (trackUid) trackEvent({ entityType: 'service', entityId: trackUid, event: 'share', source });
 
     if (typeof navigator !== 'undefined' && navigator.share) {
       try {

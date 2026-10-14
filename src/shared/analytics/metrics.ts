@@ -1,18 +1,15 @@
 // Catálogo das métricas de negócio do anunciante (rótulos, ícones, formatos).
 // A home do painel mostra só as `featured`; /painel/metricas mostra todas. Os valores vêm do
-// plugin `analytics` (`useOwnerStats` em @kizuna/core/client/analytics); métrica sem fonte = "—".
+// plugin `analytics` (`useOwnerStats` em @kizuna/core/client/analytics). Só entram métricas com fonte real (conversas, tempo de resposta e créditos não têm).
 import {
   Eye,
   Heart,
-  MessageCircle,
   MousePointerClick,
   Percent,
   Share2,
   Star,
-  Timer,
   UserCheck,
   Users,
-  Wallet,
   Megaphone,
   type LucideIcon,
 } from 'lucide-react';
@@ -47,18 +44,15 @@ export const METRIC_GROUPS: Record<MetricGroup, string> = {
 const ADS = '/painel/meus-servicos';
 
 export const METRICS: MetricDef[] = [
-  { id: 'impressions', label: 'Impressões', hint: 'Vezes que seus anúncios apareceram em buscas e listas.', group: 'alcance', icon: Megaphone, format: 'int', featured: false, href: ADS },
+  { id: 'impressions', label: 'Impressões', hint: 'Vezes que seus anúncios apareceram em buscas e listas.', group: 'alcance', icon: Megaphone, format: 'int', featured: true, href: ADS },
   { id: 'views', label: 'Visualizações', hint: 'Acessos à página do anúncio (tempo mínimo de tela configurável).', group: 'alcance', icon: Eye, format: 'int', featured: true, href: ADS },
-  { id: 'uniques', label: 'Visitantes únicos', hint: 'Pessoas diferentes que viram seus anúncios.', group: 'alcance', icon: Users, format: 'int', featured: false, href: ADS },
-  { id: 'ctr', label: 'CTR', hint: 'Visualizações ÷ impressões: mede o quanto título e foto atraem.', group: 'alcance', icon: Percent, format: 'percent', featured: false, href: ADS },
+  { id: 'uniques', label: 'Visitantes-dia', hint: 'Visitantes distintos por dia: a mesma pessoa em dias diferentes conta mais de uma vez.', group: 'alcance', icon: Users, format: 'int', featured: false, href: ADS },
+  { id: 'ctr', label: 'CTR', hint: 'Visualizações ÷ impressões: mede o quanto título e foto atraem.', group: 'alcance', icon: Percent, format: 'percent', featured: true, href: ADS },
   { id: 'favorites', label: 'Favoritos', hint: 'Vezes que salvaram seus anúncios.', group: 'interesse', icon: Heart, format: 'int', featured: true, href: ADS },
   { id: 'shares', label: 'Compartilhamentos', hint: 'Vezes que seus anúncios foram compartilhados.', group: 'interesse', icon: Share2, format: 'int', featured: false, href: ADS },
   { id: 'contacts', label: 'Cliques no contato', hint: 'Cliques em WhatsApp/telefone: o interesse real.', group: 'conversao', icon: MousePointerClick, format: 'int', featured: true, href: ADS },
-  { id: 'contactRate', label: 'Taxa de contato', hint: 'Cliques no contato ÷ visualizações.', group: 'conversao', icon: UserCheck, format: 'percent', featured: false, href: ADS },
-  { id: 'conversations', label: 'Conversas', hint: 'Conversas iniciadas na plataforma.', group: 'conversao', icon: MessageCircle, format: 'int', featured: true, href: ADS },
-  { id: 'rating', label: 'Avaliação', hint: 'Nota média dos seus anúncios.', group: 'reputacao', icon: Star, format: 'rating', featured: true, snapshot: true, href: ADS },
-  { id: 'responseTime', label: 'Tempo de resposta', hint: 'Tempo médio até a primeira resposta.', group: 'reputacao', icon: Timer, format: 'minutes', featured: false, snapshot: true, href: ADS },
-  { id: 'credits', label: 'Créditos', hint: 'Saldo disponível para destacar anúncios.', group: 'conta', icon: Wallet, format: 'int', featured: true, snapshot: true, href: '/painel/minha-conta' },
+  { id: 'contactRate', label: 'Taxa de contato', hint: 'Cliques no contato ÷ visualizações.', group: 'conversao', icon: UserCheck, format: 'percent', featured: true, href: ADS },
+  { id: 'rating', label: 'Avaliação', hint: 'Nota média das avaliações publicadas dos seus anúncios (1 a 5).', group: 'reputacao', icon: Star, format: 'rating', featured: true, snapshot: true, href: ADS },
 ];
 
 export const FEATURED_METRICS = METRICS.filter((m) => m.featured);

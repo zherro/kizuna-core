@@ -45,6 +45,7 @@
   * [Plugin search](plugins/search.md)
   * [Plugin location](plugins/location.md)
   * [Plugin tickets](plugins/tickets.md)
+  * [Plugin ads](plugins/ads.md)
 
 ## Manutenção
 

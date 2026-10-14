@@ -116,6 +116,13 @@ follow-ups (`0002_*.sql`, …) for data seeds or later migrations; the installer
   visitor/day/event, RLS: owner tenant reads its own). Anonymous writes go through
   `fn_analytics_track` (INSERT ... ON CONFLICT DO NOTHING, column-level INSERT grant; SECURITY INVOKER, RLS applies; the owner viewing their own entity is rejected by the INSERT policy). Read via the
   `analytics_events` resource; aggregation is client-side. Retention via inline `pg_cron`.
+- `ads/` — espaços de publicidade (slots) com criativos próprios imagem/GIF e Google AdSense.
+  Tabelas `ad_slots` (config por espaço), `ad_creatives` (formato, vigência, cidades, espaços,
+  peso) e `ad_stats_daily` (contadores diários por espaço/criativo/página, sem dado pessoal).
+  Leitura pública só do que está habilitado e vigente; escrita e métricas atrás de `ads`/`manage`
+  (root sempre). Escrita anônima só pela `fn_ad_track` (`SECURITY DEFINER`, valida espaço, evento,
+  página e criativo). Componente `AdSlot` em `@kizuna/core/client/ads`; tela root `AdsScreen`.
+  Config `ads` (`adsenseClient`, `maxSlotsPerPage`). Ver `docs/plugins/ads.md`.
 - `reviews/` — generic ratings/reviews infrastructure, scoped by `domain` + `reference_id` (no
   FK to the reviewed entity — same decoupling as `forms`). Tables: `reviews` (rating 1–5 +
   comment + status `pending`/`published`/`hidden`/`rejected` + soft delete), `review_tags`
