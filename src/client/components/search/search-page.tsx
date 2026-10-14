@@ -304,7 +304,6 @@ function SearchPageInner({
     (async () => {
       try {
         const base = toSearchAdsBody(seed);
-        setRegionResults([]);
         // 1) cidade + filtros
         let effective = base;
         let items = await runSearch(effective, controller.signal);
@@ -382,7 +381,9 @@ function SearchPageInner({
           filters.cityIds == null
             ? regionGroupsFor(regions, base.p_city_ibge ?? base.p_city_id)
             : [];
-        if (groups.length > 0) {
+        // As seções da região antigas ficam até as novas chegarem (sem piscar vazio).
+        if (groups.length === 0) setRegionResults([]);
+        else {
           const loaded = await Promise.all(
             groups.map(async (group) => {
               const perCity = await Promise.all(
@@ -535,7 +536,7 @@ function SearchPageInner({
   const locationLabel = location.cityName || location.stateName || location.state;
   // Cidade sem resultado mas com anúncios na região: mostra a região no lugar do "nenhum resultado".
   const cityEmptyWithRegion =
-    !loading && (scope === 'empty' || results.length === 0) && regionResults.length > 0;
+    (scope === 'empty' || results.length === 0) && regionResults.length > 0;
   const collapseBase =
     'grid transition-[grid-template-rows,opacity] duration-300 ease-out motion-reduce:transition-none';
 

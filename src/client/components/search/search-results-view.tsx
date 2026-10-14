@@ -135,7 +135,14 @@ export function SearchResultsView({
     );
   };
 
-  if (loading) {
+  // Esqueleto só quando não há nada pra mostrar (1ª carga). Ao refiltrar, a lista anterior fica
+  // na tela (esmaecida) até a nova chegar — sem piscar vazio durante a requisição.
+  const refreshing = loading && results.length > 0;
+  const busy = refreshing
+    ? 'pointer-events-none opacity-60 transition-opacity duration-200 motion-reduce:transition-none'
+    : 'transition-opacity duration-200 motion-reduce:transition-none';
+
+  if (loading && !refreshing) {
     return (
       <div
         className={
@@ -222,7 +229,7 @@ export function SearchResultsView({
 
   if (layout === 'strip') {
     return (
-      <div>
+      <div aria-busy={refreshing} className={busy}>
         {notice}
         <div className="flex gap-3 overflow-x-auto pb-2">
           {results.map((r) => card(r, 'strip'))}
@@ -232,13 +239,15 @@ export function SearchResultsView({
   }
 
   return (
-    <div>
+    <div aria-busy={refreshing} className={busy}>
       {notice}
       <div className="mb-3 flex items-baseline justify-between gap-2">
         <h2 className="text-sm font-semibold text-muted-foreground">
           {heading ?? scopeHeading(scope, stateName, cityName)}
         </h2>
-        <span className="text-xs text-muted-foreground">{results.length} resultado(s)</span>
+        <span className="text-xs text-muted-foreground">
+          {refreshing ? 'Atualizando…' : `${results.length} resultado(s)`}
+        </span>
       </div>
       <div className={GRID_CLASS}>
         {results.slice(0, 3).map((r) => card(r, 'grid'))}
