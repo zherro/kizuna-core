@@ -1,3 +1,4 @@
+import { resolveSteps } from '../../wizard/resolve-steps';
 import { describe, expect, it, vi } from 'vitest';
 import { buildServiceWizardRegistry } from './build-registry';
 import { SERVICE_WIZARD_STEPS } from './index';
@@ -301,6 +302,20 @@ describe('buildServiceWizardRegistry', () => {
     expect(enabled(ctx({ groupId: '' }))).toBe(true);
     // não altera o registry original
     expect(SERVICE_WIZARD_STEPS.price.enabled).toBeUndefined();
+  });
+
+  it('skipStepsByGroup vale junto com stepProfiles.price (preço some da navegação)', () => {
+    const reg = buildServiceWizardRegistry(SERVICE_WIZARD_STEPS, {
+      ...base,
+      stepProfiles: { price: { default: { options: [{ value: 'service' }, { value: 'quote' }] } } },
+      skipStepsByGroup: { price: ['saude'] },
+    });
+    const keys = (groupId: string) =>
+      resolveSteps({ steps: ['category', 'location', 'price', 'description'], registry: reg }, ctx({ groupId })).map(
+        (s) => s.key
+      );
+    expect(keys('g1')).toEqual(['category', 'location', 'description']);
+    expect(keys('g2')).toEqual(['category', 'location', 'price', 'description']);
   });
 
   it('skipStepsByGroup com passo desconhecido falha', () => {

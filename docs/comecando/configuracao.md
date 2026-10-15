@@ -292,7 +292,7 @@ passos para certos grupos). A referência completa, com precedência e exemplos,
     "lockLayout": true,
     "assistant": false,
     "steps": ["category", "start", "location", "price", "images", "description", "dynamic-form", "moderation"],
-    "skipStepsByGroup": { "location": ["noticias"] },
+    "skipStepsByGroup": { "location": ["noticias"], "price": ["lugares"] },
     "finishHrefByMode": {
       "create": "/painel/meus-servicos",
       "review": "/painel/administracao/aprovacoes"
@@ -325,6 +325,16 @@ No `stepProfiles.location`, `model: "addresses"` permite N endereços (com um pr
 ```
 
 Endereço só no estabelecimento: `no_estabelecimento` exige ao menos um endereço; `no_cliente` e `remoto` não pedem endereço. Detalhes em [Wizard](../interface/wizard.md).
+
+### Esconder um passo por grupo
+
+`skipStepsByGroup` mapeia a chave do passo para os slugs de grupo em que ele **não** aparece. O
+passo sai da navegação e do indicador de progresso; antes de escolher o grupo, ele aparece. Vale
+junto com `stepProfiles` do mesmo passo. Passo fora do registry quebra no carregamento.
+
+Ex.: um lugar (shopping, parque) não tem preço, então `"price": ["lugares"]`. Sem o passo, o
+anúncio fica com os padrões do banco (`starting_price = 0`, `price_unit = 'quote'`) e a variant
+`lugar` não mostra caixa de preço nem preço no JSON-LD.
 
 ### Textos do passo de local por grupo/categoria
 
