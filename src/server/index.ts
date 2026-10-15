@@ -63,6 +63,7 @@ export {
   type ResolvedLocation,
 } from './location';
 export { createRouteHandler, type RouteHandlerOptions } from './location/route-handler';
+export { searchAddress, photonToPlaces, type AddressPlace } from './location/address-search';
 export type { OtpProvider, OtpPayload, OtpSendResult, OtpConfig, OtpPurpose } from './otp/types';
 export { normalizeBrMobile, maskPhone } from './otp/phone';
 export {

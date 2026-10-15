@@ -81,10 +81,40 @@ Com `outsideList: "default"`, a cidade de `defaultCityIbge` precisa estar marcad
 | `GET /api/location/cities[?uf=MT]`     | `{ items: { value, label, stateCode, stateName }[] }` (`value` = código IBGE) |
 | `GET /api/location/resolve?uf=&city=`  | `{ location: { stateCode, stateName, cityId, cityName } \| null }` |
 | `GET /api/location/ip`, `/reverse`     | Detecção por IP / GPS (ip-api, Nominatim).                    |
-| `GET /api/location/cep`, `/address/search` | CEP (ViaCEP) e busca de endereço (Google Places).        |
+| `GET /api/location/cep`, `/address/search` | CEP (ViaCEP) e busca de endereço (Google Places ou OpenStreetMap). |
 
 A lógica fica em `src/server/location/index.ts` (`parseLocationConfig`, `listLocationCities`,
 `resolveLocation`, exportados por `@kizuna/core/server`).
+
+## Busca de endereço (`/api/location/address/search`)
+
+O campo de endereço dos formulários (wizard de serviço, cadastro de lugar) busca por nome do lugar
+ou por endereço nessa rota. A lógica é `searchAddress` (`src/server/location/address-search.ts`):
+
+| Situação                                  | Provedor usado                                          |
+| ----------------------------------------- | ------------------------------------------------------- |
+| `GOOGLE_MAPS_SERVER_KEY` definida          | Google Places (Text Search). Melhor para nomes de lugar. |
+| Sem a chave, ou o Google respondeu erro    | Photon (OpenStreetMap): gratuito, sem chave.            |
+
+Os dois devolvem o mesmo formato (`{ places: [...] }` no padrão do Google Places), então o
+formulário não muda. Sem a chave a busca funciona, mas acha menos estabelecimentos por nome.
+
+### Configurar a chave do Google
+
+1. No [Google Cloud Console](https://console.cloud.google.com/), crie ou escolha um projeto com
+   faturamento ativo (o Google dá um crédito mensal; acima dele a busca é cobrada).
+2. Em **APIs e serviços › Biblioteca**, ative **Places API (New)**.
+3. Em **APIs e serviços › Credenciais**, crie uma **chave de API**. Em "Restrições de API",
+   permita só a Places API (New). É uma chave de servidor: não use restrição por referenciador
+   HTTP, porque a chamada sai do servidor e não do navegador.
+4. Coloque a chave no `.env` local e nas variáveis do servidor de produção:
+
+   ```bash
+   GOOGLE_MAPS_SERVER_KEY=sua-chave
+   ```
+
+5. Reinicie o app. Se o Google recusar a chave, o log do servidor mostra
+   `Google Places falhou; usando OpenStreetMap` e a busca continua pelo OpenStreetMap.
 
 ## Cidade na URL (`/[cidade]`)
 
