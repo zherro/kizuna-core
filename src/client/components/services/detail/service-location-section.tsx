@@ -24,7 +24,7 @@ export function ServiceLocationSection({
       </h2>
       <div className="mt-5 space-y-4">
         {destination && <LocationMap lat={destination.lat} lng={destination.lng} title={label || title} />}
-        <DirectionsCard destination={destination} address={address || null} />
+        <DirectionsCard destination={destination} address={address || null} measure={!destination} />
       </div>
     </section>
   );

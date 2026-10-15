@@ -5,4 +5,5 @@ export { ArticleCredits } from './article-credits';
 export { FactSheet, type FactRow } from './fact-sheet';
 export { QuickActions, type QuickAction } from './quick-actions';
 export { LocationMap } from './location-map';
+export { RouteBar } from './route-bar';
 export { DirectionsCard, type DirectionsCardProps } from './directions-card';

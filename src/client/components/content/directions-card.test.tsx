@@ -137,4 +137,15 @@ describe('LocationMap', () => {
     expect(link.getAttribute('href')).toContain('openstreetmap.org/?mlat=-15.6');
     expect(container.querySelector('iframe')).toBeNull();
   });
+
+  it('a prévia abre o modal com "Calcular rota", sem pedir localização', () => {
+    const geo = vi.fn();
+    Object.defineProperty(navigator, 'geolocation', { value: { getCurrentPosition: geo }, configurable: true });
+    render(<LocationMap lat={-15.6} lng={-56.1} title="Lua Morena" />);
+    expect(screen.queryByRole('dialog')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /abrir mapa e rota/i }));
+    expect(screen.getByRole('dialog')).toBeTruthy();
+    expect(screen.getByRole('button', { name: /calcular rota/i })).toBeTruthy();
+    expect(geo).not.toHaveBeenCalled();
+  });
 });

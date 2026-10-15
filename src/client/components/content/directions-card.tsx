@@ -10,6 +10,8 @@ export type DirectionsCardProps = {
   destination?: LatLng | null;
   address?: string | null;
   tips?: string | null;
+  /** `false` quando o `LocationMap` com a barra de rota já está na página (evita distância duplicada). */
+  measure?: boolean;
   className?: string;
 };
 
@@ -27,7 +29,7 @@ const BUTTON_QUIET = `inline-flex min-h-11 shrink-0 items-center justify-center 
  * linha reta a partir da posição do usuário. A posição fica em memória (ver `useCurrentPosition`)
  * e só sai do navegador quando o usuário abre o Google Maps, com a origem no link.
  */
-export function DirectionsCard({ destination = null, address = null, tips = null, className }: DirectionsCardProps) {
+export function DirectionsCard({ destination = null, address = null, tips = null, measure = true, className }: DirectionsCardProps) {
   const { status, position, request } = useCurrentPosition();
   const [copied, setCopied] = useState(false);
 
@@ -37,7 +39,7 @@ export function DirectionsCard({ destination = null, address = null, tips = null
   if (!hasRoute && !tips) return null;
 
   const distance = origin && destination ? formatDistanceKm(distanceKm(origin, destination)) : null;
-  const canMeasure = destination !== null && status !== 'granted' && status !== 'denied';
+  const canMeasure = measure && destination !== null && status !== 'granted' && status !== 'denied';
 
   async function copyAddress() {
     if (!address) return;

@@ -62,6 +62,7 @@ export {
   type LocationCityItem,
   type ResolvedLocation,
 } from './location';
+export { createRouteHandler, type RouteHandlerOptions } from './location/route-handler';
 export type { OtpProvider, OtpPayload, OtpSendResult, OtpConfig, OtpPurpose } from './otp/types';
 export { normalizeBrMobile, maskPhone } from './otp/phone';
 export {
