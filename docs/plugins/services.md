@@ -4,8 +4,8 @@ description: Plugin services — anúncios de serviço, subcategorias, endereço
 
 # Plugin `services`
 
-Domínio marketplace de serviços: o anúncio de um prestador. Versão atual: **1.7.0**
-(`plugins/services/0001` a `0012`). O cadastro usa o [wizard](../interface/wizard.md); a busca
+Domínio marketplace de serviços: o anúncio de um prestador. Versão atual: **1.9.0**
+(`plugins/services/0001` a `0014`). O cadastro usa o [wizard](../interface/wizard.md); a busca
 pública está em [Plugin `search`](search.md).
 
 ## Tabelas
@@ -121,11 +121,21 @@ isso nos dois sentidos, sem campo novo no banco (tudo vive em `extras`).
   da lista que tiver dono. A variant `evento` mostra "Organizado por <título>" com link no lugar do
   texto de `realizador`. Dado: `ServiceDetailData.organizer?: { uid, title, href } | null`; ausente,
   `null` ou erro de rede = comportamento antigo.
-- **Vinculados** (filhos): se o anúncio aberto tem `extras.codigo`, o carrossel de vinculados lista os
-  anúncios ativos com esse código em `extras.tags` (RPC de busca com `p_tags = [codigo]`, sem o
-  próprio), ACIMA dos carrosséis por tag compartilhada e fora do limite de 2 deles. Título:
-  `extras.vinculosTitulo` ou "Vinculados". O mapeamento `local:` para "Neste local" vale só para as
-  tags compartilhadas (convenção antiga).
+- **Vinculados** (filhos): o carrossel de vinculados lista os anúncios ativos que apontam para o
+  anúncio aberto por **`local_ref`** (em `extras.local_ref` ou na resposta `local_ref` do formulário,
+  com o uid OU o `extras.codigo` dele) ou que têm o `codigo` dele em `extras.tags`. Basta preencher
+  `local_ref` (o "Local cadastrado" do evento): o mesmo campo dá o "Onde acontece" no evento e o
+  evento na página do lugar; a tag com o código é opcional. Uma chamada só da RPC de busca
+  (`p_tags = [codigo]` + `p_local_refs = [uid, codigo]`, search 0009; sem código, só
+  `p_local_refs = [uid]`), sem o próprio, sem repetir, eventos futuros primeiro (o mais próximo
+  antes). Num banco sem a search 0009 a chamada falha e repete só por tag. Fica ACIMA dos carrosséis
+  por tag compartilhada e fora do limite de 2 deles. Título: `extras.vinculosTitulo` ou
+  "Vinculados" (num lugar, "Agenda deste local"). O mapeamento `local:` para "Neste local" vale só
+  para as tags compartilhadas (convenção antiga).
+- **Origem dos campos de referência:** `local_ref`, `pontos_de_venda` e `artistas` são lidos de
+  `extras`; vazio ou ausente → das respostas do formulário (`extraFields.answers`, já carregadas
+  pela página, sem consulta extra). Helper puro `serviceRefExtras` (`src/shared/service-ref-extras.ts`),
+  usado por `fetchLinkedRefs` e pelo fallback editorial do consumidor.
 - **Unicidade:** o `codigo` é único entre os anúncios não arquivados, no banco todo (índice UNIQUE
   parcial `services_extras_codigo_uniq`, migração 0012; global porque a busca do organizador e o
   carrossel de vinculados não filtram por tenant). Um segundo anúncio não consegue tomar um código
@@ -136,9 +146,12 @@ isso nos dois sentidos, sem campo novo no banco (tudo vive em `extras`).
 - **Índice:** btree parcial `services_extras_codigo` sobre `(extras->>'codigo')`, restrito a
   `active AND status = 'active' AND (extras->>'codigo') IS NOT NULL` (migração 0011). A igualdade
   implica o `IS NOT NULL`, então a consulta usa o índice (conferido com EXPLAIN em 50 mil anúncios).
+- **Índice de `local_ref`:** btree parcial `services_extras_local_ref` sobre
+  `(extras->>'local_ref')` nos anúncios publicados (migração 0014); a resposta do formulário usa o
+  GIN `form_results_answers_gin` (`answers @> {"local_ref": ...}`).
 - **Custo:** 1 consulta a mais por página de detalhe, só quando o anúncio tem tags (mais 1 pelos
-  endereços do organizador quando ele é achado) e 1 chamada da RPC de busca para os vinculados, só
-  quando o anúncio tem `codigo`. Entram no mesmo cache da página.
+  endereços do organizador quando ele é achado) e 1 chamada da RPC de busca para os vinculados (com
+  limite de 8 cards), em toda página de detalhe. Entram no mesmo cache da página.
 
 ### Permissão `services.link` e validação no banco (migração 0012)
 

@@ -1,12 +1,12 @@
 import { serverFetchResource } from '../postgrest-crud';
 import { pgrstRpc } from '../postrest/conn';
-import { runServiceSearch, seedFromKey } from './service-search';
+import { runServiceSearch, runServiceSearchStrict, seedFromKey } from './service-search';
 import { listLocationCities } from '../location';
 import type { RoutableCity } from '../../shared/city-routing/city-slug';
 import { pickServiceCity, type ServiceAddressLike } from './service-city';
 import { fetchServiceSiblings, type ServiceSibling } from './service-siblings';
 import { projectRegions } from '../regions';
-import { buildTagSearchParams } from './tag-rail-data';
+import { buildLinkedSearchParams, buildTagSearchParams, futureEventsFirst } from './tag-rail-data';
 import {
   CODIGO_PATTERN,
   codigoCandidates,
@@ -24,6 +24,7 @@ import type { ServiceResult } from '../../client/components/search/search-types'
 import { photosFor } from '../../client/components/services/service-helpers';
 import { slugify } from '../../client/components/pages/slugify';
 import { humanizeSlug } from '../../client/components/services/detail/ad-extra-fields-format';
+import { serviceRefExtras } from '../../shared/service-ref-extras';
 
 /**
  * Carrega tudo que a tela de detalhe de um anúncio (`/anuncios/[uid]`, projeto consumidor)
@@ -257,17 +258,21 @@ export async function fetchTagRails(service: ServiceRecord): Promise<ServiceTagR
   const rails: ServiceTagRailResult[] = [];
   const shown = new Set<string>([service.uid]);
 
-  // Vinculados: anúncios que citam o `codigo` deste serviço em `tags`. Vêm ANTES dos carrosséis por
-  // tag compartilhada e não contam no limite deles; o que mostram não repete nos de baixo.
-  if (code) {
-    const params = buildTagSearchParams([code], { pageSize: 8 + shown.size });
-    const rows = params
-      ? await runServiceSearch(params, seedFromKey(`${service.uid}:vinculados`)).catch(() => [])
-      : [];
-    const items = rows.filter((row) => !shown.has(row.uid)).slice(0, 8);
+  // Vinculados: anúncios que citam o `codigo` deste serviço em `tags` OU apontam para ele em
+  // `extras.local_ref` (uid ou código) — uma chamada só. Vêm ANTES dos carrosséis por tag
+  // compartilhada e não contam no limite deles; o que mostram não repete nos de baixo.
+  {
+    const seed = seedFromKey(`${service.uid}:vinculados`);
+    const pageSize = 8 + shown.size;
+    const tagOnly = code ? buildTagSearchParams([code], { pageSize }) : null;
+    const rows = await runServiceSearchStrict(buildLinkedSearchParams(service.uid, code, { pageSize }), seed)
+      // banco sem a search 0009 (não conhece `p_local_refs`): só por tag, como antes
+      .catch(() => (tagOnly ? runServiceSearch(tagOnly, seed) : []))
+      .catch(() => []);
+    const items = futureEventsFirst(rows.filter((row) => !shown.has(row.uid))).slice(0, 8);
     if (items.length > 0) {
       items.forEach((item) => shown.add(item.uid));
-      rails.push({ tag: code, title: linkedRailTitle(service), items });
+      rails.push({ tag: code ?? service.uid, title: linkedRailTitle(service), items });
     }
   }
 
@@ -516,12 +521,15 @@ function listNames(raw: unknown): string[] {
  *   `humanizeSlug(nome)`.
  * - `artists`: `extras.artistas[].nome` → `slugify(nome)` como código; senão o nome original.
  * Listas na ordem do formulário. Erro de rede → sem venues (rótulos continuam).
+ * Cada campo vem de `extras`; vazio ou ausente → das respostas do formulário (`extraFields`, já
+ * carregadas pela página — sem consulta extra; `serviceRefExtras`).
  */
 export async function fetchLinkedRefs(
   service: ServiceRecord,
-  eventCity: RoutableCity | null
+  eventCity: RoutableCity | null,
+  extraFields?: ServiceExtraFields
 ): Promise<ServiceLinkedRefs> {
-  const extras = service.extras ?? {};
+  const extras = serviceRefExtras(service, extraFields);
   const ref = clean(extras.local_ref);
   const localRef = ref && ref !== service.uid ? ref : '';
   const tags = codigoCandidates(serviceTagsOf(service), MAX_ORGANIZER_TAGS);
@@ -614,7 +622,7 @@ export async function loadServiceDetail(uid: string): Promise<ServiceDetailData 
   const { city, location } = await fetchServiceCityAndLocation(service, provider);
   const [siblings, { venue, salePoints, artists }] = await Promise.all([
     fetchServiceSiblings(service, city?.ibge, projectRegions),
-    fetchLinkedRefs(service, city),
+    fetchLinkedRefs(service, city, extraFields),
   ]);
   const organizer: ServiceOrganizer | null = venue
     ? { uid: venue.uid, title: venue.title, href: venue.href }

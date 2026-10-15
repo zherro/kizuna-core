@@ -121,6 +121,9 @@ export type SearchAdsBody = {
    * menos uma). Ausente/`null`/`[]` = sem filtro. Só mande quando houver tags — sem a chave, a RPC
    * anterior à 0008 continua aceitando a chamada. */
   p_tags?: string[] | null;
+  /** Valores de `services.extras.local_ref` (uid ou código do lugar; `fn_search_services` 0009).
+   * Com `p_tags`, vale um OU outro. Só mande quando houver — a RPC anterior à 0009 recusa a chave. */
+  p_local_refs?: string[] | null;
 };
 
 export type TaxonomySubcategory = { id: number; name: string };

@@ -19,7 +19,11 @@ export async function runServiceSearch(
   overrides: Partial<SearchAdsBody>,
   seed: number
 ): Promise<ServiceResult[]> {
-  const body: SearchAdsBody = withProjectRegionCities({
+  return runSearchRpc(searchBody(overrides, seed)).catch(() => []);
+}
+
+function searchBody(overrides: Partial<SearchAdsBody>, seed: number): SearchAdsBody {
+  return withProjectRegionCities({
     p_state: null,
     p_city_id: null,
     p_city_ibge: null,
@@ -32,10 +36,20 @@ export async function runServiceSearch(
     p_page_size: 12,
     ...overrides,
   });
-  const response = await pgrstRpc(SEARCH_RPC, body, { auth: null, schema: 'public' }).catch(
-    () => null
-  );
-  if (!response?.ok) return [];
+}
+
+/** Como `runServiceSearch`, mas erro de rede/HTTP LANÇA — para quem tem fallback (ex.: parâmetro
+ * que só existe numa migração mais nova). */
+export async function runServiceSearchStrict(
+  overrides: Partial<SearchAdsBody>,
+  seed: number
+): Promise<ServiceResult[]> {
+  return runSearchRpc(searchBody(overrides, seed));
+}
+
+async function runSearchRpc(body: SearchAdsBody): Promise<ServiceResult[]> {
+  const response = await pgrstRpc(SEARCH_RPC, body, { auth: null, schema: 'public' });
+  if (!response.ok) throw new Error(`${SEARCH_RPC}: HTTP ${response.status}`);
   const rows = (await response.json().catch(() => null)) as ServiceResult[] | null;
   return Array.isArray(rows) ? rows : [];
 }

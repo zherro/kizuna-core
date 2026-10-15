@@ -56,6 +56,27 @@ export function buildTagSearchParams(
   };
 }
 
+/**
+ * Corpo parcial da RPC para os vinculados de um anúncio — puro (testável). Numa chamada só: quem
+ * tem o `codigo` dele nas tags (`p_tags`) OU aponta para ele em `extras.local_ref` pelo uid ou pelo
+ * código (`p_local_refs`, plugin search 0009). Sem código, vale só o uid.
+ */
+export function buildLinkedSearchParams(uid: string, code: string | null, options: { pageSize: number }) {
+  return {
+    ...(code ? { p_tags: [code] } : {}),
+    p_local_refs: code ? [uid, code] : [uid],
+    p_page_size: options.pageSize,
+    p_city_ibge: null,
+  };
+}
+
+/** Eventos futuros primeiro (o mais próximo antes); o resto mantém a ordem recebida. */
+export function futureEventsFirst<T extends { event_start?: string | null }>(items: T[], now = Date.now()): T[] {
+  const at = (item: T) => (item.event_start ? Date.parse(item.event_start) : NaN);
+  const future = items.filter((item) => at(item) >= now).sort((a, b) => at(a) - at(b));
+  return [...future, ...items.filter((item) => !future.includes(item))];
+}
+
 export async function loadServicesByTags(
   tags: unknown,
   options: LoadServicesByTagsOptions = {}

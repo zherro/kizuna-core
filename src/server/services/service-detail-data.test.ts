@@ -94,9 +94,11 @@ describe('fetchTagRails', () => {
 
   beforeEach(() => pgrstRpc.mockReset());
 
-  it('sem extras.tags não chama a RPC', async () => {
+  it('sem extras.tags: só a busca de vinculados por uid (local_ref)', async () => {
+    rpcByTag({});
     expect(await fetchTagRails(base({ extras: {} } as Partial<ServiceRecord>))).toEqual([]);
-    expect(pgrstRpc).not.toHaveBeenCalled();
+    expect(pgrstRpc).toHaveBeenCalledTimes(1);
+    expect(pgrstRpc.mock.calls[0][1].p_local_refs).toEqual(['u1']);
   });
 
   it('local:* primeiro, no máximo 2, sem o próprio e sem repetir card; tag vazia é pulada', async () => {
@@ -116,7 +118,7 @@ describe('fetchTagRails', () => {
       ['casas-de-festas', 'Mais em Casas de festas', ['c1']],
     ]);
     const bodies = pgrstRpc.mock.calls.map((c) => c[1]);
-    expect(bodies.map((b) => b.p_tags)).toEqual([['local:casa'], ['vazia'], ['casas-de-festas']]);
+    expect(bodies.map((b) => b.p_tags)).toEqual([undefined, ['local:casa'], ['vazia'], ['casas-de-festas']]);
   });
 });
 
@@ -253,6 +255,61 @@ describe('fetchTagRails: vinculados (extras.codigo)', () => {
   });
 });
 
+describe('fetchTagRails: vinculados por extras.local_ref', () => {
+  type Hit = { uid: string; event_start?: string | null };
+  const calls: Array<Record<string, unknown>> = [];
+  const rpc = (hits: Hit[], { failRefs = false } = {}) =>
+    pgrstRpc.mockImplementation(async (...args: unknown[]) => {
+      const body = args[1] as Record<string, unknown>;
+      calls.push(body);
+      if (failRefs && body.p_local_refs) return new Response('{}', { status: 400 });
+      return new Response(JSON.stringify(hits.map((h) => ({ title: h.uid, ...h }))), { status: 200 });
+    });
+  beforeEach(() => {
+    pgrstRpc.mockReset();
+    calls.length = 0;
+  });
+  const svc = (extras: Record<string, unknown>) => base({ extras } as Partial<ServiceRecord>);
+
+  it('uma chamada só: p_tags=[codigo] + p_local_refs=[uid, codigo]', async () => {
+    rpc([{ uid: 'e1' }]);
+    const rails = await fetchTagRails(svc({ codigo: 'casa-x' }));
+    expect(rails.map((r) => [r.tag, r.title, r.items.map((i) => i.uid)])).toEqual([
+      ['casa-x', 'Vinculados', ['e1']],
+    ]);
+    expect(calls).toHaveLength(1);
+    expect(calls[0].p_tags).toEqual(['casa-x']);
+    expect(calls[0].p_local_refs).toEqual(['u1', 'casa-x']);
+  });
+
+  it('sem codigo: busca por uid (p_local_refs=[uid], sem p_tags) e mostra o carrossel com vinculosTitulo', async () => {
+    rpc([{ uid: 'u1' }, { uid: 'e1' }]);
+    const rails = await fetchTagRails(svc({ vinculosTitulo: 'Agenda' }));
+    expect(rails.map((r) => [r.tag, r.title, r.items.map((i) => i.uid)])).toEqual([['u1', 'Agenda', ['e1']]]);
+    expect(calls[0].p_tags).toBeUndefined();
+    expect(calls[0].p_local_refs).toEqual(['u1']);
+  });
+
+  it('eventos futuros primeiro (mais próximo antes), depois o resto na ordem da RPC', async () => {
+    rpc([
+      { uid: 'passado', event_start: '2000-01-01T20:00' },
+      { uid: 'sem-data' },
+      { uid: 'longe', event_start: '2999-06-01T20:00' },
+      { uid: 'perto', event_start: '2999-01-01T20:00' },
+    ]);
+    const rails = await fetchTagRails(svc({ codigo: 'casa-x' }));
+    expect(rails[0].items.map((i) => i.uid)).toEqual(['perto', 'longe', 'passado', 'sem-data']);
+  });
+
+  it('RPC antiga (sem p_local_refs) → repete só por tag', async () => {
+    rpc([{ uid: 'e1' }], { failRefs: true });
+    const rails = await fetchTagRails(svc({ codigo: 'casa-x' }));
+    expect(rails[0].items.map((i) => i.uid)).toEqual(['e1']);
+    expect(calls).toHaveLength(2);
+    expect(calls[1].p_local_refs).toBeUndefined();
+  });
+});
+
 type Row = { id: string; uid: string; title: string; extras?: Record<string, unknown> };
 
 /** PostgREST falso: responde `services` (por codigo em lote ou uid em lote) e `service_addresses`. */
@@ -360,6 +417,29 @@ describe('fetchVenue', () => {
   it('erro de rede → null', async () => {
     serverFetchResource.mockRejectedValueOnce(new Error('boom'));
     expect(await fetchVenue(svc({ local_ref: 'loc1', tags: ['x'] }), null)).toBeNull();
+  });
+});
+
+describe('fetchLinkedRefs: respostas do formulário', () => {
+  it('local_ref só nas respostas do formulário → venue', async () => {
+    fakeDb([{ id: 'ic', uid: 'casa1', title: 'Casa X', extras: { codigo: 'casa-x' } }]);
+    const svc = base({ extras: {} } as Partial<ServiceRecord>);
+    const refs = await fetchLinkedRefs(svc, null, {
+      schema: {} as never,
+      answers: { local_ref: 'casa-x', pontos_de_venda: [{ nome: 'Disk ingresso' }] },
+    });
+    expect(refs.venue).toMatchObject({ uid: 'casa1', title: 'Casa X' });
+    expect(refs.salePoints.map((p) => p.label)).toEqual(['Disk ingresso']);
+  });
+
+  it('extras.local_ref vence a resposta do formulário', async () => {
+    fakeDb([
+      { id: 'ia', uid: 'a1', title: 'A', extras: { codigo: 'casa-a' } },
+      { id: 'ib', uid: 'b1', title: 'B', extras: { codigo: 'casa-b' } },
+    ]);
+    const svc = base({ extras: { local_ref: 'casa-a' } } as Partial<ServiceRecord>);
+    const refs = await fetchLinkedRefs(svc, null, { schema: {} as never, answers: { local_ref: 'casa-b' } });
+    expect(refs.venue?.uid).toBe('a1');
   });
 });
 

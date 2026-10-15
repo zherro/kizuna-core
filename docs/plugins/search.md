@@ -5,7 +5,7 @@ description: Plugin search — RPC fn_search_services, filtro de local por ender
 # Plugin `search`
 
 Busca pública de serviços: RPC `fn_search_services` (`SECURITY DEFINER`, chamável por `anon`) e a
-página `/busca`. Versão atual: **1.7.0** (`plugins/search/0008_search_tags.sql`). Depende de
+página `/busca`. Versão atual: **1.8.0** (`plugins/search/0009_search_local_refs.sql`). Depende de
 [`services`](services.md) 1.2.0 ou superior. o deck do plugin `swipe`
 devolvem as mesmas colunas de local.
 
@@ -13,7 +13,8 @@ devolvem as mesmas colunas de local.
 
 `p_state`, `p_city_id`, `p_group_category_slug`, `p_category_id`, `p_subcategories` (jsonb),
 `p_query`, `p_seed`, `p_page`, `p_page_size`, **`p_city_ibge`** (texto), `p_exclude_category_slugs`,
-`p_city_ibges`, `p_category_ids` e `p_tags` (ver "Filtro por tag"). O filtro de cidade usa
+`p_city_ibges`, `p_category_ids`, `p_tags` (ver "Filtro por tag") e `p_local_refs` (ver "Filtro por
+local_ref"). O filtro de cidade usa
 `p_city_ibge`; `p_city_id` continua na assinatura por compatibilidade.
 
 `p_group_category_slug` (busca por grupo e carrossel de grupo da home) aceita o anúncio quando o
@@ -21,6 +22,15 @@ grupo bate em qualquer um destes: o grupo gravado no anúncio (`services.categor
 principal da categoria (`categories.category_group_id`, migração **0005**) ou um vínculo secundário
 (`categories_group_link`). Assim, um carrossel de grupo pega todas as categorias do grupo, mesmo
 anúncio sem grupo gravado ou de categoria que mudou de grupo.
+
+## Filtro por local_ref (`p_local_refs`, migração 0009)
+
+`p_local_refs jsonb` (último parâmetro, default `NULL`): o anúncio entra se o `local_ref` dele (em
+`services.extras.local_ref` ou em `form_results.answers.local_ref`) for um dos valores pedidos
+(aparados, comparação exata). Com `p_tags` junto, vale a **união**: tem uma das tags OU aponta por
+`local_ref`. É assim que a página de um lugar lista os eventos dele numa chamada só
+(`fetchTagRails`). Só mande a chave quando houver valores: um banco sem a 0009 recusa a chamada
+(`runServiceSearchStrict` lança; `fetchTagRails` repete só com `p_tags`).
 
 ## Filtro por tag (`p_tags`, migração 0008)
 
