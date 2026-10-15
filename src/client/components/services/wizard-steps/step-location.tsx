@@ -96,10 +96,19 @@ export function resolveLocationOptions(
  */
 export function createStepLocation(profiles?: StepProfiles<LocationProfile>) {
   return function StepLocation({ state, patch, entities }: WizardStepProps<ServiceWizardState>) {
-    const { options, defaultValue } = resolveLocationProfile(profiles, entities, state);
+    const {
+      options,
+      defaultValue: configuredDefault,
+      labels,
+    } = resolveLocationProfile(profiles, entities, state);
+    // Uma opção só (ex.: lugares, sempre no estabelecimento) → não há o que escolher: já vem
+    // selecionada e a grade de formatos some.
+    const singleOption = options.length === 1;
+    const defaultValue = configuredDefault ?? (singleOption ? options[0].value : undefined);
     const value = state.serviceLocation ?? '';
     const { messages } = useAppPreferences();
     const t = messages.wizard;
+    const l = { ...t.location, ...labels };
     const optionMessages = (t.location as { options?: LocationOptionMessages }).options ?? {};
     const addressesLabels = (t.location as { addresses?: AddressListLabels }).addresses;
     const addresses = state.addresses ?? [];
@@ -163,46 +172,50 @@ export function createStepLocation(profiles?: StepProfiles<LocationProfile>) {
 
     return (
       <div className="space-y-6">
-        <StepHeader title={t.location.title} subtitle={t.location.subtitle} why={t.location.why} />
+        <StepHeader title={l.title} subtitle={l.subtitle} why={l.why} />
 
-        <div
-          className={`grid grid-cols-1 gap-3 ${options.length === 2 ? 'sm:grid-cols-2' : 'sm:grid-cols-3'}`}
-        >
-          {options.map((option) => {
-            const active = value === option.value;
-            const Icon = resolveLucideIcon(option.icon) ?? DEFAULT_ICON[option.value];
-            const custom = optionMessages[option.textKey ?? option.value];
-            return (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => patch({ serviceLocation: option.value })}
-                data-active={active}
-                className="wz-selectable flex flex-col items-start gap-2 rounded-xl border bg-background p-4 text-left"
-              >
-                <div
-                  className={`grid h-9 w-9 place-items-center rounded-lg ${
-                    active ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
-                  }`}
+        {singleOption ? null : (
+          <div
+            className={`grid grid-cols-1 gap-3 ${options.length === 2 ? 'sm:grid-cols-2' : 'sm:grid-cols-3'}`}
+          >
+            {options.map((option) => {
+              const active = value === option.value;
+              const Icon = resolveLucideIcon(option.icon) ?? DEFAULT_ICON[option.value];
+              const custom = optionMessages[option.textKey ?? option.value];
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => patch({ serviceLocation: option.value })}
+                  data-active={active}
+                  className="wz-selectable flex flex-col items-start gap-2 rounded-xl border bg-background p-4 text-left"
                 >
-                  <Icon className="h-5 w-5" />
-                </div>
-                <div className="text-sm font-semibold text-foreground">
-                  {custom?.title ?? SERVICE_LOCATION_LABEL[option.value]}
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  {custom?.description ?? t.location[DEFAULT_DESC_KEY[option.value]]}
-                </div>
-              </button>
-            );
-          })}
-        </div>
+                  <div
+                    className={`grid h-9 w-9 place-items-center rounded-lg ${
+                      active
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted text-muted-foreground'
+                    }`}
+                  >
+                    <Icon className="h-5 w-5" />
+                  </div>
+                  <div className="text-sm font-semibold text-foreground">
+                    {custom?.title ?? SERVICE_LOCATION_LABEL[option.value]}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {custom?.description ?? t.location[DEFAULT_DESC_KEY[option.value]]}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         {selected?.model === 'address' ? (
           <div className="space-y-3 border-t border-border pt-6">
             <div>
-              <p className="text-sm font-semibold text-foreground">{t.location.addressTitle}</p>
-              <p className="text-sm text-muted-foreground">{t.location.addressHint}</p>
+              <p className="text-sm font-semibold text-foreground">{l.addressTitle}</p>
+              <p className="text-sm text-muted-foreground">{l.addressHint}</p>
             </div>
             <AddressForm
               value={address}
@@ -220,7 +233,12 @@ export function createStepLocation(profiles?: StepProfiles<LocationProfile>) {
               addresses={addresses}
               onChange={handleAddressesChange}
               maxAddresses={resolveMaxAddresses(selected)}
-              labels={{ search: t.location.addressSearch, ...addressesLabels }}
+              labels={{
+                search: t.location.addressSearch,
+                ...addressesLabels,
+                ...(labels?.addressesTitle ? { title: labels.addressesTitle } : {}),
+                ...(labels?.addressesHint ? { hint: labels.addressesHint } : {}),
+              }}
             />
           </div>
         ) : null}

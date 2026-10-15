@@ -1,8 +1,8 @@
 'use client';
 
-import { Plus, Star, Trash2 } from 'lucide-react';
+import { Pencil, Plus, Star, Trash2 } from 'lucide-react';
+import { useState } from 'react';
 import { Button } from '../../ui/button';
-import { Input } from '../../ui/input';
 import { AddressForm } from '../../ui-better-soft/google-form/address-google-form';
 import type { ServiceAddress } from '../service-type';
 import {
@@ -17,7 +17,12 @@ import {
 export type AddressListLabels = {
   title?: string;
   hint?: string;
-  label?: string;
+  /** Texto da tag quando a linha principal não tem apelido. */
+  defaultPrimaryLabel?: string;
+  /** Texto da tag das demais linhas sem apelido; `{n}` vira a posição (2, 3...). */
+  defaultLabel?: string;
+  /** aria-label do botão/input que edita o apelido. */
+  editLabel?: string;
   primary?: string;
   makePrimary?: string;
   add?: string;
@@ -30,7 +35,9 @@ export type AddressListLabels = {
 const DEFAULT_LABELS: Required<AddressListLabels> = {
   title: 'Endereços de atendimento',
   hint: 'Adicione os locais onde você atende. Marque um como principal — é ele que define sua posição na busca.',
-  label: 'Apelido (opcional, ex.: Matriz)',
+  defaultPrimaryLabel: 'Endereço principal',
+  defaultLabel: 'Endereço {n}',
+  editLabel: 'Editar apelido do endereço',
   primary: 'Principal',
   makePrimary: 'Tornar principal',
   add: 'Adicionar endereço',
@@ -72,40 +79,41 @@ export function AddressListEditor({
       {addresses.length === 0 ? <p className="text-sm text-muted-foreground">{l.empty}</p> : null}
 
       <ul className="space-y-3">
-        {addresses.map((address) => (
+        {addresses.map((address, index) => (
           <li
             key={address.clientId}
             className="space-y-3 rounded-[var(--ui-radius-card-compact,0.75rem)] border-[length:var(--ui-border-w-card,1px)] bg-[color:var(--ui-card-bg,var(--background))] shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] p-3"
             data-primary={address.isPrimary}
           >
             <div className="flex items-center gap-2">
-              <Input
+              <LabelTag
                 value={address.label}
-                onChange={(event) =>
-                  onChange(
-                    updateAddress(addresses, address.clientId, {
-                      label: event.target.value.slice(0, 40),
-                    })
-                  )
+                fallback={
+                  address.isPrimary
+                    ? l.defaultPrimaryLabel
+                    : l.defaultLabel.replace('{n}', String(index + 1))
                 }
-                placeholder={l.label}
-                aria-label={l.label}
+                editLabel={l.editLabel}
+                onCommit={(label) =>
+                  onChange(updateAddress(addresses, address.clientId, { label }))
+                }
               />
               <Button
                 type="button"
                 variant={address.isPrimary ? 'default' : 'outline'}
                 size="sm"
-                className="shrink-0"
+                className="ml-auto h-8 shrink-0 px-2.5 text-xs"
                 aria-pressed={address.isPrimary}
                 onClick={() => onChange(setPrimaryAddress(addresses, address.clientId))}
               >
-                <Star className="mr-1 h-4 w-4" />
+                <Star className="mr-1 h-3.5 w-3.5" />
                 {address.isPrimary ? l.primary : l.makePrimary}
               </Button>
               <Button
                 type="button"
                 variant="ghost"
                 size="icon"
+                className="h-8 w-8 shrink-0"
                 aria-label={l.remove}
                 onClick={() => onChange(removeAddress(addresses, address.clientId))}
               >
@@ -119,6 +127,7 @@ export function AddressListEditor({
               }
               features={FORM_FEATURES}
               layout="compact"
+              emphasizeCep
               searchLabel={l.search}
             />
           </li>
@@ -139,5 +148,68 @@ export function AddressListEditor({
         <p className="text-xs text-muted-foreground">{l.limit}</p>
       )}
     </div>
+  );
+}
+
+const LABEL_MAX = 40;
+
+/**
+ * Apelido da linha como tag: mostra o apelido ou, se vazio, o padrão (`fallback`, nunca gravado).
+ * Clique vira input inline — Enter/blur grava (máx. 40, vazio volta ao padrão), Esc cancela.
+ */
+function LabelTag({
+  value,
+  fallback,
+  editLabel,
+  onCommit,
+}: {
+  value: string;
+  fallback: string;
+  editLabel: string;
+  onCommit: (label: string) => void;
+}) {
+  const [draft, setDraft] = useState<string | null>(null);
+  const chip =
+    'inline-flex h-7 min-w-0 max-w-[60%] items-center gap-1.5 rounded-full border border-border bg-muted px-2.5 text-xs font-medium text-foreground';
+
+  if (draft !== null) {
+    const commit = () => {
+      onCommit(draft.trim().slice(0, LABEL_MAX));
+      setDraft(null);
+    };
+    return (
+      <input
+        autoFocus
+        value={draft}
+        maxLength={LABEL_MAX}
+        aria-label={editLabel}
+        placeholder={fallback}
+        onChange={(event) => setDraft(event.target.value)}
+        onBlur={commit}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter') {
+            event.preventDefault();
+            commit();
+          } else if (event.key === 'Escape') {
+            event.preventDefault();
+            setDraft(null);
+          }
+        }}
+        className={`${chip} w-44 outline-none focus-visible:ring-2 focus-visible:ring-ring`}
+      />
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      aria-label={editLabel}
+      title={editLabel}
+      onClick={() => setDraft(value)}
+      className={`${chip} transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1`}
+    >
+      <span className="truncate">{value || fallback}</span>
+      <Pencil aria-hidden className="h-3 w-3 shrink-0 text-muted-foreground" />
+    </button>
   );
 }

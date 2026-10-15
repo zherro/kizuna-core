@@ -87,6 +87,72 @@ describe('AddressListEditor', () => {
   });
 });
 
+describe('AddressListEditor — apelido em tag', () => {
+  function Harness({ initial }: { initial: ServiceAddress[] }) {
+    const [list, setList] = useState<ServiceAddress[]>(initial);
+    return (
+      <>
+        <AddressListEditor addresses={list} onChange={setList} maxAddresses={3} />
+        <output data-testid="labels">{JSON.stringify(list.map((a) => a.label))}</output>
+      </>
+    );
+  }
+  const two = () => [
+    full({ clientId: 'a', isPrimary: true, label: '' }),
+    full({ clientId: 'b', isPrimary: false, label: '' }),
+  ];
+  const labels = () => JSON.parse(screen.getByTestId('labels').textContent ?? '[]');
+  const editButtons = () => screen.getAllByRole('button', { name: 'Editar apelido do endereço' });
+
+  it('mostra o padrão sem gravá-lo em label', () => {
+    render(<Harness initial={two()} />);
+    expect(screen.getByText('Endereço principal')).toBeTruthy();
+    expect(screen.getByText('Endereço 2')).toBeTruthy();
+    expect(screen.queryByRole('textbox')).toBeNull();
+    expect(labels()).toEqual(['', '']);
+  });
+
+  it('clique vira input; Enter grava (máx. 40)', () => {
+    render(<Harness initial={two()} />);
+    fireEvent.click(editButtons()[0]);
+    const input = screen.getByRole('textbox', { name: 'Editar apelido do endereço' });
+    fireEvent.change(input, { target: { value: 'Matriz'.padEnd(50, 'x') } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(labels()[0]).toHaveLength(40);
+    expect(screen.queryByRole('textbox')).toBeNull();
+  });
+
+  it('blur grava', () => {
+    render(<Harness initial={two()} />);
+    fireEvent.click(editButtons()[1]);
+    const input = screen.getByRole('textbox', { name: 'Editar apelido do endereço' });
+    fireEvent.change(input, { target: { value: 'Filial' } });
+    fireEvent.blur(input);
+    expect(labels()).toEqual(['', 'Filial']);
+    expect(screen.getByText('Filial')).toBeTruthy();
+  });
+
+  it('Esc cancela', () => {
+    render(<Harness initial={two()} />);
+    fireEvent.click(editButtons()[0]);
+    const input = screen.getByRole('textbox', { name: 'Editar apelido do endereço' });
+    fireEvent.change(input, { target: { value: 'Matriz' } });
+    fireEvent.keyDown(input, { key: 'Escape' });
+    expect(labels()).toEqual(['', '']);
+    expect(screen.getByText('Endereço principal')).toBeTruthy();
+  });
+
+  it('texto vazio volta ao padrão', () => {
+    render(<Harness initial={[full({ clientId: 'a', isPrimary: true, label: 'Matriz' })]} />);
+    fireEvent.click(editButtons()[0]);
+    const input = screen.getByRole('textbox', { name: 'Editar apelido do endereço' });
+    fireEvent.change(input, { target: { value: '   ' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(labels()).toEqual(['']);
+    expect(screen.getByText('Endereço principal')).toBeTruthy();
+  });
+});
+
 describe('diffAddresses', () => {
   it('só o que mudou; incompletas não são gravadas', () => {
     const kept = full({ id: '1', clientId: 'k' });

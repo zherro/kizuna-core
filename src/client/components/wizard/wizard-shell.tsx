@@ -6,6 +6,7 @@ import { cn } from '../../../lib/utils';
 import { Button } from '../ui/button';
 import { WizardRail, type WizardRailStep } from './wizard-rail';
 import { WizardProgress } from './wizard-progress';
+import { WizardCancelLink } from './wizard-cancel-link';
 
 export interface WizardShellProps {
   /** 1-based index of the current step, for display. */
@@ -25,6 +26,8 @@ export interface WizardShellProps {
   submitting: boolean;
   error?: string;
   onBack: () => void;
+  /** Quando presente, o Cancelar aparece no rodapé ao lado do Voltar (cabeçalho compacto). */
+  onCancel?: () => void;
   onContinue: () => void;
   onFinish: () => void;
   railExtra?: ReactNode;
@@ -36,7 +39,8 @@ export interface WizardShellProps {
 }
 
 /**
- * Stepper layout. Chrome (mode label + layout toggle + Cancelar) is projected into the app's
+ * Stepper layout. With `onCancel` (compact header) Cancelar sits in the footer next to Voltar;
+ * otherwise chrome (mode label + layout toggle + Cancelar) is projected into the app's
  * single header by `<Wizard>` via `WizardHeaderPortal` — this shell renders no top bar of its
  * own. Flex column of fixed height: progress `shrink-0`, step area scrolls, footer `shrink-0`.
  */
@@ -57,6 +61,7 @@ export function WizardShell({
   submitting,
   error,
   onBack,
+  onCancel,
   onContinue,
   onFinish,
   railExtra,
@@ -85,9 +90,14 @@ export function WizardShell({
       </div>
 
       <main className="min-h-0 flex-1 overflow-y-auto">
-        <div className="mx-auto grid max-w-5xl gap-8 px-3 pt-8 pb-28 sm:px-6 md:grid-cols-[13rem_1fr] md:gap-12 md:pt-12 md:pb-28">
+        <div
+          className={cn(
+            'mx-auto grid max-w-5xl gap-8 px-3 pt-8 pb-28 sm:px-6 md:grid-cols-[13rem_1fr] md:gap-12 md:pb-28',
+            onCancel ? 'md:pt-6 lg:max-w-6xl lg:gap-14' : 'md:pt-12'
+          )}
+        >
           <aside className="hidden md:block">
-            <div className="sticky top-4 space-y-5">
+            <div className={cn('sticky space-y-5', onCancel ? 'top-2' : 'top-4')}>
               <WizardRail
                 steps={railSteps}
                 current={currentStep}
@@ -120,15 +130,23 @@ export function WizardShell({
         data-wz-footer
         className="fixed inset-x-0 bottom-0 z-20 lg:left-[var(--panel-sidebar-w,0px)] border-t border-border bg-background/95 backdrop-blur"
       >
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-3 py-3 sm:px-6">
+        <div
+          className={cn(
+            'mx-auto flex max-w-5xl items-center justify-between gap-3 px-3 py-3 sm:px-6',
+            onCancel && 'lg:max-w-6xl'
+          )}
+        >
+          <div className="flex items-center gap-1 sm:gap-3">
           <Button
             variant="ghost"
             onClick={onBack}
             disabled={currentStep === 1 || submitting}
-            className={cn(currentStep === 1 && 'invisible')}
+            className={cn(currentStep === 1 && (onCancel ? 'hidden' : 'invisible'))}
           >
             <ChevronLeft className="mr-1 h-4 w-4" /> Voltar
           </Button>
+          {onCancel ? <WizardCancelLink onClick={onCancel} disabled={submitting} /> : null}
+          </div>
 
           {isLastStep ? (
             <Button onClick={onFinish} disabled={submitting || Boolean(finishBlocked)}>

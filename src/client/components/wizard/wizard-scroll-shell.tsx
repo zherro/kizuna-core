@@ -6,6 +6,7 @@ import { cn } from '../../../lib/utils';
 import { Button } from '../ui/button';
 import { WizardLayoutContext } from './wizard-layout';
 import type { WizardStep } from './types';
+import { WizardCancelLink } from './wizard-cancel-link';
 
 function prefersReducedMotion(): boolean {
   if (typeof window === 'undefined' || !window.matchMedia) return false;
@@ -26,6 +27,8 @@ export interface WizardScrollShellProps<S extends Record<string, unknown>> {
   /** persist the current step and reveal the next (= `goContinue`) */
   onAdvance: () => void;
   onFinish: () => void;
+  /** Quando presente, o Cancelar aparece no rodapé (cabeçalho compacto). */
+  onCancel?: () => void;
   finishBlocked?: boolean;
   /**
    * When false, the automatic reveal-on-valid is suppressed — the conversational Naví drives the
@@ -55,6 +58,7 @@ export function WizardScrollShell<S extends Record<string, unknown>>({
   isLastStep,
   onAdvance,
   onFinish,
+  onCancel,
   finishBlocked,
   autoReveal = true,
   ground = 'default',
@@ -147,7 +151,12 @@ export function WizardScrollShell<S extends Record<string, unknown>>({
         </div>
 
         <main className="min-h-0 flex-1 overflow-y-auto">
-          <div className="mx-auto w-full max-w-2xl px-3 pb-40 pt-8 sm:px-6 sm:pt-12">
+          <div
+            className={cn(
+              'mx-auto w-full max-w-2xl px-3 pb-40 pt-8 sm:px-6',
+              onCancel ? 'sm:pt-8 lg:max-w-3xl' : 'sm:pt-12'
+            )}
+          >
             {error ? (
               <div role="alert" className="wz-navi-error-box mb-6 rounded-md px-3 py-2 text-sm">
                 {error}
@@ -209,6 +218,10 @@ export function WizardScrollShell<S extends Record<string, unknown>>({
           className="fixed inset-x-0 bottom-0 z-20 lg:left-[var(--panel-sidebar-w,0px)] border-t border-border bg-background/95 backdrop-blur"
         >
           <div className="mx-auto flex max-w-2xl items-center justify-end gap-3 px-3 py-3 sm:px-6">
+            {onCancel ? (
+              <WizardCancelLink onClick={onCancel} disabled={submitting} className={cn('-ml-1', isLastStep && 'mr-auto')}
+              />
+            ) : null}
             {!isLastStep ? (
               <span className="mr-auto text-xs text-muted-foreground">
                 {canContinue ? 'Pronto pra avançar' : 'Continue respondendo'}

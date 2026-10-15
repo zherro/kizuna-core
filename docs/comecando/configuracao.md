@@ -326,6 +326,30 @@ No `stepProfiles.location`, `model: "addresses"` permite N endereços (com um pr
 
 Endereço só no estabelecimento: `no_estabelecimento` exige ao menos um endereço; `no_cliente` e `remoto` não pedem endereço. Detalhes em [Wizard](../interface/wizard.md).
 
+### Textos do passo de local por grupo/categoria
+
+O perfil `location` aceita `labels`, que trocam os textos de `messages.wizard.location` só para
+aquele perfil. Chaves: `title`, `subtitle`, `why` (cabeçalho), `addressTitle`/`addressHint`
+(model `address`) e `addressesTitle`/`addressesHint` (model `addresses`). Chave desconhecida ou
+valor que não é texto quebra no carregamento.
+
+Perfil com **uma opção só** não mostra a escolha de formato: a opção já vem selecionada e a tela
+vai direto para o endereço. Ex.: um lugar (shopping, parque) não vai até o cliente nem é online,
+e o endereço é o próprio conteúdo da página:
+
+```json
+"byGroup": {
+  "lugares": {
+    "options": [{ "value": "no_estabelecimento", "model": "addresses", "maxAddresses": 1 }],
+    "labels": {
+      "title": "Onde fica?",
+      "addressesTitle": "Endereço do lugar",
+      "addressesHint": "O endereço aparece na página do lugar, com mapa e rota."
+    }
+  }
+}
+```
+
 ### Validade do anúncio
 
 O perfil `price` aceita `"expiresAt": "required" | "optional" | true | false` (ausente = campo oculto),

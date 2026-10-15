@@ -34,7 +34,22 @@ export type LocationProfile = {
   /** Opção já selecionada ao abrir o passo (um `value` de `options`). Sem ele, nada vem
    * selecionado. Só vale enquanto o serviço ainda não tem localização escolhida. */
   defaultValue?: ServiceLocationValue;
+  /** Textos do passo para este perfil, por cima de `messages.wizard.location` (ex.: o grupo
+   * `lugares` troca "Onde acontece?" por "Onde fica?" — o endereço do lugar É o conteúdo). */
+  labels?: LocationLabels;
 };
+
+export const LOCATION_LABEL_KEYS = [
+  'title',
+  'subtitle',
+  'why',
+  'addressTitle',
+  'addressHint',
+  'addressesTitle',
+  'addressesHint',
+] as const;
+/** `title`/`subtitle`/`why`: cabeçalho; `address*`: model `address`; `addresses*`: model `addresses`. */
+export type LocationLabels = Partial<Record<(typeof LOCATION_LABEL_KEYS)[number], string>>;
 
 /** Padrão do core — o que o passo sempre teve. */
 export const DEFAULT_LOCATION_PROFILE: LocationProfile = {
@@ -78,6 +93,18 @@ export function validateLocationProfile(profile: LocationProfile) {
       throw new Error(`stepProfiles.location: value repetido "${option.value}"`);
     }
     seen.add(option.value);
+  }
+  if (profile.labels !== undefined) {
+    for (const [key, text] of Object.entries(profile.labels ?? {})) {
+      if (!(LOCATION_LABEL_KEYS as readonly string[]).includes(key)) {
+        throw new Error(
+          `stepProfiles.location: labels.${key} desconhecido (use ${LOCATION_LABEL_KEYS.join(', ')})`
+        );
+      }
+      if (typeof text !== 'string') {
+        throw new Error(`stepProfiles.location: labels.${key} precisa ser texto`);
+      }
+    }
   }
   if (profile.defaultValue !== undefined && !seen.has(profile.defaultValue)) {
     throw new Error(

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 
 import { Loader2, MapPin, Navigation, Search, X } from 'lucide-react';
 
@@ -97,6 +97,9 @@ type AddressFormProps = {
 
   /** Label for the search trigger. Defaults to "Pesquisar localização". */
   searchLabel?: string;
+
+  /** Destaca o CEP (rótulo forte e campo maior) como campo principal. Default `false`. */
+  emphasizeCep?: boolean;
 };
 
 // ============================================================
@@ -130,7 +133,9 @@ export function AddressForm({
   className,
   layout = 'full',
   searchLabel = 'Pesquisar localização',
+  emphasizeCep = false,
 }: AddressFormProps) {
+  const cepId = useId();
   const features = useMemo(
     () => ({
       ...DEFAULT_FEATURES,
@@ -362,16 +367,30 @@ export function AddressForm({
 
   const cepField = (
     <div>
-      <label className="mb-1.5 block text-xs font-medium text-muted-foreground">CEP</label>
+      <label
+        htmlFor={cepId}
+        className={
+          emphasizeCep
+            ? 'mb-1.5 block text-sm font-semibold text-foreground'
+            : 'mb-1.5 block text-xs font-medium text-muted-foreground'
+        }
+      >
+        CEP
+      </label>
 
       <div className="relative">
         <input
+          id={cepId}
           value={formatCep(address.postalCode)}
           onChange={(event) => handleCepChange(event.target.value)}
           disabled={disabled}
           placeholder="00000-000"
           inputMode="numeric"
-          className={cn(inputClass, 'pr-10')}
+          className={cn(
+            inputClass,
+            'pr-10',
+            emphasizeCep && 'h-12 border-primary/60 text-base font-semibold tracking-wide'
+          )}
         />
 
         {cepLoading && (

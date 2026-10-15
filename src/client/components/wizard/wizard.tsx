@@ -122,6 +122,12 @@ export interface WizardProps<S extends Record<string, unknown> = Record<string, 
    * `edit` — recarregar a página ou voltar depois abre o mesmo registro em edição.
    */
   editHref?: (id: string) => string;
+  /**
+   * Cabeçalho do wizard. `'compact'` (padrão) não desenha a tarja do topo: o Cancelar vai para o
+   * rodapé de navegação, ao lado do Voltar, e o passo ganha a altura da tela. `'bar'` mantém a
+   * barra antiga (rótulo do modo + Cancelar) projetada no cabeçalho do painel.
+   */
+  header?: 'compact' | 'bar';
 }
 
 export function Wizard<S extends Record<string, unknown> = Record<string, unknown>>({
@@ -132,6 +138,7 @@ export function Wizard<S extends Record<string, unknown> = Record<string, unknow
   initialState,
   initialRecord,
   modeLabels,
+  header = 'compact',
   assistant,
   conversation,
   onExit,
@@ -297,9 +304,18 @@ export function Wizard<S extends Record<string, unknown> = Record<string, unknow
       />
     ) : undefined;
 
-  // Single header: mode label + layout toggle + assist affordance + Cancelar, projected into the
-  // app's one full-bleed header via portal (no second header bar).
-  const chrome = (
+  // `bar`: mode label + layout toggle + assist affordance + Cancelar, projected into the app's
+  // one header via portal. `compact`: no top bar — Cancelar lives in the footer; the toggle/assist
+  // affordances (when any) still go to the header slot, without label nor Cancelar.
+  const compact = header === 'compact';
+  const chrome = compact ? (
+    layoutToggle || assistControl ? (
+      <WizardHeaderPortal compact>
+        {layoutToggle}
+        {assistControl}
+      </WizardHeaderPortal>
+    ) : null
+  ) : (
     <WizardHeaderPortal>
       <span className="hidden truncate text-sm font-semibold text-foreground sm:inline">
         {modeLabel}
@@ -311,6 +327,7 @@ export function Wizard<S extends Record<string, unknown> = Record<string, unknow
       </Button>
     </WizardHeaderPortal>
   );
+  const onCancel = compact ? exit : undefined;
 
   const naviShown = (conv.active || conv.endedMidway) && !naviSuppressed;
   const naviSlot = naviShown ? <NaviLayer conv={conv} /> : undefined;
@@ -331,6 +348,7 @@ export function Wizard<S extends Record<string, unknown> = Record<string, unknow
         ground={conv.active ? 'navi' : 'default'}
         naviSlot={naviSlot}
         renderStep={(step) => <step.Component {...stepCtx} />}
+        onCancel={onCancel}
       />
     ) : (
       <WizardShell
@@ -349,6 +367,7 @@ export function Wizard<S extends Record<string, unknown> = Record<string, unknow
         submitting={submitting}
         error={error}
         onBack={goBack}
+        onCancel={onCancel}
         onContinue={() => void goContinue()}
         onFinish={handleFinish}
         ground={conv.active ? 'navi' : 'default'}
