@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import type { ServiceDetailLabels } from './category-style';
 import type { ServiceRecord } from '../service-type';
-import type { ServiceExtraFields, ProviderProfile, ServiceOrganizer } from '../../../../server/services/service-detail-data';
+import type { ServiceExtraFields, ProviderProfile, ServiceOrganizer, ServiceVenue } from '../../../../server/services/service-detail-data';
 import type { ServiceSibling } from '../../../../server/services/service-siblings';
 
 export type { CategoryStyleInput, SectionTitlesConfig, ServiceDetailLabels, ReactionButtonConfig, ServiceDetailConfig, ServiceDetailVariant } from './category-style';
@@ -21,7 +21,19 @@ export type ServiceDetailVariantProps = {
   siblings?: ServiceSibling[];
   /** Casa/local que organiza o anúncio (tag `local:<slug>`), quando resolvida — usada pelo evento. */
   organizer?: ServiceOrganizer | null;
+  /** Local onde o evento acontece (anúncio da variant `lugar`), quando resolvido. */
+  venue?: ServiceVenue | null;
+  /** Pontos de venda resolvidos (`ServiceDetailData.salePoints`): com `venue`, viram link para o
+   * local; sem, só o `label`. Ausente → a variant usa `answers.pontos_de_venda` cru. */
+  salePoints?: ServiceSalePoint[] | null;
+  /** Artistas resolvidos (`ServiceDetailData.artists`): com `venue`, link para o anúncio; sem, para a
+   * busca pelo nome. Ausente → `answers.artistas` cru, também linkando para a busca. */
+  artists?: ServiceSalePoint[] | null;
+  /** `ServiceDetailSlots.renderVenueCard` repassado pela página. */
+  renderVenueCard?: ServiceDetailSlots['renderVenueCard'];
 };
+
+export type ServiceSalePoint = { label: string; venue: ServiceVenue | null };
 
 export type ServiceDetailVariantComponent = (props: ServiceDetailVariantProps) => ReactNode;
 
@@ -37,4 +49,6 @@ export type ServiceDetailSlots = {
   /** Substitui o card de prestador padrão da sidebar; `null` retornado por essa função remove o
    * bloco inteiro (útil quando o projeto não expõe perfil público de prestador). */
   renderProviderCard?: (ctx: { provider: ProviderProfile }) => ReactNode;
+  /** Substitui o card "Onde acontece" do evento (local resolvido em `data.venue`). */
+  renderVenueCard?: (ctx: { venue: ServiceVenue }) => ReactNode;
 };

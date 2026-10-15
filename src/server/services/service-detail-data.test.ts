@@ -9,7 +9,16 @@ vi.mock('../postgrest-crud', () => ({ serverFetchResource }));
 vi.mock('../postrest/conn', () => ({ pgrstRpc }));
 vi.mock('../regions', () => ({ projectRegions: [], withProjectRegionCities: <T,>(b: T) => b }));
 
-import { ensureServiceTaxonomy, fetchOrganizer, fetchTagRails, MAX_DETAIL_TAG_RAILS } from './service-detail-data';
+import {
+  ensureServiceTaxonomy,
+  fetchOrganizer,
+  fetchTagRails,
+  fetchLinkedRefs,
+  fetchSalePoints,
+  fetchVenue,
+  resolveServiceRefs,
+  MAX_DETAIL_TAG_RAILS,
+} from './service-detail-data';
 import type { ServiceRecord } from '../../client/components/services/service-type';
 
 const base = (over: Partial<ServiceRecord> = {}) =>
@@ -241,5 +250,177 @@ describe('fetchTagRails: vinculados (extras.codigo)', () => {
     pgrstRpc.mockReset();
     rpcByTag({});
     expect(await fetchTagRails(svc({ codigo: 'vazio' }))).toEqual([]);
+  });
+});
+
+type Row = { id: string; uid: string; title: string; extras?: Record<string, unknown> };
+
+/** PostgREST falso: responde `services` (por codigo em lote ou uid em lote) e `service_addresses`. */
+function fakeDb(rows: Row[], addresses: Record<string, unknown[]> = {}) {
+  serverFetchResource.mockImplementation(async (resource: string, filters: Record<string, string> = {}, opts?: { where?: Record<string, string> }) => {
+    if (resource === 'service_addresses') return addresses[filters.service_id] ?? [];
+    const inList = (v: string) => v.slice(4, -1).split(',');
+    const codigo = opts?.where?.['extras->>codigo'];
+    if (codigo) return rows.filter((r) => inList(codigo).includes(String(r.extras?.codigo)));
+    const uid = opts?.where?.uid;
+    if (uid?.startsWith('in.')) return rows.filter((r) => inList(uid).includes(r.uid));
+    return [];
+  });
+}
+const servicesCalls = () => serverFetchResource.mock.calls.filter((c) => c[0] === 'services');
+
+const cuiabaCity = { ibge: '5103403', name: 'Cuiabá', state: 'MT', stateName: 'Mato Grosso' };
+const addrCuiaba = [
+  { cityIbge: '5108402', city: 'Várzea Grande', state: 'MT', street: 'Rua B', isPrimary: false },
+  { cityIbge: '5103403', city: 'Cuiabá', state: 'MT', street: 'Av. A', number: '10', isPrimary: true },
+];
+
+describe('resolveServiceRefs', () => {
+  it('resolve em lote por codigo (uma consulta) e o resto por uid (outra); chave = valor original', async () => {
+    fakeDb(
+      [
+        { id: 'i1', uid: 'casa1', title: 'Casa', extras: { codigo: 'casa-x', images: [5] } },
+        { id: 'i2', uid: 'abc123', title: 'Teatro', extras: {} },
+      ],
+      { i1: addrCuiaba }
+    );
+    const map = await resolveServiceRefs(['Casa-X', 'abc123', 'nada'], cuiabaCity);
+    expect(map.get('Casa-X')).toEqual({
+      uid: 'casa1',
+      title: 'Casa',
+      href: '/cuiaba-mt/anuncio/casa1',
+      photo: '/api/public/storage/files/5/content',
+      address: 'Av. A, 10, Cuiabá - MT',
+      cityName: 'Cuiabá',
+    });
+    expect(map.get('abc123')).toMatchObject({ uid: 'abc123', photo: null, address: null, cityName: null, href: '/anuncios/abc123' });
+    expect(map.has('nada')).toBe(false);
+    expect(servicesCalls()).toHaveLength(2);
+    expect(servicesCalls()[0][2].where['extras->>codigo']).toBe('in.(casa-x,abc123,nada)');
+    expect(servicesCalls()[1][2].where.uid).toBe('in.(abc123,nada)');
+  });
+
+  it('excludeUid nunca resolve o próprio; byUid=false não faz a segunda consulta', async () => {
+    fakeDb([{ id: 'i1', uid: 'u1', title: 'Eu', extras: { codigo: 'eu' } }]);
+    const map = await resolveServiceRefs(['eu', 'u1'], null, { excludeUid: 'u1', byUid: false });
+    expect(map.size).toBe(0);
+    expect(servicesCalls()).toHaveLength(1);
+  });
+
+  it('lista vazia: sem consulta', async () => {
+    expect((await resolveServiceRefs(['', ' '], null)).size).toBe(0);
+    expect(serverFetchResource).not.toHaveBeenCalled();
+  });
+});
+
+describe('fetchVenue', () => {
+  const svc = (extras: Record<string, unknown>) => base({ extras } as Partial<ServiceRecord>);
+
+  it('extras.local_ref (uid) tem prioridade sobre a tag', async () => {
+    fakeDb(
+      [
+        { id: 'il', uid: 'loc1', title: 'Teatro', extras: { images: [5, 6] } },
+        { id: 'ic', uid: 'casa1', title: 'Casa X', extras: { codigo: 'casa-x' } },
+      ],
+      { il: addrCuiaba }
+    );
+    expect(await fetchVenue(svc({ local_ref: 'loc1', tags: ['casa-x'] }), cuiabaCity)).toEqual({
+      uid: 'loc1',
+      title: 'Teatro',
+      href: '/cuiaba-mt/anuncio/loc1',
+      photo: '/api/public/storage/files/5/content',
+      address: 'Av. A, 10, Cuiabá - MT',
+      cityName: 'Cuiabá',
+    });
+  });
+
+  it('local_ref inexistente/inativo: cai para a tag (codigo)', async () => {
+    fakeDb([{ id: 'ic', uid: 'casa1', title: 'Casa X', extras: { codigo: 'casa-x', coverFileId: 9 } }]);
+    expect(await fetchVenue(svc({ local_ref: 'sumiu', tags: ['casa-x'] }), null)).toEqual({
+      uid: 'casa1',
+      title: 'Casa X',
+      href: '/anuncios/casa1',
+      photo: '/api/public/storage/files/9/content',
+      address: null,
+      cityName: null,
+    });
+  });
+
+  it('sem local_ref: resolve pela tag (mecanismo atual)', async () => {
+    fakeDb([{ id: 'ic', uid: 'casa1', title: 'Casa X', extras: { codigo: 'casa-x' } }], { ic: addrCuiaba });
+    expect(await fetchVenue(svc({ tags: ['shows', 'casa-x'] }), cuiabaCity)).toMatchObject({ uid: 'casa1', cityName: 'Cuiabá' });
+  });
+
+  it('local_ref apontando para si mesmo é ignorado; sem local → null sem consulta', async () => {
+    expect(await fetchVenue(svc({ local_ref: 'u1' }), null)).toBeNull();
+    expect(await fetchVenue(svc({}), null)).toBeNull();
+    expect(serverFetchResource).not.toHaveBeenCalled();
+  });
+
+  it('erro de rede → null', async () => {
+    serverFetchResource.mockRejectedValueOnce(new Error('boom'));
+    expect(await fetchVenue(svc({ local_ref: 'loc1', tags: ['x'] }), null)).toBeNull();
+  });
+});
+
+describe('fetchSalePoints', () => {
+  const svc = (pontos: unknown) => base({ extras: { pontos_de_venda: pontos } } as Partial<ServiceRecord>);
+
+  it('mantém a ordem; achado → título do anúncio; não achado → humanizeSlug ou texto original', async () => {
+    fakeDb([{ id: 'ic', uid: 'casa1', title: 'Casa de Festas', extras: { codigo: 'casa-de-festas-cuiaba' } }]);
+    const points = await fetchSalePoints(
+      svc([{ nome: 'loja-do-ze-centro' }, { nome: 'casa-de-festas-cuiaba' }, { nome: 'Bilheteria local' }, { nome: '' }]),
+      null
+    );
+    expect(points.map((p) => p.label)).toEqual(['Loja Do Ze Centro', 'Casa de Festas', 'Bilheteria local']);
+    expect(points[1].venue).toMatchObject({ uid: 'casa1', href: '/anuncios/casa1' });
+    expect(points[0].venue).toBeNull();
+    expect(servicesCalls()[0][2].where['extras->>codigo']).toBe('in.(loja-do-ze-centro,casa-de-festas-cuiaba)');
+  });
+
+  it('sem pontos → [] sem consulta; erro → rótulos sem venue', async () => {
+    expect(await fetchSalePoints(svc(undefined), null)).toEqual([]);
+    expect(serverFetchResource).not.toHaveBeenCalled();
+    serverFetchResource.mockRejectedValueOnce(new Error('boom'));
+    expect(await fetchSalePoints(svc([{ nome: 'casa-de-festas-cuiaba' }]), null)).toEqual([
+      { label: 'Casa De Festas Cuiaba', venue: null },
+    ]);
+  });
+});
+
+describe('fetchLinkedRefs', () => {
+  it('venue, pontos de venda e artistas num lote só (uma consulta por codigo + uma por uid)', async () => {
+    fakeDb([
+      { id: 'il', uid: 'loc1', title: 'Teatro', extras: {} },
+      { id: 'ic', uid: 'casa1', title: 'Casa de Festas', extras: { codigo: 'casa-de-festas-cuiaba' } },
+      { id: 'ia', uid: 'art1', title: 'João Gomes', extras: { codigo: 'joao-gomes' } },
+    ]);
+    const svc = base({
+      extras: {
+        local_ref: 'loc1',
+        pontos_de_venda: [{ nome: 'casa-de-festas-cuiaba' }],
+        artistas: [{ nome: 'João Gomes' }, { nome: 'Banda Desconhecida' }],
+      },
+    } as Partial<ServiceRecord>);
+    const refs = await fetchLinkedRefs(svc, null);
+    expect(refs.venue?.uid).toBe('loc1');
+    expect(refs.salePoints).toEqual([{ label: 'Casa de Festas', venue: expect.objectContaining({ uid: 'casa1' }) }]);
+    expect(refs.artists).toEqual([
+      { label: 'João Gomes', venue: expect.objectContaining({ uid: 'art1' }) },
+      { label: 'Banda Desconhecida', venue: null },
+    ]);
+    expect(servicesCalls()).toHaveLength(2);
+    expect(servicesCalls()[0][2].where['extras->>codigo']).toBe(
+      'in.(loc1,casa-de-festas-cuiaba,joao-gomes,banda-desconhecida)'
+    );
+  });
+
+  it('nada para resolver → sem consulta', async () => {
+    expect(await fetchLinkedRefs(base({ extras: {} } as Partial<ServiceRecord>), null)).toEqual({
+      venue: null,
+      salePoints: [],
+      artists: [],
+    });
+    expect(serverFetchResource).not.toHaveBeenCalled();
   });
 });

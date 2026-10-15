@@ -4,6 +4,7 @@ import { CopyValueButton } from './copy-value-button';
 import { TrackedContactLink } from '../../../analytics/ad-tracking';
 import {
   CalendarDays,
+  ChevronRight,
   Clapperboard,
   Clock,
   ExternalLink,
@@ -16,10 +17,12 @@ import {
   Users,
   Wallet,
 } from 'lucide-react';
-import { Badge, Fact, Section } from './service-detail-cinema';
+import { Fact, Section } from './service-detail-cinema';
 import { AdDescription } from './ad-description';
+import { VenueCard } from './venue-card';
 import { humanizeSlug } from './ad-extra-fields-format';
-import type { ServiceDetailVariantComponent } from './service-detail-types';
+import type { ServiceDetailVariantComponent, ServiceSalePoint } from './service-detail-types';
+import type { ServiceVenue } from '../../../../server/services/service-detail-data';
 import {
   eventClassification,
   eventDateParts,
@@ -55,6 +58,29 @@ function EndedBadge() {
     <span className="inline-flex items-center rounded-full border border-border px-2.5 py-0.5 text-[11px] font-semibold text-muted-foreground">
       Encerrado
     </span>
+  );
+}
+
+/** Ponto de venda que é um local cadastrado: link compacto com foto, nome e cidade. */
+function SalePointLink({ venue }: { venue: ServiceVenue }) {
+  return (
+    <Link
+      href={venue.href}
+      className={`group flex items-center gap-3 p-2.5 pr-3 transition-colors hover:border-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand ${CARD_CLASS}`}
+    >
+      <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-[calc(var(--ui-radius-card,1rem)-0.375rem)] bg-muted">
+        {venue.photo ? (
+          <img src={venue.photo} alt="" loading="lazy" className="h-full w-full object-cover" />
+        ) : (
+          <Ticket aria-hidden className="h-4 w-4 text-muted-foreground" />
+        )}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate font-semibold leading-snug group-hover:text-brand">{venue.title}</span>
+        {venue.cityName && <span className="block truncate text-xs text-muted-foreground">{venue.cityName}</span>}
+      </span>
+      <ChevronRight aria-hidden className="h-4 w-4 shrink-0 text-muted-foreground" />
+    </Link>
   );
 }
 
@@ -148,7 +174,7 @@ export const ServiceDetailEventoSidebar: ServiceDetailVariantComponent = ({ serv
  * e contato. Todo campo de `answers` é opcional: bloco sem dado some. Ver
  * `docs/integracoes/eventos-depara.md` no projeto consumidor.
  */
-export const ServiceDetailEvento: ServiceDetailVariantComponent = ({ service, extraFields, hue, labels, organizer }) => {
+export const ServiceDetailEvento: ServiceDetailVariantComponent = ({ service, extraFields, hue, labels, organizer, venue, salePoints, artists: resolvedArtists, renderVenueCard }) => {
   const answers = extraFields?.answers ?? {};
 
   const when = formatEventWhen(answers);
@@ -162,9 +188,12 @@ export const ServiceDetailEvento: ServiceDetailVariantComponent = ({ service, ex
     priceUnit: service.priceUnit,
     tickets,
   });
-  const artists = parseNames(answers.artistas);
+  const artists: ServiceSalePoint[] =
+    resolvedArtists ?? parseNames(answers.artistas).map((label) => ({ label, venue: null }));
   const sessionDays = parseSessionDays(answers.sessoes, answers.data_inicio);
-  const salePoints = parseNames(answers.pontos_de_venda);
+  // Resolvidos pelo servidor quando houver; senão o texto cru do formulário.
+  const salePointItems: ServiceSalePoint[] =
+    salePoints ?? parseNames(answers.pontos_de_venda).map((label) => ({ label, venue: null }));
   const endereco = textField(answers.endereco);
   const place = endereco ? splitEventAddress(endereco) : null;
   const buyUrl = safeHttpUrl(answers.link_ingresso);
@@ -176,8 +205,10 @@ export const ServiceDetailEvento: ServiceDetailVariantComponent = ({ service, ex
 
   type FactItem = { icon: ReactNode; label: string; value: ReactNode };
   // Casa resolvida pela tag `local:<slug>` → "Organizado por <casa>" (link); senão o `realizador` texto.
+  // Organizador == local já aparece no "Onde acontece": não repete o link nos facts.
+  const organizerIsVenue = !!venue && !!organizer && organizer.uid === venue.uid;
   const organizerFact: FactItem | null =
-    organizer?.href && organizer.title
+    !organizerIsVenue && organizer?.href && organizer.title
       ? {
           icon: <Users className="h-4 w-4" />,
           label: 'Organizado por',
@@ -222,11 +253,19 @@ export const ServiceDetailEvento: ServiceDetailVariantComponent = ({ service, ex
       {artists.length > 0 && (
         <div className="mt-5 flex flex-wrap items-center gap-1.5">
           <Mic2 className="h-4 w-4 shrink-0 text-brand" />
-          {artists.map((name) => (
-            <Badge key={name}>{name}</Badge>
+          {artists.map((a, i) => (
+            <Link
+              key={`${a.venue?.uid ?? a.label}-${i}`}
+              href={a.venue?.href ?? `/busca?q=${encodeURIComponent(a.label)}`}
+              className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-brand hover:text-brand-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+            >
+              {a.venue?.title ?? a.label}
+            </Link>
           ))}
         </div>
       )}
+
+      {venue && (renderVenueCard ? renderVenueCard({ venue }) : <VenueCard venue={venue} hue={hue} />)}
 
       {/* A sidebar (lg+) mostra só título/data/local/preço: a descrição fica aqui em todos os tamanhos. */}
       {service.description && (
@@ -286,13 +325,17 @@ export const ServiceDetailEvento: ServiceDetailVariantComponent = ({ service, ex
         </Section>
       )}
 
-      {salePoints.length > 0 && (
+      {salePointItems.length > 0 && (
         <Section title="Onde comprar" hue={hue}>
           <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {salePoints.map((name) => (
-              <li key={name} className={`flex items-center gap-3 px-4 py-3 ${CARD_CLASS}`}>
-                <Ticket className="h-4 w-4 shrink-0 text-muted-foreground" />
-                <span className="font-semibold leading-snug">{name}</span>
+            {salePointItems.map((p, i) => (
+              <li key={`${p.venue?.uid ?? p.label}-${i}`}>
+                {p.venue ? <SalePointLink venue={p.venue} /> : (
+                  <div className={`flex items-center gap-3 px-4 py-3 ${CARD_CLASS}`}>
+                    <Ticket className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    <span className="font-semibold leading-snug">{p.label}</span>
+                  </div>
+                )}
               </li>
             ))}
           </ul>
@@ -348,7 +391,7 @@ export const ServiceDetailEvento: ServiceDetailVariantComponent = ({ service, ex
         </Section>
       )}
 
-      {place && endereco && (
+      {!venue && place && endereco && (
         <Section title="Local" hue={hue}>
           <div className={`flex flex-col gap-3 p-4 ${CARD_CLASS}`}>
             <div className="flex items-start gap-3">

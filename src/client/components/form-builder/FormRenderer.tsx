@@ -13,6 +13,7 @@ import { Separator } from '../ui/separator';
 import { Button } from '../ui/button';
 import { Tooltip } from '../ui/tooltip';
 import { ChoiceChips } from './choice-chips';
+import { ServiceRefPicker } from './service-ref-field';
 import { cn, resolveLucideIcon } from '../../../lib/utils';
 import { formatCurrencyMask, parseCurrencyMask } from '../../../lib/shared/currency-mask';
 import { useResourceOptions } from '../../hooks/use-resource-options';
@@ -405,6 +406,18 @@ function BaseField({
             onChange(field.type === 'image' ? files : (files[0] ?? ''));
           }}
           disabled={disabled}
+        />
+      );
+    case 'service-ref':
+      return withLabel(
+        <ServiceRefPicker
+          id={commonId}
+          value={value}
+          filter={field.serviceRef}
+          placeholder={field.placeholder}
+          disabled={disabled}
+          readOnly={readOnly}
+          onChange={onChange}
         />
       );
     case 'hidden':

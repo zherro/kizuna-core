@@ -77,6 +77,7 @@ const TOOLBOX: FieldType[] = [
   'heading',
   'info',
   'list',
+  'service-ref',
 ];
 
 const SIMPLE_TOOLBOX: FieldType[] = [

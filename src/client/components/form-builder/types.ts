@@ -36,7 +36,8 @@ export type FieldType =
   | 'divider'
   | 'heading'
   | 'info'
-  | 'list';
+  | 'list'
+  | 'service-ref';
 
 export type Breakpoint = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl';
 
@@ -91,6 +92,18 @@ export type OptionsSource = {
   filter?: Record<string, string>;
 };
 
+/**
+ * `service-ref` only — which ads can be picked. All optional; omitted = any active ad.
+ * Each group slug (`groupSlug` and/or `groupSlugs`) is one search RPC call
+ * (`p_group_category_slug`), so categories of different groups work together;
+ * `categorySlugs` filters the merged results by `category_slug`.
+ */
+export type ServiceRefFilter = {
+  groupSlug?: string;
+  groupSlugs?: string[];
+  categorySlugs?: string[];
+};
+
 export type FormField = {
   /** React key / internal only — stays random */
   id: string;
@@ -120,6 +133,8 @@ export type FormField = {
   maxItems?: number;
   /** `list` only — label of each item, e.g. `Sessão` (rendered as "Sessão 1", "Sessão 2"…). */
   itemLabel?: string;
+  /** `service-ref` only — filter of the pickable ads (the value stored is the ad `uid`). */
+  serviceRef?: ServiceRefFilter;
 };
 
 export type FormSchema = {
@@ -158,6 +173,7 @@ export const FIELD_TYPE_LABELS: Record<FieldType, string> = {
   heading: 'Heading',
   info: 'Texto Informativo',
   list: 'Lista repetível',
+  'service-ref': 'Referência a anúncio',
 };
 
 export const DEFAULT_GRID: GridConfig = { xs: 12, sm: 12, md: 6, lg: 6, xl: 6, '2xl': 6 };
@@ -167,6 +183,17 @@ export const NON_VALUE_TYPES: ReadonlySet<FieldType> = new Set<FieldType>([
   'divider',
   'heading',
   'info',
+]);
+
+/**
+ * Field types not shown in a read-only rendering of the answers (layout, `hidden`, and
+ * `service-ref`, whose raw value is an ad uid — the consumer resolves and shows it its own way).
+ * Superset of `NON_VALUE_TYPES`; `service-ref` still goes to the output (`collectOutput`).
+ */
+export const NON_DISPLAY_TYPES: ReadonlySet<FieldType> = new Set<FieldType>([
+  ...NON_VALUE_TYPES,
+  'hidden',
+  'service-ref',
 ]);
 
 /** Default upper bound of items in a `list` field when `maxItems` is not set. */
@@ -250,6 +277,7 @@ export function createField(type: FieldType): FormField {
   if (type === 'heading') base.label = 'Título da seção';
   if (type === 'info') base.label = 'Texto informativo';
   if (type === 'divider') base.label = '';
+  if (type === 'service-ref') base.serviceRef = {};
   if (type === 'list') {
     base.itemFields = [];
     base.itemLabel = 'Item';

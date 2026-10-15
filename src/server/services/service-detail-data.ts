@@ -8,9 +8,11 @@ import { fetchServiceSiblings, type ServiceSibling } from './service-siblings';
 import { projectRegions } from '../regions';
 import { buildTagSearchParams } from './tag-rail-data';
 import {
+  CODIGO_PATTERN,
   codigoCandidates,
   codigoOf,
   linkedRailTitle,
+  normalizeServiceTag,
   orderTagsForRails,
   serviceTagRailTitle,
   serviceTagsOf,
@@ -19,6 +21,9 @@ import { cityPath, serviceHref } from '../../shared/city-routing/city-slug';
 import type { FormSchema, FormValues } from '../../client/components/form-builder';
 import type { ServiceRecord } from '../../client/components/services/service-type';
 import type { ServiceResult } from '../../client/components/search/search-types';
+import { photosFor } from '../../client/components/services/service-helpers';
+import { slugify } from '../../client/components/pages/slugify';
+import { humanizeSlug } from '../../client/components/services/detail/ad-extra-fields-format';
 
 /**
  * Carrega tudo que a tela de detalhe de um anúncio (`/anuncios/[uid]`, projeto consumidor)
@@ -66,6 +71,16 @@ export type ServiceLocation = {
 /** Serviço cujo `extras.codigo` o anúncio cita em `extras.tags` — quem organiza (ex.: a casa do evento). JSON-serializável. */
 export type ServiceOrganizer = { uid: string; title: string; href: string };
 
+/** Local do evento: anúncio (variant `lugar`) via `extras.local_ref` ou tag `local:<codigo>`. JSON-serializável. */
+export type ServiceVenue = {
+  uid: string;
+  title: string;
+  href: string;
+  photo: string | null;
+  address: string | null;
+  cityName: string | null;
+};
+
 export type ServiceDetailData = {
   service: ServiceRecord;
   subcategoryNames: string[];
@@ -87,6 +102,12 @@ export type ServiceDetailData = {
   location: ServiceLocation | null;
   /** Serviço ativo cujo `extras.codigo` é uma das `extras.tags` do anúncio (quem organiza). Opcional: cache gerado antes deste campo não o tem (trate ausente como `null`). */
   organizer?: ServiceOrganizer | null;
+  /** Local do evento (ver `fetchVenue`); `organizer` é derivado dele. Ausente em cache antigo → `null`. */
+  venue?: ServiceVenue | null;
+  /** Pontos de venda resolvidos (ver `fetchLinkedRefs`). Ausente em cache antigo → `[]`. */
+  salePoints?: ServiceSalePoint[];
+  /** Artistas (`extras.artistas`) resolvidos (ver `fetchLinkedRefs`). Ausente em cache antigo → `[]`. */
+  artists?: ServiceLinkedItem[];
 };
 
 type CategoryTaxonomyRow = { id: number | string; slug?: string; categoryGroupId?: number | string | null };
@@ -387,36 +408,179 @@ export async function fetchOrganizer(
   const tags = codigoCandidates(serviceTagsOf(service), MAX_ORGANIZER_TAGS);
   if (tags.length === 0) return null;
   try {
-    const rows = await serverFetchResource<ServiceRecord>(
-      'services',
-      { active: 'true', status: 'active' },
-      {
-        auth: null,
-        limit: tags.length * 2,
-        orderBy: 'created_at',
-        orderDirection: 'asc',
-        where: {
-          'extras->>codigo': `in.(${tags.join(',')})`,
-          uid: `neq.${service.uid}`,
-        },
-      }
-    );
-    for (const tag of tags) {
-      const page = rows.find((r) => r?.uid && r.uid !== service.uid && r.title && codigoOf(r) === tag);
-      if (page) return { uid: page.uid, title: page.title, href: await organizerHref(page, eventCity) };
-    }
-    return null;
+    const found = await resolveServiceRefs(tags, eventCity, { excludeUid: service.uid, byUid: false });
+    const venue = tags.map((t) => found.get(t)).find(Boolean);
+    return venue ? { uid: venue.uid, title: venue.title, href: venue.href } : null;
   } catch {
     return null;
   }
 }
 
-async function organizerHref(house: ServiceRecord, eventCity: RoutableCity | null): Promise<string> {
-  const addresses = await serverFetchResource<ServiceAddressRow>(
-    'service_addresses',
-    { service_id: house.id, active: 'true' },
-    { auth: null, limit: 5, orderBy: 'is_primary', orderDirection: 'desc' }
-  ).catch(() => [] as ServiceAddressRow[]);
+export type ResolveRefsOptions = {
+  /** Uid que nunca é resolvido (o próprio anúncio). */
+  excludeUid?: string;
+  /** Valores não achados por `codigo` são tentados como uid (default `true`). */
+  byUid?: boolean;
+};
+
+/**
+ * Resolve referências a outros anúncios ATIVOS (`active` + `status='active'`) — genérico, não conhece
+ * o campo de origem (local, pontos de venda, organizador, artistas…). Cada valor é tentado primeiro
+ * como `extras.codigo` (uma consulta em lote, código repetido → o mais antigo) e, se não achado e
+ * `byUid`, como uid (outra consulta em lote). Devolve `Map<valor original, ServiceVenue>` só com os
+ * achados. Endereços (link/endereço/cidade) vêm em paralelo, um por anúncio achado. Lança em erro de
+ * rede da busca principal — quem chama decide o fallback.
+ */
+export async function resolveServiceRefs(
+  codes: string[],
+  eventCity: RoutableCity | null,
+  { excludeUid, byUid = true }: ResolveRefsOptions = {}
+): Promise<Map<string, ServiceVenue>> {
+  const values = [...new Set(codes.map(clean).filter(Boolean))];
+  const houses = new Map<string, ServiceRecord>();
+  const usable = (r: ServiceRecord | undefined): r is ServiceRecord =>
+    Boolean(r?.uid && r.uid !== excludeUid && r.title);
+
+  const byCode = new Map(values.map((v) => [v, normalizeServiceTag(v)] as const));
+  const codigos = [...new Set([...byCode.values()].filter((c): c is string => !!c && CODIGO_PATTERN.test(c)))];
+  if (codigos.length > 0) {
+    const where: Record<string, string> = { 'extras->>codigo': `in.(${codigos.join(',')})` };
+    if (excludeUid) where.uid = `neq.${excludeUid}`;
+    const rows = await serverFetchResource<ServiceRecord>(
+      'services',
+      { active: 'true', status: 'active' },
+      { auth: null, limit: codigos.length * 2, orderBy: 'created_at', orderDirection: 'asc', where }
+    );
+    for (const v of values) {
+      const code = byCode.get(v);
+      const hit = code ? rows.find((r) => usable(r) && codigoOf(r) === code) : undefined;
+      if (hit) houses.set(v, hit);
+    }
+  }
+
+  const pending = values.filter((v) => !houses.has(v) && v !== excludeUid && /^[\w-]+$/.test(v));
+  if (byUid && pending.length > 0) {
+    const rows = await serverFetchResource<ServiceRecord>(
+      'services',
+      { active: 'true', status: 'active' },
+      { auth: null, limit: pending.length, where: { uid: `in.(${pending.join(',')})` } }
+    );
+    for (const v of pending) {
+      const hit = rows.find((r) => usable(r) && r.uid === v);
+      if (hit) houses.set(v, hit);
+    }
+  }
+
+  const entries = await Promise.all(
+    [...houses].map(async ([v, house]) => [v, await venueOf(house, eventCity)] as const)
+  );
+  return new Map(entries);
+}
+
+async function venueOf(house: ServiceRecord, eventCity: RoutableCity | null): Promise<ServiceVenue> {
+  const addresses = await fetchAddresses(house);
+  const isPrimary = (a: ServiceAddressRow) => Boolean(a.isPrimary ?? a.is_primary);
+  const main = addresses.find(isPrimary) ?? addresses[0];
+  return {
+    uid: house.uid,
+    title: house.title,
+    href: organizerHref(house, eventCity, addresses),
+    photo: photosFor(house)[0] ?? null,
+    address: buildServiceLocation(addresses)?.address || null,
+    cityName: clean(main?.city) || null,
+  };
+}
+
+export type ServiceSalePoint = { label: string; venue: ServiceVenue | null };
+/** Item de lista que pode apontar para um anúncio (pontos de venda, artistas…). */
+export type ServiceLinkedItem = ServiceSalePoint;
+
+export type ServiceLinkedRefs = {
+  venue: ServiceVenue | null;
+  salePoints: ServiceLinkedItem[];
+  artists: ServiceLinkedItem[];
+};
+
+/** `nome` de cada item de uma lista de `extras` (`[{ nome }]` ou strings), aparado, sem vazios. */
+function listNames(raw: unknown): string[] {
+  return (Array.isArray(raw) ? raw : [])
+    .map((item) => clean(item && typeof item === 'object' ? (item as { nome?: unknown }).nome : item))
+    .filter(Boolean);
+}
+
+/**
+ * Todas as referências do anúncio a outros anúncios numa resolução só (`resolveServiceRefs`: uma
+ * consulta por codigo + no máximo uma por uid):
+ * - `venue`: `extras.local_ref` (uid ou código); senão a primeira tag que é `extras.codigo` de outro.
+ * - `salePoints`: `extras.pontos_de_venda[].nome` como código; achado → título do anúncio, senão
+ *   `humanizeSlug(nome)`.
+ * - `artists`: `extras.artistas[].nome` → `slugify(nome)` como código; senão o nome original.
+ * Listas na ordem do formulário. Erro de rede → sem venues (rótulos continuam).
+ */
+export async function fetchLinkedRefs(
+  service: ServiceRecord,
+  eventCity: RoutableCity | null
+): Promise<ServiceLinkedRefs> {
+  const extras = service.extras ?? {};
+  const ref = clean(extras.local_ref);
+  const localRef = ref && ref !== service.uid ? ref : '';
+  const tags = codigoCandidates(serviceTagsOf(service), MAX_ORGANIZER_TAGS);
+  const saleNames = listNames(extras.pontos_de_venda);
+  const artistNames = listNames(extras.artistas);
+  const artistCodes = artistNames.map((n) => slugify(n));
+
+  const values = [localRef, ...tags, ...saleNames, ...artistCodes].filter(Boolean);
+  const found =
+    values.length === 0
+      ? new Map<string, ServiceVenue>()
+      : await resolveServiceRefs(values, eventCity, { excludeUid: service.uid }).catch(
+          () => new Map<string, ServiceVenue>()
+        );
+
+  return {
+    venue: (localRef ? found.get(localRef) : undefined) ?? tags.map((t) => found.get(t)).find(Boolean) ?? null,
+    salePoints: saleNames.map((name) => {
+      const venue = found.get(name) ?? null;
+      return { label: venue?.title ?? humanizeSlug(name), venue };
+    }),
+    artists: artistNames.map((name, i) => {
+      const venue = (artistCodes[i] && found.get(artistCodes[i])) || null;
+      return { label: venue?.title ?? name, venue };
+    }),
+  };
+}
+
+/** Local do evento (ver `fetchLinkedRefs`). Erro → `null`. */
+export async function fetchVenue(service: ServiceRecord, eventCity: RoutableCity | null): Promise<ServiceVenue | null> {
+  return (await fetchLinkedRefs(service, eventCity)).venue;
+}
+
+/** Pontos de venda (ver `fetchLinkedRefs`). */
+export async function fetchSalePoints(
+  service: ServiceRecord,
+  eventCity: RoutableCity | null
+): Promise<ServiceSalePoint[]> {
+  return (await fetchLinkedRefs(service, eventCity)).salePoints;
+}
+
+async function fetchAddresses(house: ServiceRecord): Promise<ServiceAddressRow[]> {
+  try {
+    const rows = await serverFetchResource<ServiceAddressRow>(
+      'service_addresses',
+      { service_id: house.id, active: 'true' },
+      { auth: null, limit: 5, orderBy: 'is_primary', orderDirection: 'desc' }
+    );
+    return Array.isArray(rows) ? rows : [];
+  } catch {
+    return [];
+  }
+}
+
+function organizerHref(
+  house: ServiceRecord,
+  eventCity: RoutableCity | null,
+  addresses: ServiceAddressRow[]
+): string {
   const ibgeOf = (a: ServiceAddressRow) => String(a.cityIbge ?? a.city_ibge ?? '').trim();
   if (eventCity && addresses.some((a) => ibgeOf(a) === eventCity.ibge)) {
     return cityPath(eventCity, `/anuncio/${house.uid}`);
@@ -448,10 +612,13 @@ export async function loadServiceDetail(uid: string): Promise<ServiceDetailData 
   );
 
   const { city, location } = await fetchServiceCityAndLocation(service, provider);
-  const [siblings, organizer] = await Promise.all([
+  const [siblings, { venue, salePoints, artists }] = await Promise.all([
     fetchServiceSiblings(service, city?.ibge, projectRegions),
-    fetchOrganizer(service, city),
+    fetchLinkedRefs(service, city),
   ]);
+  const organizer: ServiceOrganizer | null = venue
+    ? { uid: venue.uid, title: venue.title, href: venue.href }
+    : null;
 
   return {
     service,
@@ -465,5 +632,8 @@ export async function loadServiceDetail(uid: string): Promise<ServiceDetailData 
     siblings,
     location,
     organizer,
+    venue,
+    salePoints,
+    artists,
   };
 }

@@ -19,6 +19,7 @@ import { ServiceReactionButtons } from './service-reaction-buttons';
 import { ServiceCarouselSection } from './service-carousel-section';
 import { AdTrackingProvider, SourcedTrackView } from '../../../analytics/ad-tracking';
 import type { EventRule } from '../../../../shared/analytics';
+import { DEFAULT_LINKED_TITLE } from '../../../../shared/service-tags';
 
 const BUILT_IN_VARIANTS: Record<string, ServiceDetailVariantComponent> = {
   service: ServiceDetailDefault,
@@ -122,6 +123,8 @@ export type ServiceDetailPageProps = {
  * a categoria não estiver mapeada); hero, título, sidebar e carrosséis de relacionados são comuns.
  * Sem fetch aqui dentro — quem chama já resolveu `data` via `loadServiceDetail` (server).
  */
+export const LUGAR_AGENDA_TITLE = 'Agenda deste local';
+
 export function ServiceDetailPage({
   data,
   detailConfig,
@@ -255,6 +258,10 @@ export function ServiceDetailPage({
               labels={labels}
               siblings={siblings ?? []}
               organizer={data.organizer ?? null}
+              venue={data.venue ?? null}
+              salePoints={data.salePoints ?? null}
+              artists={data.artists ?? null}
+              renderVenueCard={slots?.renderVenueCard}
             />
 
             {/* Cinema/evento têm tratamento próprio de local — a seção é só da variant `service`. */}
@@ -331,7 +338,8 @@ export function ServiceDetailPage({
         {(tagRails ?? []).map((rail) => (
           <ServiceCarouselSection
             key={rail.tag}
-            title={rail.title}
+            // Num lugar, os vinculados (sem `vinculosTitulo`) são os eventos que acontecem nele.
+            title={variantId === 'lugar' && rail.title === DEFAULT_LINKED_TITLE ? LUGAR_AGENDA_TITLE : rail.title}
             services={rail.items}
             hue={hue}
             detailConfig={detailConfig}

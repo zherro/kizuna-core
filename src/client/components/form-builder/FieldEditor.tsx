@@ -237,6 +237,41 @@ export function FieldEditor({
             </AccordionItem>
           )}
 
+          {field.type === 'service-ref' && (
+            <AccordionItem value="service-ref">
+              <AccordionTrigger>Anúncios permitidos</AccordionTrigger>
+              <AccordionContent className="space-y-2">
+                <div>
+                  <Label className="text-xs">Grupo (slug)</Label>
+                  <Input
+                    placeholder="ex.: compras-e-feiras"
+                    value={field.serviceRef?.groupSlug ?? ''}
+                    onChange={(e) =>
+                      patch({ serviceRef: { ...field.serviceRef, groupSlug: e.target.value.trim() || undefined } })
+                    }
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Categorias (slugs, separados por vírgula)</Label>
+                  <Input
+                    placeholder="ex.: shoppings-e-lojas"
+                    value={(field.serviceRef?.categorySlugs ?? []).join(', ')}
+                    onChange={(e) => {
+                      const slugs = e.target.value
+                        .split(',')
+                        .map((s) => s.trim())
+                        .filter(Boolean);
+                      patch({ serviceRef: { ...field.serviceRef, categorySlugs: slugs.length ? slugs : undefined } });
+                    }}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Vazio = qualquer anúncio ativo. O valor gravado é o uid do anúncio.
+                </p>
+              </AccordionContent>
+            </AccordionItem>
+          )}
+
           <AccordionItem value="visibility">
             <AccordionTrigger>Visibilidade condicional</AccordionTrigger>
             <AccordionContent className="space-y-2">

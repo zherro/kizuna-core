@@ -34,3 +34,4 @@ export {
   ShuffledServiceCarouselSection,
   shuffleServices,
 } from './shuffled-service-carousel-section';
+export { VenueCard } from './venue-card';

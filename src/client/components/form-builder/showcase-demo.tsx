@@ -51,6 +51,18 @@ const DEMO_SCHEMA: FormSchema = {
       visibleWhen: { field: 'categoria', op: 'eq', value: 'outro' },
     },
     {
+      id: 'f_local',
+      key: 'local_ref',
+      name: 'local_ref',
+      type: 'service-ref',
+      label: 'Onde acontece',
+      grid: { xs: 12 },
+      behavior: {},
+      validation: {},
+      appearance: { helpText: 'Busca anúncios ativos pelo título e grava o uid.' },
+      serviceRef: {},
+    },
+    {
       id: 'f_urgencia',
       key: 'urgencia',
       name: 'urgencia',

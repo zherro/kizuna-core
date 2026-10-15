@@ -9,3 +9,7 @@ export type { StepGroupingOptions } from './step-grouping';
 export { ChoiceChips } from './choice-chips';
 export type { ChoiceChipsProps } from './choice-chips';
 export * from './types';
+export { ServiceRefPicker } from './service-ref-field';
+export type { ServiceRefPickerProps } from './service-ref-field';
+export { buildServiceRefSearchBody, pickServiceRefOptions } from './service-ref';
+export type { ServiceRefOption } from './service-ref';
