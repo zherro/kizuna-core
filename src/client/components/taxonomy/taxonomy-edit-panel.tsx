@@ -10,6 +10,7 @@ import { SearchableSelect } from '@kizuna/core/client/components/ui/searchable-s
 import { ModalPanel } from '@kizuna/core/client/components/ui-better-soft/overlay/modal-panel';
 import { FormField } from '@kizuna/core/client/components/ui-better-soft/forms/form-field';
 import { useForm } from '@kizuna/core/client';
+import { useToast } from '@kizuna/core/client/hooks/use-toast';
 import { resolveLucideIcon } from '@kizuna/core/lib/utils';
 import {
   TAXONOMY_LEVEL_LABEL,
@@ -345,6 +346,12 @@ export function TaxonomyEditPanel({
   }
 
   const { formik } = form;
+  const { error: toastError } = useToast();
+
+  // O useForm só guarda o erro do servidor em `form.error` — sem isto o "Salvar" falhava calado.
+  useEffect(() => {
+    if (form.error) toastError(form.error);
+  }, [form.error, toastError]);
 
   const targetKey = target
     ? `${target.level}:${target.item?.id ?? 'new'}:${target.item?.slug ?? ''}`
@@ -354,6 +361,7 @@ export function TaxonomyEditPanel({
     if (!target) return;
     const timer = window.setTimeout(() => {
       formik.resetForm({ values: buildInitialValues(target) });
+      form.clearFeedback();
       formik.setTouched({});
       formik.setErrors({});
       setSlugStatus('idle');
@@ -433,6 +441,14 @@ export function TaxonomyEditPanel({
       }
     >
       <div className="space-y-4">
+        {form.error ? (
+          <p
+            role="alert"
+            className="rounded-[var(--ui-radius-card-sm,0.5rem)] border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+          >
+            {form.error}
+          </p>
+        ) : null}
         {level === 'category' ? (
           <div className="space-y-2">
             <Label htmlFor="taxonomy-group">Grupo</Label>
