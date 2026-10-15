@@ -114,6 +114,14 @@ const DEFAULT_FEATURES: AddressFeatureFlags = {
 // COMPONENT
 // ============================================================
 
+/** Dicas do estado "nenhum endereço encontrado" — formas de pesquisar que a busca entende. */
+const ADDRESS_SEARCH_TIPS = [
+  { label: 'Nome do lugar', example: 'como aparece no Google, ex.: Parque da Cidade' },
+  { label: 'Rua e número', example: 'ex.: Rua das Flores, 120' },
+  { label: 'CEP', example: 'ex.: 01310-100' },
+  { label: 'Bairro e cidade', example: 'ex.: Centro, Campinas' },
+];
+
 export function AddressForm({
   value,
   onChange,
@@ -770,10 +778,7 @@ function SearchDrawer({
                   autoFocus
                   value={value}
                   onChange={(event) => onChange(event.target.value)}
-                  placeholder="
-                    Digite endereço,
-                    cidade ou CEP...
-                  "
+                  placeholder="Nome do lugar, rua e número ou CEP..."
                   className="
                     h-11 w-full
                     rounded-[var(--ui-radius-card-compact,0.75rem)]
@@ -882,14 +887,19 @@ function SearchDrawer({
                       Nenhum endereço encontrado
                     </p>
 
-                    <p
-                      className="
-                        mt-1
-                        text-xs
-                        text-muted-foreground
-                      "
-                    >
-                      Tente informar mais detalhes.
+                    <p className="mt-1 text-xs text-muted-foreground">Tente pesquisar de outro jeito:</p>
+
+                    <ul className="mx-auto mt-3 max-w-xs space-y-1.5 text-left text-xs text-muted-foreground">
+                      {ADDRESS_SEARCH_TIPS.map((tip) => (
+                        <li key={tip.label} className="flex gap-2">
+                          <span className="shrink-0 font-medium text-foreground">{tip.label}:</span>
+                          <span className="min-w-0">{tip.example}</span>
+                        </li>
+                      ))}
+                    </ul>
+
+                    <p className="mt-3 text-xs text-muted-foreground">
+                      Se ainda não achar, feche a busca e preencha os campos manualmente.
                     </p>
                   </div>
                 )}
