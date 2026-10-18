@@ -41,7 +41,7 @@ Testes executados: revisão de código das 10 categorias; `npm audit --omit=dev`
 | 5 | Alto | Upload HTML/SVG servido inline | `isBlockedUpload` recusa HTML/SVG/XML/JS (MIME ou extensão); `storageContentHeaders` nas duas rotas de conteúdo: `inline` só para imagem raster, resto `attachment`, CSP `sandbox`, `nosniff`, nome RFC 5987 **[T]** |
 | 6 | Alto | Open redirect / `javascript:` no login social | `resolveReturnTo` e `goAfterLogin` passam por `sanitizeReturnTo` **[T: teste unitário]** |
 | 7 | Alto | Reset não revogava sessões | `sql/0119_password_reset_revokes_sessions.sql` grava `sessions_revoked_at` (truncado ao segundo) |
-| 8 | Alto | Postgres publicado em `0.0.0.0` | `deploy/postgres-postgrest/docker-compose.yml` e `docker-compose.db.yml` (projeto e template) ligam só em `127.0.0.1` |
+| 8 | Alto | Postgres publicado em `0.0.0.0` | `deploy/postgres-postgrest/docker-compose.prod.yml` e `docker-compose.db.yml` (projeto e template) ligam só em `127.0.0.1`; o `docker-compose.yml` de deploy segue aberto durante a manutenção |
 | 9 | Médio | Login chamável por anon direto no PostgREST | `sql/0120_login_requires_purpose.sql` exige claim `purpose = 'login'`; `auth-handlers.ts` assina com `purposeAuthHeader('login')` (login via Next testado: 401 normal) **[T]** |
 
 ### Para fechar
@@ -49,6 +49,7 @@ Testes executados: revisão de código das 10 categorias; `npm audit --omit=dev`
 - Aplicar as migrations `services/0015`, `0119` e `0120` (`node kizuna-core/cli db migrate --db-url ...`) e repetir o teste: `POST /rpc/fun_auth__login_with_perms` direto no PostgREST deve dar `42501`.
 - Gerar um `PGRST_JWT_SECRET` novo (`openssl rand -hex 32`) no `.env` local e no PostgREST; em produção, um por ambiente.
 - No servidor, o PostgREST local (`:3004`) ainda escuta em `0.0.0.0` (container de outro compose): ligar em `127.0.0.1`.
+- Terminada a manutenção remota no banco, publicar `deploy/postgres-postgrest/docker-compose.prod.yml` (Postgres só em 127.0.0.1).
 - Testar com usuário de teste: autopublicação (#3) e revogação após reset (#7).
 
 ## Médios
