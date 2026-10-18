@@ -94,6 +94,8 @@ export { isOnboardingCompletedServer } from './onboarding';
 export {
   getStorageService,
   fileContentSizeFromRequest,
+  storageContentHeaders,
+  isBlockedUpload,
   type FileContentSize,
 } from './storage-service';
 export { handleSearchChat } from './search';

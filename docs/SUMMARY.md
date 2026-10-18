@@ -51,6 +51,7 @@
 
 * [Visão geral](manutencao/README.md)
   * [Hardening](manutencao/hardening.md)
+  * [Avaliação de segurança](manutencao/avaliacao-seguranca.md)
   * [Observabilidade (Grafana + Loki)](manutencao/observabilidade.md)
   * [Backlog — IA](manutencao/todo-ai.md)
   * [Escrevendo a documentação](manutencao/documentacao.md)

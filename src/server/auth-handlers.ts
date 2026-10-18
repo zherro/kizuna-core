@@ -22,6 +22,7 @@ import {
   isConfigError,
 } from './auth';
 import { verifyCaptcha } from './captcha';
+import { purposeAuthHeader } from './session-issue';
 import { checkLockout, recordLoginFailure, clearLoginFailures } from './login-lockout';
 import { safeReportAccountRecreation } from './account/report-recreation';
 
@@ -143,7 +144,8 @@ export function createLoginHandler(pgrstRpc: PgrstRpc) {
         'fun_auth__login_with_perms',
         { p_login: email, p_password: password },
         // funções vivem no schema auth; sem o header o PostgREST procura no 1º de PGRST_DB_SCHEMAS
-        { auth: null, schema: 'auth' }
+        // `purpose: login` (sql/0120): direto no PostgREST, sem esse claim, o anon é recusado.
+        { auth: purposeAuthHeader('login'), schema: 'auth' }
       );
 
       const rpcJson = (await rpcRes.json().catch(() => null)) as Record<string, unknown> | null;
@@ -402,7 +404,8 @@ export function createRegisterHandler(pgrstRpc: PgrstRpc) {
         'fun_auth__login_with_perms',
         { p_login: email, p_password: password },
         // funções vivem no schema auth; sem o header o PostgREST procura no 1º de PGRST_DB_SCHEMAS
-        { auth: null, schema: 'auth' }
+        // `purpose: login` (sql/0120): direto no PostgREST, sem esse claim, o anon é recusado.
+        { auth: purposeAuthHeader('login'), schema: 'auth' }
       );
 
       const loginJson =

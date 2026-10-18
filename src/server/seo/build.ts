@@ -67,10 +67,16 @@ export function buildMetadata(site: SeoSite, ctx: SeoContext): Metadata {
   };
 }
 
-/** JSON-LD como string pronta pro `<script type="application/ld+json">` — nunca interpolar HTML de
- * usuário direto no objeto sem passar por `stripHtml` antes. */
+/** JSON-LD como string pronta pro `<script type="application/ld+json">`. Escapa `<`, `>`, `&` e
+ * U+2028/2029: um título com `</script>` fecharia a tag e rodaria HTML de usuário na página. O JSON
+ * continua equivalente (`\u003c` é `<` para o parser). */
 export function jsonLdScript(data: Record<string, unknown>): string {
-  return JSON.stringify(data);
+  return JSON.stringify(data)
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/&/g, '\\u0026')
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029');
 }
 
 export function serviceJsonLd(

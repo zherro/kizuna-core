@@ -29,6 +29,44 @@ export function fileContentSizeFromRequest(request: Request): FileContentSize {
   return new URL(request.url).searchParams.get('size') === 'thumb' ? 'thumb' : 'full';
 }
 
+/** Só estes tipos abrem `inline`: imagens raster, que o navegador nunca executa. */
+const INLINE_SAFE_MIME = new Set(['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'image/avif']);
+
+/** Tipos que o navegador executa na nossa origem (HTML, SVG, XML, JS): recusados no upload. */
+const BLOCKED_UPLOAD_MIME = new Set([
+  'text/html',
+  'application/xhtml+xml',
+  'image/svg+xml',
+  'text/xml',
+  'application/xml',
+  'text/javascript',
+  'application/javascript',
+  'application/ecmascript',
+]);
+const BLOCKED_UPLOAD_EXT = /\.(html?|xht(ml)?|svgz?|xml|m?js)$/i;
+
+/** Upload de arquivo que viraria XSS armazenado se servido pelo nosso domínio. */
+export function isBlockedUpload(mimeType: string | null, fileName: string): boolean {
+  return (mimeType !== null && BLOCKED_UPLOAD_MIME.has(mimeType)) || BLOCKED_UPLOAD_EXT.test(fileName);
+}
+
+/**
+ * Headers da rota de conteúdo. Imagem raster sai `inline`; o resto sai como `attachment` (baixa,
+ * não renderiza). CSP `sandbox` + `nosniff` em todos: mesmo um arquivo antigo com MIME errado não
+ * roda script na origem do site. Nome codificado (RFC 5987) para não quebrar o header.
+ */
+export function storageContentHeaders(mimeType: string, fileName: string): Record<string, string> {
+  const mime = mimeType.trim().toLowerCase();
+  const disposition = INLINE_SAFE_MIME.has(mime) ? 'inline' : 'attachment';
+  const asciiName = fileName.replace(/[^\x20-\x7e]/g, '_').replace(/["\\]/g, '');
+  return {
+    'Content-Type': INLINE_SAFE_MIME.has(mime) ? mime : mime || 'application/octet-stream',
+    'Content-Disposition': `${disposition}; filename="${asciiName}"; filename*=UTF-8''${encodeURIComponent(fileName)}`,
+    'Content-Security-Policy': "default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; sandbox",
+    'X-Content-Type-Options': 'nosniff',
+  };
+}
+
 export type UploadFileInput = {
   file: File;
   purpose: string;
@@ -222,6 +260,10 @@ async function uploadSingleFilePostgres(args: {
 
   if (file.size <= 0) {
     throw new Error('Arquivo invalido: tamanho zero.');
+  }
+
+  if (isBlockedUpload(mimeType, file.name)) {
+    throw new Error('Tipo de arquivo nao permitido.');
   }
 
   if (file.size > args.input.maxFileSizeBytes) {

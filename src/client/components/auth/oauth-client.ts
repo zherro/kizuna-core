@@ -1,5 +1,7 @@
 'use client';
 
+import { sanitizeReturnTo } from '../../../server/app-url';
+
 /** Mesmo canal/tipo que o callback do servidor usa (oauth-handlers.ts → POPUP_MESSAGE). */
 const POPUP_MESSAGE = 'kizuna:oauth';
 const AUTH_PAGES = new Set(['/login', '/registre-se']);
@@ -8,18 +10,19 @@ type PopupMessage = { type: typeof POPUP_MESSAGE; ok: boolean; error?: string };
 
 /** Para onde voltar depois do login: a página atual, ou o `returnTo`/`/painel` se for /login|/registre-se. */
 export function resolveReturnTo(explicit?: string): string {
-  if (explicit) return explicit;
+  if (explicit) return sanitizeReturnTo(explicit, '/painel');
   if (typeof window === 'undefined') return '/painel';
   const { pathname, search } = window.location;
   if (AUTH_PAGES.has(pathname)) {
-    const fromQuery = new URLSearchParams(search).get('returnTo');
-    return fromQuery || '/painel';
+    // `returnTo` vem da URL: só caminho do próprio site (nada de `https://…` nem `javascript:`).
+    return sanitizeReturnTo(new URLSearchParams(search).get('returnTo'), '/painel');
   }
   return `${pathname}${search}`;
 }
 
 /** Login concluído: vai para `target` (recarrega se já está nele, para a página ver a sessão). */
-export function goAfterLogin(target: string): void {
+export function goAfterLogin(rawTarget: string): void {
+  const target = sanitizeReturnTo(rawTarget, '/painel');
   const here = `${window.location.pathname}${window.location.search}`;
   if (target === here) window.location.reload();
   else window.location.assign(target);
