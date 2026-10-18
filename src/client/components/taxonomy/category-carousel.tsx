@@ -21,6 +21,7 @@ type StatRow = {
   categoryId: string | number;
   categoryName?: string;
   categoryIcon?: string;
+  categoryGroupId?: string | number | null;
   name?: string;
   qtd?: number;
 };
@@ -31,22 +32,45 @@ type ListingRow = {
   servicesCount?: number;
 };
 
+type GroupRow = {
+  id: string | number;
+  name?: string;
+  slug?: string;
+  icon?: string | null;
+  sortOrder?: number;
+  active?: boolean;
+};
+
+type FacetRow = {
+  id: string | number;
+  categoryId: string | number;
+  groupIds?: Array<string | number>;
+};
+
 export type CategoryCarouselItem = {
   id: number;
   name: string;
-  /** nº de subcategorias ativas na categoria (do stats view) */
+  /** slug do grupo (só em `groupBy="group"`) */
+  slug?: string;
+  icon?: string | null;
+  /** nº de subcategorias da categoria — ou, em `groupBy="group"`, nº de categorias do grupo */
   count: number;
 };
 
 export type CategoryCarouselProps = {
   variant?: "classic" | "compact";
+  /**
+   * `category` (default): um card por categoria. `group`: um card por grupo de categorias
+   * (`categories_group`), levando à busca filtrada pelo grupo (`/busca?group=<slug>`).
+   */
+  groupBy?: "category" | "group";
   /** Recurso a buscar (default 'category_stats' — só categorias com subcategoria ativa). */
   resource?: string;
   title?: string;
   /** Link "ver todas". Se ausente, não renderiza o link. */
   allLabel?: string;
   allHref?: string;
-  /** href de cada card. Default: `/busca?categoryId=<id>`. */
+  /** href de cada card. Default: `/busca?categoryId=<id>` (ou `/busca?group=<slug>` por grupo). */
   hrefFor?: (item: CategoryCarouselItem) => string;
   /** ícone de cada card. Default: <Tag />. */
   iconFor?: (item: CategoryCarouselItem) => ReactNode;
@@ -83,13 +107,14 @@ const getIcon = (category: any) => {
 
 export function CategoryCarousel({
   variant = "classic",
+  groupBy = "category",
   resource = "category_stats",
   title = "Categorias",
   allLabel,
   allHref,
-  hrefFor = (c) => `/busca?categoryId=${c.id}`,
+  hrefFor,
   iconFor = (c) => getIcon(c),
-  countLabel = (n) => `${n} ${n === 1 ? "subcategoria" : "subcategorias"}`,
+  countLabel,
   emptyLabel = "Nenhuma categoria disponível.",
   hideWhenEmpty = false,
   onlyWithListings = false,
@@ -101,9 +126,34 @@ export function CategoryCarousel({
     resource: listingsResource,
     enabled: onlyWithListings,
   });
-  const loading = loadingTaxonomy || loadingListings;
+  const byGroup = groupBy === "group";
+  const { options: groupRows, loading: loadingGroups } = useResourceOptions<GroupRow>({
+    resource: "categories_group_public",
+    enabled: byGroup,
+  });
+  const { options: facetRows, loading: loadingFacets } = useResourceOptions<FacetRow>({
+    resource: "category_service_facets",
+    enabled: byGroup && onlyWithListings,
+  });
+  const loading =
+    loadingTaxonomy ||
+    loadingListings ||
+    (byGroup && (loadingGroups || (onlyWithListings && loadingFacets)));
 
-  const items = useMemo<CategoryCarouselItem[]>(() => {
+  const href =
+    hrefFor ??
+    ((c: CategoryCarouselItem) =>
+      byGroup && c.slug
+        ? `/busca?group=${encodeURIComponent(c.slug)}`
+        : `/busca?categoryId=${c.id}`);
+  const label =
+    countLabel ??
+    ((n: number) =>
+      byGroup
+        ? `${n} ${n === 1 ? "categoria" : "categorias"}`
+        : `${n} ${n === 1 ? "subcategoria" : "subcategorias"}`);
+
+  const categoryItems = useMemo<CategoryCarouselItem[]>(() => {
     const withListings = onlyWithListings
       ? new Set(
           (listingRows ?? [])
@@ -126,6 +176,44 @@ export function CategoryCarousel({
       a.name.localeCompare(b.name, "pt-BR"),
     );
   }, [options, listingRows, onlyWithListings]);
+
+  // Por grupo: conta as categorias de cada grupo ativo. Com `onlyWithListings`, usa as facetas
+  // (grupo primário + vínculos extras das categorias com anúncio); senão, o grupo primário
+  // das categorias com subcategoria ativa. Grupos sem categoria somem.
+  const groupItems = useMemo<CategoryCarouselItem[]>(() => {
+    if (!byGroup) return [];
+    const counts = new Map<number, Set<number>>();
+    const add = (gid: unknown, cid: number) => {
+      const g = Number(gid);
+      if (!Number.isFinite(g) || g <= 0) return;
+      const set = counts.get(g) ?? new Set<number>();
+      set.add(cid);
+      counts.set(g, set);
+    };
+    if (onlyWithListings) {
+      for (const f of facetRows ?? []) {
+        for (const gid of f.groupIds ?? []) add(gid, Number(f.categoryId));
+      }
+    } else {
+      for (const row of options ?? []) add(row.categoryGroupId, Number(row.categoryId));
+    }
+    return (groupRows ?? [])
+      .filter((g) => g.active !== false && counts.has(Number(g.id)))
+      .sort(
+        (a, b) =>
+          Number(a.sortOrder ?? 0) - Number(b.sortOrder ?? 0) ||
+          String(a.name ?? "").localeCompare(String(b.name ?? ""), "pt-BR"),
+      )
+      .map((g) => ({
+        id: Number(g.id),
+        name: String(g.name ?? `Grupo ${g.id}`),
+        slug: g.slug ?? undefined,
+        icon: g.icon ?? null,
+        count: counts.get(Number(g.id))!.size,
+      }));
+  }, [byGroup, onlyWithListings, facetRows, options, groupRows]);
+
+  const items = byGroup ? groupItems : categoryItems;
 
   const empty = !loading && items.length === 0;
   if (empty && hideWhenEmpty) return null;
@@ -165,7 +253,7 @@ export function CategoryCarousel({
               : items.map((c) => (
                   <Link
                     key={c.id}
-                    href={hrefFor(c)}
+                    href={href(c)}
                     className="flex aspect-square w-24 shrink-0 flex-col items-center justify-center gap-1 rounded-[var(--ui-radius-card,1rem)] border-[length:var(--ui-border-w-card,1px)] border-border shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] bg-card p-1.5 text-center transition-transform active:scale-95"
                   >
                     <span className="flex h-12 w-12 items-center justify-center rounded-full bg-secondary text-primary [&_svg]:size-6">
@@ -203,7 +291,7 @@ export function CategoryCarousel({
             : items.map((c) => (
                 <Link
                   key={c.id}
-                  href={hrefFor(c)}
+                  href={href(c)}
                   className="group flex min-w-[200px] snap-start flex-col gap-4 rounded-[var(--ui-radius-card,1rem)] border-[length:var(--ui-border-w-card,1px)] border-border/70 shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] bg-muted/50 p-5 transition-colors hover:border-primary/40 hover:bg-primary/5"
                 >
                   <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
@@ -214,7 +302,7 @@ export function CategoryCarousel({
                       {c.name}
                     </span>
                     <span className="mt-1 block text-sm text-muted-foreground">
-                      {countLabel(c.count)}
+                      {label(c.count)}
                     </span>
                   </span>
                 </Link>
