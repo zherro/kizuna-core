@@ -24,6 +24,7 @@ export interface PublicSession {
 export interface AuthUser extends PublicSession {
   name: string;
   subtitle: string;
+  /** Inicial do primeiro nome — fallback do avatar quando não há foto. */
   initials: string;
   canManageCatalog: boolean;
   hasPerm: (resource: string, action?: keyof PermissionMap[string]) => boolean;
@@ -51,7 +52,7 @@ function buildAuthUser(raw: PublicSession): AuthUser {
     str
       .split(' ')
       .filter(Boolean)
-      .slice(0, 2)
+      .slice(0, 1)
       .map((p) => p[0]?.toUpperCase() ?? '')
       .join('');
 
@@ -89,7 +90,7 @@ function buildAuthUser(raw: PublicSession): AuthUser {
     ...raw,
     name: 'Usuario',
     subtitle: 'Conta autenticada',
-    initials: 'US',
+    initials: 'U',
     canManageCatalog,
     hasPerm,
   };

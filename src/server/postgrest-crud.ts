@@ -166,6 +166,11 @@ export async function listResource(resource: string, request: Request) {
     const clauses = config.searchableColumns.map(
       (column) => `${column}.ilike.*${normalizedSearch}*`
     );
+    if (/^\d{1,18}$/.test(normalizedSearch)) {
+      for (const column of config.searchableNumericColumns ?? []) {
+        clauses.push(`${column}.eq.${Number(normalizedSearch)}`);
+      }
+    }
     query.set('or', `(${clauses.join(',')})`);
   }
 

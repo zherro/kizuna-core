@@ -11,9 +11,10 @@ export type MarkdownEditorProps = {
   value: string;
   onChange: (value: string) => void;
   height?: number | any;
+  placeholder?: string;
 };
 
-export function MarkdownEditor({ value, onChange, height = 300 }: MarkdownEditorProps) {
+export function MarkdownEditor({ value, onChange, height = 300, placeholder }: MarkdownEditorProps) {
   const containerStyle: CSSProperties = {
     borderRadius: '0.375rem',
     border: '1px solid hsl(var(--input))',
@@ -22,7 +23,7 @@ export function MarkdownEditor({ value, onChange, height = 300 }: MarkdownEditor
 
   return (
     <div style={containerStyle} className="bg-background">
-      <MDEditor value={value} onChange={(val) => onChange(val ?? '')} height={height} />
+      <MDEditor value={value} onChange={(val) => onChange(val ?? '')} height={height} placeholder={placeholder} />
     </div>
   );
 }

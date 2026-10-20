@@ -57,7 +57,8 @@ export type ShowcaseSectionId =
   | 'search-filter-blocks'
   | 'place-highlights'
   | 'news-highlights'
-  | 'painel-welcome';
+  | 'painel-welcome'
+  | 'painel-hero';
 
 export type ShowcaseGroupId = 'shadcn-default' | 'ui-better-soft' | 'tools';
 
@@ -1519,6 +1520,16 @@ export default async function PainelPage() {
     />
   );
 }`,
+  },
+  {
+    id: 'painel-hero',
+    groupId: 'ui-better-soft',
+    label: 'Slide do painel',
+    description:
+      'Carrossel de destaques do painel (PainelHero): slides com chamada, texto, barra de progresso opcional e ate dois botoes, com setas e indicadores. Os slides sao dados de exemplo fixos no componente. Saiu da home do painel; fica aqui como bloco pronto para reuso.',
+    usageCode: `import { PainelHero } from '@kizuna/core/client/components/analytics/painel-home';
+
+<PainelHero headingAs="h2" />`,
   },
 ];
 

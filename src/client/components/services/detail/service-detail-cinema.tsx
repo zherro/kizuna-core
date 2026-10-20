@@ -168,6 +168,30 @@ function NearbySiblings({ siblings }: { siblings: ServiceSibling[] }) {
   );
 }
 
+function formatEnded(date: Date): string {
+  return date
+    .toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: DISPLAY_TIME_ZONE })
+    .toUpperCase();
+}
+
+/** Cinema encerrado (`active: false` ou `expira_em` no passado): card apagado, sem contatos/ingresso,
+ * com "ENCERRADO EM dd/mm/aaaa" em vermelho (só "ENCERRADO" quando não há data). */
+function EndedCinemaCard({ cinema, until }: { cinema: CinemaItem; until: Date | null }) {
+  return (
+    <div
+      aria-disabled="true"
+      className="flex flex-col gap-1 rounded-[var(--ui-radius-card,1rem)] border-[length:var(--ui-border-w-card,1px)] border-dashed border-border bg-muted/40 p-4 opacity-70"
+    >
+      <div className="font-bold leading-snug text-muted-foreground line-through decoration-muted-foreground/50">
+        {cinema.nome ?? 'Cinema'}
+      </div>
+      <div className="text-xs font-bold uppercase tracking-wide text-red-600 dark:text-red-400">
+        {until ? `Encerrado em ${formatEnded(until)}` : 'Encerrado'}
+      </div>
+    </div>
+  );
+}
+
 function CinemaCard({ cinema, until }: { cinema: CinemaItem; until: Date | null }) {
   return (
     <div className="flex flex-col gap-3 rounded-[var(--ui-radius-card,1rem)] border-[length:var(--ui-border-w-card,1px)] border-border bg-card p-4 shadow-[shadow:var(--ui-shadow-item,0_0_#0000)]">
@@ -247,7 +271,8 @@ export const ServiceDetailCinemaSidebar: ServiceDetailVariantComponent = ({
 /**
  * Variant `"cinema"` — um anúncio é um filme numa cidade: mostra os dados do filme, as tags
  * (pré-venda, idiomas, formatos) e a lista `answers.cinemas[]` com os cinemas onde ele está em
- * cartaz. Cinemas com `active: false` ou `expira_em` no passado ficam de fora. Gêneros são subcategorias e já
+ * cartaz. Cinemas com `active: false` ou `expira_em` no passado vêm depois, apagados e marcados
+ * "ENCERRADO EM …". Gêneros são subcategorias e já
  * aparecem no cabeçalho da página. Ver `docs/integracoes/cinema-depara.md` no projeto consumidor.
  */
 export const ServiceDetailCinema: ServiceDetailVariantComponent = ({
@@ -270,11 +295,18 @@ export const ServiceDetailCinema: ServiceDetailVariantComponent = ({
   const trailerUrl = asString(answers.detalhes_trailer_url);
 
   const now = Date.now();
-  const cinemas = asCinemas(answers.cinemas)
-    .filter((cinema) => cinema.active !== false)
-    .map((cinema) => ({ cinema, until: parseDate(cinema.expira_em) }))
-    .filter(({ until }) => !until || until.getTime() >= now)
+  const allCinemas = asCinemas(answers.cinemas)
+    .map((cinema) => {
+      const until = parseDate(cinema.expira_em);
+      const ended = cinema.active === false || (until != null && until.getTime() < now);
+      return { cinema, until, ended };
+    })
     .sort((a, b) => (a.cinema.nome ?? '').localeCompare(b.cinema.nome ?? '', 'pt-BR'));
+  const cinemas = allCinemas.filter((c) => !c.ended);
+  // Encerrados: o mais recente primeiro.
+  const endedCinemas = allCinemas
+    .filter((c) => c.ended)
+    .sort((a, b) => (b.until?.getTime() ?? 0) - (a.until?.getTime() ?? 0));
 
   type FactItem = { icon: ReactNode; label: string; value: string };
   const factsRaw: (FactItem | null)[] = [
@@ -350,6 +382,13 @@ export const ServiceDetailCinema: ServiceDetailVariantComponent = ({
           </div>
         ) : (
           <p className="text-sm text-muted-foreground">Nenhum cinema com este filme em cartaz no momento.</p>
+        )}
+        {endedCinemas.length > 0 && (
+          <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {endedCinemas.map(({ cinema, until }, index) => (
+              <EndedCinemaCard key={cinema.id_cinema ?? `${cinema.nome}-ended-${index}`} cinema={cinema} until={until} />
+            ))}
+          </div>
         )}
         <NearbySiblings siblings={siblings} />
       </Section>

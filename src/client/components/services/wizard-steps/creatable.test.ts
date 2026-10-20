@@ -24,10 +24,10 @@ describe('filterCreatable', () => {
     expect(out.categories).toBe(categories);
   });
 
-  it('grupo liberado traz todas as suas categorias (primárias e extras)', () => {
+  it('grupo liberado traz só as categorias do grupo principal (extras não abrem a criação)', () => {
     const out = filterCreatable({ groups, categories, creatable: { groups: ['eventos'] } });
-    expect(ids(out.groups)).toEqual(['g1', 'g3']);
-    expect(ids(out.categories)).toEqual(['c1', 'c2', 'c6']);
+    expect(ids(out.groups)).toEqual(['g1']);
+    expect(ids(out.categories)).toEqual(['c1', 'c2']);
   });
 
   it('categoria liberada mostra só ela e o grupo dela', () => {
@@ -46,8 +46,8 @@ describe('filterCreatable', () => {
       categories,
       creatable: { groups: ['eventos'], categories: ['hoteis-e-pousadas'] },
     });
-    expect(ids(out.groups)).toEqual(['g1', 'g2', 'g3']);
-    expect(ids(out.categories)).toEqual(['c1', 'c2', 'c3', 'c6']);
+    expect(ids(out.groups)).toEqual(['g1', 'g2']);
+    expect(ids(out.categories)).toEqual(['c1', 'c2', 'c3']);
   });
 
   it('root vê tudo', () => {
@@ -69,7 +69,7 @@ describe('filterCreatable', () => {
       keep: { groupId: 'g3', categoryId: 'c5' },
     });
     expect(ids(out.groups)).toEqual(['g1', 'g3']);
-    expect(ids(out.categories)).toEqual(['c1', 'c2', 'c5', 'c6']);
+    expect(ids(out.categories)).toEqual(['c1', 'c2', 'c5']);
   });
 
   it('lista vazia não libera nada', () => {

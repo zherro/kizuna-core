@@ -1,9 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { cn } from '../../lib/utils';
 import { useAuth } from '../providers/auth-provider';
+import { avatarImgProps, useUserAvatarUrl } from '../hooks/use-user-avatar-url';
 
 /**
  * Atalho de conta do cabeçalho: só a foto do usuário (`user_data.avatar_url`; sem foto, as iniciais)
@@ -19,26 +20,9 @@ export function HeaderAvatarLink({
   className?: string;
 }) {
   const { user } = useAuth();
-  const userId = user?.user_id;
-  const [avatarUrl, setAvatarUrl] = useState('');
-
-  useEffect(() => {
-    if (!userId) {
-      setAvatarUrl('');
-      return;
-    }
-    let active = true;
-    fetch('/api/resources/user_data?page=1&pageSize=1')
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d: { items?: Array<{ avatarUrl?: unknown }> } | null) => {
-        const url = d?.items?.[0]?.avatarUrl;
-        if (active && typeof url === 'string') setAvatarUrl(url);
-      })
-      .catch(() => {});
-    return () => {
-      active = false;
-    };
-  }, [userId]);
+  const avatarUrl = useUserAvatarUrl(user?.user_id);
+  const [failedAvatar, setFailedAvatar] = useState('');
+  const showAvatar = avatarUrl !== '' && failedAvatar !== avatarUrl;
 
   if (!user) return null;
 
@@ -52,9 +36,14 @@ export function HeaderAvatarLink({
         className
       )}
     >
-      {avatarUrl ? (
+      {showAvatar ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
+        <img
+          src={avatarUrl}
+          alt=""
+          className="h-full w-full object-cover"
+          {...avatarImgProps(() => setFailedAvatar(avatarUrl))}
+        />
       ) : (
         user.initials
       )}

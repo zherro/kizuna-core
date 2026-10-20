@@ -37,6 +37,7 @@ const TICKETS: ResourceConfig = {
   primaryKey: 'id',
   defaultOrder: 'created_at',
   searchableColumns: ['title', 'description'],
+  searchableNumericColumns: ['id'],
   // POST: title/description (o resto é default da tabela + RLS). PATCH: status (só staff, RLS).
   mapInput: (input) => {
     const out: RecordValue = {};
@@ -55,6 +56,7 @@ const TICKETS: ResourceConfig = {
   },
   mapOutput: (record) => ({
     id: String(record.id ?? ''),
+    code: `#${record.id ?? ''}`,
     uid: record.uid ?? null,
     type: String(record.type ?? 'support'),
     title: String(record.title ?? ''),

@@ -3,6 +3,8 @@ export type TicketStatus = 'open' | 'in_progress' | 'resolved';
 
 export type Ticket = {
   id: string;
+  /** Código exibido ao usuário (`#<id>`). */
+  code: string;
   uid: string;
   type: string;
   title: string;

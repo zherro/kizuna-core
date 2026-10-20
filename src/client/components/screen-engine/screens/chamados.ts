@@ -23,6 +23,7 @@ const listConfig: ListBlockConfig = {
     singularName: 'chamado',
     notFoundMessage: 'Nenhum chamado encontrado',
     fields: {
+      code: { label: 'Código', format: { type: 'text' } },
       status: {
         label: 'Status',
         format: {
@@ -37,7 +38,7 @@ const listConfig: ListBlockConfig = {
       },
     },
     badgeFields: ['status'],
-    visibleFields: ['type'],
+    visibleFields: ['code', 'type'],
   },
 };
 

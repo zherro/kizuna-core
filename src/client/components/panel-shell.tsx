@@ -6,6 +6,7 @@ import { useMemo, useRef, useState, type ComponentType, type ReactNode } from 'r
 import { LogOut, X } from 'lucide-react';
 import { buttonVariants } from './ui/button';
 import { useAuth } from '../providers/auth-provider';
+import { avatarImgProps, useUserAvatarUrl } from '../hooks/use-user-avatar-url';
 import { cn } from '../../lib/utils';
 import type { PermissionActions } from '../../types/auth';
 import { MobileMenuButton } from './mobile-menu-button';
@@ -174,6 +175,9 @@ export function PanelShellBase({
   userProfileHref,
 }: PanelShellBaseProps) {
   const { user, logout } = useAuth();
+  const avatarUrl = useUserAvatarUrl(user?.user_id);
+  const [failedAvatar, setFailedAvatar] = useState('');
+  const showAvatar = avatarUrl !== '' && failedAvatar !== avatarUrl;
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
@@ -526,15 +530,25 @@ export function PanelShellBase({
             <div className="ml-auto flex items-center gap-3">
               {headerExtra}
               <div className="flex min-w-0 items-center gap-3 rounded-full bg-muted/60 py-1.5 pr-2 pl-1.5">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
-                  {user?.initials}
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary text-sm font-bold text-primary-foreground">
+                  {showAvatar ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={avatarUrl}
+                      alt=""
+                      className="h-full w-full object-cover"
+                      {...avatarImgProps(() => setFailedAvatar(avatarUrl))}
+                    />
+                  ) : (
+                    user?.initials
+                  )}
                 </div>
                 <div className="hidden min-w-0 sm:block">
                   <div className="flex min-w-0 items-center gap-2">
                     {userProfileHref ? (
                       <Link
                         href={userProfileHref}
-                        className="block truncate text-sm font-semibold text-foreground underline decoration-muted-foreground/40 underline-offset-2 hover:decoration-foreground"
+                        className="block truncate rounded-sm text-sm font-semibold text-primary underline decoration-primary/60 underline-offset-2 transition-colors hover:decoration-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       >
                         {user?.name}
                       </Link>

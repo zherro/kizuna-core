@@ -525,7 +525,13 @@ function SearchPageInner({
   const carouselHref = useCallback(
     (item: CategoryCarouselItem) => {
       const sp = new URLSearchParams(searchParams.toString());
-      sp.set('categoryIds', String(item.id));
+      // Card de grupo (groupBy="group") filtra pelo grupo e limpa a categoria; senão, pela categoria.
+      if (item.slug) {
+        sp.set('group', item.slug);
+        sp.delete('categoryIds');
+      } else {
+        sp.set('categoryIds', String(item.id));
+      }
       sp.delete('categoryId');
       sp.delete('subcategoryIds');
       sp.delete('page');
@@ -702,6 +708,7 @@ function SearchPageInner({
               <CategoryCarousel
                 title=""
                 className="w-full px-4 pb-6 pt-6"
+                groupBy="group"
                 {...categoryCarousel}
                 hrefFor={carouselHref}
               />

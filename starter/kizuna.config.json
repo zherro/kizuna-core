@@ -195,6 +195,7 @@
           "noticias"
         ]
       },
+      "_comment_creatable": "creatable: onde o usuario pode CRIAR anuncio. groups libera o grupo inteiro, categories libera so aquela categoria. Sem a chave, tudo liberado; busca e detalhe nao mudam. Root e moderacao veem tudo.",
       "creatable": {
         "groups": ["eventos", "turismo"],
         "categories": ["hoteis-e-pousadas", "trilhas", "bares", "restaurantes"]

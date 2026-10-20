@@ -35,6 +35,8 @@ export type ResourceConfig = {
   primaryKey: string;
   defaultOrder?: string;
   searchableColumns: string[];
+  /** Colunas numéricas (ex.: id) buscadas por igualdade quando o termo é só dígitos (`01` → 1). */
+  searchableNumericColumns?: string[];
   maxPageSize?: number;
   requiredFields?: string[];
   softDeleteField?: string;

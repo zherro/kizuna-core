@@ -280,8 +280,10 @@ continuam sendo código.
 | `finishHrefByMode` | `{ create?, review?, … }`   | —           | Para onde redirecionar ao concluir, por modo.                     |
 
 O wizard de serviços (`wizards.servicos`) aceita ainda `stepProfiles` (opções de **local** e
-**preço** por grupo ou categoria, tabela de preços, seleção inicial) e `skipStepsByGroup` (esconder
-passos para certos grupos). A referência completa, com precedência e exemplos, está em
+**preço** por grupo ou categoria, tabela de preços, seleção inicial), `skipStepsByGroup` (esconder
+passos para certos grupos) e `creatable` (em quais grupos/categorias o usuário pode **criar**
+anúncio: `{ "groups": ["eventos"], "categories": ["bares"] }`; sem a chave, tudo liberado; busca e
+detalhe não mudam). A referência completa, com precedência e exemplos, está em
 [Wizard](../interface/wizard.md) (seção "Config por projeto").
 
 ```json

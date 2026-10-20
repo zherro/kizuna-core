@@ -18,3 +18,4 @@ export {
   type AiDegradationStatus,
   type UseAiDegradation,
 } from './use-ai-degradation';
+export { useUserAvatarUrl } from './use-user-avatar-url';

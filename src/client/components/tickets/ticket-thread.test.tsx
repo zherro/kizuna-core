@@ -3,6 +3,13 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { TicketThread } from './ticket-thread';
 
+vi.mock('../ui/markdown-editor', () => ({
+  MarkdownEditor: ({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder?: string }) => (
+    <textarea value={value} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} />
+  ),
+}));
+
+
 const comments = [
   {
     id: '1',

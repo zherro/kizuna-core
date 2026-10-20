@@ -166,7 +166,6 @@ export function StepCategory(props: WizardStepProps<ServiceWizardState>) {
               ? t.category.categoryTitle
               : t.category.title
         }
-        subtitle={subStage ? undefined : t.category.subtitle}
         why={subStage ? undefined : t.category.why}
       />
 

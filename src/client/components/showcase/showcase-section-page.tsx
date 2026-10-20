@@ -82,6 +82,7 @@ import { SearchFilterBlocksDemo } from '../search/filters/showcase-demo';
 import { PlaceHighlights, type PlaceHighlightItem } from '../home/place-highlights';
 import { NewsHighlights, type NewsHighlightItem } from '../home/news-highlights';
 import { PainelWelcome } from '../painel-welcome';
+import { PainelHero } from '../analytics/painel-home';
 import type { LikedItem } from '../swipe/swipe-types';
 import { FormsShowcaseDemo } from '../forms/showcase-demo';
 import { PagesAdminShowcaseDemo } from '../pages/showcase-demo';
@@ -1362,6 +1363,7 @@ function SectionDemo({ sectionId }: { sectionId: ShowcaseSectionId }) {
   if (sectionId === 'place-highlights') return <PlaceHighlightsDemo />;
   if (sectionId === 'news-highlights') return <NewsHighlightsDemo />;
   if (sectionId === 'painel-welcome') return <PainelWelcomeDemo />;
+  if (sectionId === 'painel-hero') return <PainelHero headingAs="h2" />;
   return <UiBetterSoftDemo />;
 }
 

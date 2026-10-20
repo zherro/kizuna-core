@@ -38,20 +38,25 @@ export function filterCreatable<G extends GroupLike, C extends CategoryLike>({
   const groupSlugs = new Set(creatable.groups ?? []);
   const categorySlugs = new Set(creatable.categories ?? []);
   const groupById = new Map(groups.map((g) => [String(g.id), g]));
-  const groupsOf = (c: C) =>
-    [c.categoryGroupId, ...(c.extraGroupIds ?? [])]
-      .map((id) => (id == null ? undefined : groupById.get(String(id))))
-      .filter((g): g is G => g !== undefined);
+  // Só o grupo PRINCIPAL conta: grupos extras (`extraGroupIds`) servem a busca/filtros, mas não
+  // abrem a criação (senão uma categoria de "dicas" ligada a "turismo" arrastaria o grupo todo).
+  const primaryGroup = (c: C) =>
+    c.categoryGroupId == null ? undefined : groupById.get(String(c.categoryGroupId));
 
-  const allowedCategories = categories.filter(
-    (c) =>
+  const allowedCategories = categories.filter((c) => {
+    const g = primaryGroup(c);
+    return (
       categorySlugs.has(c.slug) ||
-      groupsOf(c).some((g) => groupSlugs.has(g.slug)) ||
+      (g !== undefined && groupSlugs.has(g.slug)) ||
       same(c.id, keep?.categoryId)
-  );
+    );
+  });
 
   const groupsWithCategory = new Set<string>();
-  for (const c of allowedCategories) for (const g of groupsOf(c)) groupsWithCategory.add(String(g.id));
+  for (const c of allowedCategories) {
+    const g = primaryGroup(c);
+    if (g) groupsWithCategory.add(String(g.id));
+  }
 
   const allowedGroups = groups.filter(
     (g) =>

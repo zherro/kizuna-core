@@ -410,3 +410,33 @@ vencidos.
 
 **`skipStepsByGroup`** — `{ "location": ["slug-do-grupo"] }`: qualquer passo pode ser escondido
 para certos grupos (sem grupo escolhido ainda, aparece). Chave de passo inexistente lança.
+
+#### Onde o usuário pode criar (`creatable`)
+
+`wizards.servicos.creatable` restringe, no passo **category**, em quais grupos e categorias o
+usuário consegue **criar** anúncio. Tipo `ServiceCreatableConfig`; a regra está em
+`src/client/components/services/wizard-steps/creatable.ts` (`filterCreatable`).
+
+```json
+"creatable": {
+  "groups": ["eventos", "turismo"],
+  "categories": ["hoteis-e-pousadas", "trilhas", "bares", "restaurantes"]
+}
+```
+
+| Campo        | Tipo     | Efeito                                                                                  |
+| ------------ | -------- | --------------------------------------------------------------------------------------- |
+| `groups`     | string[] | `categories_group.slug`. Libera o grupo inteiro (todas as categorias dele).             |
+| `categories` | string[] | `categories.slug`. Libera só aquela categoria; o grupo dela aparece só com ela.         |
+
+* **Só a criação.** Busca, listagem, home e detalhe não passam por este filtro: anúncios de
+  categorias fora da lista continuam aparecendo normalmente.
+* **Sem a chave `creatable`**, tudo fica liberado. Já `{ "groups": [], "categories": [] }` não
+  libera nada.
+* **Quem vê tudo:** usuário root e o modo de moderação (`review`).
+* **Edição:** o grupo e a categoria já gravados no anúncio continuam visíveis, mesmo fora da lista.
+* **Conta só o grupo principal** da categoria (`categories.category_group_id`). Grupos extras
+  (`categories_group_link`) servem à busca e aos filtros, mas não abrem a criação: uma categoria de
+  "dicas" ligada também a "turismo" não libera o grupo "dicas".
+* Slug que não existe na taxonomia (typo) não falha: gera um `console.warn` no navegador
+  (`wizards.servicos.creatable: slug(s) fora da taxonomia…`).
