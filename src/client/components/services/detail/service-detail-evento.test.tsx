@@ -20,7 +20,7 @@ const extraWithAddress = { ...extraFields, answers: { ...extraFields.answers, en
 
 const renderEvento = (
   organizer?: { uid: string; title: string; href: string } | null,
-  extra: { artists?: { label: string; venue: Venue | null }[] | null; salePoints?: { label: string; venue: Venue | null }[] | null; venue?: Venue | null; renderVenueCard?: (ctx: { venue: Venue }) => React.ReactNode; extraFields?: never } = {}
+  extra: { artists?: { label: string; venue: Venue | null }[] | null; salePoints?: { label: string; venue: Venue | null; link?: string }[] | null; venue?: Venue | null; renderVenueCard?: (ctx: { venue: Venue }) => React.ReactNode; extraFields?: never } = {}
 ) =>
   render(
     <>
@@ -105,6 +105,68 @@ describe('ServiceDetailEvento onde comprar', () => {
   it('sem salePoints usa o texto cru de pontos_de_venda', () => {
     renderEvento(null, { extraFields: withRaw });
     expect(screen.getByText('casa-de-festas-cuiaba')).toBeTruthy();
+  });
+});
+
+describe('ServiceDetailEvento onde comprar: botão de compra', () => {
+  const comLinkGeral = { ...extraFields, answers: { ...extraFields.answers, link_ingresso: 'https://geral.test/e' } } as never;
+
+  it('ponto com link http(s) mostra "Bora comprar ingresso" em nova aba; sem link não mostra', () => {
+    renderEvento(null, {
+      salePoints: [
+        { label: 'Casa de Festas', venue: { ...venue, title: 'Casa de Festas' }, link: 'https://ingressos.test/show' },
+        { label: 'Disk ingresso', venue: null },
+      ],
+    });
+    const btns = screen.getAllByRole('link', { name: /Bora comprar ingresso/ });
+    expect(btns).toHaveLength(1);
+    expect(btns[0].getAttribute('href')).toBe('https://ingressos.test/show');
+    expect(btns[0].getAttribute('target')).toBe('_blank');
+    expect(btns[0].getAttribute('rel')).toBe('noopener noreferrer');
+    expect(screen.getByText('Disk ingresso')).toBeTruthy();
+    expect(screen.getByText('Cuiabá')).toBeTruthy();
+  });
+
+  it('link inválido (javascript:) é ignorado', () => {
+    renderEvento(null, { salePoints: [{ label: 'X', venue: null, link: 'javascript:alert(1)' }] });
+    expect(screen.queryByText(/Bora comprar ingresso/)).toBeNull();
+  });
+
+  it('link_ingresso geral não vira botão em ponto sem link próprio', () => {
+    renderEvento(null, {
+      extraFields: comLinkGeral,
+      salePoints: [{ label: 'Disk ingresso', venue: null }],
+    });
+    expect(screen.queryByText(/Bora comprar ingresso/)).toBeNull();
+    expect(screen.getByText('Comprar ingresso')).toBeTruthy();
+  });
+
+  it('sem salePoints resolvidos, lê {nome, link} e string pura do formulário', () => {
+    const raw = {
+      ...extraFields,
+      answers: { ...extraFields.answers, pontos_de_venda: [{ nome: 'Disk ingresso', link: 'https://disk.test/e' }, 'Bilheteria'] },
+    } as never;
+    renderEvento(null, { extraFields: raw });
+    expect(screen.getByRole('link', { name: /Bora comprar ingresso/ }).getAttribute('href')).toBe('https://disk.test/e');
+    expect(screen.getByText('Bilheteria')).toBeTruthy();
+  });
+});
+
+describe('ServiceDetailEvento cidade junto do local', () => {
+  const comEndereco = {
+    ...extraFields,
+    answers: { ...extraFields.answers, endereco: 'Teatro Y — Rua B, 5, Centro, Cuiabá/MT' },
+  } as never;
+
+  it('venue sem cityName usa a cidade do endereço do evento', () => {
+    renderEvento(null, { extraFields: comEndereco, venue: { ...venue, cityName: null } });
+    expect(screen.getByText('Cuiabá/MT')).toBeTruthy();
+  });
+
+  it('venue com cityName não duplica a cidade do endereço', () => {
+    renderEvento(null, { extraFields: comEndereco, venue });
+    expect(screen.getByText('Cuiabá')).toBeTruthy();
+    expect(screen.queryByText('Cuiabá/MT')).toBeNull();
   });
 });
 

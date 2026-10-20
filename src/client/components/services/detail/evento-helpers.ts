@@ -139,6 +139,28 @@ export function parseNames(raw: unknown): string[] {
     .filter((n): n is string => n != null);
 }
 
+/** Ponto de venda cru: `nome` (código do lugar ou texto livre) e `link` http(s) de compra, se houver. */
+export type EventSalePoint = { nome: string; link: string | null };
+
+/** `pontos_de_venda`: itens `{ nome, link? }` ou strings puras (formato antigo); sem nome, o item sai. */
+export function parseSalePoints(raw: unknown): EventSalePoint[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((item): EventSalePoint | null => {
+      if (typeof item === 'string') {
+        const nome = str(item);
+        return nome ? { nome, link: null } : null;
+      }
+      if (item && typeof item === 'object') {
+        const o = item as Record<string, unknown>;
+        const nome = str(o.nome);
+        return nome ? { nome, link: safeHttpUrl(o.link) } : null;
+      }
+      return null;
+    })
+    .filter((p): p is EventSalePoint => p != null);
+}
+
 /** Ingressos do maior para o menor valor (sem valor por último; empate mantém a ordem do formulário). */
 export function parseTickets(raw: unknown): EventTicket[] {
   const tickets = objects(raw)
@@ -262,6 +284,18 @@ export function splitEventAddress(address: string): { name: string; rest: string
   if (i < 0) return { name: address.trim(), rest: null };
   const rest = address.slice(i + 3).trim();
   return { name: address.slice(0, i).trim(), rest: rest || null };
+}
+
+/**
+ * Cidade do endereço do evento ("Nome — rua, número, bairro, Cidade/UF" → "Cidade/UF"): o último
+ * trecho separado por vírgula, só se terminar em "/UF". Fora desse formato → null (nunca se supõe).
+ */
+export function eventCityFromAddress(address: unknown): string | null {
+  const s = str(address);
+  if (!s) return null;
+  const last = s.split(',').pop()?.trim() ?? '';
+  const m = last.match(/^(.*\S)\s*\/\s*([A-Za-z]{2})$/);
+  return m ? `${m[1]}/${m[2].toUpperCase()}` : null;
 }
 
 export function telHref(phone: string): string {

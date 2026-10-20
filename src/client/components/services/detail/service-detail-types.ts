@@ -33,7 +33,8 @@ export type ServiceDetailVariantProps = {
   renderVenueCard?: ServiceDetailSlots['renderVenueCard'];
 };
 
-export type ServiceSalePoint = { label: string; venue: ServiceVenue | null };
+/** `link`: URL de compra do ingresso naquele ponto (só pontos de venda; validada com `safeHttpUrl`). */
+export type ServiceSalePoint = { label: string; venue: ServiceVenue | null; link?: string };
 
 export type ServiceDetailVariantComponent = (props: ServiceDetailVariantProps) => ReactNode;
 

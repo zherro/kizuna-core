@@ -22,7 +22,6 @@ import { AdDescription } from './ad-description';
 import { VenueCard } from './venue-card';
 import { humanizeSlug } from './ad-extra-fields-format';
 import type { ServiceDetailVariantComponent, ServiceSalePoint } from './service-detail-types';
-import type { ServiceVenue } from '../../../../server/services/service-detail-data';
 import {
   eventClassification,
   eventDateParts,
@@ -32,9 +31,11 @@ import {
   formatEventDay,
   formatEventWhen,
   isEventOver,
+  eventCityFromAddress,
   isFreeEvent,
   mapsSearchUrl,
   parseNames,
+  parseSalePoints,
   parseSessionDays,
   parseTickets,
   safeHttpUrl,
@@ -61,26 +62,54 @@ function EndedBadge() {
   );
 }
 
-/** Ponto de venda que é um local cadastrado: link compacto com foto, nome e cidade. */
-function SalePointLink({ venue }: { venue: ServiceVenue }) {
-  return (
-    <Link
-      href={venue.href}
-      className={`group flex items-center gap-3 p-2.5 pr-3 transition-colors hover:border-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand ${CARD_CLASS}`}
-    >
+/**
+ * Card de "Onde comprar": o lugar (foto, título, cidade; link para a página dele quando há `venue`,
+ * só o texto quando não) e, se o ponto tem `link` http(s) próprio, o botão "Bora comprar ingresso".
+ * O `link_ingresso` geral do evento nunca vira botão aqui.
+ */
+function SalePointCard({ point }: { point: ServiceSalePoint }) {
+  const { venue } = point;
+  const buy = safeHttpUrl(point.link);
+  const body = (
+    <>
       <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-[calc(var(--ui-radius-card,1rem)-0.375rem)] bg-muted">
-        {venue.photo ? (
+        {venue?.photo ? (
           <img src={venue.photo} alt="" loading="lazy" className="h-full w-full object-cover" />
         ) : (
           <Ticket aria-hidden className="h-4 w-4 text-muted-foreground" />
         )}
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block truncate font-semibold leading-snug group-hover:text-brand">{venue.title}</span>
-        {venue.cityName && <span className="block truncate text-xs text-muted-foreground">{venue.cityName}</span>}
+        <span className="block truncate font-semibold leading-snug group-hover:text-brand">{venue?.title ?? point.label}</span>
+        {venue?.cityName && <span className="block truncate text-xs text-muted-foreground">{venue.cityName}</span>}
       </span>
-      <ChevronRight aria-hidden className="h-4 w-4 shrink-0 text-muted-foreground" />
-    </Link>
+      {venue && <ChevronRight aria-hidden className="h-4 w-4 shrink-0 text-muted-foreground" />}
+    </>
+  );
+  const rowClass = 'group flex items-center gap-3 p-2.5 pr-3';
+  return (
+    <div className={`flex flex-col gap-2.5 p-2 ${CARD_CLASS}`}>
+      {venue ? (
+        <Link
+          href={venue.href}
+          className={`${rowClass} rounded-[calc(var(--ui-radius-card,1rem)-0.25rem)] transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand`}
+        >
+          {body}
+        </Link>
+      ) : (
+        <div className={rowClass}>{body}</div>
+      )}
+      {buy && (
+        <TrackedContactLink
+          href={buy}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`justify-center ${BUY_LINK_CLASS}`}
+        >
+          <Ticket className="h-3.5 w-3.5" /> Bora comprar ingresso
+        </TrackedContactLink>
+      )}
+    </div>
   );
 }
 
@@ -193,10 +222,15 @@ export const ServiceDetailEvento: ServiceDetailVariantComponent = ({ service, ex
   const sessionDays = parseSessionDays(answers.sessoes, answers.data_inicio);
   // Resolvidos pelo servidor quando houver; senão o texto cru do formulário.
   const salePointItems: ServiceSalePoint[] =
-    salePoints ?? parseNames(answers.pontos_de_venda).map((label) => ({ label, venue: null }));
+    salePoints ?? parseSalePoints(answers.pontos_de_venda).map((p) => ({ label: p.nome, venue: null, ...(p.link ? { link: p.link } : {}) }));
   const endereco = textField(answers.endereco);
   const place = endereco ? splitEventAddress(endereco) : null;
   const buyUrl = safeHttpUrl(answers.link_ingresso);
+  // A cidade fica visível junto do "Onde acontece": cityName do local; sem ele, a do endereço do evento.
+  const venueWithCity =
+    venue && !venue.cityName
+      ? { ...venue, cityName: eventCityFromAddress(endereco) }
+      : venue;
   const siteUrl = safeHttpUrl(answers.link);
   const telefone = textField(answers.contato_telefone);
   const whatsapp = textField(answers.contato_whatsapp);
@@ -265,7 +299,7 @@ export const ServiceDetailEvento: ServiceDetailVariantComponent = ({ service, ex
         </div>
       )}
 
-      {venue && (renderVenueCard ? renderVenueCard({ venue }) : <VenueCard venue={venue} hue={hue} />)}
+      {venueWithCity && (renderVenueCard ? renderVenueCard({ venue: venueWithCity }) : <VenueCard venue={venueWithCity} hue={hue} />)}
 
       {/* A sidebar (lg+) mostra só título/data/local/preço: a descrição fica aqui em todos os tamanhos. */}
       {service.description && (
@@ -330,12 +364,7 @@ export const ServiceDetailEvento: ServiceDetailVariantComponent = ({ service, ex
           <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {salePointItems.map((p, i) => (
               <li key={`${p.venue?.uid ?? p.label}-${i}`}>
-                {p.venue ? <SalePointLink venue={p.venue} /> : (
-                  <div className={`flex items-center gap-3 px-4 py-3 ${CARD_CLASS}`}>
-                    <Ticket className="h-4 w-4 shrink-0 text-muted-foreground" />
-                    <span className="font-semibold leading-snug">{p.label}</span>
-                  </div>
-                )}
+                <SalePointCard point={p} />
               </li>
             ))}
           </ul>

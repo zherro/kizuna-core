@@ -136,6 +136,14 @@ isso nos dois sentidos, sem campo novo no banco (tudo vive em `extras`).
   `extras`; vazio ou ausente → das respostas do formulário (`extraFields.answers`, já carregadas
   pela página, sem consulta extra). Helper puro `serviceRefExtras` (`src/shared/service-ref-extras.ts`),
   usado por `fetchLinkedRefs` e pelo fallback editorial do consumidor.
+- **Pontos de venda (`pontos_de_venda`):** cada item é `{ nome, link? }` (string pura também vale):
+  `nome` = `extras.codigo` de um lugar ou texto livre; `link` = URL de compra do ingresso naquele
+  ponto. `fetchLinkedRefs` devolve `ServiceSalePoint { label, venue, link? }` (o `link` segue como
+  veio, sem validar). A variant `evento` mostra "Onde comprar" como grupo de cards: lugar (foto, título,
+  cidade; link para a página dele se `venue`, texto se não) e, com `link` http(s) válido
+  (`safeHttpUrl`), o botão "Bora comprar ingresso" (nova aba, `noopener noreferrer`, mesmo rastreio
+  `TrackedContactLink`). O `link_ingresso` geral nunca vira botão por ponto. No "Onde acontece"
+  (`VenueCard`), `venue.cityName` nulo cai na cidade do `answers.endereco` ("…, Cidade/UF").
 - **Unicidade:** o `codigo` é único entre os anúncios não arquivados, no banco todo (índice UNIQUE
   parcial `services_extras_codigo_uniq`, migração 0012; global porque a busca do organizador e o
   carrossel de vinculados não filtram por tenant). Um segundo anúncio não consegue tomar um código

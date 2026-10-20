@@ -13,6 +13,8 @@ import {
   nowLocalString,
   parseLocalDate,
   parseNames,
+  parseSalePoints,
+  eventCityFromAddress,
   parseSessionDays,
   parseTickets,
   safeHttpUrl,
@@ -150,6 +152,34 @@ describe('tags e links', () => {
     ]);
     expect(eventoHeaderTags({ answers: {} })).toEqual([]);
     expect(eventoHeaderTags(null)).toEqual([]);
+  });
+
+  it('parseSalePoints: objeto {nome, link}, string pura, link inválido e itens sem nome', () => {
+    expect(
+      parseSalePoints([
+        { nome: ' Disk ingresso ', link: 'https://disk.test/e' },
+        { nome: 'casa-x', link: 'javascript:alert(1)' },
+        { nome: 'Sem link' },
+        'Bilheteria',
+        { link: 'https://x.test' },
+        '  ',
+        null,
+      ])
+    ).toEqual([
+      { nome: 'Disk ingresso', link: 'https://disk.test/e' },
+      { nome: 'casa-x', link: null },
+      { nome: 'Sem link', link: null },
+      { nome: 'Bilheteria', link: null },
+    ]);
+    expect(parseSalePoints(undefined)).toEqual([]);
+  });
+
+  it('eventCityFromAddress: trecho final "Cidade/UF"', () => {
+    expect(eventCityFromAddress('Teatro Y — Rua B, 5, Centro, Cuiabá/MT')).toBe('Cuiabá/MT');
+    expect(eventCityFromAddress('Casa — Av. A, 1, Várzea Grande / mt')).toBe('Várzea Grande/MT');
+    expect(eventCityFromAddress('Teatro Y — Rua B, 5, Centro')).toBeNull();
+    expect(eventCityFromAddress('Cuiabá/MT')).toBe('Cuiabá/MT');
+    expect(eventCityFromAddress(undefined)).toBeNull();
   });
 
   it('parseNames', () => {

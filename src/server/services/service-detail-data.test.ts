@@ -468,6 +468,26 @@ describe('fetchSalePoints', () => {
   });
 });
 
+describe('fetchSalePoints: link de compra', () => {
+  it('carrega o link do item (objeto) até o ponto; sem link a chave não existe', async () => {
+    fakeDb([{ id: 'ic', uid: 'casa1', title: 'Casa de Festas', extras: { codigo: 'casa-de-festas-cuiaba' } }]);
+    const svc = base({
+      extras: {
+        pontos_de_venda: [
+          { nome: 'casa-de-festas-cuiaba', link: ' https://ing.test/a ' },
+          'Bilheteria',
+          { nome: 'Disk ingresso', link: 'https://disk.test/e' },
+          { nome: 'Sem link' },
+        ],
+      },
+    } as Partial<ServiceRecord>);
+    const points = await fetchSalePoints(svc, null);
+    expect(points.map((p) => p.link)).toEqual(['https://ing.test/a', undefined, 'https://disk.test/e', undefined]);
+    expect(points[0].venue).toMatchObject({ uid: 'casa1' });
+    expect('link' in points[1]).toBe(false);
+  });
+});
+
 describe('fetchLinkedRefs', () => {
   it('venue, pontos de venda e artistas num lote só (uma consulta por codigo + uma por uid)', async () => {
     fakeDb([
