@@ -40,7 +40,10 @@ import {
   countActiveFilters,
   shouldHideCategoryCarousel,
   useSearchFilters,
+  type SearchDefaults,
 } from './use-search-filters';
+import { useFilterTaxonomy } from './filters/use-filter-taxonomy';
+import { findGroupBySlug } from './filters/filter-taxonomy';
 import {
   SEARCH_RPC,
   type ServiceResult,
@@ -89,6 +92,9 @@ export type SearchPageProps = {
   /** `regions` do kizuna.config.json: as cidades irmãs já vêm FUNDIDAS no resultado (o proxy da
    * RPC expande o filtro); aqui só servem para as seções de sugestão (`suggestTo`) abaixo dele. */
   regions?: RegionConfig[];
+  /** `search.defaultGroup` + `search.orderByGroup` do kizuna.config.json: grupo já marcado ao
+   * chegar sem filtro e ordenação por grupo (ver `SearchDefaults`). */
+  defaults?: SearchDefaults;
 };
 
 const REGION_PAGE_SIZE = 12;
@@ -124,6 +130,7 @@ function SearchPageInner({
   sponsoredSlot,
   aiEnabled = true,
   regions = [],
+  defaults,
 }: SearchPageProps) {
   // A cidade do topo (seletor do header): reage na hora quando o usuário troca.
   const { location: stored } = useUserLocation();
@@ -147,7 +154,10 @@ function SearchPageInner({
     toSearchAdsBody,
     defaultCityIds,
     effectiveCityIds,
-  } = useSearchFilters(location, basePath, excludeFromMixedCategorySlugs, regions);
+  } = useSearchFilters(location, basePath, excludeFromMixedCategorySlugs, regions, defaults);
+  // Nome do grupo em vigor para o título ("Eventos em Cuiabá").
+  const { taxonomy: filterTaxonomy } = useFilterTaxonomy();
+  const activeGroupName = findGroupBySlug(filterTaxonomy, filters.groupSlug)?.name ?? null;
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -251,6 +261,7 @@ function SearchPageInner({
       b.p_city_ibges,
       b.p_subcategories,
       b.p_query,
+      b.p_order,
     ]);
   }, [toSearchAdsBody]);
 
@@ -282,12 +293,19 @@ function SearchPageInner({
 
   const runSearch = useCallback(
     async (body: SearchAdsBody, signal: AbortSignal): Promise<ServiceResult[]> => {
-      const res = await fetch(`/api/resources/${SEARCH_RPC}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-        signal,
-      });
+      const post = (b: SearchAdsBody) =>
+        fetch(`/api/resources/${SEARCH_RPC}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(b),
+          signal,
+        });
+      let res = await post(body);
+      // Banco sem a search 0010 recusa `p_order`: repete na ordem de sempre em vez de ficar vazio.
+      if (!res.ok && body.p_order) {
+        const { p_order: _ignored, ...rest } = body;
+        res = await post(rest);
+      }
       const data = (await res.json().catch(() => null)) as { items?: unknown[] } | null;
       return Array.isArray(data?.items) ? (data.items as ServiceResult[]) : [];
     },
@@ -803,6 +821,7 @@ function SearchPageInner({
           relaxedLabel={relaxedFrom === 'category' ? activeCategoryName : filters.query}
           stateName={location.state}
           cityName={location.cityName}
+          groupName={activeGroupName}
           layout="strip"
           onClearFilters={resetFilters}
           onChangeLocation={() => setLocationOpen(true)}
@@ -860,6 +879,7 @@ function SearchPageInner({
               relaxedLabel={relaxedFrom === 'category' ? activeCategoryName : filters.query}
               stateName={location.state}
               cityName={location.cityName}
+              groupName={activeGroupName}
               layout="grid"
               onClearFilters={resetFilters}
               onChangeLocation={() => setLocationOpen(true)}

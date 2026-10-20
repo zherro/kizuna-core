@@ -5,7 +5,7 @@ description: Plugin search — RPC fn_search_services, filtro de local por ender
 # Plugin `search`
 
 Busca pública de serviços: RPC `fn_search_services` (`SECURITY DEFINER`, chamável por `anon`) e a
-página `/busca`. Versão atual: **1.8.0** (`plugins/search/0009_search_local_refs.sql`). Depende de
+página `/busca`. Versão atual: **1.9.0** (`plugins/search/0010_search_order.sql`). Depende de
 [`services`](services.md) 1.2.0 ou superior. o deck do plugin `swipe`
 devolvem as mesmas colunas de local.
 
@@ -22,6 +22,24 @@ grupo bate em qualquer um destes: o grupo gravado no anúncio (`services.categor
 principal da categoria (`categories.category_group_id`, migração **0005**) ou um vínculo secundário
 (`categories_group_link`). Assim, um carrossel de grupo pega todas as categorias do grupo, mesmo
 anúncio sem grupo gravado ou de categoria que mudou de grupo.
+
+## Ordenação (`p_order`, migração 0010) e grupo padrão da /busca
+
+`p_order text` (último parâmetro, default `NULL`): `event_start` (próximos eventos primeiro, por
+`form_results.answers.data_inicio`; depois os passados e os sem data), `recent` (`created_at`
+desc), `title` (A-Z). `NULL`/`relevance`/desconhecido = ordem de sempre. Com texto, o `text_rank`
+continua primeiro. Só mande a chave quando houver: um banco sem a 0010 recusa a chamada — a
+`/busca` repete sem `p_order` nesse caso.
+
+No `kizuna.config.json` (`search`), repassados ao `SearchPage` via `defaults`:
+
+- `defaultGroup`: grupo já marcado quando a /busca abre sem `group`, categoria nem texto na URL.
+  "Todas as categorias" no filtro grava `?group=todos` para o usuário ver tudo; "Limpar" volta ao
+  padrão.
+- `orderByGroup`: `{ "<slug do grupo>": "<ordem>", "default": "<ordem>" }` — vale com "Ordenar
+  por: Relevância".
+
+O título dos resultados segue o grupo filtrado ("Eventos em Cuiabá"); sem grupo, "Serviços em …".
 
 ## Filtro por local_ref (`p_local_refs`, migração 0009)
 

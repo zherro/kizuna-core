@@ -15,6 +15,32 @@ type Location = { state: string; cityId: number | null; cityName: string | null 
 
 const PAGE_SIZE = 24;
 
+/** Valor de `?group=` que significa "todos os grupos" quando há grupo padrão (`defaultGroupSlug`):
+ * sem ele, a URL vazia cairia de novo no grupo padrão e o usuário nunca veria tudo. */
+export const ALL_GROUPS_PARAM = 'todos';
+
+/** Ordenações da RPC (`fn_search_services.p_order`, plugin search 0010). */
+export type SearchOrder = 'relevance' | 'event_start' | 'recent' | 'title';
+const ORDERS: SearchOrder[] = ['relevance', 'event_start', 'recent', 'title'];
+
+export type SearchDefaults = {
+  /** `search.defaultGroup`: grupo já selecionado quando a busca abre sem grupo, categoria nem
+   * texto na URL. `null` = todos (comportamento anterior). */
+  defaultGroupSlug?: string | null;
+  /** `search.orderByGroup`: ordenação por slug do grupo em vigor; `default` vale para os demais
+   * (inclusive "todos"). Só vale com "Ordenar por: Relevância". Ex.: `{ "eventos": "event_start" }`. */
+  orderByGroup?: Record<string, string>;
+};
+
+/** Ordenação configurada para o grupo (`orderByGroup[slug]`, senão `default`, senão relevância). */
+export function orderForGroup(
+  orderByGroup: Record<string, string> | undefined,
+  groupSlug: string | null
+): SearchOrder {
+  const raw = (groupSlug && orderByGroup?.[groupSlug]) || orderByGroup?.default;
+  return ORDERS.includes(raw as SearchOrder) ? (raw as SearchOrder) : 'relevance';
+}
+
 function parseIntOrNull(value: string | null): number | null {
   if (!value) return null;
   const n = Number(value);
@@ -105,8 +131,11 @@ export function useSearchFilters(
    * `categoryId`, então a categoria continua navegável sozinha. */
   excludeCategorySlugs: string[] = [],
   /** `regions` do kizuna.config.json — a cidade do cabeçalho entra no padrão junto das irmãs. */
-  regions: RegionConfig[] = []
+  regions: RegionConfig[] = [],
+  defaults: SearchDefaults = {}
 ) {
+  const defaultGroupSlug = defaults.defaultGroupSlug?.trim() || null;
+  const orderByGroup = defaults.orderByGroup;
   const router = useRouter();
   const params = useSearchParams();
 
@@ -118,7 +147,7 @@ export function useSearchFilters(
       state: location.state,
       cityId: location.cityId,
       cityName: location.cityName,
-      groupSlug: params.get('group') || null,
+      groupSlug: resolveGroupParam(params, defaultGroupSlug),
       categoryIds: parseCategoryIds(params),
       subcategoryIds: parseIdList(params.get('subcategoryIds')),
       cityIds: parseCityIds(params.get('cidades')),
@@ -129,12 +158,15 @@ export function useSearchFilters(
         ? sortParam
         : 'relevance') as SearchSort,
     };
-  }, [params, location.state, location.cityId, location.cityName]);
+  }, [params, location.state, location.cityId, location.cityName, defaultGroupSlug]);
 
   const writeUrl = useCallback(
     (next: SearchFilters) => {
       const sp = new URLSearchParams();
       if (next.groupSlug) sp.set('group', next.groupSlug);
+      // com grupo padrão, "todos" precisa ficar explícito na URL (senão volta ao padrão)
+      else if (defaultGroupSlug && next.categoryIds.length === 0 && !next.query)
+        sp.set('group', ALL_GROUPS_PARAM);
       if (next.categoryIds.length) sp.set('categoryIds', next.categoryIds.join(','));
       if (next.subcategoryIds.length) sp.set('subcategoryIds', next.subcategoryIds.join(','));
       const cidades = serializeCityIds(next.cityIds);
@@ -145,7 +177,7 @@ export function useSearchFilters(
       if (next.sort !== 'relevance') sp.set('sort', next.sort);
       router.replace(`${basePath}?${sp.toString()}`, { scroll: false });
     },
-    [router, basePath]
+    [router, basePath, defaultGroupSlug]
   );
 
   const setFilters = useCallback(
@@ -164,7 +196,12 @@ export function useSearchFilters(
     [filters, writeUrl]
   );
 
+  // Limpar volta à busca "de chegada": URL vazia, então o grupo padrão (se houver) fica marcado.
   const resetFilters = useCallback(() => {
+    if (defaultGroupSlug) {
+      router.replace(basePath, { scroll: false });
+      return;
+    }
     writeUrl({
       state: location.state,
       cityId: location.cityId,
@@ -178,7 +215,7 @@ export function useSearchFilters(
       priceMax: null,
       sort: 'relevance',
     });
-  }, [location.state, location.cityId, location.cityName, writeUrl]);
+  }, [location.state, location.cityId, location.cityName, writeUrl, defaultGroupSlug, router, basePath]);
 
   const applyAgentFilter = useCallback(
     (f: AgentFilter | null) => {
@@ -219,6 +256,8 @@ export function useSearchFilters(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.cityId]);
 
+  const order = orderForGroup(orderByGroup, filters.groupSlug);
+
   const toSearchAdsBody = useCallback(
     (seed: number, page = 0): SearchAdsBody => ({
       p_state: filters.state || null,
@@ -240,8 +279,10 @@ export function useSearchFilters(
         filters.categoryIds.length === 0 && excludeCategorySlugs.length
           ? excludeCategorySlugs
           : null,
+      // Só manda `p_order` quando há ordenação configurada — a RPC anterior à search 0010 recusa a chave.
+      ...(filters.sort === 'relevance' && order !== 'relevance' ? { p_order: order } : {}),
     }),
-    [filters, effectiveCityIds, excludeCategorySlugs]
+    [filters, effectiveCityIds, excludeCategorySlugs, order]
   );
 
   return {
@@ -253,4 +294,15 @@ export function useSearchFilters(
     defaultCityIds,
     effectiveCityIds,
   };
+}
+
+/** `?group=` → grupo em vigor: `todos` = nenhum; ausente = o grupo padrão, a menos que a URL já
+ * traga categoria ou texto (aí a busca não deve ficar presa ao padrão). */
+export function resolveGroupParam(params: URLSearchParams, defaultGroupSlug: string | null): string | null {
+  const raw = params.get('group');
+  if (raw === ALL_GROUPS_PARAM) return null;
+  if (raw) return raw;
+  if (!defaultGroupSlug) return null;
+  if (params.get('categoryIds') || params.get('categoryId') || params.get('q')?.trim()) return null;
+  return defaultGroupSlug;
 }

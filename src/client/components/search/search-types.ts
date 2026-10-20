@@ -124,6 +124,9 @@ export type SearchAdsBody = {
   /** Valores de `services.extras.local_ref` (uid ou código do lugar; `fn_search_services` 0009).
    * Com `p_tags`, vale um OU outro. Só mande quando houver — a RPC anterior à 0009 recusa a chave. */
   p_local_refs?: string[] | null;
+  /** Ordenação (`fn_search_services` 0010): `event_start` | `recent` | `title`; ausente = relevância.
+   * Só mande quando houver — a RPC anterior à 0010 recusa a chave. */
+  p_order?: 'relevance' | 'event_start' | 'recent' | 'title';
 };
 
 export type TaxonomySubcategory = { id: number; name: string };

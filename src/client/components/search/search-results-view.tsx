@@ -43,6 +43,8 @@ type Props = {
   impressionRule?: EventRule | null;
   /** Título da lista no lugar do padrão por escopo (ex.: seção de região). */
   heading?: string;
+  /** Nome do grupo filtrado — vira o sujeito do título ("Eventos em Cuiabá"). */
+  groupName?: string | null;
   /** Com `scope="related"`: o filtro que não teve resultado (mostra o aviso "nada em X"). */
   relaxedFrom?: RelaxedFrom | null;
   /** Nome do que não teve resultado: a categoria ou o texto buscado. */
@@ -84,10 +86,16 @@ function toCardProps(r: ServiceResult, detailConfig?: ServiceDetailConfig | null
   };
 }
 
-function scopeHeading(scope: ResultsScope, stateName: string, cityName: string | null): string {
+function scopeHeading(
+  scope: ResultsScope,
+  stateName: string,
+  cityName: string | null,
+  groupName: string | null = null
+): string {
   switch (scope) {
     case 'city':
-      return cityName ? `Serviços em ${cityName}` : `Serviços em ${stateName}`;
+      // Com grupo no filtro o título é dele ("Eventos em Cuiabá"); sem grupo, o genérico.
+      return `${groupName ?? 'Serviços'} em ${cityName ?? stateName}`;
     case 'state':
       return `Em todo o ${stateName}`;
     case 'related':
@@ -112,6 +120,7 @@ export function SearchResultsView({
   serviceDetailConfig,
   impressionRule = null,
   heading,
+  groupName = null,
   relaxedFrom = null,
   relaxedLabel = null,
   source = 'search',
@@ -243,7 +252,7 @@ export function SearchResultsView({
       {notice}
       <div className="mb-3 flex items-baseline justify-between gap-2">
         <h2 className="text-sm font-semibold text-muted-foreground">
-          {heading ?? scopeHeading(scope, stateName, cityName)}
+          {heading ?? scopeHeading(scope, stateName, cityName, groupName)}
         </h2>
         <span className="text-xs text-muted-foreground">
           {refreshing ? 'Atualizando…' : `${results.length} resultado(s)`}
