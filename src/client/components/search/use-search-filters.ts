@@ -19,16 +19,33 @@ const PAGE_SIZE = 24;
  * sem ele, a URL vazia cairia de novo no grupo padrão e o usuário nunca veria tudo. */
 export const ALL_GROUPS_PARAM = 'todos';
 
-/** Ordenações da RPC (`fn_search_services.p_order`, plugin search 0010). */
-export type SearchOrder = 'relevance' | 'event_start' | 'recent' | 'title';
-const ORDERS: SearchOrder[] = ['relevance', 'event_start', 'recent', 'title'];
+/** Ordenação da RPC (`fn_search_services.p_order`, search 0011): `'relevance'` ou
+ * `'<campo>[:asc|desc]'` com campo de `ORDER_FIELDS` (colunas de `services`). */
+export type SearchOrder = string;
+export const ORDER_FIELDS = ['occurs_at', 'created_at', 'expires_at', 'price', 'title'] as const;
+const ORDER_ALIASES: Record<string, string> = {
+  event_start: 'occurs_at:asc',
+  recent: 'created_at:desc',
+};
+
+/** Normaliza `'campo[:dir]'` (ou apelido) para `'campo:asc|desc'`; inválido = `'relevance'`. */
+export function normalizeOrder(raw: string | null | undefined): SearchOrder {
+  const value = (raw ?? '').trim().toLowerCase();
+  const spec = ORDER_ALIASES[value] ?? value;
+  const [field, dir = 'asc'] = spec.split(':');
+  if (!(ORDER_FIELDS as readonly string[]).includes(field) || (dir !== 'asc' && dir !== 'desc')) {
+    return 'relevance';
+  }
+  return `${field}:${dir}`;
+}
 
 export type SearchDefaults = {
   /** `search.defaultGroup`: grupo já selecionado quando a busca abre sem grupo, categoria nem
    * texto na URL. `null` = todos (comportamento anterior). */
   defaultGroupSlug?: string | null;
   /** `search.orderByGroup`: ordenação por slug do grupo em vigor; `default` vale para os demais
-   * (inclusive "todos"). Só vale com "Ordenar por: Relevância". Ex.: `{ "eventos": "event_start" }`. */
+   * (inclusive "todos"). `'<campo>[:asc|desc]'` com campo de `ORDER_FIELDS`. Só vale com
+   * "Ordenar por: Relevância". Ex.: `{ "eventos": "occurs_at:asc" }`. */
   orderByGroup?: Record<string, string>;
 };
 
@@ -38,7 +55,7 @@ export function orderForGroup(
   groupSlug: string | null
 ): SearchOrder {
   const raw = (groupSlug && orderByGroup?.[groupSlug]) || orderByGroup?.default;
-  return ORDERS.includes(raw as SearchOrder) ? (raw as SearchOrder) : 'relevance';
+  return normalizeOrder(raw);
 }
 
 function parseIntOrNull(value: string | null): number | null {

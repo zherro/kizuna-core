@@ -15,6 +15,7 @@ import {
   Phone,
   Ticket,
   Users,
+  Layers,
   Wallet,
 } from 'lucide-react';
 import { Fact, Section } from './service-detail-cinema';
@@ -38,6 +39,7 @@ import {
   parseSalePoints,
   parseSessionDays,
   parseTickets,
+  ticketDisplay,
   safeHttpUrl,
   splitEventAddress,
   telHref,
@@ -113,21 +115,35 @@ function SalePointCard({ point }: { point: ServiceSalePoint }) {
   );
 }
 
+/** Card de ingresso: nome (setor) + preço em destaque; abaixo, o que inclui; por fim lotação e lote.
+ * No mobile o preço desce para baixo do nome quando o nome é longo (flex-wrap), sem espremer o texto. */
 function TicketCard({ ticket }: { ticket: EventTicket }) {
-  const meta = [ticket.tipo, ticket.lote, ticket.pessoas != null ? `${ticket.pessoas} ${ticket.pessoas === 1 ? 'pessoa' : 'pessoas'}` : null]
-    .filter((v): v is string => v != null);
+  const { name, detail, lote, people } = ticketDisplay(ticket);
   const value = ticket.valor == null ? null : ticket.valor > 0 ? formatBRL(ticket.valor) : 'Gratuito';
   return (
-    <li className={`flex flex-col gap-1 p-4 ${CARD_CLASS}`}>
-      {ticket.setor && (
-        <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{ticket.setor}</div>
-      )}
-      <div className="flex items-baseline justify-between gap-3">
-        <div className="min-w-0 font-bold leading-snug">{ticket.titulo ?? ticket.tipo ?? 'Ingresso'}</div>
-        {value && <div className="shrink-0 text-lg font-black leading-none text-brand">{value}</div>}
+    <li className={`flex flex-col gap-2 p-4 ${CARD_CLASS}`}>
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+        <h3 className="min-w-0 flex-1 basis-48 text-base font-bold leading-snug">{name}</h3>
+        {value && <div className="shrink-0 text-lg font-black leading-tight text-brand">{value}</div>}
       </div>
-      {meta.length > 0 && <div className="text-xs text-muted-foreground">{meta.join(' · ')}</div>}
-      {ticket.comprar && <div className="mt-1 text-xs text-muted-foreground">{ticket.comprar}</div>}
+      {detail && <p className="text-sm leading-relaxed text-muted-foreground">{detail}</p>}
+      {(people || lote) && (
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-medium text-foreground/80">
+          {people && (
+            <span className="inline-flex items-center gap-1.5">
+              <Users aria-hidden className="h-3.5 w-3.5 text-muted-foreground" />
+              {people}
+            </span>
+          )}
+          {lote && (
+            <span className="inline-flex items-center gap-1.5">
+              <Layers aria-hidden className="h-3.5 w-3.5 text-muted-foreground" />
+              {lote}
+            </span>
+          )}
+        </div>
+      )}
+      {ticket.comprar && <div className="text-xs text-muted-foreground">{ticket.comprar}</div>}
     </li>
   );
 }

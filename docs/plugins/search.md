@@ -5,7 +5,7 @@ description: Plugin search — RPC fn_search_services, filtro de local por ender
 # Plugin `search`
 
 Busca pública de serviços: RPC `fn_search_services` (`SECURITY DEFINER`, chamável por `anon`) e a
-página `/busca`. Versão atual: **1.9.0** (`plugins/search/0010_search_order.sql`). Depende de
+página `/busca`. Versão atual: **1.10.0** (`plugins/search/0011_search_order_fields.sql`). Depende de
 [`services`](services.md) 1.2.0 ou superior. o deck do plugin `swipe`
 devolvem as mesmas colunas de local.
 
@@ -23,21 +23,38 @@ principal da categoria (`categories.category_group_id`, migração **0005**) ou 
 (`categories_group_link`). Assim, um carrossel de grupo pega todas as categorias do grupo, mesmo
 anúncio sem grupo gravado ou de categoria que mudou de grupo.
 
-## Ordenação (`p_order`, migração 0010) e grupo padrão da /busca
+## Ordenação (`p_order`, migrações 0010/0011) e grupo padrão da /busca
 
-`p_order text` (último parâmetro, default `NULL`): `event_start` (próximos eventos primeiro, por
-`form_results.answers.data_inicio`; depois os passados e os sem data), `recent` (`created_at`
-desc), `title` (A-Z). `NULL`/`relevance`/desconhecido = ordem de sempre. Com texto, o `text_rank`
-continua primeiro. Só mande a chave quando houver: um banco sem a 0010 recusa a chamada — a
-`/busca` repete sem `p_order` nesse caso.
+`p_order text` (último parâmetro, default `NULL`) = `'<campo>[:asc|desc]'` (padrão asc), de uma
+lista fechada de colunas de `services` — nada de JSON, então pesa pouco:
+
+- `occurs_at` — quando o anúncio acontece (services 0016; sincronizado de
+  `form_results.answers.data_inicio` por trigger). `asc` = o que ainda vai acontecer primeiro, do
+  mais próximo ao mais distante, depois os passados; sem data por último.
+- `created_at`, `expires_at`, `price` (`starting_price`), `title`.
+
+`NULL`/`relevance`/desconhecido = ordem de sempre. Com texto, o `text_rank` continua primeiro.
+
+**Relevância não é um campo nem uma pontuação gravada** — é a ordem padrão, calculada na hora em
+cada busca, critério a critério (o seguinte só desempata o anterior):
+
+1. com texto (`p_query`): quanto o texto bate com título + descrição (`ts_rank`, calculado na consulta);
+2. anúncio da cidade selecionada antes das cidades irmãs da região (`in_home_city`);
+3. melhor avaliação (`review_stats.average_rating`);
+4. prestador com cidade no perfil antes de quem não tem;
+5. aleatório com semente (`p_seed`) — varia entre buscas, mas é estável na paginação da mesma busca.
+
+Com `p_order`, o critério pedido entra logo depois do 1 (texto) e antes dos demais.
+Apelidos da 0010: `event_start` = `occurs_at:asc`, `recent` = `created_at:desc`. Só mande a chave
+quando houver: um banco sem a 0010 recusa a chamada — a `/busca` repete sem `p_order` nesse caso.
 
 No `kizuna.config.json` (`search`), repassados ao `SearchPage` via `defaults`:
 
 - `defaultGroup`: grupo já marcado quando a /busca abre sem `group`, categoria nem texto na URL.
   "Todas as categorias" no filtro grava `?group=todos` para o usuário ver tudo; "Limpar" volta ao
   padrão.
-- `orderByGroup`: `{ "<slug do grupo>": "<ordem>", "default": "<ordem>" }` — vale com "Ordenar
-  por: Relevância".
+- `orderByGroup`: `{ "<slug do grupo>": "<campo:dir>", "default": "<campo:dir>" }`, ex.
+  `{ "eventos": "occurs_at:asc" }` — vale com "Ordenar por: Relevância".
 
 O título dos resultados segue o grupo filtrado ("Eventos em Cuiabá"); sem grupo, "Serviços em …".
 

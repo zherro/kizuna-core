@@ -4,7 +4,7 @@ description: Plugin services — anúncios de serviço, subcategorias, endereço
 
 # Plugin `services`
 
-Domínio marketplace de serviços: o anúncio de um prestador. Versão atual: **1.9.0**
+Domínio marketplace de serviços: o anúncio de um prestador. Versão atual: **1.10.0**
 (`plugins/services/0001` a `0014`). O cadastro usa o [wizard](../interface/wizard.md); a busca
 pública está em [Plugin `search`](search.md).
 
@@ -30,6 +30,15 @@ pelo perfil `price.expiresAt` (ver [Wizard](../interface/wizard.md)); no front v
 (ISO ou `null`). A busca e o swipe ignoram anúncios com `expires_at` no passado (`NULL` = sem
 validade); o `status` do anúncio continua `active`, então ele volta a aparecer se a data for limpa
 ou estendida. A leitura direta da tabela (`/api/resources/services`) não aplica esse filtro.
+
+## Quando acontece (`services.occurs_at`, migration 0016)
+
+`occurs_at timestamptz` (NULL = sem data): data/hora em que o anúncio acontece (evento: início).
+Genérico para qualquer categoria com data. Índice parcial `services_occurs_at` (publicados com
+data). Quem grava pode preencher direto; o trigger `trg_form_results_sync_occurs_at` copia a
+primeira resposta preenchida entre `data_inicio`, `data_evento` e `data` do formulário do anúncio
+(sem fuso = horário de Brasília; texto inválido é ignorado). A 0016 faz o backfill. Usado pela
+busca para ordenar (`p_order => 'occurs_at:asc'`, search 0011).
 
 ## Endereços (`service_addresses`, migration 0003)
 

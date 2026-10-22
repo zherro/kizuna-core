@@ -106,6 +106,9 @@ export const EVENT_FIXTURE_ANSWERS: FormValues = {
     { titulo: 'Inteira', setor: 'PLATEIA', tipo: 'Inteira', pessoas: 1, valor: 160, lote: '1º lote', comprar: 'Comprar ❯' },
     { titulo: 'Camarote para quatro pessoas com serviço de bar', setor: 'CAMAROTE', pessoas: 4, valor: 900 },
     { titulo: 'Cortesia PCD', setor: 'PLATEIA', valor: 0 },
+    // formato do importador: o título junta setor, o que inclui e a lotação
+    { titulo: 'CAMAROTE PALCO — 10 pessoas + 10 copos + 01 Whisky OldPar (10 pessoas)', setor: 'CAMAROTE PALCO', pessoas: 10, valor: 1000 },
+    { titulo: 'BISTRO (5 pessoas)', setor: 'BISTRO', pessoas: 5, valor: 300 },
   ],
   link_ingresso: 'https://www.exemplo.com.br/eventos/noite-de-jazz/ingressos',
   pontos_de_venda: [{ nome: 'Bilheteria do teatro' }, { nome: 'Disk ingresso' }],

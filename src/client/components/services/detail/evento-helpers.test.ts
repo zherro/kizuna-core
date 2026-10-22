@@ -17,6 +17,7 @@ import {
   eventCityFromAddress,
   parseSessionDays,
   parseTickets,
+  ticketDisplay,
   safeHttpUrl,
   splitEventAddress,
   whatsappHref,
@@ -201,5 +202,46 @@ describe('tags e links', () => {
     expect(safeHttpUrl('javascript:alert(1)')).toBeNull();
     expect(safeHttpUrl('https://x.com/a')).toBe('https://x.com/a');
     expect(safeHttpUrl('x.com')).toBeNull();
+  });
+});
+
+describe('ticketDisplay', () => {
+  const base = { titulo: null, setor: null, tipo: null, lote: null, pessoas: null, valor: null, comprar: null };
+
+  it('título do importador: nome = setor, detalhe sem setor nem lotação, lotação vira etiqueta', () => {
+    expect(
+      ticketDisplay({
+        ...base,
+        setor: 'CAMAROTE PALCO',
+        titulo: 'CAMAROTE PALCO — 10 copos + 01 Whisky OldPar (10 pessoas)',
+        pessoas: 10,
+      })
+    ).toEqual({ name: 'CAMAROTE PALCO', detail: '10 copos + 01 Whisky OldPar', lote: null, people: '10 pessoas' });
+  });
+
+  it('usa o tipo como detalhe e não repete a lotação que já está nele', () => {
+    expect(
+      ticketDisplay({ ...base, setor: 'CAMAROTE', tipo: '10 pessoas + 10 copos', pessoas: 10, lote: '1º lote' })
+    ).toEqual({ name: 'CAMAROTE', detail: '10 pessoas + 10 copos', lote: '1º lote', people: null });
+  });
+
+  it('só setor e lotação: sem detalhe', () => {
+    expect(ticketDisplay({ ...base, setor: 'BISTRO', titulo: 'BISTRO (5 pessoas)', pessoas: 5 })).toEqual({
+      name: 'BISTRO',
+      detail: null,
+      lote: null,
+      people: '5 pessoas',
+    });
+  });
+
+  it('setor no começo sem separador faz parte do texto', () => {
+    expect(
+      ticketDisplay({ ...base, setor: 'CAMAROTE', titulo: 'Camarote para quatro pessoas com serviço de bar', pessoas: 4 })
+        .detail
+    ).toBe('Camarote para quatro pessoas com serviço de bar');
+  });
+
+  it('sem setor cai no título', () => {
+    expect(ticketDisplay({ ...base, titulo: 'Meia-entrada' })).toEqual({ name: 'Meia-entrada', detail: null, lote: null, people: null });
   });
 });

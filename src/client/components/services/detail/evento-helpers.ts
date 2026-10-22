@@ -161,6 +161,44 @@ export function parseSalePoints(raw: unknown): EventSalePoint[] {
     .filter((p): p is EventSalePoint => p != null);
 }
 
+export type TicketDisplay = {
+  /** Nome do ingresso: o setor (PISTA, CAMAROTE…), senão o título/tipo. */
+  name: string;
+  /** O que o ingresso inclui/qual a modalidade (Inteira, "10 copos + whisky"…), sem repetir o nome. */
+  detail: string | null;
+  /** Lote ("1º lote"), quando não está no detalhe. */
+  lote: string | null;
+  /** Lotação ("5 pessoas"), quando não está no detalhe. */
+  people: string | null;
+};
+
+const norm = (v: string) => v.trim().toLowerCase();
+
+/**
+ * Separa o que o importador junta no `titulo` ("SETOR — descrição (N pessoas)"): nome = setor,
+ * detalhe = tipo (ou o título sem o prefixo do setor e sem o "(N pessoas)" final), mais lote e
+ * lotação à parte. Nada se repete entre nome, detalhe e etiquetas.
+ */
+export function ticketDisplay(t: EventTicket): TicketDisplay {
+  const name = t.setor ?? t.titulo ?? t.tipo ?? 'Ingresso';
+  let detail = t.tipo;
+  if (!detail && t.titulo) {
+    let rest = t.titulo;
+    // só tira o setor do começo quando vem seguido de separador ("CAMAROTE — …"); "Camarote para
+    // quatro" continua inteiro
+    if (t.setor && norm(rest).startsWith(norm(t.setor))) {
+      const after = rest.slice(t.setor.length);
+      if (/^\s*([—–\-:|]|\(|$)/.test(after)) rest = after.replace(/^\s*[—–\-:|]\s*/, '');
+    }
+    rest = rest.replace(/\(\s*\d+\s*pessoas?\s*\)\s*$/i, '').trim();
+    detail = rest || null;
+  }
+  if (detail && norm(detail) === norm(name)) detail = null;
+  const notInDetail = (v: string | null) => (v && !(detail && norm(detail).includes(norm(v))) ? v : null);
+  const people = t.pessoas != null ? `${t.pessoas} ${t.pessoas === 1 ? 'pessoa' : 'pessoas'}` : null;
+  return { name, detail, lote: notInDetail(t.lote), people: notInDetail(people) };
+}
+
 /** Ingressos do maior para o menor valor (sem valor por último; empate mantém a ordem do formulário). */
 export function parseTickets(raw: unknown): EventTicket[] {
   const tickets = objects(raw)
