@@ -51,7 +51,7 @@ import {
 export { eventoHeaderTags };
 
 const BUY_LINK_CLASS =
-  'inline-flex items-center gap-1.5 rounded-full bg-brand px-3.5 py-1.5 text-xs font-bold text-brand-foreground transition hover:opacity-90';
+  'inline-flex min-h-[38px] items-center gap-2 rounded-full bg-brand px-5 py-2 text-sm font-bold text-brand-foreground transition hover:opacity-90';
 
 const CARD_CLASS =
   'rounded-[var(--ui-radius-card,1rem)] border-[length:var(--ui-border-w-card,1px)] border-border bg-card shadow-[shadow:var(--ui-shadow-item,0_0_#0000)]';
@@ -108,7 +108,7 @@ function SalePointCard({ point }: { point: ServiceSalePoint }) {
           rel="noopener noreferrer"
           className={`justify-center ${BUY_LINK_CLASS}`}
         >
-          <Ticket className="h-3.5 w-3.5" /> Bora comprar ingresso
+          <Ticket className="h-4 w-4" /> Bora comprar ingresso
         </TrackedContactLink>
       )}
     </div>
@@ -206,7 +206,7 @@ export const ServiceDetailEventoSidebar: ServiceDetailVariantComponent = ({ serv
 
       {buyUrl && !over && (
         <TrackedContactLink href={buyUrl} target="_blank" rel="noopener noreferrer" className={`mt-4 ${BUY_LINK_CLASS}`}>
-          <Ticket className="h-3.5 w-3.5" /> Comprar ingresso
+          <Ticket className="h-4 w-4" /> Comprar ingresso
         </TrackedContactLink>
       )}
     </>
@@ -369,7 +369,7 @@ export const ServiceDetailEvento: ServiceDetailVariantComponent = ({ service, ex
               rel="noopener noreferrer"
               className={`${tickets.length > 0 ? 'mt-4 ' : ''}${BUY_LINK_CLASS}`}
             >
-              <Ticket className="h-3.5 w-3.5" /> Comprar ingresso
+              <Ticket className="h-4 w-4" /> Comprar ingresso
             </TrackedContactLink>
           )}
         </Section>
