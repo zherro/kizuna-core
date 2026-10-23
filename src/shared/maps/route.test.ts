@@ -60,5 +60,8 @@ describe('osrmRouteUrl', () => {
     expect(osrmRouteUrl('foot', { lat: 1, lng: 2 }, { lat: 3, lng: 4 })).toBe(
       'https://routing.openstreetmap.de/routed-foot/route/v1/foot/2,1;4,3?overview=false'
     );
+    expect(osrmRouteUrl('car', { lat: 1, lng: 2 }, { lat: 3, lng: 4 }, true)).toBe(
+      'https://routing.openstreetmap.de/routed-car/route/v1/driving/2,1;4,3?overview=simplified&geometries=geojson'
+    );
   });
 });

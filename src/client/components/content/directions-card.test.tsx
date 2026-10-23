@@ -131,10 +131,10 @@ describe('DirectionsCard', () => {
 });
 
 describe('LocationMap', () => {
-  it('mantém o link para o mapa maior e o título acessível, sem carregar o iframe antes de visível', () => {
+  it('sem link para o mapa maior, com título acessível e sem carregar o iframe antes de visível', () => {
     const { container } = render(<LocationMap lat={-15.6} lng={-56.1} title="Lua Morena" />);
-    const link = screen.getByRole('link', { name: /mapa maior/i });
-    expect(link.getAttribute('href')).toContain('openstreetmap.org/?mlat=-15.6');
+    expect(screen.queryByRole('link', { name: /mapa maior/i })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Abrir mapa e rota: Lua Morena' })).toBeTruthy();
     expect(container.querySelector('iframe')).toBeNull();
   });
 

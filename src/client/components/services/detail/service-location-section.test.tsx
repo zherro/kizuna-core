@@ -32,7 +32,7 @@ describe('ServiceLocationSection', () => {
       />
     );
     expect(screen.getByText('Localização')).toBeTruthy();
-    expect(screen.getByText('Ver mapa maior (OpenStreetMap)')).toBeTruthy();
+    expect(screen.getByLabelText('Abrir mapa e rota: Barbearia')).toBeTruthy();
     expect(screen.getByText('Rua X, 100')).toBeTruthy();
   });
 
@@ -45,7 +45,7 @@ describe('ServiceLocationSection', () => {
       />
     );
     expect(screen.getByText('Rua X, 100')).toBeTruthy();
-    expect(screen.queryByText('Ver mapa maior (OpenStreetMap)')).toBeNull();
+    expect(screen.queryByLabelText('Abrir mapa e rota: Barbearia')).toBeNull();
   });
 
   it('location nulo não renderiza nada', () => {

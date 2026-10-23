@@ -4,7 +4,13 @@ import { distanceKm, formatDistanceKm } from './distance';
 export type RouteMode = 'foot' | 'car';
 export type RouteLeg = { km: number; minutes: number };
 /** Resposta de `/api/location/route`. `approx`: estimativa a partir da linha reta (OSRM falhou). */
-export type RouteSummary = { approx: boolean; foot: RouteLeg; car: RouteLeg };
+export type RouteSummary = {
+  approx: boolean;
+  foot: RouteLeg;
+  car: RouteLeg;
+  /** Traçado de carro (OSRM simplificado), da origem ao destino. Ausente na estimativa. */
+  path?: LatLng[];
+};
 
 /** Percurso costuma ser ~30% maior que a linha reta. */
 export const ROUTE_DETOUR_FACTOR = 1.3;
@@ -56,7 +62,8 @@ export function parseLatLngParam(value: string | null | undefined): LatLng | nul
 const OSRM_PROFILE: Record<RouteMode, string> = { foot: 'routed-foot/route/v1/foot', car: 'routed-car/route/v1/driving' };
 
 /** URL do OSRM FOSSGIS (routing.openstreetmap.de), que recebe `lng,lat`. */
-export function osrmRouteUrl(mode: RouteMode, origin: LatLng, destination: LatLng): string {
+export function osrmRouteUrl(mode: RouteMode, origin: LatLng, destination: LatLng, withGeometry = false): string {
   const pt = (p: LatLng) => `${p.lng},${p.lat}`;
-  return `https://routing.openstreetmap.de/${OSRM_PROFILE[mode]}/${pt(origin)};${pt(destination)}?overview=false`;
+  const query = withGeometry ? 'overview=simplified&geometries=geojson' : 'overview=false';
+  return `https://routing.openstreetmap.de/${OSRM_PROFILE[mode]}/${pt(origin)};${pt(destination)}?${query}`;
 }

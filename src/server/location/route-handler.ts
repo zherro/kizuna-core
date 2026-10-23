@@ -27,11 +27,34 @@ export type RouteHandlerOptions = {
   cacheMax?: number;
 };
 
-type OsrmResponse = { code?: string; routes?: { distance?: number; duration?: number }[] };
+type OsrmResponse = {
+  code?: string;
+  routes?: { distance?: number; duration?: number; geometry?: { coordinates?: unknown } }[];
+};
 
-async function osrmLeg(fetchImpl: FetchLike, mode: RouteMode, from: LatLng, to: LatLng, timeoutMs: number): Promise<RouteLeg | null> {
+type OsrmLeg = RouteLeg & { path?: LatLng[] };
+
+/** GeoJSON `[lng, lat][]` → `LatLng[]`; formato inesperado → sem traçado. */
+function parsePath(coords: unknown): LatLng[] | undefined {
+  if (!Array.isArray(coords) || coords.length < 2) return undefined;
+  const path: LatLng[] = [];
+  for (const c of coords) {
+    if (!Array.isArray(c) || typeof c[0] !== 'number' || typeof c[1] !== 'number') return undefined;
+    path.push({ lat: c[1], lng: c[0] });
+  }
+  return path;
+}
+
+async function osrmLeg(
+  fetchImpl: FetchLike,
+  mode: RouteMode,
+  from: LatLng,
+  to: LatLng,
+  timeoutMs: number,
+  withGeometry = false
+): Promise<OsrmLeg | null> {
   try {
-    const res = await fetchImpl(osrmRouteUrl(mode, from, to), {
+    const res = await fetchImpl(osrmRouteUrl(mode, from, to, withGeometry), {
       signal: AbortSignal.timeout(timeoutMs),
       headers: { 'User-Agent': 'kizuna-core (route)' },
     });
@@ -39,7 +62,10 @@ async function osrmLeg(fetchImpl: FetchLike, mode: RouteMode, from: LatLng, to: 
     const data = (await res.json()) as OsrmResponse;
     const route = data.code === 'Ok' ? data.routes?.[0] : undefined;
     if (typeof route?.distance !== 'number' || typeof route.duration !== 'number') return null;
-    return routeLeg(route.distance / 1000, route.duration / 60);
+    const leg: OsrmLeg = routeLeg(route.distance / 1000, route.duration / 60);
+    const path = withGeometry ? parsePath(route.geometry?.coordinates) : undefined;
+    if (path) leg.path = path;
+    return leg;
   } catch {
     return null;
   }
@@ -69,11 +95,14 @@ export function createRouteHandler({
 
     const [foot, car] = await Promise.all([
       osrmLeg(fetchImpl, 'foot', from, to, timeoutMs),
-      osrmLeg(fetchImpl, 'car', from, to, timeoutMs),
+      osrmLeg(fetchImpl, 'car', from, to, timeoutMs, true),
     ]);
     const estimate = estimateRoute(from, to);
-    const body: RouteSummary =
-      foot && car ? { approx: false, foot, car } : estimate;
+    let body: RouteSummary = estimate;
+    if (foot && car) {
+      const { path, ...carLeg } = car;
+      body = { approx: false, foot, car: carLeg, ...(path ? { path } : {}) };
+    }
 
     // Só guarda resposta real: estimativa é barata e o OSRM pode voltar logo.
     if (!body.approx) {

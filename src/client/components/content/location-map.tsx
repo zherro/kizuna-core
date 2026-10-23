@@ -1,28 +1,15 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { ExternalLink, Expand, Route } from 'lucide-react';
-import { osmEmbedUrl, osmViewUrl } from '../../../shared/maps';
+import { Expand, Route } from 'lucide-react';
+import { osmEmbedUrl } from '../../../shared/maps';
 import { LazyMount } from '../lazy-mount';
 import { Sheet, SheetContent, SheetTitle } from '../ui/sheet';
 import { RouteBar, useRouteSummary } from './route-bar';
+import { RouteMap } from './route-map';
 
 const FOCUS =
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-background';
-
-function OsmLink({ lat, lng }: { lat: number; lng: number }) {
-  return (
-    <a
-      href={osmViewUrl({ lat, lng })}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={`inline-flex min-h-11 items-center gap-1 rounded-sm text-xs font-medium text-muted-foreground underline underline-offset-2 hover:text-foreground ${FOCUS}`}
-    >
-      Ver mapa maior (OpenStreetMap)
-      <ExternalLink className="h-3 w-3" aria-hidden="true" />
-    </a>
-  );
-}
 
 /**
  * Mapa incorporado do OpenStreetMap (sem chave, sem biblioteca). Na página é uma prévia sem
@@ -51,6 +38,7 @@ export function LocationMap({
   const destination = useMemo(() => ({ lat, lng }), [lat, lng]);
   const route = useRouteSummary(destination, routeEndpoint);
   const [open, setOpen] = useState(false);
+  const routed = route.route.status === 'done' && route.route.route.path && route.position ? route.route.route.path : null;
 
   const iframe = (interactive: boolean) => (
     <iframe
@@ -73,7 +61,6 @@ export function LocationMap({
             {iframe(true)}
           </LazyMount>
         </div>
-        <OsmLink lat={lat} lng={lng} />
       </div>
     );
   }
@@ -99,26 +86,28 @@ export function LocationMap({
           <Expand className="h-4 w-4" />
         </span>
       </button>
-      <OsmLink lat={lat} lng={lng} />
 
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent
           side="bottom"
           aria-label={`Mapa e rota: ${title}`}
-          className="flex max-h-[92dvh] flex-col p-0 md:bottom-auto md:left-1/2 md:right-auto md:top-1/2 md:w-[min(56rem,92vw)] md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-2xl"
+          className="flex max-h-[96dvh] flex-col p-0 md:bottom-auto md:left-1/2 md:right-auto md:top-1/2 md:max-h-[92dvh] md:w-[min(72rem,94vw)] md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-2xl"
         >
           <div className="flex items-center gap-3 border-b border-border py-3 pl-4 pr-14">
             <SheetTitle className="min-w-0 truncate text-base font-bold">{title}</SheetTitle>
           </div>
-          <div className="relative h-[70dvh] min-h-[320px] md:h-[min(70vh,560px)]">
-            {iframe(true)}
+          <div className="relative h-[calc(70dvh+30px)] min-h-[350px] md:h-[min(80vh,720px)]">
+            {routed && route.position ? (
+              <RouteMap path={routed} origin={route.position} destination={destination} />
+            ) : (
+              iframe(true)
+            )}
             <div className="pointer-events-none absolute inset-x-2 top-2 flex justify-start [&>*]:pointer-events-auto">
               <RouteBar state={route} className="max-w-full" />
             </div>
           </div>
           <div className="px-4 pb-2">
-            <OsmLink lat={lat} lng={lng} />
-          </div>
+              </div>
         </SheetContent>
       </Sheet>
     </div>
