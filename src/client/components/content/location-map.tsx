@@ -91,12 +91,13 @@ export function LocationMap({
         <SheetContent
           side="bottom"
           aria-label={`Mapa e rota: ${title}`}
+          closeClassName="top-2.5 h-9 w-9 rounded-full bg-brand text-brand-foreground shadow-md hover:bg-brand hover:text-brand-foreground hover:brightness-110"
           className="flex max-h-[96dvh] flex-col p-0 md:bottom-auto md:left-1/2 md:right-auto md:top-1/2 md:max-h-[92dvh] md:w-[min(72rem,94vw)] md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-2xl"
         >
           <div className="flex items-center gap-3 border-b border-border py-3 pl-4 pr-14">
             <SheetTitle className="min-w-0 truncate text-base font-bold">{title}</SheetTitle>
           </div>
-          <div className="relative h-[calc(70dvh+30px)] min-h-[350px] md:h-[min(80vh,720px)]">
+          <div className="relative h-[calc(70dvh+60px)] min-h-[380px] md:h-[min(80vh,720px)]">
             {routed && route.position ? (
               <RouteMap path={routed} origin={route.position} destination={destination} />
             ) : (

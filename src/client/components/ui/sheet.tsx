@@ -63,10 +63,12 @@ interface SheetContentProps extends React.HTMLAttributes<HTMLDivElement> {
   side?: 'top' | 'right' | 'bottom' | 'left';
   /** Botão "X" no canto do painel (default true). Desligue se o conteúdo já traz o seu. */
   showClose?: boolean;
+  /** Classes extras do botão "X" (ex.: destacar com a cor da marca). */
+  closeClassName?: string;
 }
 
 const SheetContent = React.forwardRef<HTMLDivElement, SheetContentProps>(
-  ({ side = 'right', className = '', showClose = true, children, ...props }, ref) => {
+  ({ side = 'right', className = '', showClose = true, closeClassName, children, ...props }, ref) => {
     const { open, onOpenChange } = useSheet();
 
     const sideClasses = {
@@ -112,7 +114,7 @@ const SheetContent = React.forwardRef<HTMLDivElement, SheetContentProps>(
               size="icon"
               aria-label="Fechar"
               onClick={() => onOpenChange(false)}
-              className="absolute right-3 top-3 h-8 w-8"
+              className={cn('absolute right-3 top-3 h-8 w-8', closeClassName)}
             >
               <X className="h-4 w-4" />
             </Button>
