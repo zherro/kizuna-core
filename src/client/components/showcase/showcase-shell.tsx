@@ -123,6 +123,7 @@ const ICON_BY_SECTION: Record<ShowcaseSectionId, React.ComponentType<{ className
   'news-highlights': Newspaper,
   'painel-welcome': Sparkles,
   'painel-hero': Sparkles,
+  'address-form': Sparkles,
 };
 
 type ShowcaseShellProps = {

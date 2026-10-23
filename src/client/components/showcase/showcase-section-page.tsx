@@ -83,6 +83,7 @@ import { PlaceHighlights, type PlaceHighlightItem } from '../home/place-highligh
 import { NewsHighlights, type NewsHighlightItem } from '../home/news-highlights';
 import { PainelWelcome } from '../painel-welcome';
 import { PainelHero } from '../analytics/painel-home';
+import { AddressForm } from '../ui-better-soft/google-form/address-google-form';
 import type { LikedItem } from '../swipe/swipe-types';
 import { FormsShowcaseDemo } from '../forms/showcase-demo';
 import { PagesAdminShowcaseDemo } from '../pages/showcase-demo';
@@ -1364,6 +1365,12 @@ function SectionDemo({ sectionId }: { sectionId: ShowcaseSectionId }) {
   if (sectionId === 'news-highlights') return <NewsHighlightsDemo />;
   if (sectionId === 'painel-welcome') return <PainelWelcomeDemo />;
   if (sectionId === 'painel-hero') return <PainelHero headingAs="h2" />;
+  if (sectionId === 'address-form')
+    return (
+      <div className="max-w-md">
+        <AddressForm layout="compact" emphasizeCep />
+      </div>
+    );
   return <UiBetterSoftDemo />;
 }
 

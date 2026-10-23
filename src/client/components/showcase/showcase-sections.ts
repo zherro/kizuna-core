@@ -58,7 +58,8 @@ export type ShowcaseSectionId =
   | 'place-highlights'
   | 'news-highlights'
   | 'painel-welcome'
-  | 'painel-hero';
+  | 'painel-hero'
+  | 'address-form';
 
 export type ShowcaseGroupId = 'shadcn-default' | 'ui-better-soft' | 'tools';
 
@@ -1530,6 +1531,16 @@ export default async function PainelPage() {
     usageCode: `import { PainelHero } from '@kizuna/core/client/components/analytics/painel-home';
 
 <PainelHero headingAs="h2" />`,
+  },
+  {
+    id: 'address-form',
+    groupId: 'ui-better-soft',
+    label: 'Formulário de endereço',
+    description:
+      'AddressForm (google-form): CEP (ViaCEP), busca de endereço no painel lateral e, sem CEP, latitude e longitude (aceita colar o par do Google Maps; cidade/UF e CEP vêm de /api/location/reverse). layout="compact" mostra só o CEP e depois um resumo; "Editar" abre um painel lateral, tela inteira no mobile.',
+    usageCode: `import { AddressForm } from '@kizuna/core/client/components/ui-better-soft/google-form/address-google-form';
+
+<AddressForm layout="compact" emphasizeCep onChange={(value) => setAddress(value)} />`,
   },
 ];
 

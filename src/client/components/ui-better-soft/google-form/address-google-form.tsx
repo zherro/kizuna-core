@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 
-import { Loader2, MapPin, Navigation, Search, X } from 'lucide-react';
+import { Crosshair, Loader2, MapPin, Navigation, Search, X } from 'lucide-react';
 
 import { cn } from '../../../../lib/utils';
 
@@ -180,6 +180,15 @@ export function AddressForm({
 
   const [results, setResults] = useState<AddressSearchResult[]>([]);
 
+  // Coordenadas digitadas (alternativa ao CEP): abre com os valores atuais, se houver.
+  const [coordsOpen, setCoordsOpen] = useState(false);
+  const [latText, setLatText] = useState(value?.latitude != null ? String(value.latitude) : '');
+  const [lngText, setLngText] = useState(value?.longitude != null ? String(value.longitude) : '');
+  const [coordsLoading, setCoordsLoading] = useState(false);
+  const [coordsError, setCoordsError] = useState<string | null>(null);
+  const latId = useId();
+  const lngId = useId();
+
   // ============================================================
   // UNLOCK
   // ============================================================
@@ -213,6 +222,7 @@ export function AddressForm({
 
   async function handleCepChange(rawValue: string) {
     const postalCode = rawValue.replace(/\D/g, '').slice(0, 8);
+    setCoordsError(null);
 
     updateAddress({
       postalCode,
@@ -258,6 +268,62 @@ export function AddressForm({
       console.error('Erro ao consultar CEP:', error);
     } finally {
       setCepLoading(false);
+    }
+  }
+
+  // ============================================================
+  // COORDINATES (alternativa ao CEP)
+  // ============================================================
+
+  /** Colar "-15.60, -56.09" (como o Google Maps copia) no campo de latitude preenche os dois. */
+  function handleLatChange(raw: string) {
+    const pair = splitCoordinatePair(raw);
+    if (pair) {
+      setLatText(pair[0]);
+      setLngText(pair[1]);
+    } else {
+      setLatText(raw);
+    }
+    setCoordsError(null);
+  }
+
+  async function applyCoordinates() {
+    const latitude = parseCoordinate(latText);
+    const longitude = parseCoordinate(lngText);
+    if (latitude === null || latitude < -90 || latitude > 90) {
+      setCoordsError('Latitude inválida. Use um número entre -90 e 90, ex.: -15.6014.');
+      return;
+    }
+    if (longitude === null || longitude < -180 || longitude > 180) {
+      setCoordsError('Longitude inválida. Use um número entre -180 e 180, ex.: -56.0979.');
+      return;
+    }
+    setCoordsError(null);
+    updateAddress({ latitude, longitude, placeId: null, formattedAddress: null, country: 'BR' });
+
+    // Cidade/UF (e o CEP, quando o mapa conhece) a partir do ponto — o CEP é o que dá o código
+    // IBGE da cidade ao salvar. Falha aqui não desfaz as coordenadas.
+    try {
+      setCoordsLoading(true);
+      const response = await fetch(`/api/location/reverse?lat=${latitude}&lng=${longitude}`);
+      const data = (await response.json().catch(() => null)) as {
+        zipCode?: string;
+        city?: string;
+        state?: string;
+      } | null;
+      if (!response.ok || !data?.city) {
+        setCoordsError('Coordenadas salvas, mas não achamos a cidade desse ponto. Confira os números.');
+        return;
+      }
+      updateAddress({
+        city: data.city,
+        state: data.state ?? '',
+        ...(data.zipCode && data.zipCode.length === 8 ? { postalCode: data.zipCode } : {}),
+      });
+    } catch {
+      setCoordsError('Coordenadas salvas, mas não foi possível consultar a cidade agora.');
+    } finally {
+      setCoordsLoading(false);
     }
   }
 
@@ -432,6 +498,77 @@ export function AddressForm({
     </button>
   );
 
+  const coordsField = (
+    <div className="space-y-2">
+      <button
+        type="button"
+        disabled={disabled}
+        aria-expanded={coordsOpen}
+        onClick={() => setCoordsOpen((open) => !open)}
+        className="inline-flex items-center gap-1.5 text-xs font-medium text-primary underline-offset-2 hover:underline disabled:pointer-events-none disabled:opacity-50"
+      >
+        <Crosshair className="h-3.5 w-3.5" />
+        {coordsOpen ? 'Fechar latitude e longitude' : 'Sem CEP? Informar latitude e longitude'}
+      </button>
+
+      {coordsOpen && (
+        <div className="space-y-3 rounded-[var(--ui-radius-card-compact,0.75rem)] border border-border bg-muted/30 p-3">
+          <p className="text-xs text-muted-foreground">
+            No Google Maps, toque e segure no lugar e copie os números. Pode colar os dois juntos
+            no campo de latitude.
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label htmlFor={latId} className="mb-1.5 block text-xs font-medium text-muted-foreground">
+                Latitude
+              </label>
+              <input
+                id={latId}
+                value={latText}
+                onChange={(event) => handleLatChange(event.target.value)}
+                disabled={disabled}
+                placeholder="-15.6014"
+                inputMode="decimal"
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label htmlFor={lngId} className="mb-1.5 block text-xs font-medium text-muted-foreground">
+                Longitude
+              </label>
+              <input
+                id={lngId}
+                value={lngText}
+                onChange={(event) => {
+                  setLngText(event.target.value);
+                  setCoordsError(null);
+                }}
+                disabled={disabled}
+                placeholder="-56.0979"
+                inputMode="decimal"
+                className={inputClass}
+              />
+            </div>
+          </div>
+          {coordsError && (
+            <p role="alert" className="text-xs text-destructive">
+              {coordsError}
+            </p>
+          )}
+          <button
+            type="button"
+            disabled={disabled || coordsLoading || !latText.trim() || !lngText.trim()}
+            onClick={() => void applyCoordinates()}
+            className="inline-flex h-9 items-center gap-2 rounded-[var(--ui-radius-control,0.5rem)] bg-primary px-3 text-xs font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:pointer-events-none disabled:opacity-50"
+          >
+            {coordsLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <MapPin className="h-4 w-4" />}
+            Usar estas coordenadas
+          </button>
+        </div>
+      )}
+    </div>
+  );
+
   const detailFields = (
     <>
       {/* STREET / NUMBER */}
@@ -535,6 +672,7 @@ export function AddressForm({
         className={className}
         cepField={cepField}
         searchTrigger={searchTrigger}
+        coordsField={coordsField}
         detailFields={detailFields}
         searchDrawer={searchDrawer}
         resolved={resolved}
@@ -548,6 +686,7 @@ export function AddressForm({
       <div className={cn('space-y-4', className)}>
         {cepField}
         {searchTrigger}
+        {coordsField}
         {detailFields}
       </div>
 
@@ -562,14 +701,15 @@ export function AddressForm({
 
 /**
  * `layout="compact"`: só o CEP fica visível por padrão. Depois de resolvido (ou editado), um
- * resumo de uma linha substitui o formulário inteiro — "Editar" abre um modal central com o
- * restante dos campos (que por sua vez pode abrir o `SearchDrawer` por cima). Poupa espaço de
+ * resumo de uma linha substitui o formulário inteiro — "Editar" abre um painel lateral (tela
+ * inteira no mobile) com o restante dos campos, que por sua vez pode abrir o `SearchDrawer` por cima. Poupa espaço de
  * tela no step e evita a sensação de formulário longo.
  */
 function CompactAddressForm({
   className,
   cepField,
   searchTrigger,
+  coordsField,
   detailFields,
   searchDrawer,
   resolved,
@@ -578,6 +718,7 @@ function CompactAddressForm({
   className?: string;
   cepField: ReactNode;
   searchTrigger: ReactNode;
+  coordsField: ReactNode;
   detailFields: ReactNode;
   searchDrawer: ReactNode;
   resolved: boolean;
@@ -607,44 +748,95 @@ function CompactAddressForm({
           <div className="space-y-3">
             {cepField}
             {searchTrigger}
+            {coordsField}
           </div>
         )}
       </div>
 
       {editOpen && (
-        <div
-          className="fixed inset-0 z-[60] grid place-items-center bg-background/80 p-4 backdrop-blur-sm"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) setEditOpen(false);
-          }}
-        >
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-label="Editar endereço"
-            className="flex max-h-[min(40rem,90dvh)] w-full max-w-md flex-col overflow-hidden rounded-[var(--ui-radius-card,1rem)] border-[length:var(--ui-border-w-card,1px)] border-border bg-[color:var(--ui-card-bg,var(--background))] shadow-xl"
-          >
-            <header className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
-              <p className="text-sm font-semibold text-foreground">Editar endereço</p>
-              <button
-                type="button"
-                onClick={() => setEditOpen(false)}
-                className="rounded-[var(--ui-radius-control,0.5rem)] px-3 py-1.5 text-sm font-medium text-primary hover:bg-muted"
-              >
-                Concluir
-              </button>
-            </header>
-            <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
-              {cepField}
-              {searchTrigger}
-              {detailFields}
-            </div>
-          </div>
-        </div>
+        <EditAddressDrawer onClose={() => setEditOpen(false)}>
+          {cepField}
+          {searchTrigger}
+          {coordsField}
+          {detailFields}
+        </EditAddressDrawer>
       )}
 
       {searchDrawer}
     </>
+  );
+}
+
+/**
+ * Painel lateral de edição: desliza da direita, 480px no desktop e tela inteira no mobile (mesmo
+ * formato do `SearchDrawer`). Rodapé fixo com "Concluir" ao alcance do polegar; ESC e o fundo fecham.
+ */
+function EditAddressDrawer({ onClose, children }: { onClose: () => void; children: ReactNode }) {
+  const [entered, setEntered] = useState(false);
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => setEntered(true));
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') closeRef.current();
+    };
+    document.addEventListener('keydown', onKey);
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      cancelAnimationFrame(frame);
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = overflow;
+    };
+  }, []);
+
+  return (
+    <div className="fixed inset-0 z-[60]">
+      <button
+        type="button"
+        aria-label="Fechar"
+        onClick={onClose}
+        className={cn(
+          'absolute inset-0 bg-black/30 backdrop-blur-[1px] transition-opacity duration-300 motion-reduce:transition-none',
+          entered ? 'opacity-100' : 'opacity-0'
+        )}
+      />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Editar endereço"
+        className={cn(
+          'absolute inset-y-0 right-0 flex w-full flex-col bg-background shadow-2xl transition-transform duration-300 ease-out motion-reduce:transition-none sm:w-[480px]',
+          entered ? 'translate-x-0' : 'translate-x-full'
+        )}
+      >
+        <header className="flex h-16 shrink-0 items-center justify-between gap-3 border-b border-border px-5">
+          <div>
+            <h2 className="text-sm font-semibold text-foreground">Editar endereço</h2>
+            <p className="text-xs text-muted-foreground">CEP, busca ou latitude e longitude</p>
+          </div>
+          <button
+            type="button"
+            aria-label="Fechar"
+            onClick={onClose}
+            className="inline-flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </header>
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-5 py-5">{children}</div>
+        <footer className="shrink-0 border-t border-border px-5 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex h-11 w-full items-center justify-center rounded-[var(--ui-radius-control,0.5rem)] bg-primary text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+          >
+            Concluir
+          </button>
+        </footer>
+      </div>
+    </div>
   );
 }
 
@@ -1132,3 +1324,17 @@ const inputClass = `
   disabled:cursor-not-allowed
   disabled:opacity-50
 `;
+
+/** Número de coordenada aceitando vírgula decimal ("-15,6014"); vazio/inválido → `null`. */
+export function parseCoordinate(raw: string): number | null {
+  const text = raw.trim().replace(/\s+/g, '').replace(',', '.');
+  if (!text) return null;
+  const n = Number(text);
+  return Number.isFinite(n) ? n : null;
+}
+
+/** "-15.6014, -56.0979" (par colado do Google Maps) → ["-15.6014", "-56.0979"]; senão `null`. */
+export function splitCoordinatePair(raw: string): [string, string] | null {
+  const m = raw.trim().match(/^(-?\d{1,3}(?:\.\d+)?)\s*[,;\s]\s*(-?\d{1,3}(?:\.\d+)?)$/);
+  return m ? [m[1], m[2]] : null;
+}
