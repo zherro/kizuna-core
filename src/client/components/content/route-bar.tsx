@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Car, Footprints, Loader2, Navigation, Route } from 'lucide-react';
+import { Car, Check, Footprints, Loader2, Navigation, Route, Share2 } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import { directionsLinks, formatRouteLeg, type LatLng, type RouteSummary } from '../../../shared/maps';
 import { useCurrentPosition } from '../../hooks/use-current-position';
@@ -38,10 +38,38 @@ export function useRouteSummary(destination: LatLng, endpoint = '/api/location/r
 export type RouteSummaryState = ReturnType<typeof useRouteSummary>;
 
 /** Barra "Calcular rota" na cor do tema (sobre o topo do mapa). Recebe o estado de `useRouteSummary`. */
-export function RouteBar({ state, className }: { state: RouteSummaryState; className?: string }) {
+export function RouteBar({
+  state,
+  title,
+  className,
+}: {
+  state: RouteSummaryState;
+  /** Nome do destino: vai para a Uber e para o texto compartilhado. */
+  title?: string;
+  className?: string;
+}) {
   const { status, position, request, route, destination } = state;
   const origin = status === 'granted' && position ? { lat: position.lat, lng: position.lng } : null;
-  const links = directionsLinks({ destination, origin });
+  const links = directionsLinks({ destination, origin, label: title });
+  const [shared, setShared] = useState(false);
+
+  // Sem origem: quem recebe traça a rota a partir de onde ELE estiver.
+  async function share() {
+    const url = directionsLinks({ destination }).google;
+    if (!url) return;
+    try {
+      if (typeof navigator.share === 'function') {
+        await navigator.share({ title: title || undefined, text: title || undefined, url });
+        return;
+      }
+      await navigator.clipboard.writeText(title ? `${title}
+${url}` : url);
+      setShared(true);
+      window.setTimeout(() => setShared(false), 2000);
+    } catch {
+      // Cancelado ou sem permissão: nada a fazer.
+    }
+  }
   const loading = status === 'asking' || route.status === 'loading';
 
   const shell = cn('rounded-xl bg-brand text-brand-foreground shadow-lg', className);
@@ -76,6 +104,21 @@ export function RouteBar({ state, className }: { state: RouteSummaryState; class
               Waze
             </a>
           ) : null}
+          {links.uber ? (
+            <a href={links.uber} target="_blank" rel="noopener noreferrer" className={LINK}>
+              <Car className="h-3.5 w-3.5" aria-hidden="true" />
+              Uber
+            </a>
+          ) : null}
+          <button
+            type="button"
+            onClick={share}
+            aria-label={shared ? 'Link copiado' : 'Compartilhar localização'}
+            title={shared ? 'Link copiado' : 'Compartilhar localização'}
+            className={cn(LINK, 'w-9 justify-center px-0')}
+          >
+            {shared ? <Check className="h-4 w-4" aria-hidden="true" /> : <Share2 className="h-4 w-4" aria-hidden="true" />}
+          </button>
         </div>
       </div>
     );

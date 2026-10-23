@@ -104,7 +104,7 @@ export function LocationMap({
               iframe(true)
             )}
             <div className="pointer-events-none absolute inset-x-2 top-2 flex justify-start [&>*]:pointer-events-auto">
-              <RouteBar state={route} className="max-w-full" />
+              <RouteBar state={route} title={title} className="max-w-full" />
             </div>
           </div>
           <div className="px-4 pb-2">
