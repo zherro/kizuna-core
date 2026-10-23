@@ -86,6 +86,9 @@ export type ServiceWizardState = {
   /** Transient: validity reported by the dynamic per-category form step. Not a `services` column
    * (the resource `mapInput` ignores unknown keys), only drives that step's `canContinue`. */
   dynamicFormValid: boolean;
+  /** `services.extras` na edição: completa campos do formulário da categoria sem resposta salva
+   * (anúncios importados guardam os dados em `extras`). */
+  formFallback?: Record<string, unknown> | null;
   /** Transient: outro passo (ex.: título) pede pro passo de categoria abrir já na lista de
    * categorias (`'picker'`) em vez de nas especialidades. Consumido e limpo por `StepCategory`. */
   categoryStage?: '' | 'picker';

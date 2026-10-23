@@ -31,7 +31,7 @@ export function dynamicFormCategory(
  * reporta validade via `patch({ dynamicFormValid })`.
  */
 export function StepDynamicForm(props: WizardStepProps<ServiceWizardState>) {
-  const { patch, resourceId } = props;
+  const { patch, resourceId, state } = props;
   const localRef = useRef<DynamicFormStepHandle>(null);
   const category = dynamicFormCategory(props);
   const formKey = String(category?.formKey ?? '').trim();
@@ -52,6 +52,7 @@ export function StepDynamicForm(props: WizardStepProps<ServiceWizardState>) {
       formKey={formKey}
       domain="service"
       referenceId={String(resourceId)}
+      fallbackValues={state.formFallback}
       onValidChange={(valid) => patch({ dynamicFormValid: valid })}
     />
   );

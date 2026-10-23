@@ -17,6 +17,9 @@ type DynamicFormStepProps = {
   referenceId: string;
   /** Reported whenever validity changes — the wizard gates "continuar" on this. */
   onValidChange?: (valid: boolean) => void;
+  /** Valores de reserva (ex.: `services.extras` de um import): preenchem, pela `key`, os campos do
+   * schema sem resposta salva. Só na carga inicial; ao salvar passam a valer como respostas. */
+  fallbackValues?: FormValues | null;
   className?: string;
 };
 
@@ -27,7 +30,7 @@ type DynamicFormStepProps = {
  * step-level persist) that upserts through `fn_form_result_upsert`.
  */
 export const DynamicFormStep = forwardRef<DynamicFormStepHandle, DynamicFormStepProps>(
-  function DynamicFormStep({ formKey, domain, referenceId, onValidChange, className }, ref) {
+  function DynamicFormStep({ formKey, domain, referenceId, onValidChange, fallbackValues, className }, ref) {
     const { data, loading, error, submit } = useFormAnswers({ formKey, domain, referenceId });
     const [values, setValues] = useState<FormValues>({});
     const [hydrated, setHydrated] = useState(false);
@@ -78,6 +81,25 @@ export const DynamicFormStep = forwardRef<DynamicFormStepHandle, DynamicFormStep
       };
     }, [loading, data, liveSchema, formKey]);
 
+    // Completa com `fallbackValues` uma vez, quando já há schema e respostas carregadas.
+    const filledRef = useRef(false);
+    useEffect(() => {
+      if (filledRef.current || !hydrated || !schema || !fallbackValues) return;
+      filledRef.current = true;
+      setValues((current) => {
+        const next = { ...current };
+        let changed = false;
+        for (const field of schema.fields ?? []) {
+          if (!isBlank(next[field.key])) continue;
+          const fallback = fallbackValues[field.key];
+          if (isBlank(fallback)) continue;
+          next[field.key] = fallback;
+          changed = true;
+        }
+        return changed ? next : current;
+      });
+    }, [hydrated, schema, fallbackValues]);
+
     const errors = useMemo(() => (schema ? validate(schema, values) : {}), [schema, values]);
     const valid = Object.keys(errors).length === 0;
 
@@ -124,3 +146,7 @@ export const DynamicFormStep = forwardRef<DynamicFormStepHandle, DynamicFormStep
     );
   }
 );
+
+function isBlank(value: unknown): boolean {
+  return value == null || value === '' || (Array.isArray(value) && value.length === 0);
+}
