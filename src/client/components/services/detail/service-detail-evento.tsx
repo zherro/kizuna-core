@@ -315,8 +315,6 @@ export const ServiceDetailEvento: ServiceDetailVariantComponent = ({ service, ex
         </div>
       )}
 
-      {venueWithCity && (renderVenueCard ? renderVenueCard({ venue: venueWithCity }) : <VenueCard venue={venueWithCity} hue={hue} />)}
-
       {/* A sidebar (lg+) mostra só título/data/local/preço: a descrição fica aqui em todos os tamanhos. */}
       {service.description && (
         <Section title={labels.about} hue={hue}>
@@ -386,6 +384,8 @@ export const ServiceDetailEvento: ServiceDetailVariantComponent = ({ service, ex
           </ul>
         </Section>
       )}
+
+      {venueWithCity && (renderVenueCard ? renderVenueCard({ venue: venueWithCity }) : <VenueCard venue={venueWithCity} hue={hue} />)}
 
       {(hasContact || siteUrl) && (
         <Section title="Contato" hue={hue}>
