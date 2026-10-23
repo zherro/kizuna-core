@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 
 import { Crosshair, Loader2, MapPin, Navigation, Search, X } from 'lucide-react';
 
@@ -655,7 +656,8 @@ export function AddressForm({
   );
 
   const searchDrawer = searchOpen && (
-    <SearchDrawer
+    <BodyPortal>
+      <SearchDrawer
       value={searchValue}
       loading={searchLoading}
       results={results}
@@ -663,7 +665,8 @@ export function AddressForm({
       onChange={setSearchValue}
       onClose={closeSearch}
       onSelect={handleSelectResult}
-    />
+      />
+    </BodyPortal>
   );
 
   if (layout === 'compact') {
@@ -754,17 +757,28 @@ function CompactAddressForm({
       </div>
 
       {editOpen && (
-        <EditAddressDrawer onClose={() => setEditOpen(false)}>
-          {cepField}
-          {searchTrigger}
-          {coordsField}
-          {detailFields}
-        </EditAddressDrawer>
+        <BodyPortal>
+          <EditAddressDrawer onClose={() => setEditOpen(false)}>
+            {cepField}
+            {searchTrigger}
+            {coordsField}
+            {detailFields}
+          </EditAddressDrawer>
+        </BodyPortal>
       )}
 
       {searchDrawer}
     </>
   );
+}
+
+/**
+ * Overlays vão direto para o `<body>`: dentro do wizard o conteúdo tem `transform`, e aí
+ * `position: fixed` passa a valer em relação a ele — o painel abria preso na coluna do step.
+ */
+function BodyPortal({ children }: { children: ReactNode }) {
+  if (typeof document === 'undefined') return null;
+  return createPortal(children, document.body);
 }
 
 /**
