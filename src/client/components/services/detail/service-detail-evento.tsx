@@ -373,6 +373,8 @@ export const ServiceDetailEvento: ServiceDetailVariantComponent = ({ service, ex
         </Section>
       )}
 
+      {venueWithCity && (renderVenueCard ? renderVenueCard({ venue: venueWithCity }) : <VenueCard venue={venueWithCity} hue={hue} />)}
+
       {salePointItems.length > 0 && (
         <Section title="Onde comprar" hue={hue}>
           <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -384,8 +386,6 @@ export const ServiceDetailEvento: ServiceDetailVariantComponent = ({ service, ex
           </ul>
         </Section>
       )}
-
-      {venueWithCity && (renderVenueCard ? renderVenueCard({ venue: venueWithCity }) : <VenueCard venue={venueWithCity} hue={hue} />)}
 
       {(hasContact || siteUrl) && (
         <Section title="Contato" hue={hue}>

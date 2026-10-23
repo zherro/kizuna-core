@@ -29,7 +29,7 @@ export function VenueCard({ venue, hue, title = 'Onde acontece' }: { venue: Serv
         <div className="flex min-w-0 flex-1 flex-col justify-center">
           <div className="font-display text-lg font-black leading-tight group-hover:text-brand">{venue.title}</div>
           {venue.address && <div className="mt-1 line-clamp-2 text-sm text-muted-foreground">{venue.address}</div>}
-          {venue.cityName && <div className="mt-0.5 text-xs font-semibold text-muted-foreground">{venue.cityName}</div>}
+          {venue.cityName && <div className="mt-1 text-sm font-semibold text-muted-foreground">{venue.cityName}</div>}
         </div>
         <ChevronRight aria-hidden className="h-5 w-5 shrink-0 self-center text-muted-foreground transition-transform group-hover:translate-x-0.5" />
       </Link>

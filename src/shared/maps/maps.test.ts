@@ -33,8 +33,8 @@ describe('directionsLinks', () => {
   });
 
   it('sem destino nem endereço devolve null nos dois', () => {
-    expect(directionsLinks({})).toEqual({ google: null, waze: null });
-    expect(directionsLinks({ address: '   ' })).toEqual({ google: null, waze: null });
+    expect(directionsLinks({})).toEqual({ google: null, waze: null, uber: null });
+    expect(directionsLinks({ address: '   ' })).toEqual({ google: null, waze: null, uber: null });
   });
 });
 
@@ -84,5 +84,18 @@ describe('osmEmbedUrl / osmViewUrl', () => {
     expect(osmViewUrl({ lat: -15.6, lng: -56.1 })).toBe(
       'https://www.openstreetmap.org/?mlat=-15.6&mlon=-56.1#map=17/-15.6/-56.1'
     );
+  });
+});
+
+describe('directionsLinks — uber', () => {
+  it('leva coordenadas, endereço e nome do destino', () => {
+    const { uber } = directionsLinks({ destination: { lat: -15.6, lng: -56.1 }, address: 'Rua X', label: 'Bar' });
+    const q = new URL(uber!).searchParams;
+    expect(q.get('action')).toBe('setPickup');
+    expect(q.get('pickup')).toBe('my_location');
+    expect(q.get('dropoff[latitude]')).toBe('-15.6');
+    expect(q.get('dropoff[longitude]')).toBe('-56.1');
+    expect(q.get('dropoff[formatted_address]')).toBe('Rua X');
+    expect(q.get('dropoff[nickname]')).toBe('Bar');
   });
 });

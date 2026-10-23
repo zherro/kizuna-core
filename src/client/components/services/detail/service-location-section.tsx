@@ -7,10 +7,13 @@ export function ServiceLocationSection({
   location,
   title,
   hue,
+  placeMode = false,
 }: {
   location: ServiceLocation | null;
   title: string;
   hue: number;
+  /** Página de um LUGAR: mede a distância já ao abrir e oferece compartilhar a localização. */
+  placeMode?: boolean;
 }) {
   if (!location) return null;
   const { address, lat, lng, label } = location;
@@ -24,7 +27,13 @@ export function ServiceLocationSection({
       </h2>
       <div className="mt-5 space-y-4">
         {destination && <LocationMap lat={destination.lat} lng={destination.lng} title={label || title} />}
-        <DirectionsCard destination={destination} address={address || null} measure={!destination} />
+        <DirectionsCard
+          destination={destination}
+          address={address || null}
+          measure={placeMode || !destination}
+          autoLocate={placeMode}
+          shareTitle={placeMode ? label || title : null}
+        />
       </div>
     </section>
   );

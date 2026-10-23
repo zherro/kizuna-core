@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { Check, Copy, LocateFixed, Loader2, Navigation } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Car, Check, Copy, LocateFixed, Loader2, Navigation, Share2 } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import { directionsLinks, distanceKm, formatDistanceKm, type LatLng } from '../../../shared/maps';
 import { useCurrentPosition } from '../../hooks/use-current-position';
@@ -12,6 +12,10 @@ export type DirectionsCardProps = {
   tips?: string | null;
   /** `false` quando o `LocationMap` com a barra de rota já está na página (evita distância duplicada). */
   measure?: boolean;
+  /** Pede a posição ao montar (o navegador mostra o pedido de permissão), salvo se já foi negada. */
+  autoLocate?: boolean;
+  /** Mostra "Compartilhar localização" (Web Share; sem ela, copia o link do Google Maps). */
+  shareTitle?: string | null;
   className?: string;
 };
 
@@ -29,12 +33,45 @@ const BUTTON_QUIET = `inline-flex min-h-11 shrink-0 items-center justify-center 
  * linha reta a partir da posição do usuário. A posição fica em memória (ver `useCurrentPosition`)
  * e só sai do navegador quando o usuário abre o Google Maps, com a origem no link.
  */
-export function DirectionsCard({ destination = null, address = null, tips = null, measure = true, className }: DirectionsCardProps) {
+export function DirectionsCard({
+  destination = null,
+  address = null,
+  tips = null,
+  measure = true,
+  autoLocate = false,
+  shareTitle = null,
+  className,
+}: DirectionsCardProps) {
   const { status, position, request } = useCurrentPosition();
   const [copied, setCopied] = useState(false);
+  const [shared, setShared] = useState(false);
+
+  const canAutoLocate = autoLocate && measure && destination !== null;
+  useEffect(() => {
+    if (!canAutoLocate) return;
+    let cancelled = false;
+    const permissions = typeof navigator !== 'undefined' ? navigator.permissions : undefined;
+    if (!permissions?.query) {
+      request();
+      return;
+    }
+    permissions
+      .query({ name: 'geolocation' })
+      .then((p) => {
+        if (!cancelled && p.state !== 'denied') request();
+      })
+      .catch(() => {
+        if (!cancelled) request();
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [canAutoLocate, request]);
 
   const origin = status === 'granted' && position ? { lat: position.lat, lng: position.lng } : null;
-  const links = directionsLinks({ destination, address, origin });
+  const links = directionsLinks({ destination, address, origin, label: shareTitle });
+  // Sem origem: o link compartilhado leva quem recebe até o lugar a partir de onde ELE estiver.
+  const shareUrl = shareTitle != null ? directionsLinks({ destination, address }).google : null;
   const hasRoute = links.google !== null || links.waze !== null;
   if (!hasRoute && !tips) return null;
 
@@ -49,6 +86,23 @@ export function DirectionsCard({ destination = null, address = null, tips = null
       window.setTimeout(() => setCopied(false), 2000);
     } catch {
       // Sem permissão de área de transferência: o botão só não confirma.
+    }
+  }
+
+  async function shareLocation() {
+    if (!shareUrl) return;
+    const text = [shareTitle, address].filter(Boolean).join(' — ');
+    try {
+      if (typeof navigator.share === 'function') {
+        await navigator.share({ title: shareTitle || undefined, text: text || undefined, url: shareUrl });
+        return;
+      }
+      await navigator.clipboard.writeText(text ? `${text}
+${shareUrl}` : shareUrl);
+      setShared(true);
+      window.setTimeout(() => setShared(false), 2000);
+    } catch {
+      // Cancelado pelo usuário ou sem permissão: nada a fazer.
     }
   }
 
@@ -79,6 +133,18 @@ export function DirectionsCard({ destination = null, address = null, tips = null
               <Navigation className="h-4 w-4 text-brand" aria-hidden="true" />
               Abrir no Waze
             </a>
+          ) : null}
+          {links.uber ? (
+            <a href={links.uber} target="_blank" rel="noopener noreferrer" className={BUTTON}>
+              <Car className="h-4 w-4 text-brand" aria-hidden="true" />
+              Pedir Uber
+            </a>
+          ) : null}
+          {shareUrl ? (
+            <button type="button" onClick={shareLocation} className={BUTTON}>
+              {shared ? <Check className="h-4 w-4 text-brand" aria-hidden="true" /> : <Share2 className="h-4 w-4 text-brand" aria-hidden="true" />}
+              {shared ? 'Link copiado' : 'Compartilhar localização'}
+            </button>
           ) : null}
         </div>
       ) : null}

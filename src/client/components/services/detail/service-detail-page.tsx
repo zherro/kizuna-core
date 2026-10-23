@@ -264,9 +264,14 @@ export function ServiceDetailPage({
               renderVenueCard={slots?.renderVenueCard}
             />
 
-            {/* Cinema/evento têm tratamento próprio de local — a seção é só da variant `service`. */}
-            {variantId === 'service' && (
-              <ServiceLocationSection location={location ?? null} title={service.title} hue={hue} />
+            {/* Cinema/evento têm tratamento próprio de local — a seção é das variants `service` e `lugar`. */}
+            {(variantId === 'service' || variantId === 'lugar') && (
+              <ServiceLocationSection
+                location={location ?? null}
+                title={service.title}
+                hue={hue}
+                placeMode={variantId === 'lugar'}
+              />
             )}
           </div>
 

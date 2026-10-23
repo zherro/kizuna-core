@@ -23,13 +23,20 @@ export const ServiceDetailLugar: ServiceDetailVariantComponent = ({
       </Section>
     )}
 
-    {extraFields && (
+    {extraFields && hasAnswers(extraFields.answers) && (
       <Section title={labels.details} hue={hue}>
         <AdExtraFields schema={extraFields.schema} answers={extraFields.answers} />
       </Section>
     )}
   </>
 );
+
+/** Sem nenhuma resposta preenchida a seção "Informações" sairia vazia. */
+function hasAnswers(answers: Record<string, unknown> | null | undefined): boolean {
+  return Object.values(answers ?? {}).some(
+    (v) => v != null && v !== '' && !(Array.isArray(v) && v.length === 0)
+  );
+}
 
 /** Sidebar da variant `"lugar"`: no lugar da caixa de preço, o nome do lugar e o que ele é. */
 export const ServiceDetailLugarSidebar: ServiceDetailVariantComponent = ({
