@@ -92,6 +92,8 @@ export type ServiceWizardState = {
   /** Passo `location`, `refs` da config: valores por chave de `extras` (local do evento, pontos
    * de venda…). Começa com o `extras` salvo; só as chaves do perfil são gravadas. */
   serviceRefs?: Record<string, unknown>;
+  /** Já completou `serviceRefs` com as respostas do formulário (uma vez por anúncio). */
+  serviceRefsFromAnswers?: boolean;
   /** Transient: outro passo (ex.: título) pede pro passo de categoria abrir já na lista de
    * categorias (`'picker'`) em vez de nas especialidades. Consumido e limpo por `StepCategory`. */
   categoryStage?: '' | 'picker';

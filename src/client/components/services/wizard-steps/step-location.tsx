@@ -96,7 +96,7 @@ export function resolveLocationOptions(
  * fallback nos textos padrão.
  */
 export function createStepLocation(profiles?: StepProfiles<LocationProfile>) {
-  return function StepLocation({ state, patch, entities }: WizardStepProps<ServiceWizardState>) {
+  return function StepLocation({ state, patch, entities, resourceId }: WizardStepProps<ServiceWizardState>) {
     const {
       options,
       defaultValue: configuredDefault,
@@ -116,6 +116,27 @@ export function createStepLocation(profiles?: StepProfiles<LocationProfile>) {
     const addresses = state.addresses ?? [];
     const [address, setAddress] = useState<AddressValue>(initialAddress);
     const selected = options.find((option) => option.value === value);
+
+    // Vínculos vazios em `extras` → completa com as respostas do formulário da categoria (eventos
+    // importados gravavam `local_ref`/`pontos_de_venda` lá). Uma vez por anúncio.
+    const refKeys = refs.map((r) => r.key).join('|');
+    useEffect(() => {
+      if (!refKeys || resourceId == null || state.serviceRefsFromAnswers) return;
+      let alive = true;
+      loadAnswerRefs(String(resourceId), refKeys.split('|')).then((found) => {
+        if (!alive) return;
+        const current = state.serviceRefs ?? {};
+        const merged = { ...current };
+        for (const [key, value] of Object.entries(found)) {
+          if (isBlankRef(merged[key])) merged[key] = value;
+        }
+        patch({ serviceRefs: merged, serviceRefsFromAnswers: true });
+      });
+      return () => {
+        alive = false;
+      };
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [refKeys, resourceId, state.serviceRefsFromAnswers]);
 
     // Perfil com `defaultValue` e nada escolhido ainda → já abre com ele selecionado. Sem
     // `defaultValue`, nada vem selecionado.
@@ -263,6 +284,24 @@ export function createStepLocation(profiles?: StepProfiles<LocationProfile>) {
       </div>
     );
   };
+}
+
+function isBlankRef(value: unknown): boolean {
+  return value == null || (typeof value === 'string' && !value.trim()) || (Array.isArray(value) && value.length === 0);
+}
+
+/** `form_results.answers` do anúncio, só as chaves pedidas e não vazias. Falha → `{}`. */
+async function loadAnswerRefs(serviceId: string, keys: string[]): Promise<Record<string, unknown>> {
+  try {
+    const q = new URLSearchParams({ page: '1', pageSize: '1', 'filter.domain': 'service', 'filter.reference_id': serviceId });
+    const res = await fetch(`/api/resources/form_results?${q}`, { cache: 'no-store' });
+    if (!res.ok) return {};
+    const data = (await res.json().catch(() => null)) as { items?: Array<{ answers?: Record<string, unknown> }> } | null;
+    const answers = data?.items?.[0]?.answers ?? {};
+    return Object.fromEntries(keys.filter((k) => !isBlankRef(answers[k])).map((k) => [k, answers[k]]));
+  } catch {
+    return {};
+  }
 }
 
 /** Passo `location` pronto pro registry, com os perfis dados (padrão: as 3 opções do core). */
