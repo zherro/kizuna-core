@@ -209,14 +209,16 @@ export function Wizard<S extends Record<string, unknown> = Record<string, unknow
     ctx,
   } = wz;
 
-  // Rótulos do stepper vêm de `messages.wizard.stepLabels` (i18n); sem entrada, fica o do registry.
+  // Rótulos do stepper: `labelFor(ctx)` do passo (ex.: por grupo) → `messages.wizard.stepLabels`
+  // (i18n) → o do registry.
   const stepLabels = (messages.wizard as { stepLabels?: Record<string, string> }).stepLabels;
   const steps = useMemo(
     () =>
-      stepLabels
-        ? rawSteps.map((s) => (stepLabels[s.key] ? { ...s, label: stepLabels[s.key] } : s))
-        : rawSteps,
-    [rawSteps, stepLabels]
+      rawSteps.map((s) => {
+        const label = s.labelFor?.(ctx)?.trim() || stepLabels?.[s.key];
+        return label ? { ...s, label } : s;
+      }),
+    [rawSteps, stepLabels, ctx]
   );
 
   // Linha criada (id definido) ainda em `create` → troca a URL pela de edição e vira `edit`.

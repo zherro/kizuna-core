@@ -4,14 +4,15 @@ import { validateLocationProfile } from './location-options';
 import { validatePriceProfile } from './price-options';
 import { createLocationStep } from './step-location';
 import { createPriceStep } from './step-price';
-import { allProfiles } from './step-profiles';
+import { allProfiles, resolveStepProfile } from './step-profiles';
 import type { ServiceWizardJsonConfig } from './wizard-config';
 
 /**
  * Registry do wizard de serviços ajustado pela config do projeto (`kizuna.config.json`):
  *  - `stepProfiles.<passo>` troca o conteúdo de um passo com perfis (`location`, `price`), no
  *    formato único `{ default, byGroup, byCategory }` — categoria → grupo → default → core;
- *  - `skipStepsByGroup` esconde qualquer passo para certos grupos (pelo slug do grupo).
+ *  - `skipStepsByGroup` esconde qualquer passo para certos grupos (pelo slug do grupo);
+ *  - `stepLabels.<passo>` troca o nome do passo no stepper por grupo/categoria.
  * Sem nada disso, devolve o próprio `base`. Os dados gravados não mudam (mesmas colunas/enums).
  */
 export function buildServiceWizardRegistry(
@@ -27,7 +28,14 @@ export function buildServiceWizardRegistry(
   if (unknown.length) {
     throw new Error(`skipStepsByGroup: step(s) fora do registry: ${unknown.join(', ')}`);
   }
-  if (!profiles.location && !profiles.price && Object.keys(skip).length === 0) return base;
+  const labels = json.stepLabels ?? {};
+  const unknownLabels = Object.keys(labels).filter((key) => !(key in base));
+  if (unknownLabels.length) {
+    throw new Error(`stepLabels: step(s) fora do registry: ${unknownLabels.join(', ')}`);
+  }
+  if (!profiles.location && !profiles.price && Object.keys(skip).length === 0 && Object.keys(labels).length === 0) {
+    return base;
+  }
 
   const registry = { ...base };
   if (profiles.location) registry.location = createLocationStep(profiles.location);
@@ -45,6 +53,13 @@ export function buildServiceWizardRegistry(
         if (originalEnabled === undefined) return true;
         return typeof originalEnabled === 'function' ? originalEnabled(ctx) : originalEnabled;
       },
+    };
+  }
+  for (const [key, byScope] of Object.entries(labels)) {
+    registry[key] = {
+      ...registry[key],
+      labelFor: (ctx: WizardStepContext<ServiceWizardState>) =>
+        resolveStepProfile('', byScope, ctx.entities, ctx.state) || undefined,
     };
   }
   return registry;

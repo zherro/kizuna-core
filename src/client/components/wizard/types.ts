@@ -53,6 +53,9 @@ export interface WizardStepProps<S = Record<string, unknown>> extends WizardStep
 export interface WizardStep<S = Record<string, unknown>> {
   key: string;
   label: string;
+  /** Rótulo que depende do estado (ex.: por grupo/categoria escolhidos). Vazio/undefined = `label`
+   *  (ou o de `messages.wizard.stepLabels`). */
+  labelFor?: (ctx: WizardStepContext<S>) => string | undefined;
   Component: ComponentType<WizardStepProps<S>>;
   required?: boolean;
   enabled?: boolean | ((ctx: WizardStepContext<S>) => boolean);

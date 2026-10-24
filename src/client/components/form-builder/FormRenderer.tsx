@@ -320,7 +320,7 @@ function BaseField({
     case 'switch':
       return (
         <div className="space-y-1.5">
-          <div className="flex items-center justify-between rounded-md border p-3">
+          <div className="flex min-h-[50px] items-center justify-between gap-3 rounded-md border px-3 py-2">
             <div className="space-y-0.5">
               <Label htmlFor={commonId}>{field.label}</Label>
               {field.description && (
@@ -425,7 +425,17 @@ function BaseField({
     case 'divider':
       return <Separator />;
     case 'heading':
-      return <h3 className="text-lg font-semibold">{field.label}</h3>;
+      // Título de seção: divisória com a barrinha da marca, para separar visualmente os blocos
+      // do formulário (o primeiro título não leva a linha de cima).
+      return (
+        <div className="border-t border-border pt-6 [[data-first-heading]_&]:border-t-0 [[data-first-heading]_&]:pt-0">
+          <h3 className="flex items-center gap-2.5 text-lg font-semibold">
+            <span aria-hidden className="h-5 w-1 shrink-0 rounded-full bg-primary" />
+            {field.label}
+          </h3>
+          {field.description && <p className="mt-1 text-sm text-muted-foreground">{field.description}</p>}
+        </div>
+      );
     case 'info':
       return (
         <div className="rounded-md border bg-muted/40 p-3 text-sm text-muted-foreground">
@@ -533,6 +543,7 @@ function ListField({ field, value, error, onChange, errors = {}, width = 1280 }:
               return (
                 <div
                   key={sub.id}
+                  className={alignsToInput(sub.type) ? 'self-end' : undefined}
                   style={{ gridColumn: `span ${span} / span ${span}`, order: sub.grid.order }}
                 >
                   <FieldSlot
@@ -601,6 +612,9 @@ export function FormRenderer({
     [schema.fields, values]
   );
 
+  // Só o primeiro título de seção fica sem a divisória de cima (logo abaixo do título do form).
+  const firstHeadingIndex = visibleFields.findIndex((f) => f.type === 'heading');
+
   return (
     <form
       className={cn('space-y-4', className)}
@@ -621,7 +635,7 @@ export function FormRenderer({
         </div>
       )}
       <div className="grid grid-cols-12 gap-4">
-        {visibleFields.map((f) => {
+        {visibleFields.map((f, index) => {
           const fullWidth =
             f.type === 'divider' || f.type === 'heading' || f.type === 'info' || f.type === 'list';
           const span = fullWidth ? 12 : activeSpan(f.grid, width);
@@ -629,6 +643,8 @@ export function FormRenderer({
           return (
             <div
               key={f.id}
+              className={alignsToInput(f.type) ? 'self-end' : undefined}
+              data-first-heading={f.type === 'heading' && index === firstHeadingIndex ? '' : undefined}
               style={{ gridColumn: `span ${span} / span ${span}`, order: f.grid.order }}
             >
               <FieldSlot
@@ -650,4 +666,10 @@ export function FormRenderer({
       )}
     </form>
   );
+}
+
+/** Switch e checkbox não têm rótulo em cima: na mesma linha de um campo com rótulo, descem para a
+ * base da célula e ficam alinhados ao input, não ao rótulo. Sozinhos na linha, nada muda. */
+function alignsToInput(type: string): boolean {
+  return type === 'switch' || type === 'checkbox';
 }

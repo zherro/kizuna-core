@@ -266,6 +266,7 @@ export function ServicoWizardPage({
       decisionNote: '',
       dynamicFormValid: true,
       formFallback: record.extras ?? null,
+      serviceRefs: { ...(record.extras ?? {}) },
       addressComplete: addresses.some(isAddressComplete),
       addresses,
       addressesSnapshot: addresses,

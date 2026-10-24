@@ -21,6 +21,10 @@ export type ServiceWizardJsonConfig = WizardJsonConfig & {
    * Vale pelo slug do grupo escolhido; sem grupo escolhido ainda o passo aparece. Serve pra
    * qualquer passo. */
   skipStepsByGroup?: Record<string, string[]>;
+  /** Nome do passo no stepper por grupo/categoria: `{ "dynamic-form": { byGroup: { "eventos":
+   * "Detalhes do evento" } } }` (mesmo formato/precedência de `stepProfiles`). Sem entrada, fica o
+   * nome padrão. */
+  stepLabels?: Record<string, StepProfiles<string>>;
   /**
    * Onde o usuário pode CRIAR anúncio (só o wizard; busca/detalhe não mudam). `groups` libera o
    * grupo inteiro (slug do grupo); `categories` libera só aquela categoria (slug). Root vê tudo e,

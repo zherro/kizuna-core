@@ -89,6 +89,9 @@ export type ServiceWizardState = {
   /** `services.extras` na edição: completa campos do formulário da categoria sem resposta salva
    * (anúncios importados guardam os dados em `extras`). */
   formFallback?: Record<string, unknown> | null;
+  /** Passo `location`, `refs` da config: valores por chave de `extras` (local do evento, pontos
+   * de venda…). Começa com o `extras` salvo; só as chaves do perfil são gravadas. */
+  serviceRefs?: Record<string, unknown>;
   /** Transient: outro passo (ex.: título) pede pro passo de categoria abrir já na lista de
    * categorias (`'picker'`) em vez de nas especialidades. Consumido e limpo por `StepCategory`. */
   categoryStage?: '' | 'picker';

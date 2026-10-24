@@ -23,6 +23,7 @@ import {
   normalizePrimary,
   syncServiceAddresses,
 } from './service-addresses';
+import { LocationRefsEditor, refPersistValue } from './location-refs';
 import { StepHint } from './step-hint';
 import {
   DEFAULT_LOCATION_PROFILE,
@@ -100,6 +101,7 @@ export function createStepLocation(profiles?: StepProfiles<LocationProfile>) {
       options,
       defaultValue: configuredDefault,
       labels,
+      refs = [],
     } = resolveLocationProfile(profiles, entities, state);
     // Uma opção só (ex.: lugares, sempre no estabelecimento) → não há o que escolher: já vem
     // selecionada e a grade de formatos some.
@@ -252,6 +254,12 @@ export function createStepLocation(profiles?: StepProfiles<LocationProfile>) {
         {selected?.model === 'identifier' && selectedHint ? (
           <StepHint tone="info">{selectedHint}</StepHint>
         ) : null}
+
+        <LocationRefsEditor
+          refs={refs}
+          values={state.serviceRefs ?? {}}
+          onChange={(key, v) => patch({ serviceRefs: { ...(state.serviceRefs ?? {}), [key]: v } })}
+        />
       </div>
     );
   };
@@ -286,9 +294,14 @@ export function createLocationStep(
     },
     persist: async (ctx) => {
       const r = await ctx.persist({ serviceLocation: ctx.state.serviceLocation });
-      const option = resolveLocationOptions(profiles, ctx.entities, ctx.state).find(
-        (o) => o.value === ctx.state.serviceLocation
-      );
+      const profile = resolveLocationProfile(profiles, ctx.entities, ctx.state);
+      if (profile.refs?.length) {
+        const values = ctx.state.serviceRefs ?? {};
+        await ctx.persistExtras(
+          Object.fromEntries(profile.refs.map((ref) => [ref.key, refPersistValue(ref, values[ref.key])]))
+        );
+      }
+      const option = profile.options.find((o) => o.value === ctx.state.serviceLocation);
       if (option?.model !== 'addresses') return;
       // Sem serviço ainda (mesma guarda do passo `images`) → nada a gravar; o estado segue local.
       const serviceId = ctx.resourceId ?? (r?.item?.id as string | number | undefined) ?? null;

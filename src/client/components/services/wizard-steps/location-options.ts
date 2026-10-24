@@ -1,3 +1,4 @@
+import { validateLocationRefs, type LocationRefConfig } from './location-refs';
 /** Valores aceitos pelo enum `public.service_location` (plugin services) — o que é gravado. */
 export const SERVICE_LOCATION_VALUES = ['no_cliente', 'no_estabelecimento', 'remoto'] as const;
 export type ServiceLocationValue = (typeof SERVICE_LOCATION_VALUES)[number];
@@ -37,6 +38,9 @@ export type LocationProfile = {
   /** Textos do passo para este perfil, por cima de `messages.wizard.location` (ex.: o grupo
    * `lugares` troca "Onde acontece?" por "Onde fica?" — o endereço do lugar É o conteúdo). */
   labels?: LocationLabels;
+  /** Vínculos com outros anúncios abaixo do endereço (ex.: local do evento, pontos de venda),
+   * gravados em `services.extras` — ver `LocationRefConfig`. */
+  refs?: LocationRefConfig[];
 };
 
 export const LOCATION_LABEL_KEYS = [
@@ -106,6 +110,7 @@ export function validateLocationProfile(profile: LocationProfile) {
       }
     }
   }
+  validateLocationRefs(profile.refs);
   if (profile.defaultValue !== undefined && !seen.has(profile.defaultValue)) {
     throw new Error(
       `stepProfiles.location: defaultValue "${String(profile.defaultValue)}" não está em "options"`
