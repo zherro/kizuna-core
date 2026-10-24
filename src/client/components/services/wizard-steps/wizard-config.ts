@@ -1,6 +1,7 @@
 import type { WizardJsonConfig } from '../../wizard/from-config';
 import type { LocationProfile } from './location-options';
 import type { PriceProfile } from './price-options';
+import type { ImagesProfile } from './step-images';
 import type { StepProfiles } from './step-profiles';
 
 /**
@@ -16,6 +17,7 @@ export type ServiceWizardJsonConfig = WizardJsonConfig & {
   stepProfiles?: {
     location?: StepProfiles<LocationProfile>;
     price?: StepProfiles<PriceProfile>;
+    images?: StepProfiles<ImagesProfile>;
   };
   /** Passos que NÃO aparecem pra certos grupos de categorias: `{ "location": ["slug-do-grupo"] }`.
    * Vale pelo slug do grupo escolhido; sem grupo escolhido ainda o passo aparece. Serve pra

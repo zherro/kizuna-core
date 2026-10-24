@@ -280,8 +280,9 @@ continuam sendo código.
 | `finishHrefByMode` | `{ create?, review?, … }`   | —           | Para onde redirecionar ao concluir, por modo.                     |
 
 O wizard de serviços (`wizards.servicos`) aceita ainda `stepProfiles` (opções de **local** e
-**preço** por grupo ou categoria, tabela de preços, seleção inicial), `skipStepsByGroup` (esconder
-passos para certos grupos) e `creatable` (em quais grupos/categorias o usuário pode **criar**
+**preço** por grupo ou categoria, tabela de preços, seleção inicial, vínculos com outros anúncios),
+`skipStepsByGroup` (esconder passos para certos grupos), `stepLabels` (nome do passo por grupo ou
+categoria) e `creatable` (em quais grupos/categorias o usuário pode **criar**
 anúncio: `{ "groups": ["eventos"], "categories": ["bares"] }`; sem a chave, tudo liberado; busca e
 detalhe não mudam). A referência completa, com precedência e exemplos, está em
 [Wizard](../interface/wizard.md) (seção "Config por projeto").
@@ -294,7 +295,8 @@ detalhe não mudam). A referência completa, com precedência e exemplos, está 
     "lockLayout": true,
     "assistant": false,
     "steps": ["category", "start", "location", "price", "images", "description", "dynamic-form", "moderation"],
-    "skipStepsByGroup": { "location": ["noticias"], "price": ["lugares"] },
+    "skipStepsByGroup": { "location": ["noticias"], "price": ["lugares", "eventos"] },
+    "stepLabels": { "dynamic-form": { "byGroup": { "eventos": "Detalhes do evento" } } },
     "finishHrefByMode": {
       "create": "/painel/meus-servicos",
       "review": "/painel/administracao/aprovacoes"
@@ -334,7 +336,9 @@ Endereço só no estabelecimento: `no_estabelecimento` exige ao menos um endere�
 passo sai da navegação e do indicador de progresso; antes de escolher o grupo, ele aparece. Vale
 junto com `stepProfiles` do mesmo passo. Passo fora do registry quebra no carregamento.
 
-Ex.: um lugar (shopping, parque) não tem preço, então `"price": ["lugares"]`. Sem o passo, o
+Ex.: um lugar (shopping, parque) não tem preço, então `"price": ["lugares"]`. Eventos também
+ficam sem o passo de preço (`"price": ["lugares", "eventos"]`): os ingressos são do formulário da
+categoria. Sem o passo, o
 anúncio fica com os padrões do banco (`starting_price = 0`, `price_unit = 'quote'`) e a variant
 `lugar` não mostra caixa de preço nem preço no JSON-LD.
 
@@ -358,6 +362,71 @@ e o endereço é o próprio conteúdo da página:
       "addressesTitle": "Endereço do lugar",
       "addressesHint": "O endereço aparece na página do lugar, com mapa e rota."
     }
+  }
+}
+```
+
+### Vínculos com outros anúncios no passo de local (`refs`)
+
+O perfil `location` aceita `refs`: seções abaixo do endereço que ligam o anúncio a **outros
+anúncios** (ex.: o local de um evento, os pontos de venda de ingresso). Cada seção busca só nos
+grupos de `groups` e grava em `services.extras[key]`. Como vive no perfil, vale por grupo ou
+categoria e serve para qualquer tipo de anúncio.
+
+| Campo         | Tipo     | Efeito                                                                                   |
+| ------------- | -------- | ---------------------------------------------------------------------------------------- |
+| `key`         | string   | Chave em `services.extras` (`^[a-z][a-z0-9_]*$`, sem repetir no perfil).                  |
+| `label`       | string   | Título da seção.                                                                         |
+| `hint`        | string   | Texto de ajuda (opcional).                                                               |
+| `groups`      | string[] | Slugs de grupo em que a busca procura (ao menos um). Ex.: `["lugares"]`.                  |
+| `multiple`    | boolean  | Lista de itens em vez de um. Padrão `false`.                                              |
+| `withLink`    | boolean  | Só com `multiple`: cada item tem também um link (ex.: compra do ingresso naquele ponto).  |
+| `placeholder`, `linkLabel`, `addLabel` | string | Textos do campo de busca, do link e do botão de adicionar.             |
+
+Formato gravado: um só → `extras[key] = "<uid>"`; vários → `extras[key] = [{ "nome": "<uid>", "link"?: "…" }]`.
+Valores antigos com o código do anúncio (`extras.codigo`, gravado por importadores) continuam
+válidos. Se `extras` estiver vazio, o passo preenche a seção com a resposta de mesma chave do
+formulário da categoria (dados antigos) e, ao salvar, grava em `extras`.
+
+A página do evento lê `local_ref` ("Onde acontece") e `pontos_de_venda` ("Onde comprar"):
+
+```json
+"byGroup": {
+  "eventos": {
+    "options": [{ "value": "no_estabelecimento", "model": "addresses", "maxAddresses": 1 }],
+    "refs": [
+      { "key": "local_ref", "label": "Local do evento", "groups": ["lugares"] },
+      { "key": "pontos_de_venda", "label": "Onde comprar ingressos", "groups": ["lugares"],
+        "multiple": true, "withLink": true, "addLabel": "Adicionar ponto de venda" }
+    ]
+  }
+}
+```
+
+### Nome do passo por grupo/categoria (`stepLabels`)
+
+`stepLabels` troca o nome do passo no stepper, por passo, no formato de `stepProfiles`
+(`default`, `byGroup`, `byCategory`; categoria → grupo → default). Sem entrada, vale o nome de
+`messages.wizard.stepLabels` ou o do registry. Passo fora do registry quebra no carregamento.
+
+```json
+"stepLabels": {
+  "dynamic-form": {
+    "byGroup": { "eventos": "Detalhes do evento", "lugares": "Funcionamento e contato" }
+  }
+}
+```
+
+### Quantidade de fotos (`stepProfiles.images`)
+
+O perfil `images` define `maxImages`: quantas fotos cada anúncio pode ter (inteiro de 1 a 20;
+padrão do core: 3). Vale por grupo ou categoria, como os outros perfis.
+
+```json
+"stepProfiles": {
+  "images": {
+    "default": { "maxImages": 4 },
+    "byGroup": { "lugares": { "maxImages": 8 } }
   }
 }
 ```

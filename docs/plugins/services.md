@@ -133,7 +133,8 @@ isso nos dois sentidos, sem campo novo no banco (tudo vive em `extras`).
 - **Vinculados** (filhos): o carrossel de vinculados lista os anúncios ativos que apontam para o
   anúncio aberto por **`local_ref`** (em `extras.local_ref` ou na resposta `local_ref` do formulário,
   com o uid OU o `extras.codigo` dele) ou que têm o `codigo` dele em `extras.tags`. Basta preencher
-  `local_ref` (o "Local cadastrado" do evento): o mesmo campo dá o "Onde acontece" no evento e o
+  `local_ref` (o "Local do evento", no passo de endereço do wizard; ver `stepProfiles.location.refs`
+  em [Configuração](../comecando/configuracao.md)): o mesmo campo dá o "Onde acontece" no evento e o
   evento na página do lugar; a tag com o código é opcional. Uma chamada só da RPC de busca
   (`p_tags = [codigo]` + `p_local_refs = [uid, codigo]`, search 0009; sem código, só
   `p_local_refs = [uid]`), sem o próprio, sem repetir, eventos futuros primeiro (o mais próximo
@@ -142,7 +143,8 @@ isso nos dois sentidos, sem campo novo no banco (tudo vive em `extras`).
   "Vinculados" (num lugar, "Agenda deste local"). O mapeamento `local:` para "Neste local" vale só
   para as tags compartilhadas (convenção antiga).
 - **Origem dos campos de referência:** `local_ref`, `pontos_de_venda` e `artistas` são lidos de
-  `extras`; vazio ou ausente → das respostas do formulário (`extraFields.answers`, já carregadas
+  `extras` (onde o passo de endereço grava `local_ref` e `pontos_de_venda`); vazio ou ausente → das
+  respostas do formulário (dados antigos) (`extraFields.answers`, já carregadas
   pela página, sem consulta extra). Helper puro `serviceRefExtras` (`src/shared/service-ref-extras.ts`),
   usado por `fetchLinkedRefs` e pelo fallback editorial do consumidor.
 - **Pontos de venda (`pontos_de_venda`):** cada item é `{ nome, link? }` (string pura também vale):
@@ -153,6 +155,11 @@ isso nos dois sentidos, sem campo novo no banco (tudo vive em `extras`).
   (`safeHttpUrl`), o botão "Bora comprar ingresso" (nova aba, `noopener noreferrer`, mesmo rastreio
   `TrackedContactLink`). O `link_ingresso` geral nunca vira botão por ponto. No "Onde acontece"
   (`VenueCard`), `venue.cityName` nulo cai na cidade do `answers.endereco` ("…, Cidade/UF").
+- **Endereço do evento:** o texto de local da sidebar e a seção "Local" (quando não há `venue`) vêm
+  de `resolveEventPlace`: o lugar vinculado → o endereço principal do próprio anúncio
+  (`ServiceDetailData.location`, passo de endereço; apelido como nome, link do mapa pelas
+  coordenadas) → o campo antigo `answers.endereco`. As variants recebem `location` em
+  `ServiceDetailVariantProps`.
 - **Unicidade:** o `codigo` é único entre os anúncios não arquivados, no banco todo (índice UNIQUE
   parcial `services_extras_codigo_uniq`, migração 0012; global porque a busca do organizador e o
   carrossel de vinculados não filtram por tenant). Um segundo anúncio não consegue tomar um código

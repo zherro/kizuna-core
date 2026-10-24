@@ -411,6 +411,17 @@ vencidos.
 **`skipStepsByGroup`** — `{ "location": ["slug-do-grupo"] }`: qualquer passo pode ser escondido
 para certos grupos (sem grupo escolhido ainda, aparece). Chave de passo inexistente lança.
 
+**`stepProfiles.images`** — `{ maxImages }` (1 a 20; padrão 3): limite de fotos do passo `images`
+por grupo/categoria (`createImagesStep`).
+
+**`stepLabels`** — `{ "<passo>": { default?, byGroup?, byCategory? } }`: nome do passo no stepper
+por grupo/categoria. Vira `WizardStep.labelFor(ctx)`, que o `Wizard` aplica antes de
+`messages.wizard.stepLabels`. Chave de passo inexistente lança.
+
+**`stepProfiles.location.refs`** — seções de vínculo com outros anúncios abaixo do endereço
+(busca por grupos, grava em `services.extras[key]`); referência em
+[Configuração](../comecando/configuracao.md#vínculos-com-outros-anúncios-no-passo-de-local-refs).
+
 #### Onde o usuário pode criar (`creatable`)
 
 `wizards.servicos.creatable` restringe, no passo **category**, em quais grupos e categorias o

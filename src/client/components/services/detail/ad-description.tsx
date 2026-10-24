@@ -1,5 +1,6 @@
 import Markdown from 'react-markdown';
 import type { Components } from 'react-markdown';
+import { youtubeVideoId } from '../../../../shared/youtube';
 
 /**
  * Descrição de um anúncio. O texto costuma vir em Markdown (assistente/importador/editor); anúncios
@@ -63,7 +64,17 @@ function safeHref(raw: string): string | null {
  * (exceto `href` validado em `<a>`), e texto escapado: qualquer coisa fora disso vira texto ou some.
  */
 export function sanitizeDescriptionHtml(html: string): string {
-  const src = html.replace(DROP_WITH_CONTENT, '').replace(/<!--[\s\S]*?-->/g, '');
+  // Vídeo do YouTube (botão do editor → `<iframe class="ql-video" src=…>`): vira um marcador antes de
+  // descartar iframes e, no fim, um embed montado aqui (só o id do vídeo atravessa).
+  const videos: string[] = [];
+  const withMarkers = html.replace(/<iframe\b([^>]*)>[\s\S]*?<\/iframe\s*>/gi, (_whole, attrs: string) => {
+    const src = /\bsrc\s*=\s*(?:"([^"]*)"|'([^']*)')/i.exec(attrs);
+    const id = src ? youtubeVideoId((src[1] ?? src[2] ?? '').replace(/&amp;/gi, '&')) : null;
+    if (!id) return '';
+    videos.push(id);
+    return `\u0000yt${videos.length - 1}\u0000`;
+  });
+  const src = withMarkers.replace(DROP_WITH_CONTENT, '').replace(/<!--[\s\S]*?-->/g, '');
   const out: string[] = [];
   const token = /<(\/?)([a-zA-Z][a-zA-Z0-9]*)\b([^>]*)>|<|[^<]+/g;
   let m: RegExpExecArray | null;
@@ -93,7 +104,19 @@ export function sanitizeDescriptionHtml(html: string): string {
     }
     out.push(`<${tag}>`);
   }
-  return out.join('');
+  return out.join('').replace(/\u0000yt(\d+)\u0000/g, (_, i: string) => youtubeEmbedHtml(videos[Number(i)]));
+}
+
+/** Embed responsivo (16:9), sem cookies, carregado só perto da tela. `id` já validado. */
+function youtubeEmbedHtml(id: string | undefined): string {
+  if (!id) return '';
+  return (
+    '<div class="my-4 aspect-video w-full overflow-hidden rounded-xl bg-muted">' +
+    `<iframe src="https://www.youtube-nocookie.com/embed/${id}" title="Vídeo do YouTube" class="h-full w-full border-0" ` +
+    'loading="lazy" referrerpolicy="strict-origin-when-cross-origin" ' +
+    'allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>' +
+    '</div>'
+  );
 }
 
 const isExternal = (href?: string) => !!href && /^https?:\/\//i.test(href);

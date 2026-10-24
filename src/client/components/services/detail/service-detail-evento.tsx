@@ -33,15 +33,15 @@ import {
   formatEventWhen,
   isEventOver,
   eventCityFromAddress,
+  eventPlaceMapUrl,
+  resolveEventPlace,
   isFreeEvent,
-  mapsSearchUrl,
   parseNames,
   parseSalePoints,
   parseSessionDays,
   parseTickets,
   ticketDisplay,
   safeHttpUrl,
-  splitEventAddress,
   telHref,
   textField,
   whatsappHref,
@@ -153,11 +153,10 @@ function TicketCard({ ticket }: { ticket: EventTicket }) {
  * "a partir de" (+ link de compra). Só lg+ (`hidden lg:block`, aplicado por quem chama); no mobile o
  * conteúdo principal já mostra tudo.
  */
-export const ServiceDetailEventoSidebar: ServiceDetailVariantComponent = ({ service, extraFields }) => {
+export const ServiceDetailEventoSidebar: ServiceDetailVariantComponent = ({ service, extraFields, venue, location }) => {
   const answers = extraFields?.answers ?? {};
   const date = eventDateParts(answers.data_inicio);
-  const endereco = textField(answers.endereco);
-  const place = endereco ? splitEventAddress(endereco) : null;
+  const place = resolveEventPlace(venue, location, answers.endereco);
   const tickets = parseTickets(answers.ingressos);
   const price = eventPriceInfo({
     free: isFreeEvent(answers),
@@ -219,7 +218,7 @@ export const ServiceDetailEventoSidebar: ServiceDetailVariantComponent = ({ serv
  * e contato. Todo campo de `answers` é opcional: bloco sem dado some. Ver
  * `docs/integracoes/eventos-depara.md` no projeto consumidor.
  */
-export const ServiceDetailEvento: ServiceDetailVariantComponent = ({ service, extraFields, hue, labels, organizer, venue, salePoints, artists: resolvedArtists, renderVenueCard }) => {
+export const ServiceDetailEvento: ServiceDetailVariantComponent = ({ service, extraFields, hue, labels, organizer, venue, location, salePoints, artists: resolvedArtists, renderVenueCard }) => {
   const answers = extraFields?.answers ?? {};
 
   const when = formatEventWhen(answers);
@@ -240,7 +239,7 @@ export const ServiceDetailEvento: ServiceDetailVariantComponent = ({ service, ex
   const salePointItems: ServiceSalePoint[] =
     salePoints ?? parseSalePoints(answers.pontos_de_venda).map((p) => ({ label: p.nome, venue: null, ...(p.link ? { link: p.link } : {}) }));
   const endereco = textField(answers.endereco);
-  const place = endereco ? splitEventAddress(endereco) : null;
+  const place = resolveEventPlace(null, location, endereco);
   const buyUrl = safeHttpUrl(answers.link_ingresso);
   // A cidade fica visível junto do "Onde acontece": cityName do local; sem ele, a do endereço do evento.
   const venueWithCity =
@@ -436,7 +435,7 @@ export const ServiceDetailEvento: ServiceDetailVariantComponent = ({ service, ex
         </Section>
       )}
 
-      {!venue && place && endereco && (
+      {!venue && place && (
         <Section title="Local" hue={hue}>
           <div className={`flex flex-col gap-3 p-4 ${CARD_CLASS}`}>
             <div className="flex items-start gap-3">
@@ -447,7 +446,7 @@ export const ServiceDetailEvento: ServiceDetailVariantComponent = ({ service, ex
               </div>
             </div>
             <a
-              href={mapsSearchUrl(endereco)}
+              href={eventPlaceMapUrl(place)}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 self-start py-2 text-xs font-semibold text-muted-foreground hover:text-foreground"

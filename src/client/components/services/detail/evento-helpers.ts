@@ -363,3 +363,48 @@ export function safeHttpUrl(value: unknown): string | null {
 export function textField(value: unknown): string | null {
   return str(value);
 }
+
+export type EventPlace = {
+  name: string;
+  rest: string | null;
+  /** Texto para busca no mapa (endereço completo). */
+  address: string;
+  /** Coordenadas, quando o endereço do anúncio as tem. */
+  lat: number | null;
+  lng: number | null;
+};
+
+/**
+ * Onde o evento acontece, para o texto "local": o lugar vinculado (`venue`) → o endereço do passo
+ * de endereço do anúncio (`location`) → o campo antigo `endereco` do formulário ("Nome — rua…").
+ */
+export function resolveEventPlace(
+  venue: { title: string; address: string | null } | null | undefined,
+  location: { address: string; lat: number | null; lng: number | null; label: string | null } | null | undefined,
+  legacyAddress: unknown
+): EventPlace | null {
+  const loc = location?.address?.trim() ? location : null;
+  if (venue?.title) {
+    const address = venue.address || loc?.address || '';
+    return { name: venue.title, rest: address || null, address: address || venue.title, lat: null, lng: null };
+  }
+  if (loc) {
+    const label = loc.label?.trim() || null;
+    return {
+      name: label ?? loc.address,
+      rest: label ? loc.address : null,
+      address: loc.address,
+      lat: loc.lat,
+      lng: loc.lng,
+    };
+  }
+  const legacy = str(legacyAddress);
+  if (!legacy) return null;
+  const { name, rest } = splitEventAddress(legacy);
+  return { name, rest, address: legacy, lat: null, lng: null };
+}
+
+/** Link do Google Maps para o local: coordenadas quando houver, senão o endereço. */
+export function eventPlaceMapUrl(place: EventPlace): string {
+  return place.lat != null && place.lng != null ? mapsSearchUrl(`${place.lat},${place.lng}`) : mapsSearchUrl(place.address);
+}

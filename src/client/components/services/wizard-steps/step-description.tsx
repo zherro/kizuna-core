@@ -3,6 +3,7 @@
 import { Check } from 'lucide-react';
 import { useAppPreferences } from '../../../providers/app-preferences-provider';
 import { QuillEditor } from '../../ui/quill-editor';
+import { useAuth } from '../../../providers/auth-provider';
 import { cn } from '../../../../lib/utils';
 import type { WizardStepProps } from '../../wizard/types';
 import { useWizardLayout } from '../../wizard/wizard-layout';
@@ -16,6 +17,7 @@ export const DESCRIPTION_MIN_LENGTH = 20;
 
 export function StepDescription({ state, patch, entities }: WizardStepProps<ServiceWizardState>) {
   const value = state.description ?? '';
+  const { user } = useAuth();
   const { messages } = useAppPreferences();
   const t = messages.wizard;
   const length = stripHtml(value).length;
@@ -49,6 +51,8 @@ export function StepDescription({ state, patch, entities }: WizardStepProps<Serv
         value={value}
         onChange={(v) => patch({ description: v })}
         placeholder={t.description.placeholder}
+        // "Ver código" (HTML cru) só para root.
+        source={user?.is_root === true}
       />
 
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs">

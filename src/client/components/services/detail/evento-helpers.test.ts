@@ -3,6 +3,8 @@ import {
   eventDateParts,
   eventEnd,
   eventPriceInfo,
+  eventPlaceMapUrl,
+  resolveEventPlace,
   eventoHeaderTags,
   formatBRL,
   formatEventDay,
@@ -243,5 +245,21 @@ describe('ticketDisplay', () => {
 
   it('sem setor cai no título', () => {
     expect(ticketDisplay({ ...base, titulo: 'Meia-entrada' })).toEqual({ name: 'Meia-entrada', detail: null, lote: null, people: null });
+  });
+});
+
+describe('resolveEventPlace', () => {
+  const loc = { address: 'Av. Beira Rio, 4453, Terceiro, Cuiabá - MT', lat: -15.6, lng: -56.1, label: 'Musiva' };
+  it('lugar vinculado tem prioridade', () => {
+    expect(resolveEventPlace({ title: 'Musiva', address: 'Rua X' }, loc, 'Velho')).toMatchObject({ name: 'Musiva', rest: 'Rua X' });
+  });
+  it('sem lugar, usa o endereço do passo (apelido como nome) e as coordenadas', () => {
+    const p = resolveEventPlace(null, loc, 'Velho')!;
+    expect(p).toMatchObject({ name: 'Musiva', rest: loc.address, lat: -15.6 });
+    expect(eventPlaceMapUrl(p)).toContain(encodeURIComponent('-15.6,-56.1'));
+  });
+  it('sem endereço do passo, cai no campo antigo do formulário', () => {
+    expect(resolveEventPlace(null, null, 'Casa — Rua A, Cuiabá/MT')).toMatchObject({ name: 'Casa', rest: 'Rua A, Cuiabá/MT' });
+    expect(resolveEventPlace(null, { ...loc, address: ' ' }, '')).toBeNull();
   });
 });

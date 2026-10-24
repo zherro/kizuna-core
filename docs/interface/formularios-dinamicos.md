@@ -57,7 +57,8 @@ Cada `FormField` tem, entre outros:
 | `color`                                                 | `string`                                 |                                                                                       |
 | `upload`, `image`                                       | nomes de arquivo (`string` / `string[]`) | O renderer só guarda os nomes; o envio do arquivo é responsabilidade de quem consome. |
 | `hidden`                                                | qualquer                                 | Não renderiza nada; carrega valor.                                                    |
-| `divider`, `heading`, `info`                            | nenhum                                   | Só layout (`NON_VALUE_TYPES`); nunca entram nas respostas.                            |
+| `divider`, `heading`, `info`                            | nenhum                                   | Só layout (`NON_VALUE_TYPES`); nunca entram nas respostas. `heading` é título de seção: divisória com a barrinha da marca (o primeiro, sem a linha) e `description` abaixo. |
+| `service-ref`                                           | `string` (uid do anúncio)                | Busca anúncios ativos (`serviceRef: { groupSlugs, categorySlugs }`). Para vínculos que valem para várias categorias, prefira `stepProfiles.location.refs` do wizard. |
 | `list`                                                  | `Array<Record<string, unknown>>`         | Grupo repetível de sub-campos (ver abaixo).                                           |
 
 ## Comportamento, validação e visibilidade
@@ -180,5 +181,9 @@ Respostas correspondentes:
   `form_results.schema_snapshot` / `form_results.version`. Assim uma resposta antiga continua
   legível mesmo que o formulário mude depois — `itemFields` faz parte do schema e, portanto, do
   snapshot. `DynamicFormStep` prefere o `schema_snapshot` de uma captura existente ao schema atual.
+* `DynamicFormStep` aceita `fallbackValues`: na carga, campos do schema sem resposta salva são
+  preenchidos pela chave de mesmo nome. O wizard de serviços passa `services.extras` (anúncios
+  importados guardam os dados lá); ao salvar, os valores viram respostas.
+* Switch e checkbox na mesma linha de um campo com rótulo alinham pela base do input.
 * Em `answers->'sessoes'` dá para consultar a lista com operadores jsonb (por exemplo
   `jsonb_array_elements`).

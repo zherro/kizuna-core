@@ -62,3 +62,15 @@ describe('AdDescription', () => {
     expect(renderToStaticMarkup(<AdDescription text="  " />)).toBe('');
   });
 });
+
+describe('sanitizeDescriptionHtml — vídeo do YouTube', () => {
+  it('iframe do YouTube vira embed seguro; outros iframes somem', () => {
+    const out = sanitizeDescriptionHtml(
+      '<p>Oi</p><iframe class="ql-video" frameborder="0" allowfullscreen="true" src="https://www.youtube.com/embed/dQw4w9WgXcQ?showinfo=0" onload="x()"></iframe><iframe src="https://evil.com/x"></iframe>'
+    );
+    expect(out).toContain('src="https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ"');
+    expect(out).not.toContain('evil.com');
+    expect(out).not.toContain('onload');
+    expect(out.match(/<iframe/g)).toHaveLength(1);
+  });
+});

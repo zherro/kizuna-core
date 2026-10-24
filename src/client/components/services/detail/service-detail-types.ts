@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import type { ServiceDetailLabels } from './category-style';
 import type { ServiceRecord } from '../service-type';
-import type { ServiceExtraFields, ProviderProfile, ServiceOrganizer, ServiceVenue } from '../../../../server/services/service-detail-data';
+import type { ServiceExtraFields, ProviderProfile, ServiceLocation, ServiceOrganizer, ServiceVenue } from '../../../../server/services/service-detail-data';
 import type { ServiceSibling } from '../../../../server/services/service-siblings';
 
 export type { CategoryStyleInput, SectionTitlesConfig, ServiceDetailLabels, ReactionButtonConfig, ServiceDetailConfig, ServiceDetailVariant } from './category-style';
@@ -23,6 +23,8 @@ export type ServiceDetailVariantProps = {
   organizer?: ServiceOrganizer | null;
   /** Local onde o evento acontece (anúncio da variant `lugar`), quando resolvido. */
   venue?: ServiceVenue | null;
+  /** Endereço principal do próprio anúncio (passo de endereço do wizard, `service_addresses`). */
+  location?: ServiceLocation | null;
   /** Pontos de venda resolvidos (`ServiceDetailData.salePoints`): com `venue`, viram link para o
    * local; sem, só o `label`. Ausente → a variant usa `answers.pontos_de_venda` cru. */
   salePoints?: ServiceSalePoint[] | null;

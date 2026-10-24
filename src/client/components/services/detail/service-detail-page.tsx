@@ -259,6 +259,7 @@ export function ServiceDetailPage({
               siblings={siblings ?? []}
               organizer={data.organizer ?? null}
               venue={data.venue ?? null}
+              location={location ?? null}
               salePoints={data.salePoints ?? null}
               artists={data.artists ?? null}
               renderVenueCard={slots?.renderVenueCard}
@@ -285,6 +286,8 @@ export function ServiceDetailPage({
                     subcategoryNames={subcategoryNames}
                     hue={hue}
                     labels={labels}
+                    venue={data.venue ?? null}
+                    location={location ?? null}
                   />
                 </div>
               ) : (

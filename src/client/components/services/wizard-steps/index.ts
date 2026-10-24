@@ -10,7 +10,7 @@ import { StepStart } from './step-start';
 import { StepCategory } from './step-category';
 import { createLocationStep } from './step-location';
 import { createPriceStep } from './step-price';
-import { StepImages } from './step-images';
+import { createImagesStep } from './step-images';
 import { StepDescription } from './step-description';
 import { StepDynamicForm, dynamicFormCategory, getDynamicFormHolder } from './step-dynamic-form';
 import { StepModeration } from './step-moderation';
@@ -100,14 +100,8 @@ export const SERVICE_WIZARD_STEPS: Record<string, WizardStep<ServiceWizardState>
   // Padrão do core; o projeto troca o perfil via `stepProfiles.price` (ver build-registry.ts).
   price: createPriceStep(),
 
-  images: {
-    key: 'images',
-    label: 'Fotos',
-    Component: StepImages,
-    enabled: (ctx) => ctx.resourceId != null,
-    canContinue: (ctx) => (ctx.state.imageIds ?? []).length > 0,
-    // Persistence happens inside ImageGalleryManager's `onPersist` → ctx.persistExtras.
-  },
+  // Padrão do core (até 3 fotos); o projeto troca via `stepProfiles.images` (ver build-registry.ts).
+  images: createImagesStep(),
 
   description: {
     key: 'description',
@@ -160,7 +154,7 @@ export { StepStart } from './step-start';
 export { StepCategory } from './step-category';
 export { StepLocation } from './step-location';
 export { StepPrice } from './step-price';
-export { StepImages } from './step-images';
+export { StepImages, createImagesStep, createStepImages, DEFAULT_MAX_SERVICE_IMAGES, type ImagesProfile } from './step-images';
 export { StepDescription } from './step-description';
 export { StepDynamicForm } from './step-dynamic-form';
 export { StepModeration } from './step-moderation';
