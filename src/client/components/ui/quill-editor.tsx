@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import { useId, useMemo, useRef, useState, type MutableRefObject, type ComponentProps } from 'react';
-import { Code2, Smile, Youtube } from 'lucide-react';
+import { Code2, SquarePlay, Smile } from 'lucide-react';
 import type ReactQuillType from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import { youtubeEmbedUrl } from '../../../shared/youtube';
@@ -132,7 +132,7 @@ export function QuillEditor({ value, onChange, placeholder, emoji = true, video 
                 onMouseDown={keepSelection}
                 onClick={() => toggle('video')}
               >
-                <Youtube className="h-4 w-4" />
+                <SquarePlay className="h-4 w-4" />
               </button>
             )}
             {source && (
