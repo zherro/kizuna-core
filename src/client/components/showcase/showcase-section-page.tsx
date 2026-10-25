@@ -52,12 +52,17 @@ import { MediaResultCard } from '../ui-better-soft/lists/media-result-card';
 import { AdDescription } from '../services/detail/ad-description';
 import { AdExtraFields } from '../services/detail/ad-extra-fields';
 import { ServiceDetailEvento } from '../services/detail/service-detail-evento';
+import { NewsArticle, NewsArticleActions } from '../services/detail/service-detail-noticia';
+import { newsArticleMeta } from '../services/detail/noticia-helpers';
 import {
   EVENT_FIXTURE_ANSWERS,
   EVENT_FIXTURE_DESCRIPTION,
   EVENT_FIXTURE_LABELS,
   EVENT_FIXTURE_SCHEMA,
   EVENT_FIXTURE_SERVICE,
+  NEWS_FIXTURE_ANSWERS,
+  NEWS_FIXTURE_COVER,
+  NEWS_FIXTURE_SERVICE,
 } from './service-detail-fixture';
 import { ListingResultCard } from '../ui-better-soft/lists/listing-result-card';
 import { HighlightSlider } from '../ui-better-soft/highlight-slider';
@@ -1222,6 +1227,33 @@ function ServiceDetailEventoDemo() {
   );
 }
 
+function ServiceDetailNoticiaDemo() {
+  const meta = newsArticleMeta(
+    NEWS_FIXTURE_SERVICE,
+    { schema: { title: 'Notícias', fields: [] }, answers: NEWS_FIXTURE_ANSWERS },
+    { subcategoryNames: ['Feiras e mercados'], timeZone: 'America/Cuiaba' }
+  );
+  return (
+    <NewsArticle
+      title={NEWS_FIXTURE_SERVICE.title}
+      meta={meta}
+      coverUrl={NEWS_FIXTURE_COVER}
+      body={NEWS_FIXTURE_SERVICE.description}
+      actions={
+        <NewsArticleActions
+          reactions={
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1">Gostei</Button>
+              <Button variant="outline" className="flex-1">Favoritar</Button>
+            </div>
+          }
+          share={<Button variant="ghost" className="w-full">Compartilhar</Button>}
+        />
+      }
+    />
+  );
+}
+
 const PLACE_HIGHLIGHTS_DEMO: PlaceHighlightItem[] = [
   {
     href: '#arena',
@@ -1405,6 +1437,7 @@ function SectionDemo({ sectionId }: { sectionId: ShowcaseSectionId }) {
   if (sectionId === 'directions-card') return <DirectionsCardDemo />;
   if (sectionId === 'ad-extra-fields') return <AdExtraFieldsDemo />;
   if (sectionId === 'service-detail-evento') return <ServiceDetailEventoDemo />;
+  if (sectionId === 'service-detail-noticia') return <ServiceDetailNoticiaDemo />;
   if (sectionId === 'search-filter-blocks') return <SearchFilterBlocksDemo />;
   if (sectionId === 'home-search') return <HomeSearchDemo />;
   if (sectionId === 'place-highlights') return <PlaceHighlightsDemo />;

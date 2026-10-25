@@ -60,6 +60,9 @@ export type ServiceDetailConfig = {
   sectionTitles?: Record<string, SectionTitlesConfig>;
   /** Botões Gostei/Favoritar do detalhe (plugin swipe); remova um bloco para esconder o botão. */
   reactions?: { like?: ReactionButtonConfig; favorite?: ReactionButtonConfig };
+  /** Fuso IANA em que o formulário grava datas sem fuso (ex. `data_publicacao` da variant
+   * `noticia`) e em que elas são exibidas. Default "America/Sao_Paulo". */
+  timeZone?: string;
 };
 
 const FALLBACK_VARIANT = 'service';

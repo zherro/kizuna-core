@@ -154,3 +154,62 @@ export const EVENT_FIXTURE_LABELS: ServiceDetailLabels = {
   about: 'Sobre o evento',
   details: 'Informações do evento',
 };
+
+/**
+ * Notícia de exemplo (variant `noticia`): formulário `noticias` (`data_publicacao`, `autor`, `fonte`,
+ * `link`), várias fontes em `extras.fontes` e crédito da foto em `extras.imagem_credito`. A foto
+ * vem de `extras.coverFileId` no app; aqui a página recebe a URL pronta via `NEWS_FIXTURE_COVER`.
+ */
+export const NEWS_FIXTURE_COVER =
+  'https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&w=1600&q=80';
+
+export const NEWS_FIXTURE_ANSWERS: FormValues = {
+  data_publicacao: '2026-10-25T08:00',
+  autor: 'Redação',
+  fonte: 'Prefeitura',
+  link: 'https://www.exemplo.com.br/noticias/feira',
+};
+
+export const NEWS_FIXTURE_DESCRIPTION =
+  '<p>A feira de produtores volta à praça central neste sábado, com 80 barracas de hortaliças, queijos e doces da região, das 6h às 12h.</p>' +
+  '<h2>O que muda</h2>' +
+  '<p>As barracas passam a ocupar as duas calçadas da praça e a rua lateral fica fechada para carros durante a feira.</p>' +
+  '<ul><li><strong>Horário:</strong> sábados, das 6h às 12h.</li><li><strong>Pagamento:</strong> dinheiro, cartão e Pix.</li></ul>' +
+  '<h3>Estacionamento</h3>' +
+  '<p>O estacionamento do mercado municipal fica aberto ao público durante a feira, sem cobrança.</p>';
+
+export const NEWS_FIXTURE_SERVICE = {
+  id: '0',
+  uid: 'fixture-noticia',
+  title: 'Feira de produtores volta à praça central com 80 barracas neste sábado',
+  categoryGroupId: null,
+  categoryGroup: { id: '0', name: 'Notícias', slug: 'noticias' },
+  categoryId: '0',
+  category: { id: '0', name: 'Cidade', slug: 'cidade' },
+  description: NEWS_FIXTURE_DESCRIPTION,
+  startingPrice: 0,
+  priceUnit: 'quote',
+  urgentAvailable: false,
+  extras: {
+    fontes: [
+      { nome: 'Prefeitura', url: 'https://www.exemplo.com.br/noticias/feira' },
+      { nome: 'Associação dos Produtores', url: 'https://www.exemplo.org/feira' },
+      { nome: 'Rádio Local' },
+    ],
+    imagem_credito: {
+      autor: 'Fulano de Tal',
+      licenca: 'CC BY 4.0',
+      licenca_url: 'https://creativecommons.org/licenses/by/4.0/',
+      pagina_origem: 'https://www.exemplo.com.br/fotos/feira',
+      alt: 'Barracas de hortaliças enfileiradas na praça',
+      legenda: 'Barracas da feira na edição de setembro. Imagem ilustrativa',
+    },
+  },
+  status: 'active',
+  sponsored: false,
+  likeCount: 0,
+  serviceLocation: null,
+  active: true,
+  expiresAt: null,
+  createdAt: '2026-10-24T22:00:00Z',
+} as ServiceRecord;

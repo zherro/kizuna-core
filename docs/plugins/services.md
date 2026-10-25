@@ -86,6 +86,62 @@ ativo): o endereço em texto, o mapa quando há coordenadas e os atalhos de "Com
 blocos de [Conteúdo](../arquitetura/modelo-de-conteudo.md). Aparece só na variant padrão (`service`);
 cinema e evento tratam o local por conta própria.
 
+## Variant `noticia` (anúncio que é uma matéria)
+
+Quando o anúncio é uma **notícia** (ex.: grupo `noticias` com
+`serviceDetail.variantByGroupSlug: { "noticias": "noticia" }`), o `ServiceDetailPage` troca a página
+inteira por uma matéria (`ServiceDetailNoticia`, uma variant de **página inteira**: só o fundo, o
+breadcrumb e os carrosséis continuam comuns). Fica assim:
+
+1. Breadcrumb `Início > <grupo> > <título>`, com o grupo levando a `/busca?group=<slug>`.
+2. **Chapéu**: a 1ª subcategoria; sem ela, a categoria; depois o grupo; por fim "Notícias". A cor
+   vem do texto do chapéu (`kickerTone`), a mesma do bloco de notícias da home.
+3. **Título** (o único `h1`) e a linha de **autor, data de publicação e tempo de leitura**
+   ("25 de outubro de 2026, 8h"; tempo de leitura a 200 palavras por minuto).
+4. **Foto de abertura**: uma só, a 1ª de `extras.images` (ou `extras.coverFileId`), com legenda e
+   crédito. Sem foto, a matéria abre direto no texto.
+5. **Corpo** em largura de leitura, cerca de 68 caracteres por linha (`AdDescription` com
+   `variant="article"`): o 1º parágrafo é o lide, maior; `h2`/`h3` do texto são mantidos
+   (`h1` vira `h2`).
+6. **Fontes** no fim.
+7. Gostei/Favoritar e Compartilhar: numa coluna fixa ao lado do texto no desktop, numa faixa sob a
+   foto no celular.
+
+Não aparecem preço, "Sob consulta", "Detalhes do serviço", avaliações, card de prestador nem o
+mapa/"Como chegar". O carrossel de relacionados se chama "Mais notícias". No card (busca e
+carrosséis), `variantCardProps('noticia')` tira o preço e o "gratuito/pago" e usa o CTA "Ler
+notícia". O card usa o estilo do card de lugar e fica sem data, porque a busca não traz a data de
+publicação.
+
+### Dados lidos
+
+| Origem | Chave | Uso |
+| --- | --- | --- |
+| Formulário da categoria (`extraFields.answers`) | `data_publicacao` | Data de publicação, `AAAA-MM-DDTHH:MM` sem fuso, lida no fuso `serviceDetail.timeZone`. Sem ela, vale `services.created_at`. |
+| | `autor` | "Por <autor>". |
+| | `fonte`, `link` | Fonte única (nome e URL), usada só quando não há `extras.fontes`. Só com `link`, o nome vira o domínio. |
+| `services.extras` | `fontes` | Lista `[{ "nome": "...", "url": "https://..." }]`, principal primeiro; `url` é opcional. Com 1 item o rótulo é "Fonte"; com 2 ou mais, "Fontes: A, B e C". |
+| | `imagem_credito` | `{ autor, licenca, licenca_url, pagina_origem, alt, legenda }`, tudo opcional. Vira "Foto: Autor / Licença", com o autor ligado a `pagina_origem` e a licença ligada a `licenca_url`. `alt` é o texto alternativo da foto (sem ele, a legenda; depois, o título) e `legenda` fica sob a foto. |
+
+Toda URL (`url`, `link`, `licenca_url`, `pagina_origem`) só vira link se for `http`/`https`, e
+abre em nova aba com `rel="noopener noreferrer"`. Notícia cadastrada pelo painel sem
+`extras.fontes` nem `extras.imagem_credito` funciona do mesmo jeito: a foto sai sem crédito e a
+fonte vem do formulário.
+
+### Blocos e helpers
+
+* `newsArticleMeta(service, extraFields, { subcategoryNames, timeZone })` (`noticia-helpers.ts`)
+  devolve `{ kicker, publishedAt, publishedLabel, author, sources, source, sourceUrl, photoCredit,
+  readingMinutes }`. Também estão lá `newsSources`, `newsPhotoCredit`, `formatNewsPublished` e
+  `readingMinutes`. São funções puras, com testes.
+* `NewsArticle` desenha a matéria a partir disso. `NewsArticleActions` agrupa reações e
+  compartilhar.
+* Os blocos de conteúdo genéricos ficam em `client/components/content`: `ArticleHeader` (agora
+  aceita cor e marcador do chapéu e uma linha `meta`), `ArticleByline`, `ArticleFigure` e
+  `ArticleSources`.
+* Outra variant de página inteira entra por `ServiceDetailPage` com a prop `fullPages`
+  (`{ [variant]: Componente }`); o componente recebe `ServiceDetailFullPageProps`.
+
 ## Tags (`extras.tags`, migração 0011)
 
 `services.extras.tags` é um array JSON de strings que agrupa anúncios além da taxonomia: um local e

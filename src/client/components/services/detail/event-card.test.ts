@@ -35,6 +35,17 @@ describe('variantCardProps', () => {
     });
   });
 
+  it('noticia: sem preço nem gratuito, CTA "Ler notícia"', () => {
+    expect(variantCardProps('noticia', { startingPrice: 40, priceUnit: 'unit', free: true })).toEqual({
+      cardStyle: 'lugar',
+      ctaLabel: 'Ler notícia',
+      priceLabel: null,
+      priceCaption: null,
+      dateLabel: null,
+      whenLabel: null,
+    });
+  });
+
   it('cinema: sem preço; demais variants: null', () => {
     expect(variantCardProps('cinema')).toMatchObject({
       cardStyle: 'cinema',

@@ -43,6 +43,11 @@ export function variantCardProps(
     // Lugar: sem preço nem "gratuito/pago" — o card só apresenta o lugar.
     return { cardStyle: 'lugar', ctaLabel: 'Ver lugar', priceLabel: null, priceCaption: null, dateLabel: null, whenLabel: null };
   }
+  if (variantId === 'noticia') {
+    // Notícia: sem preço nem "gratuito/pago". Usa o estilo de card do lugar (capa landscape, sem
+    // anunciante nem selo "Novo"). A busca não traz a data de publicação: o card fica sem data.
+    return { cardStyle: 'lugar', ctaLabel: 'Ler notícia', priceLabel: null, priceCaption: null, dateLabel: null, whenLabel: null };
+  }
   if (variantId === 'evento') {
     // O card do evento mostra a data, não o valor (o valor está no detalhe).
     const where = [input.venue?.trim(), input.place?.trim()].filter(Boolean).join(' · ');

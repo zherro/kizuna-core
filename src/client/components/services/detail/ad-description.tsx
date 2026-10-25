@@ -1,6 +1,7 @@
 import Markdown from 'react-markdown';
 import type { Components } from 'react-markdown';
 import { youtubeVideoId } from '../../../../shared/youtube';
+import { ArticleMarkdown } from '../../content/article-markdown';
 
 /**
  * Descrição de um anúncio. O texto costuma vir em Markdown (assistente/importador/editor); anúncios
@@ -59,11 +60,25 @@ function safeHref(raw: string): string | null {
   return v;
 }
 
+/** Títulos no modo `outline` (texto de matéria): h1/h2 → h2, h3 → h3, h4–h6 → h4. */
+function outlineHeading(tag: string): string {
+  if (tag === 'h1' || tag === 'h2') return 'h2';
+  if (tag === 'h3') return 'h3';
+  return 'h4';
+}
+
+export type SanitizeDescriptionOptions = {
+  /** `flatten` (padrão): todo título vira h3 (o h2 é o título da seção do anúncio).
+   * `outline`: mantém a hierarquia do texto a partir de h2 (página em que o texto É o artigo). */
+  headings?: 'flatten' | 'outline';
+};
+
 /**
  * HTML de editor → HTML seguro. Reconstrói a saída só com tags da lista fechada, sem atributos
  * (exceto `href` validado em `<a>`), e texto escapado: qualquer coisa fora disso vira texto ou some.
  */
-export function sanitizeDescriptionHtml(html: string): string {
+export function sanitizeDescriptionHtml(html: string, options: SanitizeDescriptionOptions = {}): string {
+  const outline = options.headings === 'outline';
   // Vídeo do YouTube (botão do editor → `<iframe class="ql-video" src=…>`): vira um marcador antes de
   // descartar iframes e, no fim, um embed montado aqui (só o id do vídeo atravessa).
   const videos: string[] = [];
@@ -86,8 +101,9 @@ export function sanitizeDescriptionHtml(html: string): string {
     const closing = m[1] === '/';
     let tag = m[2].toLowerCase();
     if (!ALLOWED_TAGS.has(tag)) continue;
-    // Título dentro de um anúncio é só ênfase: h1–h6 viram h3 (o h2 é o título da seção).
-    if (HEADINGS.has(tag)) tag = 'h3';
+    // Título dentro de um anúncio é só ênfase: h1–h6 viram h3 (o h2 é o título da seção). Num
+    // artigo (`outline`), a hierarquia do texto é mantida abaixo do h1 da página.
+    if (HEADINGS.has(tag)) tag = outline ? outlineHeading(tag) : 'h3';
     if (closing) {
       if (tag !== 'br' && tag !== 'hr') out.push(`</${tag}>`);
       continue;
@@ -159,9 +175,47 @@ function keepLineBreaks(text: string): string {
   return text.replace(/\r\n?/g, '\n').replace(/([^\n])\n(?=[^\n])/g, '$1  \n');
 }
 
-export function AdDescription({ text, className = '' }: { text: string; className?: string }) {
+/** Corpo de matéria (`variant="article"`): texto maior, entrelinha de leitura longa, 1º parágrafo
+ * como lide, títulos com hierarquia. Mesma escala do `ArticleMarkdown` (caminho Markdown). */
+const ARTICLE_PROSE =
+  'text-[1.0625rem] leading-[1.7] text-foreground/90 [overflow-wrap:anywhere] sm:text-lg sm:leading-[1.75] ' +
+  '[&>p]:my-5 [&>p]:text-pretty [&>p:first-child]:mt-0 [&>p:first-child]:text-lg [&>p:first-child]:leading-[1.6] [&>p:first-child]:text-foreground sm:[&>p:first-child]:text-xl ' +
+  '[&_h2]:mb-3 [&_h2]:mt-10 [&_h2]:text-balance [&_h2]:font-display [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:leading-snug [&_h2]:tracking-tight [&_h2]:text-foreground ' +
+  '[&_h3]:mb-2 [&_h3]:mt-8 [&_h3]:text-balance [&_h3]:font-display [&_h3]:text-xl [&_h3]:font-semibold [&_h3]:leading-snug [&_h3]:text-foreground ' +
+  '[&_h4]:mb-1.5 [&_h4]:mt-6 [&_h4]:font-semibold [&_h4]:text-foreground ' +
+  '[&_ul]:my-5 [&_ul]:list-disc [&_ul]:space-y-2 [&_ul]:pl-6 [&_ol]:my-5 [&_ol]:list-decimal [&_ol]:space-y-2 [&_ol]:pl-6 [&_li]:pl-1 [&_li]:marker:text-brand ' +
+  '[&_a]:font-medium [&_a]:text-brand [&_a]:underline [&_a]:decoration-brand/40 [&_a]:underline-offset-4 [&_a:hover]:decoration-brand ' +
+  '[&_strong]:font-semibold [&_strong]:text-foreground ' +
+  '[&_blockquote]:my-8 [&_blockquote]:border-l-4 [&_blockquote]:border-brand/40 [&_blockquote]:pl-5 [&_blockquote]:font-display [&_blockquote]:text-xl [&_blockquote]:leading-8 [&_blockquote]:text-foreground ' +
+  '[&_hr]:my-10 [&_hr]:border-border';
+
+export type AdDescriptionProps = {
+  text: string;
+  className?: string;
+  /** `compact` (padrão): texto de seção de anúncio. `article`: corpo de matéria, com títulos
+   * mantidos (h2/h3) e escala de leitura longa — a largura de leitura fica com quem chama. */
+  variant?: 'compact' | 'article';
+};
+
+export function AdDescription({ text, className = '', variant = 'compact' }: AdDescriptionProps) {
   const value = text.trim();
   if (!value) return null;
+
+  if (variant === 'article') {
+    if (isHtmlDescription(value)) {
+      return (
+        <div
+          className={`${ARTICLE_PROSE} ${className}`}
+          dangerouslySetInnerHTML={{ __html: sanitizeDescriptionHtml(value, { headings: 'outline' }) }}
+        />
+      );
+    }
+    return (
+      <div className={className}>
+        <ArticleMarkdown>{keepLineBreaks(value)}</ArticleMarkdown>
+      </div>
+    );
+  }
 
   if (isHtmlDescription(value)) {
     return (

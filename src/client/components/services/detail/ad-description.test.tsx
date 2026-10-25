@@ -32,6 +32,26 @@ describe('sanitizeDescriptionHtml', () => {
   it('rebaixa títulos para h3', () => {
     expect(sanitizeDescriptionHtml('<h1>T</h1>')).toBe('<h3>T</h3>');
   });
+  it('outline: mantém a hierarquia do artigo abaixo do h1 da página', () => {
+    expect(sanitizeDescriptionHtml('<h1>A</h1><h2>B</h2><h3>C</h3><h5>D</h5>', { headings: 'outline' })).toBe(
+      '<h2>A</h2><h2>B</h2><h3>C</h3><h4>D</h4>'
+    );
+  });
+});
+
+describe('AdDescription variant="article"', () => {
+  it('HTML sanitizado com h2 preservado e sem h1', () => {
+    const html = renderToStaticMarkup(
+      <AdDescription variant="article" text={'<p>Lide.</p><h2>Contexto</h2><p>Texto <script>x</script></p>'} />
+    );
+    expect(html).toContain('<h2>Contexto</h2>');
+    expect(html).not.toContain('<script');
+    expect(html).not.toContain('<h1');
+  });
+  it('Markdown cai no ArticleMarkdown (título vira h2)', () => {
+    const html = renderToStaticMarkup(<AdDescription variant="article" text={'## Contexto\n\nTexto.'} />);
+    expect(html).toMatch(/<h2[^>]*>Contexto<\/h2>/);
+  });
 });
 
 describe('AdDescription', () => {

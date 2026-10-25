@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
-import type { ServiceDetailLabels } from './category-style';
+import type { ServiceDetailConfig, ServiceDetailLabels } from './category-style';
 import type { ServiceRecord } from '../service-type';
-import type { ServiceExtraFields, ProviderProfile, ServiceLocation, ServiceOrganizer, ServiceVenue } from '../../../../server/services/service-detail-data';
+import type { ServiceDetailData, ServiceExtraFields, ProviderProfile, ServiceLocation, ServiceOrganizer, ServiceVenue } from '../../../../server/services/service-detail-data';
 import type { ServiceSibling } from '../../../../server/services/service-siblings';
 
 export type { CategoryStyleInput, SectionTitlesConfig, ServiceDetailLabels, ReactionButtonConfig, ServiceDetailConfig, ServiceDetailVariant } from './category-style';
@@ -39,6 +39,28 @@ export type ServiceDetailVariantProps = {
 export type ServiceSalePoint = { label: string; venue: ServiceVenue | null; link?: string };
 
 export type ServiceDetailVariantComponent = (props: ServiceDetailVariantProps) => ReactNode;
+
+/**
+ * Variant de PÁGINA INTEIRA (ex. `noticia`): substitui hero, título, miolo e sidebar do
+ * `ServiceDetailPage` — só o fundo, o breadcrumb e os carrosséis de relacionados continuam comuns.
+ * Para quando o anúncio não é uma oferta e o layout de anúncio (preço, prestador, avaliações) não
+ * faz sentido.
+ */
+export type ServiceDetailFullPageProps = {
+  data: ServiceDetailData;
+  hue: number;
+  labels: ServiceDetailLabels;
+  detailConfig?: ServiceDetailConfig | null;
+  /** Caminho público do anúncio (compartilhar). */
+  path: string;
+  /** uid pra contar eventos (`share`, reações) no plugin analytics; ausente = não conta. */
+  trackUid?: string;
+  /** Envolve o bloco que conta a visualização (título + capa) — no-op sem analytics. */
+  trackView: (node: ReactNode) => ReactNode;
+  slots?: ServiceDetailSlots;
+};
+
+export type ServiceDetailFullPageComponent = (props: ServiceDetailFullPageProps) => ReactNode;
 
 /** Pontos de extensão que o projeto consumidor injeta — o core não conhece plugins de
  * chat/solicitar/demandas, então essas ações ficam de fora por padrão (só `AdShareButton`

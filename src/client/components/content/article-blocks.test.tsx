@@ -1,7 +1,16 @@
 // @vitest-environment jsdom
 import { describe, it, expect, afterEach } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
-import { ArticleLayout, ArticleHeader, ArticleBody, ArticleCredits, formatDateBR } from './index';
+import {
+  ArticleLayout,
+  ArticleHeader,
+  ArticleBody,
+  ArticleCredits,
+  ArticleByline,
+  ArticleFigure,
+  ArticleSources,
+  formatDateBR,
+} from './index';
 
 afterEach(cleanup);
 
@@ -127,5 +136,59 @@ describe('ArticleLayout', () => {
     );
     expect(container.querySelector('aside')).toBeNull();
     expect(container.textContent).toBe('HC');
+  });
+});
+
+describe('ArticleByline', () => {
+  it('autor, data em <time> e tempo de leitura; nada → null', () => {
+    const date = new Date('2026-10-25T12:00:00Z');
+    const { container, rerender } = render(
+      <ArticleByline author="Redação" publishedAt={date} publishedLabel="25 de outubro de 2026, 8h" readingMinutes={3} />
+    );
+    expect(screen.getByText('Redação')).toBeTruthy();
+    expect(container.querySelector('time')?.getAttribute('datetime')).toBe(date.toISOString());
+    expect(screen.getByText('3 min de leitura')).toBeTruthy();
+    rerender(<ArticleByline />);
+    expect(container.innerHTML).toBe('');
+  });
+});
+
+describe('ArticleFigure', () => {
+  it('foto com alt, legenda e crédito com links externos', () => {
+    const { container } = render(
+      <ArticleFigure
+        src="/a.jpg"
+        alt="Praça"
+        caption="Legenda"
+        credit={{ author: 'Fulano', license: 'CC BY 4.0', licenseUrl: 'https://cc.org/by', sourceUrl: 'https://origem.org/a' }}
+      />
+    );
+    expect(screen.getByRole('img').getAttribute('alt')).toBe('Praça');
+    expect(screen.getByText('Legenda')).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Fulano' }).getAttribute('href')).toBe('https://origem.org/a');
+    const license = screen.getByRole('link', { name: 'CC BY 4.0' });
+    expect(license.getAttribute('href')).toBe('https://cc.org/by');
+    expect(license.getAttribute('rel')).toContain('noopener');
+    expect(container.querySelector('figcaption')?.textContent).toContain('Foto: Fulano / CC BY 4.0');
+  });
+
+  it('sem legenda nem crédito, sem figcaption', () => {
+    const { container } = render(<ArticleFigure src="/a.jpg" alt="x" />);
+    expect(container.querySelector('figcaption')).toBeNull();
+  });
+});
+
+describe('ArticleSources', () => {
+  it('"Fonte" com uma, "Fontes" com várias, links só quando há url', () => {
+    const { container, rerender } = render(<ArticleSources sources={[{ name: 'Caixa', url: 'https://caixa.gov.br' }]} />);
+    expect(container.textContent).toBe('Fonte: Caixa');
+    expect(screen.getByRole('link', { name: 'Caixa' }).getAttribute('target')).toBe('_blank');
+    rerender(
+      <ArticleSources sources={[{ name: 'A', url: 'https://a.com' }, { name: 'B' }, { name: 'C', url: null }]} />
+    );
+    expect(container.textContent).toBe('Fontes: A, B e C');
+    expect(screen.getAllByRole('link')).toHaveLength(1);
+    rerender(<ArticleSources sources={[]} />);
+    expect(container.innerHTML).toBe('');
   });
 });

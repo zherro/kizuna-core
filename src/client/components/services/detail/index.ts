@@ -3,6 +3,23 @@ export { ServiceDetailDefault } from './service-detail-default';
 export { ServiceDetailCinema, ServiceDetailCinemaSidebar } from './service-detail-cinema';
 export { ServiceDetailLugar, ServiceDetailLugarSidebar } from './service-detail-lugar';
 export { ServiceDetailEvento, ServiceDetailEventoSidebar, eventoHeaderTags } from './service-detail-evento';
+export {
+  ServiceDetailNoticia,
+  NewsArticle,
+  NewsArticleActions,
+  NOTICIA_RELATED_TITLE,
+  type NewsArticleProps,
+} from './service-detail-noticia';
+export {
+  newsArticleMeta,
+  newsSources,
+  newsPhotoCredit,
+  formatNewsPublished,
+  readingMinutes,
+  type NewsArticleMeta,
+  type NewsSource,
+  type NewsPhotoCredit,
+} from './noticia-helpers';
 export { variantCardProps, type VariantCardProps } from './event-card';
 export {
   resolveServiceDetailVariant,
@@ -22,6 +39,8 @@ export type {
   ServiceDetailVariantProps,
   ServiceDetailVariantComponent,
   ServiceDetailSlots,
+  ServiceDetailFullPageProps,
+  ServiceDetailFullPageComponent,
 } from './service-detail-types';
 export { ServiceLocationSection } from './service-location-section';
 export { AdPhotoMosaic } from './ad-photo-mosaic';

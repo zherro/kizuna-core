@@ -54,6 +54,7 @@ export type ShowcaseSectionId =
   | 'directions-card'
   | 'ad-extra-fields'
   | 'service-detail-evento'
+  | 'service-detail-noticia'
   | 'search-filter-blocks'
   | 'place-highlights'
   | 'place-mosaic'
@@ -1413,6 +1414,41 @@ export function MioloDoEvento({ data }) {
       subcategoryNames={data.subcategoryNames}
       hue={25}
       labels={{ about: 'Sobre o evento', details: 'Informacoes do evento' }}
+    />
+  );
+}`,
+  },
+  {
+    id: 'service-detail-noticia',
+    groupId: 'ui-better-soft',
+    label: 'Detalhe da noticia',
+    description:
+      'Variant noticia (pagina inteira) do detalhe do anuncio: chapeu, titulo, autor, data e tempo de leitura (ArticleByline), foto de abertura com legenda e credito (ArticleFigure, de extras.imagem_credito), corpo em largura de leitura (AdDescription variant article) e fontes no fim (ArticleSources, de extras.fontes ou fonte + link do formulario). Sem preco, avaliacoes, prestador nem mapa.',
+    usageCode: `import {
+  NewsArticle,
+  NewsArticleActions,
+  AdShareButton,
+  newsArticleMeta,
+} from '@kizuna/core/client/components/services/detail';
+
+// Normalmente montado pelo ServiceDetailPage (serviceDetail.variantByGroupSlug: { "noticias": "noticia" }).
+export function Materia({ data, coverUrl, path }) {
+  const meta = newsArticleMeta(data.service, data.extraFields, {
+    subcategoryNames: data.subcategoryNames,
+    timeZone: 'America/Cuiaba',
+  });
+  return (
+    <NewsArticle
+      title={data.service.title}
+      meta={meta}
+      coverUrl={coverUrl}
+      body={data.service.description}
+      actions={
+        <NewsArticleActions
+          reactions={null}
+          share={<AdShareButton title={data.service.title} path={path} />}
+        />
+      }
     />
   );
 }`,

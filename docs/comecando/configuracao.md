@@ -171,6 +171,15 @@ ou de um grupo de categoria (`group`):
   pode ser escolhido pelo **grupo** da categoria: `serviceDetail.variantByGroupSlug` mapeia
   `categories_group.slug` -> variant (a entrada da categoria em `variantByCategorySlug` tem
   precedência) e `serviceDetail.colors` aceita o slug do grupo. Requer `search` 0005.
+* **Variants prontas do detalhe:** `service` (padrão), `cinema`, `evento`, `lugar` e `noticia`.
+  A `noticia` transforma o anúncio numa matéria: chapéu, título, autor, data, foto com crédito,
+  texto em largura de leitura e fontes no fim, sem preço, avaliações, prestador nem mapa. Ex.:
+  `"variantByGroupSlug": { "noticias": "noticia" }`. Campos lidos (`data_publicacao`, `autor`,
+  `fonte`, `link`, `extras.fontes`, `extras.imagem_credito`) em
+  [Plugin services](../plugins/services.md#variant-noticia-anuncio-que-e-uma-materia).
+* **Fuso das datas do formulário:** `serviceDetail.timeZone` (IANA, padrão `America/Sao_Paulo`) é o
+  fuso em que datas sem fuso do formulário (como `data_publicacao`) são lidas e exibidas. Ex.:
+  `"timeZone": "America/Cuiaba"`.
 * **Títulos de seção do detalhe:** `serviceDetail.sectionTitles` mapeia slug da categoria (depois o
   do grupo, depois `default`) -> `{ about, details }`; o padrão é "Sobre o serviço" / "Detalhes do
   serviço". Ex.: `{ "eventos": { "about": "Sobre o evento", "details": "Informações do evento" } }`.

@@ -119,6 +119,7 @@ const ICON_BY_SECTION: Record<ShowcaseSectionId, React.ComponentType<{ className
   'directions-card': Navigation,
   'ad-extra-fields': ClipboardList,
   'service-detail-evento': Ticket,
+  'service-detail-noticia': Newspaper,
   'search-filter-blocks': SlidersHorizontal,
   'place-highlights': Building2,
   'place-mosaic': LayoutGrid,

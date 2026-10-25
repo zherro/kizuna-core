@@ -7,11 +7,17 @@ import { photosFor, formatServicePrice } from '../service-helpers';
 import { PRICE_UNIT_LABEL } from '../service-labels';
 import type { ServiceDetailData } from '../../../../server/services/service-detail-data';
 import { hueGradient, resolveCategoryHue, resolveSectionTitles, resolveServiceDetailVariant } from './category-style';
-import type { ServiceDetailConfig, ServiceDetailSlots, ServiceDetailVariantComponent } from './service-detail-types';
+import type {
+  ServiceDetailConfig,
+  ServiceDetailFullPageComponent,
+  ServiceDetailSlots,
+  ServiceDetailVariantComponent,
+} from './service-detail-types';
 import { ServiceDetailDefault } from './service-detail-default';
 import { ServiceDetailLugar, ServiceDetailLugarSidebar } from './service-detail-lugar';
 import { ServiceDetailCinema, ServiceDetailCinemaSidebar, cinemaHeaderTags } from './service-detail-cinema';
 import { ServiceDetailEvento, ServiceDetailEventoSidebar, eventoHeaderTags } from './service-detail-evento';
+import { NOTICIA_RELATED_TITLE, ServiceDetailNoticia } from './service-detail-noticia';
 import { ServiceLocationSection } from './service-location-section';
 import { AdPhotoMosaic } from './ad-photo-mosaic';
 import { AdShareButton } from './ad-share-button';
@@ -34,6 +40,17 @@ const BUILT_IN_SIDEBARS: Record<string, ServiceDetailVariantComponent> = {
   cinema: ServiceDetailCinemaSidebar,
   evento: ServiceDetailEventoSidebar,
   lugar: ServiceDetailLugarSidebar,
+};
+
+/** Variants de PÁGINA INTEIRA: trocam hero + título + miolo + sidebar por um layout próprio
+ * (só fundo, breadcrumb e carrosséis continuam comuns). Têm precedência sobre `BUILT_IN_VARIANTS`. */
+const BUILT_IN_FULL_PAGES: Record<string, ServiceDetailFullPageComponent> = {
+  noticia: ServiceDetailNoticia,
+};
+
+/** Título do carrossel de relacionados por variant (default "Também pode te interessar"). */
+const RELATED_TITLES: Record<string, string> = {
+  noticia: NOTICIA_RELATED_TITLE,
 };
 
 /** Tags extras sob o título, por variant (idiomas/formatos, classificação...). */
@@ -109,6 +126,8 @@ export type ServiceDetailPageProps = {
   /** Substitui a caixa de preço da sidebar, por variant (`cinema` já vem pronto: título + gênero +
    * sinopse, só em telas lg+). Passe aqui só pra adicionar/sobrescrever outra variant. */
   sidebars?: Record<string, ServiceDetailVariantComponent>;
+  /** Variants de página inteira (`noticia` já vem pronta). Passe aqui só pra adicionar/sobrescrever. */
+  fullPages?: Record<string, ServiceDetailFullPageComponent>;
   slots?: ServiceDetailSlots;
   /** `/anuncios/[uid]` do projeto consumidor — usado pro breadcrumb, compartilhar e JSON-LD. */
   path: string;
@@ -130,6 +149,7 @@ export function ServiceDetailPage({
   detailConfig,
   variants,
   sidebars,
+  fullPages,
   slots,
   path,
   searchHref = '/busca',
@@ -144,6 +164,8 @@ export function ServiceDetailPage({
   const VariantContent = { ...BUILT_IN_VARIANTS, ...variants }[variantId] ?? ServiceDetailDefault;
   const headerTags = HEADER_TAGS[variantId]?.(extraFields) ?? [];
   const SidebarContent = { ...BUILT_IN_SIDEBARS, ...sidebars }[variantId];
+  const fullPageMap: Partial<Record<string, ServiceDetailFullPageComponent>> = { ...BUILT_IN_FULL_PAGES, ...fullPages };
+  const FullPage = fullPageMap[variantId];
 
   const photos = photosFor(service);
   const priceFull = formatServicePrice(service.startingPrice, service.priceUnit);
@@ -167,22 +189,52 @@ export function ServiceDetailPage({
       <div
         className="pointer-events-none absolute inset-x-0 top-0 h-[420px]"
         style={{
-          backgroundImage: `linear-gradient(to bottom, oklch(0.97 0.028 ${hue}), var(--background))`,
+          // Tinta derivada do próprio --background (mesma luminosidade, matiz da categoria): no claro
+          // fica ~0.97 como antes; no escuro vira um tom escuro em vez de uma faixa clara sob o
+          // breadcrumb/título (que, no tema escuro, são claros).
+          backgroundImage: `linear-gradient(to bottom, oklch(from var(--background) calc(l * 0.975) 0.028 ${hue}), var(--background))`,
         }}
       />
       <div className="relative mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8">
         <nav className="flex items-center gap-1 py-5 text-xs text-muted-foreground">
-          <Link href="/" className="hover:text-foreground">
+          {/* -my-1 py-1: área de toque de 24px sem mudar a altura do breadcrumb */}
+          <Link href="/" className="-my-1 py-1 hover:text-foreground">
             Início
           </Link>
           <ChevronRight className="h-3 w-3" />
-          <Link href={searchHref} className="hover:text-foreground">
-            Buscar
-          </Link>
-          <ChevronRight className="h-3 w-3" />
+          {FullPage && service.categoryGroup?.slug ? (
+            // Página inteira (ex. notícia): o meio do caminho é a seção, não a busca genérica.
+            <Link
+              href={`${searchHref}?group=${encodeURIComponent(service.categoryGroup.slug)}`}
+              className="-my-1 shrink-0 py-1 hover:text-foreground"
+            >
+              {service.categoryGroup.name}
+            </Link>
+          ) : (
+            <Link href={searchHref} className="-my-1 py-1 hover:text-foreground">
+              Buscar
+            </Link>
+          )}
+          <ChevronRight className="h-3 w-3 shrink-0" />
           <span className="truncate text-foreground">{service.title}</span>
         </nav>
 
+        {FullPage ? (
+          <FullPage
+            data={data}
+            hue={hue}
+            labels={labels}
+            detailConfig={detailConfig}
+            path={path}
+            trackUid={analytics ? service.uid : undefined}
+            trackView={(node) => (
+              <ViewTracker uid={service.uid} rule={analytics?.viewRule ?? null}>
+                {node}
+              </ViewTracker>
+            )}
+            slots={slots}
+          />
+        ) : (
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_340px] lg:gap-[38px]">
           <div className="min-w-0">
             {/* Só hero + título: a regra de visibilidade (fração do bloco) precisa caber numa tela. */}
@@ -342,6 +394,7 @@ export function ServiceDetailPage({
             </div>
           </aside>
         </div>
+        )}
 
         {(tagRails ?? []).map((rail) => (
           <ServiceCarouselSection
@@ -354,7 +407,7 @@ export function ServiceDetailPage({
           />
         ))}
         <ServiceCarouselSection
-          title="Também pode te interessar"
+          title={RELATED_TITLES[variantId] ?? 'Também pode te interessar'}
           subtitleLabel={relatedScopeLabel}
           services={related.items}
           hue={hue}
