@@ -10,7 +10,7 @@ import {
   type ReactNode,
 } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Filter, MapPin, Search, X } from 'lucide-react';
+import { Filter, X } from 'lucide-react';
 import {
   Sheet,
   SheetContent,
@@ -22,6 +22,7 @@ import { useUserLocation } from '../../hooks/use-user-location';
 import { LocationModal } from '../location-modal';
 import { cn } from '../../../lib/utils';
 import { AssistantIcon } from './assistant-icon';
+import { SearchBar } from './search-bar';
 import { LocationGate } from './location-gate';
 import { SearchChat } from './search-chat';
 import { SearchFiltersPanel } from './search-filters-panel';
@@ -502,6 +503,21 @@ function SearchPageInner({
     }
   };
 
+  // `?ia=<texto>` (vem do campo de busca da home): abre o chat com o texto uma vez e limpa o
+  // parâmetro da URL (replace), pra recarregar/voltar não reabrir o assistente.
+  const iaHandledRef = useRef(false);
+  useEffect(() => {
+    const ia = searchParams.get('ia');
+    if (ia === null || iaHandledRef.current) return;
+    iaHandledRef.current = true;
+    if (aiEnabled) openChat(ia);
+    const sp = new URLSearchParams(searchParams.toString());
+    sp.delete('ia');
+    const qs = sp.toString();
+    router.replace(qs ? `${basePath}?${qs}` : basePath, { scroll: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- roda uma vez na montagem
+  }, []);
+
   // chat e filtro (mobile) se alternam — abrir um minimiza o outro, pra tela nunca ficar com
   // dois painéis grandes disputando espaço.
   const toggleMobileChat = () => {
@@ -622,53 +638,28 @@ function SearchPageInner({
               <Typography.H4 font="display" className="text-muted-foreground">
                 {aiEnabled ? 'Buscar com IA' : 'Buscar'}
               </Typography.H4>
-              <form
-                className="mt-3 flex items-center gap-2 rounded-full border-2 border-primary/40 bg-background p-2 shadow-md transition focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/15"
-                onSubmit={(e) => {
-                  e.preventDefault();
+              <SearchBar
+                className="mt-3"
+                value={heroInput}
+                onChange={setHeroInput}
+                onSubmit={(text) => {
                   if (aiEnabled) {
-                    openChat(heroInput);
+                    openChat(text);
                     setHeroInput('');
                   } else {
-                    setFilters({ query: heroInput.trim() || null });
+                    setFilters({ query: text.trim() || null });
                   }
                 }}
-              >
-                <button
-                  type="button"
-                  onClick={() => setLocationOpen(true)}
-                  aria-label="Trocar localização"
-                  title={location.autoDetected ? 'Detectado automaticamente — clique para trocar' : 'Trocar localização'}
-                  className="hidden h-12 shrink-0 items-center gap-1 rounded-full bg-muted px-3 text-xs font-medium text-foreground transition hover:bg-muted/70 sm:inline-flex"
-                >
-                  <MapPin className="h-3.5 w-3.5 text-primary" />
-                  <span className="max-w-[9rem] truncate">{locationLabel}</span>
-                </button>
-                <input
-                  value={heroInput}
-                  onChange={(e) => setHeroInput(e.target.value)}
-                  placeholder={aiEnabled ? 'Descreva o que você precisa…' : 'O que você procura?'}
-                  className="h-12 min-w-0 flex-1 bg-transparent px-3 text-base outline-none placeholder:text-muted-foreground/70"
-                />
-                {aiEnabled && (
-                  <button
-                    type="button"
-                    onClick={() => openChat(heroInput)}
-                    aria-label="Falar com o assistente"
-                    className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary transition hover:bg-primary/20"
-                  >
-                    <AssistantIcon className="h-[30px] w-[30px]" />
-                  </button>
-                )}
-                <button
-                  type="submit"
-                  aria-label="Buscar"
-                  className="h-12 shrink-0 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90 sm:px-5"
-                >
-                  <Search className="h-4 w-4 sm:hidden" />
-                  <span className="hidden sm:inline">Buscar</span>
-                </button>
-              </form>
+                placeholder={aiEnabled ? 'Descreva o que você precisa…' : 'O que você procura?'}
+                locationLabel={locationLabel}
+                onLocationClick={() => setLocationOpen(true)}
+                locationTitle={
+                  location.autoDetected
+                    ? 'Detectado automaticamente — clique para trocar'
+                    : 'Trocar localização'
+                }
+                assistant={aiEnabled ? { onClick: (text) => openChat(text) } : undefined}
+              />
               {/* Localização no mobile (no desktop ela é o chip dentro da barra). */}
               <p className="mt-1.5 text-xs text-muted-foreground sm:hidden">
                 Buscando em <span className="font-medium text-foreground">{locationLabel}</span>

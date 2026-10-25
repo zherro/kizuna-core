@@ -10,7 +10,7 @@ caminho (sem barrel).
 | Página                                  | Cobre                                                                                         |
 | --------------------------------------- | --------------------------------------------------------------------------------------------- |
 | [Componentes & hooks](componentes.md)   | Mapa de `ui/`, `ui-better-soft/`, `screen-engine/`, `showcase/`, hooks, providers, tema.      |
-| [Blocos da home](blocos-da-home.md)     | Peças prontas de home com contrato de dados: `DiscoverCta`, `PlaceHighlights` (lugares da cidade), `NewsHighlights` (notícias), `PainelWelcome` (home do painel para quem navega). |
+| [Blocos da home](blocos-da-home.md)     | Peças prontas de home com contrato de dados: `DiscoverCta`, `PlaceHighlights` (lugares da cidade), `PlaceMosaic` (lugares em mosaico), `HomeSearch`/`SearchBar` (busca da home), `NewsHighlights` (notícias), `PainelWelcome` (home do painel para quem navega). |
 | [Screen Engine](screen-engine.md)       | Telas de `/painel` montadas a partir de `ScreenConfig` — arquitetura, uso, limites, erros.    |
 | [Wizard](wizard.md)                     | Fluxos multi-step: contrato de step, `defineWizard`, persistência read-merge-write, slot de IA. |
 | [Formulários dinâmicos](formularios-dinamicos.md) | Form builder: `FormSchema`, tipos de campo, validação, campo repetível `list`, respostas. |

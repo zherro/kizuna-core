@@ -56,8 +56,9 @@ core template (`template/src/app/painel/root/[slug]/page.tsx`, which fills the `
 
 ## `client/components/home/*` — blocos da home
 
-`DiscoverCta` (banner de chamada) e `PlaceHighlights` (lugares da cidade: destaque + índice,
-chapéu com cor por grupo via `placeTone`). Recebem dados prontos por props — ver
+`DiscoverCta` (banner de chamada), `PlaceHighlights` (lugares da cidade: destaque + índice,
+chapéu com cor por grupo via `placeTone`), `PlaceMosaic` (lugares em mosaico, usado pela home do
+starter) e `HomeSearch` (busca da home, baseada no `SearchBar` de `search/`). Recebem dados prontos por props — ver
 [Blocos da home](blocos-da-home.md).
 
 ## `client/components/showcase/*` — visual catalog

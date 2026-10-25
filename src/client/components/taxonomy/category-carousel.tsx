@@ -414,7 +414,7 @@ function Header({
         <Grid sm={2}>
           <Link
             href={allHref}
-            className="float-right text-sm font-medium text-muted-foreground underline-offset-4 hover:text-foreground underline"
+            className="relative float-right text-sm font-medium text-muted-foreground after:absolute after:-inset-2 after:content-[''] underline-offset-4 hover:text-foreground underline"
           >
             {allLabel}
           </Link>

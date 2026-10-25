@@ -1,5 +1,5 @@
 ---
-description: Blocos prontos para montar a home (DiscoverCta, PlaceHighlights, NewsHighlights) e a home do painel (PainelWelcome) — contrato de dados, visual e como ligar.
+description: Blocos prontos para montar a home (DiscoverCta, PlaceHighlights, PlaceMosaic, HomeSearch, NewsHighlights) e a home do painel (PainelWelcome) — contrato de dados, visual e como ligar.
 ---
 
 # Blocos da home
@@ -13,11 +13,18 @@ e quem decide se o bloco aparece é a página da home.
 | ----------------- | ----------------------- | --------------------------------------------------------------- |
 | `DiscoverCta`     | `discover-cta.tsx`      | Banner de chamada com o gradiente da cor primária.              |
 | `PlaceHighlights` | `place-highlights.tsx`  | "Lugares da cidade": um lugar em destaque e os demais num índice. |
+| `PlaceMosaic`     | `place-mosaic.tsx`      | "Lugares da cidade" em mosaico (bento, colunas ou faixas), com chips por grupo e "Surpreenda-me". Substitui o `PlaceHighlights` na home do starter. |
+| `HomeSearch`      | `home-search.tsx`       | Campo de busca da home (usa o `SearchBar` de `search/search-bar.tsx`); envia para `/busca`. |
 | `NewsHighlights`  | `news-highlights.tsx`   | "Notícias": manchete grande e lista numerada das seguintes.     |
 | `PainelWelcome`   | `painel-welcome/painel-welcome.tsx` | Home do painel para quem navega: descoberta, favoritos, atalhos e convite a anunciar. |
 
 `PlaceHighlights`, `NewsHighlights` e `PainelWelcome` aparecem no showcase
 (`/showcase/place-highlights`, `/showcase/news-highlights` e `/showcase/painel-welcome`).
+
+{% hint style="info" %}
+A home do starter usa `PlaceMosaic` no lugar de `PlaceHighlights`. O `PlaceHighlights` continua no
+core (e o `placeTone` é compartilhado pelos dois), mas a página inicial não o monta mais.
+{% endhint %}
 
 ## PlaceHighlights
 
@@ -98,6 +105,123 @@ const places = loadHomePlaces({ citySlug: city?.slug, cityName: city?.name, limi
 
 `loadHomePlaces` lê arquivos do disco: chame no Server Component da página e passe o resultado
 adiante como prop (o bloco em si não tem estado e funciona dos dois lados).
+
+## PlaceMosaic
+
+"Lugares da cidade" em mosaico. Usa o mesmo contrato de dados do `PlaceHighlights`
+(`PlaceHighlightItem`, reexportado como `PlaceMosaicItem`) e a mesma cor de grupo (`placeTone`),
+mas arruma as peças em um de três arranjos:
+
+* `bento`: grade de 2 colunas no celular e 4 no desktop; as quatro primeiras peças fecham um bloco
+  (uma grande, uma larga e duas altas) e o padrão se repete em linhas de 4;
+* `columns`: colunas estilo alvenaria, com a altura de cada peça definida pelo hash do título;
+* `strips`: carrossel horizontal com scroll-snap no celular e grade de 4 colunas no desktop, com um
+  destaque largo alternando de lado.
+
+Sem itens, devolve `null`. A forma muda com a largura **do próprio bloco** (container queries).
+
+```ts
+type PlaceMosaicProps = {
+  items: PlaceHighlightItem[];
+  variant?: 'bento' | 'columns' | 'strips' | 'auto'; // default "auto"
+  seed?: string;           // semente do "auto"; no servidor, passe mosaicDaySeed()
+  title?: string;          // default "Lugares da cidade"
+  moreHref?: string;       // liga o link do cabeçalho
+  moreLabel?: string;      // default "Ver todos"
+  limit?: number;          // máximo de lugares; aplicado ANTES dos chips
+  contained?: boolean;     // container da home (default true)
+  className?: string;
+  labels?: { all?: string; surprise?: string; filterBy?: string; drawn?: string; open?: string; close?: string };
+};
+```
+
+### Variante `auto` e semente
+
+Com `variant="auto"`, `resolveMosaicVariant` decide assim: **menos de 4 itens** usa `strips` (bento
+e colunas precisam de volume para parecerem mosaico); com 4 ou mais, o hash de `seed|contagem`
+escolhe entre as três. A decisão é determinística.
+
+O servidor passa `seed={mosaicDaySeed()}` (data "AAAA-MM-DD" no fuso `America/Sao_Paulo`). O cliente
+**nunca lê a data**, então servidor e hidratação geram o mesmo markup, sem erro de hidratação, e o
+arranjo gira a cada dia. As funções de `place-mosaic-layout.ts` são puras; o sorteio recebe o gerador
+aleatório por parâmetro, o que permite testar.
+
+### Comportamento
+
+* **Chips de categoria:** vêm dos `kicker` dos itens (únicos, na ordem em que aparecem, mesma
+  normalização da cor). Com um só grupo, os chips somem. Trocar de filtro faz uma transição curta
+  de opacidade (sem ela com movimento reduzido).
+* **Resumo:** em telas com ponteiro, o `summary`/`meta` aparece ao passar o mouse ou focar a peça.
+  No toque não há hover: o resumo fica fixo só nas peças grandes.
+* **Surpreenda-me:** sorteia entre os itens do **filtro atual**, rola até a peça, a destaca com um
+  anel na cor do grupo e mostra um aviso fixo "Sorteado: Nome" com o link "Abrir lugar" e um botão de
+  fechar. No celular o aviso fica acima da navegação inferior. O visitante vê o lugar no contexto,
+  pode sortear de novo (**nunca repete o último**) e só navega se quiser. Trocar o filtro limpa o aviso.
+* Peças sem foto usam o gradiente do grupo com um pino, como no `PlaceHighlights`.
+
+### Acessibilidade
+
+`section` com `aria-labelledby`; chips em um `group` com `aria-label` e `aria-pressed`; cada peça é um
+único link (foto com `alt` vazio); o aviso do sorteio é `role="status"`; alvos de toque de no mínimo
+44px, foco visível e animações condicionadas a `prefers-reduced-motion`.
+
+### Montar na home
+
+No starter, `HomePlaces` (`src/components/home/home-engagement.tsx`) carrega os lugares e entrega ao
+mosaico, com a semente calculada no servidor:
+
+```tsx
+import { PlaceMosaic, mosaicDaySeed } from '@kizuna/core/client/components/home/place-mosaic';
+
+<PlaceMosaic items={items} variant={variant} seed={mosaicDaySeed()} limit={limit} />
+```
+
+`variant` e `limit` vêm de `home.placesMosaic` no `kizuna.config.json` (ver
+[Configuração](../comecando/configuracao.md)).
+
+## HomeSearch e SearchBar
+
+`SearchBar` (`search/search-bar.tsx`) é o campo de busca em pílula, extraído de
+`search/search-page.tsx` e compartilhado pela `/busca` e pela home. É **controlado e sem
+roteamento**: quem usa decide o que fazer no envio.
+
+```ts
+type SearchBarProps = {
+  value: string;
+  onChange: (value: string) => void;
+  onSubmit: (value: string) => void;          // Enter ou "Buscar"; texto sem trim
+  placeholder?: string;                       // default "O que você procura?"
+  locationLabel?: string;                     // chip de localização (só desktop); sem rótulo, não aparece
+  onLocationClick?: () => void;
+  locationTitle?: string;                     // default "Trocar localização"
+  assistant?: { onClick: (value: string) => void }; // botão do assistente; sem isto, não aparece
+  className?: string;
+};
+```
+
+`HomeSearch` (`home/home-search.tsx`) monta o `SearchBar` na home e navega:
+
+* envio normal: `/busca?q=<texto>`, acrescentando a cidade (`state`, `cityId`, `cityName`) quando
+  `city` vier;
+* assistente: `/busca?ia=<texto>`;
+* texto vazio: `/busca` sem parâmetro de texto.
+
+A `/busca` lê `?ia=`: com a IA habilitada, abre o chat com o texto **uma única vez** e remove o
+parâmetro da URL.
+
+```ts
+type HomeSearchProps = {
+  city?: { name: string; state: string; ibge: string } | null;
+  aiEnabled?: boolean;      // mostra o botão do assistente (default false)
+  placeholder?: string;     // com IA e sem valor: "Descreva o que você precisa…"
+  locationLabel?: string;
+  contained?: boolean;      // container da home (default true)
+  className?: string;
+};
+```
+
+No starter, `src/components/home-page.tsx` passa `aiEnabled` conforme `search.ai` (desligado só com
+`false`) e esconde o bloco com `home.showSearch: false`.
 
 ## NewsHighlights
 

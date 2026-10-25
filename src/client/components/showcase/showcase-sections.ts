@@ -56,6 +56,8 @@ export type ShowcaseSectionId =
   | 'service-detail-evento'
   | 'search-filter-blocks'
   | 'place-highlights'
+  | 'place-mosaic'
+  | 'home-search'
   | 'news-highlights'
   | 'painel-welcome'
   | 'painel-hero'
@@ -1448,6 +1450,24 @@ export function CategoriasDoGrupo({ group, categoryIds, subcategoryIds, onChange
 }`,
   },
   {
+    id: 'home-search',
+    groupId: 'ui-better-soft',
+    label: 'Busca da home',
+    description:
+      'Campo de busca em pilula da home: o mesmo SearchBar da pagina /busca (chip de localizacao, input, botao do assistente e Buscar). Ao enviar, navega para /busca?q=<texto>, acrescentando state, cityId e cityName quando recebe a cidade; com aiEnabled, o botao do assistente leva a /busca?ia=<texto>, que abre o chat la. Texto vazio vai para /busca. Para usar sem navegar, use o SearchBar controlado direto.',
+    usageCode: `import { HomeSearch } from '@kizuna/core/client/components/home/home-search';
+
+export function BuscaDaHome() {
+  return (
+    <HomeSearch
+      aiEnabled
+      city={{ name: 'Cuiabá', state: 'MT', ibge: '5103403' }}
+      locationLabel="Cuiabá"
+    />
+  );
+}`,
+  },
+  {
     id: 'place-highlights',
     groupId: 'ui-better-soft',
     label: 'Lugares da cidade',
@@ -1468,6 +1488,38 @@ export function LugaresDaHome() {
           summary: 'Estádio da cidade, com jogos, shows e visita guiada.',
           image: '/lugares/arena-pantanal/01.jpg',
           meta: 'Av. Agrícola Paes de Barros, s/n',
+        },
+        { href: '/cuiaba-mt/lugares/pantanal-shopping', title: 'Pantanal Shopping', kicker: 'Shopping' },
+      ]}
+    />
+  );
+}`,
+  },
+  {
+    id: 'place-mosaic',
+    groupId: 'ui-better-soft',
+    label: 'Mosaico de lugares',
+    description:
+      'Lugares da cidade em mosaico, em tres arranjos: bento (pecas de tamanhos diferentes), colunas (alturas variadas por hash do titulo) e faixas (destaque alternando de lado; carrossel com scroll-snap no celular). Chips de grupo filtram com transicao suave, o resumo aparece sobre a foto no hover/foco (fixo no touch) e "Surpreenda-me" sorteia um lugar do filtro atual, rola ate ele e o destaca com um link para abrir. variant="auto" escolhe de forma deterministica pela contagem e pela seed (mosaicDaySeed no servidor). Mesmo contrato PlaceHighlightItem; sem itens, nao renderiza nada.',
+    usageCode: `import { PlaceMosaic } from '@kizuna/core/client/components/home/place-mosaic';
+import { mosaicDaySeed } from '@kizuna/core/client/components/home/place-mosaic-layout';
+
+export function LugaresDaHome() {
+  return (
+    <PlaceMosaic
+      variant="auto"
+      seed={mosaicDaySeed()}
+      moreHref="/cuiaba-mt/lugares"
+      limit={12}
+      labels={{ all: 'Todos', surprise: 'Surpreenda-me' }}
+      items={[
+        {
+          href: '/cuiaba-mt/lugares/arena-pantanal',
+          title: 'Arena Pantanal',
+          kicker: 'Estadio e arenas',
+          summary: 'Estadio da cidade, com jogos, shows e visita guiada.',
+          image: '/lugares/arena-pantanal/01.jpg',
+          meta: 'Av. Agricola Paes de Barros, s/n',
         },
         { href: '/cuiaba-mt/lugares/pantanal-shopping', title: 'Pantanal Shopping', kicker: 'Shopping' },
       ]}

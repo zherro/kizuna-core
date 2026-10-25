@@ -122,9 +122,30 @@ Controla quais seções aparecem na home pública (`/`) e o visual delas.
 | `inkPicker`         | boolean                  | `true`      | Mostra o seletor de intensidade do fundo escuro ("ink") dos cards de destaque.           |
 | `inkLevel`          | `1`–`7`                  | `6`         | Intensidade padrão do fundo "ink". Com o seletor ativo, a escolha salva do usuário prevalece. |
 | `categoryRails`     | `{ slug? \| group?, title?, limit? }[]` | `[]` (o starter já traz `cinema`) | **Carrosséis por categoria** na home (ver abaixo), um por item, na ordem do array.        |
+| `showPlaces`        | boolean                  | `true`      | Mostra o mosaico de lugares da cidade. Só `false` esconde; sem lugares aprovados o bloco some sozinho. |
+| `showNews`          | boolean                  | `true`      | Mostra as notícias (grupo `noticias`). Só `false` esconde.                                |
+| `showSearch`        | boolean                  | `true`      | Mostra a **busca** logo abaixo do swipe (mesmo campo da `/busca`; envia para `/busca?q=`). Só `false` esconde. |
+| `placesMosaic.variant` | `bento` \| `columns` \| `strips` \| `auto` | `auto` | Arranjo do mosaico de lugares. `auto` escolhe pela contagem e gira a cada dia (com menos de 4 lugares usa `strips`). |
+| `placesMosaic.limit`   | number                | `10`        | Máximo de lugares no mosaico (aplicado antes dos chips de categoria).                     |
+| `instagramUrl`      | string                   | —           | Perfil do Instagram. Vazio = o link não aparece. Agora é um link discreto em linha, não mais um card grande. |
 
-Ordem das seções na home: hero → carrossel de categorias → banner "Descobrir" → carrosséis por
-categoria → grade de próximos → "como funciona" → chamada final.
+Ordem das seções na home do starter: categorias → swipe → busca → trilhas por categoria
+(`categoryRails`, que continua definindo as trilhas dinâmicas por categoria/grupo) → mosaico de
+lugares → notícias → "como funciona" → seguir/instalar.
+
+```json
+"showSearch": true,
+"placesMosaic": { "variant": "auto", "limit": 10 }
+```
+
+Os blocos novos estão descritos em [Blocos da home](../interface/blocos-da-home.md).
+
+{% hint style="info" %}
+**Cache da home.** A home `/[cidade]` é ISR com `revalidate = 900` (15 minutos). O valor é literal
+em `src/app/[cidade]/page.tsx` porque o Next exige uma constante estática (não dá para ler do
+`kizuna.config.json`). Para mudar o tempo, edite esse arquivo. Mudanças em lugares, notícias e
+anúncios aparecem na home após a próxima revalidação.
+{% endhint %}
 
 ### Carrosséis por categoria
 

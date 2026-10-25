@@ -79,7 +79,9 @@ import { MobileTabBar } from '../ui-better-soft/mobile-tab-bar';
 import { LocationTrigger, LocationModal } from '../location-modal';
 import { FormBuilderShowcaseDemo } from '../form-builder/showcase-demo';
 import { SearchFilterBlocksDemo } from '../search/filters/showcase-demo';
+import { HomeSearch } from '../home/home-search';
 import { PlaceHighlights, type PlaceHighlightItem } from '../home/place-highlights';
+import { PlaceMosaic } from '../home/place-mosaic';
 import { NewsHighlights, type NewsHighlightItem } from '../home/news-highlights';
 import { PainelWelcome } from '../painel-welcome';
 import { PainelHero } from '../analytics/painel-home';
@@ -1233,8 +1235,51 @@ const PLACE_HIGHLIGHTS_DEMO: PlaceHighlightItem[] = [
   { href: '#noturna', title: 'Casa Lua Cheia', kicker: 'Casa noturna', meta: 'Rua do Porto, 12' },
 ];
 
+function HomeSearchDemo() {
+  return (
+    <HomeSearch
+      aiEnabled
+      contained={false}
+      locationLabel="Cuiabá"
+      city={{ name: 'Cuiabá', state: 'MT', ibge: '5103403' }}
+    />
+  );
+}
+
 function PlaceHighlightsDemo() {
   return <PlaceHighlights items={PLACE_HIGHLIGHTS_DEMO} moreHref="#todos" contained={false} />;
+}
+
+const PLACE_MOSAIC_DEMO: PlaceHighlightItem[] = [
+  ...PLACE_HIGHLIGHTS_DEMO,
+  { href: '#parque', title: 'Parque das Águas', kicker: 'Parque', summary: 'Trilhas curtas, lago e área de piquenique para a família.', meta: 'Av. do Lago, 1200' },
+  { href: '#museu', title: 'Museu da Cidade', kicker: 'Museu', summary: 'Acervo sobre a fundação e as culturas locais.', meta: 'Praça da Matriz, 3' },
+  { href: '#mercado', title: 'Mercado Velho', kicker: 'Shopping', meta: 'Rua do Comércio, 45' },
+  { href: '#bar', title: 'Bar do Porto', kicker: 'Casa noturna', summary: 'Música ao vivo de quinta a sábado.', meta: 'Rua do Porto, 80' },
+  { href: '#salao', title: 'Salão Aurora', kicker: 'Casa de festas', meta: 'Rua das Flores, 210' },
+  { href: '#estadio', title: 'Ginásio Municipal', kicker: 'Estádio e arenas', meta: 'Av. Esportiva, 9' },
+];
+
+function PlaceMosaicDemo() {
+  const [variant, setVariant] = useState<'bento' | 'columns' | 'strips' | 'auto'>('bento');
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-2">
+        {(['bento', 'columns', 'strips', 'auto'] as const).map((v) => (
+          <button
+            key={v}
+            type="button"
+            onClick={() => setVariant(v)}
+            aria-pressed={variant === v}
+            className="min-h-11 rounded-full border px-4 text-sm aria-pressed:bg-foreground aria-pressed:text-background"
+          >
+            {v}
+          </button>
+        ))}
+      </div>
+      <PlaceMosaic items={PLACE_MOSAIC_DEMO} variant={variant} seed="demo" moreHref="#todos" contained={false} />
+    </div>
+  );
 }
 
 /* Datas fixas (não `Date.now()`): o texto do servidor e o da hidratação precisam bater. */
@@ -1361,7 +1406,9 @@ function SectionDemo({ sectionId }: { sectionId: ShowcaseSectionId }) {
   if (sectionId === 'ad-extra-fields') return <AdExtraFieldsDemo />;
   if (sectionId === 'service-detail-evento') return <ServiceDetailEventoDemo />;
   if (sectionId === 'search-filter-blocks') return <SearchFilterBlocksDemo />;
+  if (sectionId === 'home-search') return <HomeSearchDemo />;
   if (sectionId === 'place-highlights') return <PlaceHighlightsDemo />;
+  if (sectionId === 'place-mosaic') return <PlaceMosaicDemo />;
   if (sectionId === 'news-highlights') return <NewsHighlightsDemo />;
   if (sectionId === 'painel-welcome') return <PainelWelcomeDemo />;
   if (sectionId === 'painel-hero') return <PainelHero headingAs="h2" />;

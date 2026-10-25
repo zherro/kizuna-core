@@ -24,7 +24,7 @@ export function CityInvite() {
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/40 px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted"
+          className="relative inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/40 px-3 py-1.5 after:absolute after:inset-x-0 after:-inset-y-2 after:content-[''] text-xs font-medium text-foreground transition-colors hover:bg-muted"
         >
           <MapPin className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
           {location?.cityName
