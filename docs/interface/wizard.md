@@ -131,8 +131,18 @@ num container normal no fluxo do documento:
   (volta para `finishHrefByMode[mode]` ou `/painel`).
 - Grid `md:grid-cols-[13rem_1fr]`: **rail** (steps clicáveis até o `furthestStep`) + summary
   opcional à esquerda, step ativo à direita (`key={currentStep}` + animação `.wz-step-in`).
-- **Bottom bar** sticky: "Voltar" (`invisible` no passo 1), "Continuar" / "Salvar e
-  continuar", "Concluir" no último.
+- **Rail fixo no desktop**: a página rola no documento, e o rail é `sticky` abaixo do header do
+  site (`--kz-header-h`). Por isso nem o `<main>` do shell nem o miolo do `PanelShellBase` têm
+  `overflow-y-auto` — um contêiner de rolagem que não rola prende o `sticky` (o rail subia junto).
+- **Cabeçalho do formulário no mobile** (`WizardTopBar`, abaixo de `md`): seletor de passos em
+  popover (`WizardStepSelect`, sobre o `SelectPopover`) + barra de progresso, grudado no topo. O
+  `<Wizard>` liga o **modo imersivo** (`useImmersiveMode`): o header do site, o do painel e a
+  `MobileTabBar` somem no mobile, e a chrome (toggle de layout, IA) vem para este cabeçalho.
+  No `scroll`, escolher um passo rola até a seção (reabrindo se já foi respondida).
+- **Pular passos em desenvolvimento**: fora de produção, rail e seletor liberam todos os passos
+  (`jumpTo(i, { force: true })`), sem responder os anteriores.
+- **Bottom bar** fixa (`BottomBar`, a mesma casca da `MobileTabBar`): "Voltar" (`invisible` no
+  passo 1), "Continuar" / "Salvar e continuar", "Concluir" no último.
 - O header padrão do painel fica escondido enquanto a rota é de wizard (o app consumidor casa a
   rota via um predicado `isFullBleedRoute` no `panel-shell`), mas sem `position: fixed`.
 - Outlines de card ativo via `.wz-selectable` / `.wz-disc-current` no `globals.css` do core

@@ -14,6 +14,8 @@ import { type WizardLayout, readStoredLayout, writeStoredLayout } from './wizard
 import { applyAssistPatch } from './apply-assist-patch';
 import { Button } from '../ui/button';
 import { useCollapsePanelSidebar } from '../panel-sidebar-context';
+import { useImmersiveMode } from '../../hooks/use-immersive-mode';
+import { useMediaQuery } from '../../hooks/use-media-query';
 import { useAppPreferences } from '../../providers/app-preferences-provider';
 import type {
   WizardAssistant,
@@ -152,6 +154,10 @@ export function Wizard<S extends Record<string, unknown> = Record<string, unknow
   // Desktop: encolhe o menu lateral do painel enquanto o wizard está aberto; ao sair reabre (a
   // menos que o usuário tenha mexido no menu nesse meio tempo — aí vale a escolha dele).
   useCollapsePanelSidebar();
+  // Mobile: some o header do site/painel e a barra inferior — o formulário usa a tela toda, com o
+  // próprio cabeçalho (seletor de passos) e o próprio rodapé de ações.
+  useImmersiveMode();
+  const mobile = useMediaQuery('(max-width: 767px)');
 
   // Layout is only switchable in `create`; edit/review always use the stepper (the scroll layout
   // has no persist-without-advance story). Seed from `variant` for a stable first paint, then
@@ -263,7 +269,8 @@ export function Wizard<S extends Record<string, unknown> = Record<string, unknow
 
   const totalSteps = steps.length;
   const currentStep = currentIndex + 1;
-  const stepLabel = steps[currentIndex]?.label ?? '';
+  // Em desenvolvimento dá pra pular para qualquer passo (rail e seletor), sem responder os anteriores.
+  const devJump = process.env.NODE_ENV !== 'production';
   const progress = totalSteps > 1 ? Math.round((currentIndex / (totalSteps - 1)) * 100) : 100;
   const railSteps = steps.map((s) => ({ label: s.label }));
   const continueLabel = mode === 'edit' ? 'Salvar e continuar' : 'Continuar';
@@ -310,7 +317,7 @@ export function Wizard<S extends Record<string, unknown> = Record<string, unknow
   // one header via portal. `compact`: no top bar — Cancelar lives in the footer; the toggle/assist
   // affordances (when any) still go to the header slot, without label nor Cancelar.
   const compact = header === 'compact';
-  const chrome = compact ? (
+  const chrome = mobile ? null : compact ? (
     layoutToggle || assistControl ? (
       <WizardHeaderPortal compact>
         {layoutToggle}
@@ -330,6 +337,20 @@ export function Wizard<S extends Record<string, unknown> = Record<string, unknow
     </WizardHeaderPortal>
   );
   const onCancel = compact ? exit : undefined;
+  // Mobile: a chrome vai no cabeçalho do formulário (o do painel some no modo imersivo) — num
+  // lugar só, nunca nos dois. No `bar` o Cancelar não está no rodapé, então vem junto.
+  const topBarExtra =
+    mobile && (layoutToggle || assistControl || !compact) ? (
+      <>
+        {layoutToggle}
+        {assistControl}
+        {compact ? null : (
+          <Button variant="ghost" size="sm" onClick={exit}>
+            Cancelar
+          </Button>
+        )}
+      </>
+    ) : undefined;
 
   const naviShown = (conv.active || conv.endedMidway) && !naviSuppressed;
   const naviSlot = naviShown ? <NaviLayer conv={conv} /> : undefined;
@@ -351,17 +372,17 @@ export function Wizard<S extends Record<string, unknown> = Record<string, unknow
         naviSlot={naviSlot}
         renderStep={(step) => <step.Component {...stepCtx} />}
         onCancel={onCancel}
+        topBarExtra={topBarExtra}
       />
     ) : (
       <WizardShell
         currentStep={currentStep}
         currentIndex={currentIndex}
-        totalSteps={totalSteps}
-        stepLabel={stepLabel}
         progress={progress}
         railSteps={railSteps}
-        furthest={Math.min(furthestIndex + 1, totalSteps)}
-        onJump={(step) => void jumpTo(step - 1)}
+        furthest={devJump ? totalSteps : Math.min(furthestIndex + 1, totalSteps)}
+        onJump={(step) => void jumpTo(step - 1, { force: devJump })}
+        topBarExtra={topBarExtra}
         isLastStep={isLastStep}
         showContinue
         continueLabel={continueLabel}

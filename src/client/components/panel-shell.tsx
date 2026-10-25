@@ -7,6 +7,7 @@ import { LogOut, X } from 'lucide-react';
 import { buttonVariants } from './ui/button';
 import { useAuth } from '../providers/auth-provider';
 import { avatarImgProps, useUserAvatarUrl } from '../hooks/use-user-avatar-url';
+import { HIDE_WHEN_IMMERSIVE } from '../hooks/use-immersive-mode';
 import { cn } from '../../lib/utils';
 import type { PermissionActions } from '../../types/auth';
 import { MobileMenuButton } from './mobile-menu-button';
@@ -457,7 +458,12 @@ export function PanelShellBase({
     return (
       <div className="flex h-full min-h-full flex-1 flex-col bg-background">
         {renderDrawer(true)}
-        <header className="sticky top-0 z-30 shrink-0 bg-background/95 shadow-sm backdrop-blur">
+        <header
+          className={cn(
+            'sticky top-0 z-30 shrink-0 bg-background/95 shadow-sm backdrop-blur',
+            HIDE_WHEN_IMMERSIVE
+          )}
+        >
           <div className="flex h-16 items-center gap-3 px-4 md:px-6">
             <MobileMenuButton onClick={() => setMobileOpen(true)} aria-label="Abrir menu" />
             <Link href="/painel" className="inline-flex items-center gap-3">
@@ -488,7 +494,9 @@ export function PanelShellBase({
           </div>
         </header>
 
-        <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
+        {/* Sem `overflow` aqui: a página rola no documento, e um contêiner de rolagem que não rola
+            prende o `sticky` dos filhos (o menu de passos do wizard subia com a página). */}
+        <div className="min-h-0 flex-1">{children}</div>
       </div>
     );
   }
@@ -509,7 +517,12 @@ export function PanelShellBase({
           collapsed ? 'lg:pl-24' : 'lg:pl-72'
         )}
       >
-        <header className="sticky top-0 z-30 bg-background/95 px-4 py-3 shadow-sm backdrop-blur md:px-6">
+        <header
+          className={cn(
+            'sticky top-0 z-30 bg-background/95 px-4 py-3 shadow-sm backdrop-blur md:px-6',
+            HIDE_WHEN_IMMERSIVE
+          )}
+        >
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-2">
               <MobileMenuButton
@@ -576,7 +589,8 @@ export function PanelShellBase({
           </div>
         </header>
 
-        <div className="min-h-0 flex-1 min-w-0 overflow-y-auto">{children}</div>
+        {/* Sem `overflow` (ver o ramo full-bleed): o `sticky` dos filhos precisa do documento. */}
+        <div className="min-h-0 min-w-0 flex-1">{children}</div>
       </div>
     </div>
     </PanelSidebarContext.Provider>

@@ -37,7 +37,8 @@ export interface UseWizardStateReturn<S> {
   error: string;
   goBack: () => void;
   goContinue: () => Promise<void>;
-  jumpTo: (i: number) => Promise<void>;
+  /** `force` ignora o limite do passo mais avançado — só para desenvolvimento (pular direto a um passo). */
+  jumpTo: (i: number, opts?: { force?: boolean }) => Promise<void>;
   finish: () => Promise<{ href: string | null }>;
 }
 
@@ -176,16 +177,17 @@ export function useWizardState<S extends Record<string, unknown>>(
   }, [currentStep, ctx, runStepPersist, steps.length]);
 
   const jumpTo = useCallback(
-    async (target: number) => {
+    async (target: number, opts?: { force?: boolean }) => {
       if (target === clampedIndex) return;
-      if (target < 0 || target > furthestIndex) return;
+      if (target < 0 || target >= steps.length) return;
+      if (target > furthestIndex && !opts?.force) return;
       if (target > clampedIndex) {
         const ok = await runStepPersist(currentStep);
         if (!ok) return;
       }
       setCurrentIndex(target);
     },
-    [clampedIndex, furthestIndex, currentStep, runStepPersist]
+    [clampedIndex, furthestIndex, steps.length, currentStep, runStepPersist]
   );
 
   const finish = useCallback(async (): Promise<{ href: string | null }> => {

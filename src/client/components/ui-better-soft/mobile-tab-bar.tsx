@@ -5,6 +5,8 @@ import { usePathname } from 'next/navigation';
 import { useEffect, type ReactNode } from 'react';
 import { cn } from '../../../lib/utils';
 import { useAuth } from '../../providers/auth-provider';
+import { useIsImmersive } from '../../hooks/use-immersive-mode';
+import { BottomBar } from './bottom-bar';
 
 // `icon` takes a rendered element (e.g. `<Search />`), not a component reference — that's what
 // keeps it safe to pass from a Server Component consumer (RootLayout) across the client boundary.
@@ -70,7 +72,7 @@ export function isTabActive(
  * Barra de navegação inferior do mobile (visível só abaixo de `md`). Genérica: os itens vêm por
  * prop. Enquanto montada, publica `--mobile-tab-h` no `<html>` (altura + safe-area) para o layout
  * reservar espaço (`pb-[var(--mobile-tab-h,0px)]`) e para elementos `fixed bottom` subirem acima dela.
- * Fica em z-20: abaixo do drawer do painel (z-50), do overlay (z-40) e do chat da busca (z-30).
+ * A casca (fixa, blur, safe-area, z-20) é o `BottomBar`. Some em modo imersivo (`useImmersiveMode`).
  */
 export function MobileTabBar({ items, guestItems, hideOn = [], className }: MobileTabBarProps) {
   const pathname = usePathname() ?? '';
@@ -79,7 +81,9 @@ export function MobileTabBar({ items, guestItems, hideOn = [], className }: Mobi
   const visibleItems = (isGuest && guestItems ? guestItems : items).filter((item) =>
     isTabVisible(item, pathname)
   );
-  const hidden = hideOn.some((prefix) => matchesPrefix(prefix, pathname));
+  // Modo imersivo (wizard no mobile): a tela usa o próprio rodapé de ações.
+  const immersive = useIsImmersive();
+  const hidden = immersive || hideOn.some((prefix) => matchesPrefix(prefix, pathname));
 
   useEffect(() => {
     if (hidden) return;
@@ -93,14 +97,7 @@ export function MobileTabBar({ items, guestItems, hideOn = [], className }: Mobi
   if (hidden) return null;
 
   return (
-    <nav
-      aria-label="Navegação principal"
-      className={cn(
-        'fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background/95 backdrop-blur md:hidden',
-        'pb-[env(safe-area-inset-bottom)]',
-        className
-      )}
-    >
+    <BottomBar as="nav" aria-label="Navegação principal" className={cn('md:hidden', className)}>
       <ul className="grid h-16 grid-cols-5">
         {visibleItems.map((item) => {
           const active = isTabActive(item, pathname);
@@ -138,6 +135,6 @@ export function MobileTabBar({ items, guestItems, hideOn = [], className }: Mobi
           );
         })}
       </ul>
-    </nav>
+    </BottomBar>
   );
 }

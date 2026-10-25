@@ -7,6 +7,7 @@ import { createPortal } from 'react-dom';
  * Projeta a "chrome" do wizard (rótulo do modo, toggle de layout, ações de IA, Cancelar) no
  * cabeçalho ÚNICO do `PanelShellBase` (o `<div id="wz-header-slot">` do ramo full-bleed), pra não
  * existir um segundo cabeçalho. Sem o slot no DOM (SSR, outro host), renderiza inline como fallback.
+ * Só do `md` pra cima: no mobile o `<Wizard>` manda a chrome para o cabeçalho do formulário.
  */
 export function WizardHeaderPortal({
   children,

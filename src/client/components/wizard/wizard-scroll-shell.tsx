@@ -4,6 +4,8 @@ import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { Check, ChevronDown, ChevronRight } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import { Button } from '../ui/button';
+import { BottomBar } from '../ui-better-soft/bottom-bar';
+import { WizardTopBar } from './wizard-top-bar';
 import { WizardLayoutContext } from './wizard-layout';
 import type { WizardStep } from './types';
 import { WizardCancelLink } from './wizard-cancel-link';
@@ -39,6 +41,8 @@ export interface WizardScrollShellProps<S extends Record<string, unknown>> {
   ground?: 'default' | 'navi';
   /** Persistent Naví dock, rendered once at the end of the scroll column (sticks to the bottom). */
   naviSlot?: ReactNode;
+  /** Slot à direita do cabeçalho do formulário no mobile (`WizardTopBar`). */
+  topBarExtra?: ReactNode;
   renderStep: (step: WizardStep<S>, index: number) => ReactNode;
 }
 
@@ -63,6 +67,7 @@ export function WizardScrollShell<S extends Record<string, unknown>>({
   autoReveal = true,
   ground = 'default',
   naviSlot,
+  topBarExtra,
   renderStep,
 }: WizardScrollShellProps<S>) {
   const total = steps.length;
@@ -133,6 +138,16 @@ export function WizardScrollShell<S extends Record<string, unknown>>({
     });
   }, [revealCount]);
 
+  // Seletor de passos do cabeçalho: leva até a seção (reabrindo se já foi respondida).
+  const jumpToSection = (n: number) => {
+    const index = n - 1;
+    if (index < currentIndex && !reopened.has(index)) toggleReopen(index);
+    sectionRefs.current[index]?.scrollIntoView({
+      behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+      block: 'start',
+    });
+  };
+
   const contextValue = useMemo(() => ({ layout: 'scroll' as const, stacked: true }), []);
 
   return (
@@ -143,7 +158,16 @@ export function WizardScrollShell<S extends Record<string, unknown>>({
           ground === 'navi' && 'wz-navi-ground'
         )}
       >
-        <div className="h-0.5 w-full shrink-0 bg-muted">
+        <WizardTopBar
+          steps={steps}
+          current={revealCount}
+          furthest={revealCount}
+          progress={answeredPct}
+          onJump={jumpToSection}
+          extra={topBarExtra}
+        />
+
+        <div className="hidden h-0.5 w-full shrink-0 bg-muted md:block">
           <div
             className="h-full bg-primary transition-[width] duration-500 ease-out"
             style={{ width: `${answeredPct}%` }}
@@ -178,7 +202,7 @@ export function WizardScrollShell<S extends Record<string, unknown>>({
                     data-answered={answered || undefined}
                     data-open={open || undefined}
                     className={cn(
-                      'wz-scroll-step scroll-mt-20',
+                      'wz-scroll-step scroll-mt-20 md:scroll-mt-[calc(var(--kz-header-h,0px)+1rem)]',
                       isNewest && open && 'wz-scroll-reveal'
                     )}
                   >
@@ -213,48 +237,47 @@ export function WizardScrollShell<S extends Record<string, unknown>>({
           </div>
         </main>
 
-        <div
+        <BottomBar
           data-wz-footer
-          className="fixed inset-x-0 bottom-0 z-20 lg:left-[var(--panel-sidebar-w,0px)] border-t border-border bg-background/95 backdrop-blur"
+          aria-label="Navegação do formulário"
+          innerClassName="flex max-w-2xl items-center justify-end gap-3 px-3 py-3 sm:px-6"
         >
-          <div className="mx-auto flex max-w-2xl items-center justify-end gap-3 px-3 py-3 sm:px-6">
-            {onCancel ? (
-              <WizardCancelLink onClick={onCancel} disabled={submitting} className={cn('-ml-1', isLastStep && 'mr-auto')}
-              />
-            ) : null}
-            {!isLastStep ? (
-              <span className="mr-auto text-xs text-muted-foreground">
-                {canContinue ? 'Pronto pra avançar' : 'Continue respondendo'}
-              </span>
-            ) : null}
-            {/* Sem auto-reveal (a Naví dirige), cada passo precisa do seu "Avançar" — habilitado
-                quando o passo valida. Com auto-reveal, o próprio revelar progride. */}
-            {!isLastStep && !autoReveal ? (
-              <Button onClick={onAdvance} disabled={submitting || !canContinue}>
-                {submitting ? (
-                  'Salvando...'
-                ) : (
-                  <>
-                    Avançar <ChevronRight className="ml-1 h-4 w-4" />
-                  </>
-                )}
-              </Button>
-            ) : (
-              <Button
-                onClick={onFinish}
-                disabled={submitting || !isLastStep || !canContinue || Boolean(finishBlocked)}
-              >
-                {submitting ? (
-                  'Salvando...'
-                ) : (
-                  <>
-                    <Check className="mr-1 h-4 w-4" /> Concluir
-                  </>
-                )}
-              </Button>
-            )}
-          </div>
-        </div>
+          {onCancel ? (
+            <WizardCancelLink onClick={onCancel} disabled={submitting} className={cn('-ml-1', isLastStep && 'mr-auto')}
+            />
+          ) : null}
+          {!isLastStep ? (
+            <span className="mr-auto text-xs text-muted-foreground">
+              {canContinue ? 'Pronto pra avançar' : 'Continue respondendo'}
+            </span>
+          ) : null}
+          {/* Sem auto-reveal (a Naví dirige), cada passo precisa do seu "Avançar" — habilitado
+              quando o passo valida. Com auto-reveal, o próprio revelar progride. */}
+          {!isLastStep && !autoReveal ? (
+            <Button onClick={onAdvance} disabled={submitting || !canContinue}>
+              {submitting ? (
+                'Salvando...'
+              ) : (
+                <>
+                  Avançar <ChevronRight className="ml-1 h-4 w-4" />
+                </>
+              )}
+            </Button>
+          ) : (
+            <Button
+              onClick={onFinish}
+              disabled={submitting || !isLastStep || !canContinue || Boolean(finishBlocked)}
+            >
+              {submitting ? (
+                'Salvando...'
+              ) : (
+                <>
+                  <Check className="mr-1 h-4 w-4" /> Concluir
+                </>
+              )}
+            </Button>
+          )}
+        </BottomBar>
       </div>
     </WizardLayoutContext.Provider>
   );

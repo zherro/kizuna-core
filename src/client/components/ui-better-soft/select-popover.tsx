@@ -1,11 +1,16 @@
 'use client';
 // soft-theme: raio via var(--ui-*) (globals.css) — classic/soft via data-ui-style
 
-import { useEffect, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 
-export type SelectPopoverOption<T extends number | string = number> = { value: T; label: string };
+export type SelectPopoverOption<T extends number | string = number> = {
+  value: T;
+  label: string;
+  /** Opção visível mas não escolhível (ex.: passo do wizard ainda não alcançado). */
+  disabled?: boolean;
+};
 
 type SelectPopoverProps<T extends number | string> = {
   value: T;
@@ -17,6 +22,8 @@ type SelectPopoverProps<T extends number | string> = {
   listClassName?: string;
   /** Id do gatilho, para um `<label htmlFor>` visível. */
   id?: string;
+  /** Conteúdo do gatilho no lugar do rótulo da opção atual (a seta continua). */
+  triggerContent?: ReactNode;
 };
 
 /**
@@ -33,6 +40,7 @@ export function SelectPopover<T extends number | string = number>({
   className,
   listClassName,
   id,
+  triggerContent,
 }: Readonly<SelectPopoverProps<T>>) {
   const [aberto, setAberto] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -56,7 +64,7 @@ export function SelectPopover<T extends number | string = number>({
       // Setas/Home/End movem o foco entre as opções (teclado em listas longas).
       const keys = ['ArrowDown', 'ArrowUp', 'Home', 'End'];
       if (!keys.includes(event.key) || !listRef.current) return;
-      const opts = Array.from(listRef.current.querySelectorAll<HTMLElement>('[role="option"]'));
+      const opts = Array.from(listRef.current.querySelectorAll<HTMLElement>('[role="option"]:not(:disabled)'));
       if (opts.length === 0) return;
       event.preventDefault();
       const cur = opts.indexOf(document.activeElement as HTMLElement);
@@ -102,7 +110,7 @@ export function SelectPopover<T extends number | string = number>({
           className
         )}
       >
-        {rotuloAtual}
+        {triggerContent ?? rotuloAtual}
         <ChevronDown
           className={cn(
             'h-3.5 w-3.5 shrink-0 transition-transform duration-200',
@@ -131,6 +139,7 @@ export function SelectPopover<T extends number | string = number>({
             type="button"
             role="option"
             aria-selected={option.value === value}
+            disabled={option.disabled}
             onClick={() => {
               onChange(option.value);
               setAberto(false);
@@ -140,7 +149,9 @@ export function SelectPopover<T extends number | string = number>({
               'block w-full rounded-xl px-3 py-2 text-left text-base font-normal whitespace-nowrap transition-colors',
               option.value === value
                 ? 'bg-primary text-primary-foreground'
-                : 'text-foreground hover:bg-background'
+                : option.disabled
+                  ? 'cursor-default text-muted-foreground opacity-60'
+                  : 'text-foreground hover:bg-background'
             )}
           >
             {option.label}

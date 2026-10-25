@@ -4,16 +4,15 @@ import type { ReactNode } from 'react';
 import { Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import { Button } from '../ui/button';
+import { BottomBar } from '../ui-better-soft/bottom-bar';
 import { WizardRail, type WizardRailStep } from './wizard-rail';
-import { WizardProgress } from './wizard-progress';
+import { WizardTopBar } from './wizard-top-bar';
 import { WizardCancelLink } from './wizard-cancel-link';
 
 export interface WizardShellProps {
   /** 1-based index of the current step, for display. */
   currentStep: number;
   currentIndex: number;
-  totalSteps: number;
-  stepLabel: string;
   progress: number;
   railSteps: WizardRailStep[];
   furthest: number;
@@ -31,6 +30,8 @@ export interface WizardShellProps {
   onContinue: () => void;
   onFinish: () => void;
   railExtra?: ReactNode;
+  /** Slot à direita do cabeçalho do formulário no mobile (`WizardTopBar`). */
+  topBarExtra?: ReactNode;
   /** `'navi'` washes the ground with a soft brand tint (conversational Naví active). */
   ground?: 'default' | 'navi';
   /** Persistent Naví dock, rendered once at the end of the scroll column (sticks to the bottom). */
@@ -47,8 +48,6 @@ export interface WizardShellProps {
 export function WizardShell({
   currentStep,
   currentIndex,
-  totalSteps,
-  stepLabel,
   progress,
   railSteps,
   furthest,
@@ -65,6 +64,7 @@ export function WizardShell({
   onContinue,
   onFinish,
   railExtra,
+  topBarExtra,
   ground = 'default',
   naviSlot,
   children,
@@ -76,20 +76,18 @@ export function WizardShell({
         ground === 'navi' && 'wz-navi-ground'
       )}
     >
-      <div className="shrink-0 border-b border-border md:hidden">
-        <WizardProgress
-          stepLabel={stepLabel}
-          currentStep={currentStep}
-          totalSteps={totalSteps}
-          progress={progress}
-          steps={railSteps}
-          current={currentStep}
-          furthest={furthest}
-          onJump={onJump}
-        />
-      </div>
+      <WizardTopBar
+        steps={railSteps}
+        current={currentStep}
+        furthest={furthest}
+        progress={progress}
+        onJump={onJump}
+        extra={topBarExtra}
+      />
 
-      <main className="min-h-0 flex-1 overflow-y-auto">
+      {/* Sem `overflow`: a página rola no documento — um contêiner de rolagem aqui prenderia o
+          `sticky` do rail (ele subia junto com o passo). */}
+      <main className="min-h-0 flex-1">
         <div
           className={cn(
             'mx-auto grid max-w-5xl gap-8 px-3 pt-8 pb-28 sm:px-6 md:grid-cols-[13rem_1fr] md:gap-12 md:pb-28',
@@ -97,7 +95,14 @@ export function WizardShell({
           )}
         >
           <aside className="hidden md:block">
-            <div className={cn('sticky space-y-5', onCancel ? 'top-2' : 'top-4')}>
+            <div
+              className={cn(
+                'sticky max-h-[calc(100dvh-var(--kz-header-h,0px)-8rem)] space-y-5 overflow-y-auto',
+                onCancel
+                  ? 'top-[calc(var(--kz-header-h,0px)+1.5rem)]'
+                  : 'top-[calc(var(--kz-header-h,0px)+2rem)]'
+              )}
+            >
               <WizardRail
                 steps={railSteps}
                 current={currentStep}
@@ -126,17 +131,15 @@ export function WizardShell({
         </div>
       </main>
 
-      <div
+      <BottomBar
         data-wz-footer
-        className="fixed inset-x-0 bottom-0 z-20 lg:left-[var(--panel-sidebar-w,0px)] border-t border-border bg-background/95 backdrop-blur"
+        aria-label="Navegação do formulário"
+        innerClassName={cn(
+          'flex max-w-5xl items-center justify-between gap-3 px-3 py-3 sm:px-6',
+          onCancel && 'lg:max-w-6xl'
+        )}
       >
-        <div
-          className={cn(
-            'mx-auto flex max-w-5xl items-center justify-between gap-3 px-3 py-3 sm:px-6',
-            onCancel && 'lg:max-w-6xl'
-          )}
-        >
-          <div className="flex items-center gap-1 sm:gap-3">
+        <div className="flex items-center gap-1 sm:gap-3">
           <Button
             variant="ghost"
             onClick={onBack}
@@ -146,26 +149,25 @@ export function WizardShell({
             <ChevronLeft className="mr-1 h-4 w-4" /> Voltar
           </Button>
           {onCancel ? <WizardCancelLink onClick={onCancel} disabled={submitting} /> : null}
-          </div>
-
-          {isLastStep ? (
-            <Button onClick={onFinish} disabled={submitting || Boolean(finishBlocked)}>
-              {submitting ? (
-                'Salvando...'
-              ) : (
-                <>
-                  <Check className="mr-1 h-4 w-4" /> Concluir
-                </>
-              )}
-            </Button>
-          ) : showContinue ? (
-            <Button onClick={onContinue} disabled={submitting || !canContinue}>
-              {submitting ? 'Salvando...' : continueLabel}
-              {!submitting ? <ChevronRight className="ml-1 h-4 w-4" /> : null}
-            </Button>
-          ) : null}
         </div>
-      </div>
+
+        {isLastStep ? (
+          <Button onClick={onFinish} disabled={submitting || Boolean(finishBlocked)}>
+            {submitting ? (
+              'Salvando...'
+            ) : (
+              <>
+                <Check className="mr-1 h-4 w-4" /> Concluir
+              </>
+            )}
+          </Button>
+        ) : showContinue ? (
+          <Button onClick={onContinue} disabled={submitting || !canContinue}>
+            {submitting ? 'Salvando...' : continueLabel}
+            {!submitting ? <ChevronRight className="ml-1 h-4 w-4" /> : null}
+          </Button>
+        ) : null}
+      </BottomBar>
     </div>
   );
 }
