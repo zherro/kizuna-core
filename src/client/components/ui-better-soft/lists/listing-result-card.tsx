@@ -127,7 +127,7 @@ function RatingChip({
 
 function LocationLine({ label }: { label: string }) {
   return (
-    <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground" title={label}>
+    <span className="inline-flex max-w-full items-center gap-1 text-xs text-muted-foreground" title={label}>
       <MapPin className="h-3 w-3 shrink-0" />
       <span className="truncate">{label}</span>
     </span>
@@ -260,14 +260,14 @@ export function ListingResultCard({
             {title}
           </h3>
           {subtitleLabel && (
-            <p className="line-clamp-1 text-[11px] text-muted-foreground">{subtitleLabel}</p>
+            <p className="line-clamp-1 text-xs text-muted-foreground">{subtitleLabel}</p>
           )}
           {!isPosterCard && showRating && <RatingChip rating={rating} reviewCount={reviewCount} />}
           {isPosterCard ? (
             // linha de informação com altura reservada: cinema e evento têm o mesmo tamanho de card
             <div className="mt-auto min-h-4 pt-1">
               {isEvento && whenLabel ? (
-                <span className="inline-flex max-w-full items-center gap-1 text-[11px] font-semibold text-foreground">
+                <span className="inline-flex max-w-full items-center gap-1 text-xs font-semibold text-foreground">
                   <CalendarDays className="h-3 w-3 shrink-0" />
                   <span className="truncate">{whenLabel}</span>
                 </span>

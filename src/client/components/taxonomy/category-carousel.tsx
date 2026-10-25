@@ -14,7 +14,6 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useResourceOptions } from "../../hooks";
 import { resolveLucideIcon } from "../../../lib/lucide-icon";
 import { Typography } from "../ui/typography";
-import { Grid } from "../ui";
 
 type StatRow = {
   id: string | number;
@@ -131,7 +130,11 @@ export function CategoryCarousel({
     resource: "categories_group_public",
     enabled: byGroup,
   });
-  const { options: facetRows, loading: loadingFacets } = useResourceOptions<FacetRow>({
+  const {
+    options: facetRows,
+    loading: loadingFacets,
+    error: facetsError,
+  } = useResourceOptions<FacetRow>({
     resource: "category_service_facets",
     enabled: byGroup && onlyWithListings,
   });
@@ -179,7 +182,8 @@ export function CategoryCarousel({
 
   // Por grupo: conta as categorias de cada grupo ativo. Com `onlyWithListings`, usa as facetas
   // (grupo primário + vínculos extras das categorias com anúncio); senão, o grupo primário
-  // das categorias com subcategoria ativa. Grupos sem categoria somem.
+  // das categorias com subcategoria ativa. Grupos sem categoria somem. Sem as facetas (banco sem a
+  // migração search 0013), cai no grupo primário das categorias com anúncio em vez de esvaziar.
   const groupItems = useMemo<CategoryCarouselItem[]>(() => {
     if (!byGroup) return [];
     const counts = new Map<number, Set<number>>();
@@ -190,9 +194,15 @@ export function CategoryCarousel({
       set.add(cid);
       counts.set(g, set);
     };
-    if (onlyWithListings) {
+    if (onlyWithListings && !facetsError) {
       for (const f of facetRows ?? []) {
         for (const gid of f.groupIds ?? []) add(gid, Number(f.categoryId));
+      }
+    } else if (onlyWithListings) {
+      const withListings = new Set(categoryItems.map((c) => c.id));
+      for (const row of options ?? []) {
+        const cid = Number(row.categoryId);
+        if (withListings.has(cid)) add(row.categoryGroupId, cid);
       }
     } else {
       for (const row of options ?? []) add(row.categoryGroupId, Number(row.categoryId));
@@ -211,7 +221,7 @@ export function CategoryCarousel({
         icon: g.icon ?? null,
         count: counts.get(Number(g.id))!.size,
       }));
-  }, [byGroup, onlyWithListings, facetRows, options, groupRows]);
+  }, [byGroup, onlyWithListings, facetsError, facetRows, categoryItems, options, groupRows]);
 
   const items = byGroup ? groupItems : categoryItems;
 
@@ -259,7 +269,7 @@ export function CategoryCarousel({
                     <span className="flex h-12 w-12 items-center justify-center rounded-full bg-secondary text-primary [&_svg]:size-6">
                       {iconFor(c)}
                     </span>
-                    <span className="line-clamp-2 text-[11px] font-semibold leading-tight text-foreground">
+                    <span className="line-clamp-2 text-xs font-semibold leading-tight text-foreground">
                       {c.name}
                     </span>
                   </Link>
@@ -405,21 +415,18 @@ function Header({
   compact?: boolean;
   style?: CSSProperties | undefined;
 }) {
+  // flex (não Grid): no mobile o Grid empilhava e o "ver todas" caía numa linha sozinho.
   return (
-    <Grid container containerSize="fluid">
-      <Grid sm={10} >
-        <Typography.H5 font="display">{title}</Typography.H5>
-      </Grid>
+    <div className="flex items-baseline justify-between gap-4">
+      <Typography.H5 font="display" className="min-w-0">{title}</Typography.H5>
       {allLabel && allHref ? (
-        <Grid sm={2}>
-          <Link
-            href={allHref}
-            className="relative float-right text-sm font-medium text-muted-foreground after:absolute after:-inset-2 after:content-[''] underline-offset-4 hover:text-foreground underline"
-          >
-            {allLabel}
-          </Link>
-        </Grid>
+        <Link
+          href={allHref}
+          className="relative shrink-0 whitespace-nowrap text-sm font-medium text-muted-foreground after:absolute after:-inset-2 after:content-[''] underline-offset-4 hover:text-foreground underline"
+        >
+          {allLabel}
+        </Link>
       ) : null}
-    </Grid>
+    </div>
   );
 }
