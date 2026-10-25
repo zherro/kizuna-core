@@ -67,6 +67,7 @@ export function PublicProfileSection({ formik }: { formik: AccountFormik }) {
           onChange={(value) => formik.setFieldValue('bio', value)}
           placeholder="Conte um pouco sobre você e o que você faz..."
           video={false}
+          headings={false}
         />
       </Field>
     </SectionCard>

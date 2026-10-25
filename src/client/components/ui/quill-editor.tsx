@@ -31,6 +31,8 @@ export type QuillEditorProps = {
   emoji?: boolean;
   /** Botão de vídeo do YouTube (vira `<iframe class="ql-video">`; a página só aceita YouTube). Padrão: ligado. */
   video?: boolean;
+  /** Botão de título (h2; a página do anúncio mostra como subtítulo). Padrão: ligado. */
+  headings?: boolean;
   /** Botão "Ver código" (HTML cru). Ligue só para quem pode (ex.: root). Padrão: desligado. */
   source?: boolean;
 };
@@ -47,7 +49,7 @@ export const EDITOR_EMOJIS = [
 const BTN =
   'inline-flex h-6 w-7 items-center justify-center rounded text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
 
-export function QuillEditor({ value, onChange, placeholder, emoji = true, video = true, source = false }: QuillEditorProps) {
+export function QuillEditor({ value, onChange, placeholder, headings = true, emoji = true, video = true, source = false }: QuillEditorProps) {
   const toolbarId = `ql-toolbar-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
   const quillRef = useRef<QuillHandle | null>(null);
   const [panel, setPanel] = useState<'emoji' | 'video' | null>(null);
@@ -95,6 +97,12 @@ export function QuillEditor({ value, onChange, placeholder, emoji = true, video 
   return (
     <div className="quill-wrapper relative rounded-[var(--ui-radius-field,0.375rem)] border border-input bg-background">
       <div id={toolbarId} className="flex flex-wrap items-center gap-y-1">
+        {/* Um nível só de título: a página mostra qualquer h1–h6 como o mesmo subtítulo (h3). */}
+        {headings && (
+          <span className="ql-formats">
+            <button type="button" className="ql-header" value="2" aria-label="Título" title="Título" disabled={showSource} />
+          </span>
+        )}
         <span className="ql-formats">
           <button type="button" className="ql-bold" aria-label="Negrito" disabled={showSource} />
           <button type="button" className="ql-italic" aria-label="Itálico" disabled={showSource} />
