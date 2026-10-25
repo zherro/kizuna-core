@@ -35,15 +35,16 @@ export const DynamicFormStep = forwardRef<DynamicFormStepHandle, DynamicFormStep
     const [values, setValues] = useState<FormValues>({});
     const [hydrated, setHydrated] = useState(false);
 
-    // Prefer the frozen schema_snapshot from an existing capture; the live form schema is loaded
-    // lazily below only when there is no capture yet.
-    const [liveSchema, setLiveSchema] = useState<FormSchema | null>(null);
-    const schema: FormSchema | null = useMemo(() => {
-      if (data?.schemaSnapshot && Object.keys(data.schemaSnapshot).length > 0) {
-        return data.schemaSnapshot;
-      }
-      return liveSchema;
-    }, [data?.schemaSnapshot, liveSchema]);
+    // Formulário ATUAL (ativo) por form_key: edição mostra sempre a versão vigente, mesmo para
+    // respostas salvas com um schema antigo. O `schema_snapshot` da captura só vale se o formulário
+    // não existir mais (apagado/desativado). Respostas de campos que saíram continuam gravadas.
+    const [live, setLive] = useState<{ status: 'loading' | 'found' | 'missing'; schema: FormSchema | null }>({
+      status: 'loading',
+      schema: null,
+    });
+    const snapshot =
+      data?.schemaSnapshot && Object.keys(data.schemaSnapshot).length > 0 ? data.schemaSnapshot : null;
+    const schema: FormSchema | null = live.status === 'found' ? live.schema : live.status === 'missing' ? snapshot : null;
 
     useEffect(() => {
       if (loading || hydrated) return;
@@ -51,10 +52,13 @@ export const DynamicFormStep = forwardRef<DynamicFormStepHandle, DynamicFormStep
       setHydrated(true);
     }, [loading, hydrated, data?.answers]);
 
-    // No capture yet → fetch the live form definition by form_key.
     useEffect(() => {
-      if (loading || data || liveSchema || !formKey) return;
+      if (!formKey) {
+        setLive({ status: 'missing', schema: null });
+        return;
+      }
       let active = true;
+      setLive({ status: 'loading', schema: null });
       (async () => {
         try {
           const query = new URLSearchParams({
@@ -71,15 +75,15 @@ export const DynamicFormStep = forwardRef<DynamicFormStepHandle, DynamicFormStep
           } | null;
           if (!active) return;
           const found = payload?.items?.[0]?.schema;
-          if (found) setLiveSchema(found);
+          setLive(found ? { status: 'found', schema: found } : { status: 'missing', schema: null });
         } catch {
-          /* handled by the empty-state below */
+          if (active) setLive({ status: 'missing', schema: null });
         }
       })();
       return () => {
         active = false;
       };
-    }, [loading, data, liveSchema, formKey]);
+    }, [formKey]);
 
     // Completa com `fallbackValues` uma vez, quando já há schema e respostas carregadas.
     const filledRef = useRef(false);
@@ -122,7 +126,7 @@ export const DynamicFormStep = forwardRef<DynamicFormStepHandle, DynamicFormStep
       [submit, values]
     );
 
-    if (loading) {
+    if (loading || live.status === 'loading') {
       return (
         <p className="rounded-md border border-dashed border-border px-3 py-2 text-xs text-muted-foreground">
           Carregando formulario...

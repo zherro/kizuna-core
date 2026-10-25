@@ -180,7 +180,10 @@ Respostas correspondentes:
 * Ao gravar, `fn_form_result_upsert` copia o schema vigente e a versão para
   `form_results.schema_snapshot` / `form_results.version`. Assim uma resposta antiga continua
   legível mesmo que o formulário mude depois — `itemFields` faz parte do schema e, portanto, do
-  snapshot. `DynamicFormStep` prefere o `schema_snapshot` de uma captura existente ao schema atual.
+  snapshot. O `FormResultViewer`/painel de respostas lê o `schema_snapshot`; já o `DynamicFormStep`
+  (edição) usa sempre o formulário **ativo atual** e só cai no `schema_snapshot` se o formulário não
+  existir mais. Campos que saíram do formulário somem da tela, mas as respostas deles continuam
+  gravadas (o upsert reenvia todas as respostas carregadas).
 * `DynamicFormStep` aceita `fallbackValues`: na carga, campos do schema sem resposta salva são
   preenchidos pela chave de mesmo nome. O wizard de serviços passa `services.extras` (anúncios
   importados guardam os dados lá); ao salvar, os valores viram respostas.
