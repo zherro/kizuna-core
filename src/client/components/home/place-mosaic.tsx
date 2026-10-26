@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { MapPin, Shuffle, X } from 'lucide-react';
-import { useId, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import type { PlaceHighlightItem } from './place-highlights';
 import { normalizePlaceKicker, placeTone, type PlaceTone } from './place-highlights-tone';
 import {
@@ -10,6 +10,7 @@ import {
   columnTileHeight,
   pickSurprise,
   resolveMosaicVariant,
+  shuffleItems,
   stripTileIsWide,
   uniqueKickers,
   type BentoTileKind,
@@ -61,6 +62,10 @@ export type PlaceMosaicProps = {
   moreLabel?: string;
   /** Máximo de lugares exibidos (aplicado antes dos chips). */
   limit?: number;
+  /** Embaralha `items` no navegador a cada visita e só então corta em `limit` — para home ISR,
+   * mande um pool maior que `limit`. O HTML do servidor sai na ordem recebida (sem hydration
+   * mismatch); a troca acontece logo após montar. Default false. */
+  shuffle?: boolean;
   /** Aplica o container da home (max-w-[1600px]). Default true. */
   contained?: boolean;
   className?: string;
@@ -95,13 +100,18 @@ export function PlaceMosaic({
   moreHref,
   moreLabel = 'Ver todos',
   limit,
+  shuffle = false,
   contained = true,
   className,
   labels,
 }: PlaceMosaicProps) {
   const headingId = useId();
   const text = { ...DEFAULT_LABELS, ...labels };
-  const shown = useMemo(() => (limit && limit > 0 ? items.slice(0, limit) : items), [items, limit]);
+  const [ordered, setOrdered] = useState(items);
+  useEffect(() => {
+    setOrdered(shuffle ? shuffleItems(items) : items);
+  }, [items, shuffle]);
+  const shown = useMemo(() => (limit && limit > 0 ? ordered.slice(0, limit) : ordered), [ordered, limit]);
   const kickers = useMemo(() => uniqueKickers(shown), [shown]);
 
   const [active, setActive] = useState<string | null>(null);

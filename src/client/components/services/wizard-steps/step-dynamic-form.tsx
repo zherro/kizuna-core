@@ -37,12 +37,18 @@ export function StepDynamicForm(props: WizardStepProps<ServiceWizardState>) {
   const formKey = String(category?.formKey ?? '').trim();
 
   const holder = getDynamicFormHolder(props);
+  // O handle do filho é recriado a cada mudança das respostas, mas este componente não
+  // re-renderiza junto: guardar `localRef.current` aqui deixava o registry com as respostas
+  // do primeiro render (`{}`). O holder repassa sempre para o handle atual.
   useEffect(() => {
-    holder.current = localRef.current;
+    holder.current = {
+      persist: async () => (await localRef.current?.persist()) ?? false,
+      getValues: () => localRef.current?.getValues() ?? {},
+    };
     return () => {
       holder.current = null;
     };
-  });
+  }, [holder]);
 
   if (!formKey || resourceId == null) return null;
 

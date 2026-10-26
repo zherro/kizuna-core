@@ -124,18 +124,24 @@ Controla quais seções aparecem na home pública (`/`) e o visual delas.
 | `categoryRails`     | `{ slug? \| group?, title?, limit? }[]` | `[]` (o starter já traz `cinema`) | **Carrosséis por categoria** na home (ver abaixo), um por item, na ordem do array.        |
 | `showPlaces`        | boolean                  | `true`      | Mostra o mosaico de lugares da cidade. Só `false` esconde; sem lugares aprovados o bloco some sozinho. |
 | `showNews`          | boolean                  | `true`      | Mostra as notícias (grupo `noticias`). Só `false` esconde.                                |
+| `newsLeads`         | `1` \| `2`               | `1`         | Manchetes do bloco de notícias: `1` = uma grande; `2` = duas lado a lado (no celular empilham). A lista ao lado continua com 5. |
 | `showSearch`        | boolean                  | `true`      | Mostra a **busca** logo abaixo do swipe (mesmo campo da `/busca`; envia para `/busca?q=`). Só `false` esconde. |
 | `placesMosaic.variant` | `bento` \| `columns` \| `strips` \| `auto` | `auto` | Arranjo do mosaico de lugares. `auto` escolhe pela contagem e gira a cada dia (com menos de 4 lugares usa `strips`). |
 | `placesMosaic.limit`   | number                | `10`        | Máximo de lugares no mosaico (aplicado antes dos chips de categoria).                     |
+| `placesMosaic.group`   | slug de `categories_group` | —     | Puxa os lugares **cadastrados no Kizuna** desse grupo (ex. `lugares`), pela mesma busca dos carrosséis. |
+| `placesMosaic.category`| slug de `categories`  | —           | Idem, por categoria; tem precedência sobre `group`. Sem `group` nem `category`, o mosaico lê `content/lugares` (só aprovados). |
+| `placesMosaic.scope`   | `city` \| `region`    | `region`    | Só a cidade da página ou a cidade + vizinhas (`regions`), como nos carrosséis.           |
+| `placesMosaic.random`  | boolean               | `true`      | Ordem aleatória a cada visita (sorteada no navegador, então vale mesmo com a home em ISR). |
 | `instagramUrl`      | string                   | —           | Perfil do Instagram. Vazio = o link não aparece. Agora é um link discreto em linha, não mais um card grande. |
 
 Ordem das seções na home do starter: categorias → swipe → busca → trilhas por categoria
-(`categoryRails`, que continua definindo as trilhas dinâmicas por categoria/grupo) → mosaico de
-lugares → notícias → "como funciona" → seguir/instalar.
+(`categoryRails`, que continua definindo as trilhas dinâmicas por categoria/grupo) → notícias →
+mosaico de lugares → "como funciona" → seguir/instalar.
 
 ```json
 "showSearch": true,
-"placesMosaic": { "variant": "auto", "limit": 10 }
+"newsLeads": 2,
+"placesMosaic": { "variant": "auto", "limit": 10, "group": "lugares", "scope": "region", "random": true }
 ```
 
 Os blocos novos estão descritos em [Blocos da home](../interface/blocos-da-home.md).

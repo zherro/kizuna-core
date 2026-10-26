@@ -129,6 +129,7 @@ type PlaceMosaicProps = {
   moreHref?: string;       // liga o link do cabeçalho
   moreLabel?: string;      // default "Ver todos"
   limit?: number;          // máximo de lugares; aplicado ANTES dos chips
+  shuffle?: boolean;       // embaralha no navegador a cada visita e só então corta em limit (default false)
   contained?: boolean;     // container da home (default true)
   className?: string;
   labels?: { all?: string; surprise?: string; filterBy?: string; drawn?: string; open?: string; close?: string };
@@ -168,13 +169,25 @@ aleatório por parâmetro, o que permite testar.
 ### Montar na home
 
 No starter, `HomePlaces` (`src/components/home/home-engagement.tsx`) carrega os lugares e entrega ao
-mosaico, com a semente calculada no servidor:
+mosaico, com a semente calculada no servidor. Com `home.placesMosaic.group` (ou `category`), os
+lugares vêm do próprio Kizuna: `loadCategoryRail` (o loader dos carrosséis) traz um conjunto maior
+que `limit` e `placeItemsFromServices` (`place-mosaic-services.ts`) converte cada anúncio em item do
+mosaico (chapéu = subcategoria, senão categoria; apoio = cidade; foto = capa):
 
 ```tsx
 import { PlaceMosaic, mosaicDaySeed } from '@kizuna/core/client/components/home/place-mosaic';
+import { placeItemsFromServices } from '@kizuna/core/client/components/home/place-mosaic-services';
+import { loadCategoryRail } from '@kizuna/core/server';
 
-<PlaceMosaic items={items} variant={variant} seed={mosaicDaySeed()} limit={limit} />
+const data = await loadCategoryRail({ group: 'lugares' }, { limit, cityIbge: city?.ibge });
+<PlaceMosaic items={placeItemsFromServices(data?.items ?? [])} seed={mosaicDaySeed()} limit={limit} shuffle />
 ```
+
+{% hint style="info" %}
+Ordem aleatória com ISR: embaralhar no servidor congelaria a mesma ordem para todos até o próximo
+revalidate. Com `shuffle`, o HTML sai na ordem recebida (sem erro de hidratação) e o navegador sorteia
+logo depois de montar; por isso mande um conjunto maior que `limit`.
+{% endhint %}
 
 `variant` e `limit` vêm de `home.placesMosaic` no `kizuna.config.json` (ver
 [Configuração](../comecando/configuracao.md)).
@@ -235,6 +248,12 @@ Tailwind, não a largura da janela), então funciona igual numa coluna estreita 
 * a partir de 42rem: manchete na largura toda, lista em duas colunas;
 * a partir de 56rem: manchete à esquerda (7 de 12 colunas), lista à direita.
 
+Com `leadCount={2}` são **duas manchetes** lado a lado no lugar da grande (a partir de 42rem; no
+celular empilham). A partir de 56rem elas ocupam 8 de 12 colunas e a lista 4, e a foto de cada uma
+cresce até a altura da lista (a proporção 4:3 é o mínimo), sem faixa vazia embaixo. Título e "tira"
+de cada manchete escalam pela largura do próprio cartão. Peça `2 + listLimit` itens a quem carrega;
+com um item só, cai na manchete única.
+
 O bloco não ordena nada: quem chama entrega os itens do mais recente para o mais antigo. Itens sem
 `href` ou sem título são ignorados; sem itens, devolve `null`.
 
@@ -253,7 +272,8 @@ type NewsHighlightsProps = {
   title?: string;      // default "Notícias"
   moreHref?: string;   // liga o link "Ver todas" no cabeçalho
   moreLabel?: string;  // default "Ver todas"
-  listLimit?: number;  // linhas na lista além da manchete (default 5)
+  listLimit?: number;  // linhas na lista além das manchetes (default 5)
+  leadCount?: 1 | 2;   // manchetes em destaque (default 1)
   timeZone?: string;   // fuso das datas exibidas (default America/Sao_Paulo)
   contained?: boolean; // container da home (default true)
   className?: string;
@@ -301,7 +321,8 @@ No starter, `loadHomeNews` em `src/lib/noticias.ts` (servidor) busca os anúncio
 `noticias` pela mesma RPC da busca (`fn_search_services`: ativos, não expirados, filtro de cidade),
 completa resumo (`services.description`) e data (`answers.data_publicacao` do formulário
 `noticias`, com `services.created_at` de reserva), ordena do mais recente para o mais antigo e
-corta no `limit` (default 6: manchete + 5). `homeNewsMoreHref(city)` monta o link da busca.
+corta no `limit` (default 6: manchete + 5). `homeNewsMoreHref(city)` monta o link da busca. Com
+`home.newsLeads: 2`, o `HomeNews` pede 7 (duas manchetes + 5) e passa `leadCount={2}`.
 
 ```tsx
 import { NewsHighlights } from '@kizuna/core/client/components/home/news-highlights';

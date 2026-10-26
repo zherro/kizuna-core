@@ -1360,7 +1360,25 @@ const NEWS_HIGHLIGHTS_DEMO: NewsHighlightItem[] = [
 ];
 
 function NewsHighlightsDemo() {
-  return <NewsHighlights items={NEWS_HIGHLIGHTS_DEMO} moreHref="#todas" contained={false} />;
+  const [leadCount, setLeadCount] = useState<1 | 2>(1);
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-2">
+        {([1, 2] as const).map((n) => (
+          <button
+            key={n}
+            type="button"
+            onClick={() => setLeadCount(n)}
+            aria-pressed={leadCount === n}
+            className={`rounded-full border px-3 py-1 text-sm ${leadCount === n ? 'border-foreground bg-foreground text-background' : 'border-border'}`}
+          >
+            {n === 1 ? '1 manchete' : '2 manchetes'}
+          </button>
+        ))}
+      </div>
+      <NewsHighlights items={NEWS_HIGHLIGHTS_DEMO} moreHref="#todas" contained={false} leadCount={leadCount} />
+    </div>
+  );
 }
 
 const PAINEL_WELCOME_DEMO_ITEMS: LikedItem[] = [
