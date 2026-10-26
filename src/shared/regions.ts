@@ -84,3 +84,9 @@ export function withRegionCities(regions: RegionConfig[]) {
     return cities.length > 1 ? { ...body, p_city_ibges: cities } : body;
   };
 }
+
+/** true quando as duas cidades (IBGE) são a mesma ou estão na mesma região — uma praça só. */
+export function isSameRegion(regions: RegionConfig[], a: string, b: string): boolean {
+  if (a === b) return true;
+  return regions.some((r) => r.cities.includes(a) && r.cities.includes(b));
+}

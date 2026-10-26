@@ -436,6 +436,8 @@ export type ResolveRefsOptions = {
  * achados. Endereços (link/endereço/cidade) vêm em paralelo, um por anúncio achado. Lança em erro de
  * rede da busca principal — quem chama decide o fallback.
  */
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export async function resolveServiceRefs(
   codes: string[],
   eventCity: RoutableCity | null,
@@ -451,11 +453,12 @@ export async function resolveServiceRefs(
   if (codigos.length > 0) {
     const where: Record<string, string> = { 'extras->>codigo': `in.(${codigos.join(',')})` };
     if (excludeUid) where.uid = `neq.${excludeUid}`;
+    // Cada consulta falha sozinha: um erro aqui não pode apagar o que a outra resolveu.
     const rows = await serverFetchResource<ServiceRecord>(
       'services',
       { active: 'true', status: 'active' },
       { auth: null, limit: codigos.length * 2, orderBy: 'created_at', orderDirection: 'asc', where }
-    );
+    ).catch(() => [] as ServiceRecord[]);
     for (const v of values) {
       const code = byCode.get(v);
       const hit = code ? rows.find((r) => usable(r) && codigoOf(r) === code) : undefined;
@@ -463,13 +466,16 @@ export async function resolveServiceRefs(
     }
   }
 
-  const pending = values.filter((v) => !houses.has(v) && v !== excludeUid && /^[\w-]+$/.test(v));
+  // Só valores com cara de uuid: `uid` é uuid no banco e um único código no `in.(...)` (ex.:
+  // "casa-de-festas-cuiaba", um ponto de venda sem anúncio) derrubava a consulta inteira — e com
+  // ela todos os vínculos do evento (local, pontos de venda, artistas).
+  const pending = values.filter((v) => !houses.has(v) && v !== excludeUid && UUID_PATTERN.test(v));
   if (byUid && pending.length > 0) {
     const rows = await serverFetchResource<ServiceRecord>(
       'services',
       { active: 'true', status: 'active' },
       { auth: null, limit: pending.length, where: { uid: `in.(${pending.join(',')})` } }
-    );
+    ).catch(() => [] as ServiceRecord[]);
     for (const v of pending) {
       const hit = rows.find((r) => usable(r) && r.uid === v);
       if (hit) houses.set(v, hit);

@@ -38,15 +38,20 @@ async function fetchCities(): Promise<CityOption[]> {
 export function LocationTrigger({ onClick }: { onClick: () => void }) {
   const { location, status } = useUserLocation();
   const viewing = useViewingCity();
-  const isDetecting = status === 'detecting' && !viewing;
-  const shown = viewing
-    ? {
-        cityName: viewing.cityName,
-        stateName: viewing.stateName,
-        stateCode: viewing.stateCode,
-        source: 'manual' as const,
-      }
-    : location;
+  // A cidade escolhida pela pessoa vence; a da página (anúncio com cidade na URL) só entra quando
+  // não há nenhuma escolhida — senão abrir uma notícia de Cuiabá "trocava" a cidade de quem está em
+  // Várzea Grande. A diferença entre as duas continua no convite (`CityInvite`) e no seletor.
+  const isDetecting = status === 'detecting' && !location && !viewing;
+  const shown =
+    location ??
+    (viewing
+      ? {
+          cityName: viewing.cityName,
+          stateName: viewing.stateName,
+          stateCode: viewing.stateCode,
+          source: 'manual' as const,
+        }
+      : null);
 
   return (
     <button

@@ -43,10 +43,11 @@ export function NewsArticle({ title, meta, coverUrl, body, actions, trackView = 
       <div className="lg:col-span-2">
         {trackView(
           <div className="space-y-6 sm:space-y-8">
-            <div className="max-w-4xl">
+            <div>
               <ArticleHeader
                 tags={<NewsTags group={meta.group} category={meta.category} size="md" />}
                 title={title}
+                titleWrap="pretty"
                 meta={
                   <ArticleByline
                     author={meta.author}

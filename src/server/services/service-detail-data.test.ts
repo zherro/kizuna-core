@@ -332,16 +332,18 @@ const addrCuiaba = [
   { cityIbge: '5103403', city: 'Cuiabá', state: 'MT', street: 'Av. A', number: '10', isPrimary: true },
 ];
 
+const U2 = 'dfb6753c-1495-43ca-94ab-907eb1dd9273';
+
 describe('resolveServiceRefs', () => {
   it('resolve em lote por codigo (uma consulta) e o resto por uid (outra); chave = valor original', async () => {
     fakeDb(
       [
         { id: 'i1', uid: 'casa1', title: 'Casa', extras: { codigo: 'casa-x', images: [5] } },
-        { id: 'i2', uid: 'abc123', title: 'Teatro', extras: {} },
+        { id: 'i2', uid: U2, title: 'Teatro', extras: {} },
       ],
       { i1: addrCuiaba }
     );
-    const map = await resolveServiceRefs(['Casa-X', 'abc123', 'nada'], cuiabaCity);
+    const map = await resolveServiceRefs(['Casa-X', U2, 'nada'], cuiabaCity);
     expect(map.get('Casa-X')).toEqual({
       uid: 'casa1',
       title: 'Casa',
@@ -350,11 +352,25 @@ describe('resolveServiceRefs', () => {
       address: 'Av. A, 10, Cuiabá - MT',
       cityName: 'Cuiabá',
     });
-    expect(map.get('abc123')).toMatchObject({ uid: 'abc123', photo: null, address: null, cityName: null, href: '/anuncios/abc123' });
+    expect(map.get(U2)).toMatchObject({ uid: U2, photo: null, address: null, cityName: null, href: `/anuncios/${U2}` });
     expect(map.has('nada')).toBe(false);
     expect(servicesCalls()).toHaveLength(2);
-    expect(servicesCalls()[0][2].where['extras->>codigo']).toBe('in.(casa-x,abc123,nada)');
-    expect(servicesCalls()[1][2].where.uid).toBe('in.(abc123,nada)');
+    expect(servicesCalls()[0][2].where['extras->>codigo']).toBe(`in.(casa-x,${U2},nada)`);
+    // `uid` é uuid no banco: código que sobrou fica fora do in.(...) — senão a consulta inteira falha
+    expect(servicesCalls()[1][2].where.uid).toBe(`in.(${U2})`);
+  });
+
+  it('uma consulta que falha não apaga o que a outra resolveu', async () => {
+    serverFetchResource.mockImplementation((_r: string, _f: unknown, opts: { where?: Record<string, string> }) =>
+      opts?.where?.uid
+        ? Promise.resolve([{ id: 'i2', uid: U2, title: 'Musiva', extras: {} }])
+        : opts?.where
+          ? Promise.reject(new Error('PostgREST 400'))
+          : Promise.resolve([])
+    );
+    const map = await resolveServiceRefs([U2, 'casa-de-festas-cuiaba'], null);
+    expect(map.get(U2)).toMatchObject({ uid: U2, title: 'Musiva' });
+    expect(map.has('casa-de-festas-cuiaba')).toBe(false);
   });
 
   it('excludeUid nunca resolve o próprio; byUid=false não faz a segunda consulta', async () => {
@@ -376,15 +392,15 @@ describe('fetchVenue', () => {
   it('extras.local_ref (uid) tem prioridade sobre a tag', async () => {
     fakeDb(
       [
-        { id: 'il', uid: 'loc1', title: 'Teatro', extras: { images: [5, 6] } },
+        { id: 'il', uid: '9b2c1e4a-0d3f-4a6b-8c7d-1e2f3a4b5c6d', title: 'Teatro', extras: { images: [5, 6] } },
         { id: 'ic', uid: 'casa1', title: 'Casa X', extras: { codigo: 'casa-x' } },
       ],
       { il: addrCuiaba }
     );
-    expect(await fetchVenue(svc({ local_ref: 'loc1', tags: ['casa-x'] }), cuiabaCity)).toEqual({
-      uid: 'loc1',
+    expect(await fetchVenue(svc({ local_ref: '9b2c1e4a-0d3f-4a6b-8c7d-1e2f3a4b5c6d', tags: ['casa-x'] }), cuiabaCity)).toEqual({
+      uid: '9b2c1e4a-0d3f-4a6b-8c7d-1e2f3a4b5c6d',
       title: 'Teatro',
-      href: '/cuiaba-mt/anuncio/loc1',
+      href: '/cuiaba-mt/anuncio/9b2c1e4a-0d3f-4a6b-8c7d-1e2f3a4b5c6d',
       photo: '/api/public/storage/files/5/content',
       address: 'Av. A, 10, Cuiabá - MT',
       cityName: 'Cuiabá',
@@ -416,7 +432,7 @@ describe('fetchVenue', () => {
 
   it('erro de rede → null', async () => {
     serverFetchResource.mockRejectedValueOnce(new Error('boom'));
-    expect(await fetchVenue(svc({ local_ref: 'loc1', tags: ['x'] }), null)).toBeNull();
+    expect(await fetchVenue(svc({ local_ref: '9b2c1e4a-0d3f-4a6b-8c7d-1e2f3a4b5c6d', tags: ['x'] }), null)).toBeNull();
   });
 });
 
@@ -491,19 +507,19 @@ describe('fetchSalePoints: link de compra', () => {
 describe('fetchLinkedRefs', () => {
   it('venue, pontos de venda e artistas num lote só (uma consulta por codigo + uma por uid)', async () => {
     fakeDb([
-      { id: 'il', uid: 'loc1', title: 'Teatro', extras: {} },
+      { id: 'il', uid: '9b2c1e4a-0d3f-4a6b-8c7d-1e2f3a4b5c6d', title: 'Teatro', extras: {} },
       { id: 'ic', uid: 'casa1', title: 'Casa de Festas', extras: { codigo: 'casa-de-festas-cuiaba' } },
       { id: 'ia', uid: 'art1', title: 'João Gomes', extras: { codigo: 'joao-gomes' } },
     ]);
     const svc = base({
       extras: {
-        local_ref: 'loc1',
+        local_ref: '9b2c1e4a-0d3f-4a6b-8c7d-1e2f3a4b5c6d',
         pontos_de_venda: [{ nome: 'casa-de-festas-cuiaba' }],
         artistas: [{ nome: 'João Gomes' }, { nome: 'Banda Desconhecida' }],
       },
     } as Partial<ServiceRecord>);
     const refs = await fetchLinkedRefs(svc, null);
-    expect(refs.venue?.uid).toBe('loc1');
+    expect(refs.venue?.uid).toBe('9b2c1e4a-0d3f-4a6b-8c7d-1e2f3a4b5c6d');
     expect(refs.salePoints).toEqual([{ label: 'Casa de Festas', venue: expect.objectContaining({ uid: 'casa1' }) }]);
     expect(refs.artists).toEqual([
       { label: 'João Gomes', venue: expect.objectContaining({ uid: 'art1' }) },
@@ -511,7 +527,7 @@ describe('fetchLinkedRefs', () => {
     ]);
     expect(servicesCalls()).toHaveLength(2);
     expect(servicesCalls()[0][2].where['extras->>codigo']).toBe(
-      'in.(loc1,casa-de-festas-cuiaba,joao-gomes,banda-desconhecida)'
+      'in.(9b2c1e4a-0d3f-4a6b-8c7d-1e2f3a4b5c6d,casa-de-festas-cuiaba,joao-gomes,banda-desconhecida)'
     );
   });
 

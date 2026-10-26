@@ -5,18 +5,21 @@ import { MapPin } from 'lucide-react';
 import { useUserLocation } from '../../hooks/use-user-location';
 import { LocationModal } from '../location-modal';
 import { useViewingCity } from '../viewing-city';
+import { isSameRegion, type RegionConfig } from '../../../shared/regions';
 
 /**
  * Convite discreto quando a URL mostra uma cidade diferente da salva: "Ver mais serviços em
  * Cuiabá" (ou "Escolher minha cidade" sem cidade salva). Abre o seletor em modo de confirmação.
+ * Com `regions`, cidade da mesma região (ex.: Cuiabá e Várzea Grande) não conta como diferente:
+ * é a mesma praça, não há o que sugerir.
  */
-export function CityInvite() {
+export function CityInvite({ regions = [] }: { regions?: RegionConfig[] } = {}) {
   const { location, ready } = useUserLocation();
   const viewing = useViewingCity();
   const [open, setOpen] = useState(false);
 
   if (!viewing || !ready) return null;
-  if (location && location.cityId === viewing.cityId) return null;
+  if (location && isSameRegion(regions, String(location.cityId), String(viewing.cityId))) return null;
 
   return (
     <>

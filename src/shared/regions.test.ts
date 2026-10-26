@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseRegions, regionCitiesFor, regionGroupsFor, withRegionCities } from './regions';
+import { isSameRegion, parseRegions, regionCitiesFor, regionGroupsFor, withRegionCities } from './regions';
 
 const regions = parseRegions([
   { key: 'grande-cuiaba', title: 'Também na Grande Cuiabá', cities: ['5103403', 5108402] },
@@ -65,5 +65,21 @@ describe('regions', () => {
         p_city_ibges: ['5103403'],
       });
     });
+  });
+});
+
+describe('isSameRegion', () => {
+  const regions = parseRegions([
+    { key: 'grande-cuiaba', title: 'Grande Cuiabá', cities: ['5103403', '5108402'] },
+    { key: 'chapada', title: 'Chapada', cities: ['5103007'] },
+  ]);
+  it('mesma cidade ou cidades irmãs: mesma praça', () => {
+    expect(isSameRegion(regions, '5103403', '5103403')).toBe(true);
+    expect(isSameRegion(regions, '5103403', '5108402')).toBe(true);
+  });
+  it('outra região ou cidade sem região: diferente', () => {
+    expect(isSameRegion(regions, '5103403', '5103007')).toBe(false);
+    expect(isSameRegion(regions, '5103403', '5107602')).toBe(false);
+    expect(isSameRegion([], '5103403', '5108402')).toBe(false);
   });
 });

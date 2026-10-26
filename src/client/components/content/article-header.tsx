@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react';
 
 export type ArticleHeaderProps = {
+  /** Quebra do título: `balance` (padrão) equilibra as linhas; `pretty` usa a largura toda e evita só viúva. */
+  titleWrap?: 'balance' | 'pretty';
   /** Substitui a linha do kicker (ex.: as etiquetas de grupo/categoria da notícia). */
   tags?: ReactNode;
   /** Linha de contexto acima do título (ex.: "Casa noturna · Cuiabá", ou o chapéu da notícia). */
@@ -23,7 +25,7 @@ export function formatDateBR(iso: string): string {
   return m ? `${m[3]}/${m[2]}/${m[1]}` : iso;
 }
 
-export function ArticleHeader({ tags, kicker, kickerColor, kickerMarker, title, summary, updatedAt, meta }: ArticleHeaderProps) {
+export function ArticleHeader({ titleWrap = 'balance', tags, kicker, kickerColor, kickerMarker, title, summary, updatedAt, meta }: ArticleHeaderProps) {
   return (
     <header>
       {tags ? (
@@ -39,7 +41,7 @@ export function ArticleHeader({ tags, kicker, kickerColor, kickerMarker, title, 
           {kicker}
         </p>
       ) : null}
-      <h1 className="mt-2 text-balance font-display text-3xl font-black leading-[1.1] tracking-tight text-[var(--foreground-display,var(--foreground))] sm:text-4xl lg:text-5xl">{title}</h1>
+      <h1 className={`mt-2 ${titleWrap === 'pretty' ? 'text-pretty' : 'text-balance'} font-display text-3xl font-black leading-[1.1] tracking-tight text-[var(--foreground-display,var(--foreground))] sm:text-4xl lg:text-5xl`}>{title}</h1>
       {summary ? <p className="mt-4 max-w-[60ch] text-pretty text-lg leading-7 text-muted-foreground sm:text-xl sm:leading-8">{summary}</p> : null}
       {updatedAt ? (
         <p className="mt-4 text-sm text-muted-foreground">Atualizado em {formatDateBR(updatedAt)}</p>

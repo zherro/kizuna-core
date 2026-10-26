@@ -87,7 +87,8 @@ export function WeatherWidget({
 
   if (!data || data.cities.length === 0) return null;
 
-  const headerCityName = viewing?.cityName ?? location?.cityName;
+  // Mesma regra do seletor do header: a cidade escolhida vence a da página.
+  const headerCityName = location?.cityName ?? viewing?.cityName;
   const userCityIndex = headerCityName
     ? data.cities.findIndex((c) => normalize(c.name) === normalize(headerCityName))
     : -1;

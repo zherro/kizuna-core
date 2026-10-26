@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { LocationModal } from './location-modal';
+import { LocationModal, LocationTrigger } from './location-modal';
 import { ViewingCityMarker, ViewingCityProvider } from './viewing-city';
 
 const NAMES = [
@@ -114,6 +114,18 @@ describe('LocationModal — modo de confirmação (cidade em exibição ≠ salv
     );
     return onConfirm;
   }
+
+  it('header: a cidade salva vence a da página', async () => {
+    render(
+      <ViewingCityProvider>
+        <ViewingCityMarker city={VIEWING} onConfirm={() => {}} />
+        <LocationTrigger onClick={() => {}} />
+      </ViewingCityProvider>
+    );
+    const trigger = await screen.findByRole('button', { name: 'Selecionar localização' });
+    expect(trigger.textContent).toContain('Cuiabá');
+    expect(trigger.textContent).not.toContain('Várzea Grande');
+  });
 
   it('pré-seleciona a cidade salva e só grava ao confirmar', async () => {
     const onConfirm = setup();
