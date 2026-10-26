@@ -8,7 +8,7 @@
  * sem: trocar qualquer um dos dois invalida os links já enviados.
  */
 
-import { createCipheriv, createDecipheriv, hkdfSync, randomBytes } from 'node:crypto';
+import { createCipheriv, createDecipheriv, createHmac, hkdfSync, randomBytes } from 'node:crypto';
 
 const VERSION = 'v1';
 
@@ -64,4 +64,42 @@ export function openToken<T = unknown>(purpose: string, token: string): T | null
   } catch {
     return null;
   }
+}
+
+/**
+ * Cifra um texto sensível (ex.: IP) num token opaco, SEM validade — para dado guardado, não link.
+ * Mesmo formato versionado do `sealToken`; o `purpose` entra como AAD (com prefixo próprio, então
+ * um token de `sealToken` nunca abre aqui nem o contrário). IV aleatório: cada cifra é diferente.
+ */
+export function encryptValue(purpose: string, plain: string): string {
+  const iv = randomBytes(12);
+  const cipher = createCipheriv('aes-256-gcm', appKey(), iv);
+  cipher.setAAD(Buffer.from(`${VERSION}:value:${purpose}`));
+  const encrypted = Buffer.concat([cipher.update(String(plain), 'utf8'), cipher.final()]);
+  return [VERSION, iv.toString('base64url'), encrypted.toString('base64url'), cipher.getAuthTag().toString('base64url')].join('.');
+}
+
+/** Abre um token de `encryptValue`. Devolve `null` se for inválido, adulterado ou de outro propósito. */
+export function decryptValue(purpose: string, token: string): string | null {
+  const [version, iv, encrypted, tag] = String(token ?? '').split('.');
+  if (version !== VERSION || !iv || !encrypted || !tag) return null;
+  try {
+    // Tag de 16 bytes obrigatório: tag truncada é rejeitada (lança → null).
+    const decipher = createDecipheriv('aes-256-gcm', appKey(), Buffer.from(iv, 'base64url'), { authTagLength: 16 });
+    decipher.setAAD(Buffer.from(`${VERSION}:value:${purpose}`));
+    decipher.setAuthTag(Buffer.from(tag, 'base64url'));
+    return Buffer.concat([decipher.update(Buffer.from(encrypted, 'base64url')), decipher.final()]).toString('utf8');
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * HMAC-SHA256 (hex, 64 caracteres) determinístico de `plain`, para agrupar/contar sem guardar o
+ * valor. A subchave vem do HKDF da chave do app (info `kizuna:hmac:<purpose>`) — a chave crua
+ * nunca é usada direto no HMAC, e cada propósito tem a sua.
+ */
+export function hmacValue(purpose: string, plain: string): string {
+  const subkey = Buffer.from(hkdfSync('sha256', appKey(), 'kizuna', `kizuna:hmac:${purpose}`, 32));
+  return createHmac('sha256', subkey).update(String(plain), 'utf8').digest('hex');
 }

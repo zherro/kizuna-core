@@ -11,6 +11,10 @@
  *   "entities": { "service": { "events": { "view": { "minVisibleMs": 3000 } } } }
  * }
  *
+ * Bloco opcional `collect` (o que gravar por evento; padrões abaixo):
+ *   "collect": { "device": true, "region": true, "ip": true, "encryptIp": true, "ipRetentionDays": 30 }
+ * `ipRetentionDays`: inteiro >= 0; 0 = nunca zera o IP.
+ *
  * `events` presente = só os eventos listados ligam. Ausente = todos com os defaults.
  */
 
@@ -35,8 +39,22 @@ export type EventRule = {
   oncePerSession: boolean;
 };
 
+export type CollectConfig = {
+  /** Grava tipo de dispositivo, navegador e SO. */
+  device: boolean;
+  /** Grava país/estado/cidade (derivados do IP). */
+  region: boolean;
+  /** Grava o IP do evento. */
+  ip: boolean;
+  /** Cifra o IP gravado. */
+  encryptIp: boolean;
+  /** Dias até zerar o IP gravado. 0 = nunca zera. */
+  ipRetentionDays: number;
+};
+
 export type AnalyticsConfig = {
   enabled: boolean;
+  collect: CollectConfig;
   events: Partial<Record<AnalyticsEvent, EventRule>>;
   entities: Record<string, Partial<Record<AnalyticsEvent, Partial<EventRule>>>>;
 };
@@ -110,7 +128,35 @@ export function parseAnalyticsConfig(raw: unknown): AnalyticsConfig {
     }
   }
 
-  return { enabled: obj.enabled !== false, events, entities };
+  return { enabled: obj.enabled !== false, events, entities, collect: parseCollect(obj.collect) };
+}
+
+const DEFAULT_COLLECT: CollectConfig = {
+  device: true,
+  region: true,
+  ip: true,
+  encryptIp: true,
+  ipRetentionDays: 30,
+};
+
+function boolOr(v: unknown, fallback: boolean): boolean {
+  return typeof v === 'boolean' ? v : fallback;
+}
+
+/** Bloco `collect`: o que é gravado por evento. Valor inválido cai no padrão. */
+export function parseCollect(raw: unknown): CollectConfig {
+  const o = isObj(raw) ? raw : {};
+  const days = o.ipRetentionDays;
+  return {
+    device: boolOr(o.device, DEFAULT_COLLECT.device),
+    region: boolOr(o.region, DEFAULT_COLLECT.region),
+    ip: boolOr(o.ip, DEFAULT_COLLECT.ip),
+    encryptIp: boolOr(o.encryptIp, DEFAULT_COLLECT.encryptIp),
+    ipRetentionDays:
+      typeof days === 'number' && Number.isInteger(days) && days >= 0
+        ? days
+        : DEFAULT_COLLECT.ipRetentionDays,
+  };
 }
 
 /** Regra efetiva de um evento para uma entidade, ou `null` se o evento está desligado. */

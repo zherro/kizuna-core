@@ -63,6 +63,42 @@ describe('parseAnalyticsConfig', () => {
     expect(resolveEventRule(low, 'service', 'view')?.minVisibleMs).toBe(500);
   });
 
+  it('collect: defaults', () => {
+    expect(parseAnalyticsConfig({}).collect).toEqual({
+      device: true,
+      region: true,
+      ip: true,
+      encryptIp: true,
+      ipRetentionDays: 30,
+    });
+  });
+
+  it('collect: respeita valores informados', () => {
+    const c = parseAnalyticsConfig({
+      collect: { ip: false, encryptIp: false, ipRetentionDays: 7 },
+    });
+    expect(c.collect).toEqual({
+      device: true,
+      region: true,
+      ip: false,
+      encryptIp: false,
+      ipRetentionDays: 7,
+    });
+  });
+
+  it('collect: ipRetentionDays inválido cai em 30; 0 é aceito', () => {
+    for (const bad of [-1, 1.5, '7', null, NaN]) {
+      expect(parseAnalyticsConfig({ collect: { ipRetentionDays: bad } }).collect.ipRetentionDays).toBe(30);
+    }
+    expect(parseAnalyticsConfig({ collect: { ipRetentionDays: 0 } }).collect.ipRetentionDays).toBe(0);
+  });
+
+  it('collect: não booleano cai no padrão', () => {
+    const c = parseAnalyticsConfig({ collect: { device: 'no', region: 0 } });
+    expect(c.collect.device).toBe(true);
+    expect(c.collect.region).toBe(true);
+  });
+
   it('lixo no bloco não quebra', () => {
     expect(() => parseAnalyticsConfig('x')).not.toThrow();
     expect(() => parseAnalyticsConfig({ events: 5, entities: [] })).not.toThrow();

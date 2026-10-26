@@ -161,7 +161,7 @@ export {
   type ContactInput,
 } from './tickets/contact-ticket';
 
-export { sealToken, openToken, generateAppEncryptionKey } from './app-crypto';
+export { sealToken, openToken, generateAppEncryptionKey, encryptValue, decryptValue, hmacValue } from './app-crypto';
 export {
   createEmailCodeRequestHandler,
   resolveEmailVerificationCode,

@@ -41,7 +41,7 @@ ALTER TABLE public.analytics_events ENABLE ROW LEVEL SECURITY;
 REVOKE INSERT ON TABLE public.analytics_events FROM anon, auth_user;
 GRANT INSERT (entity_type, entity_id, event_type, source, visitor_hash, visible_ms)
   ON TABLE public.analytics_events TO anon, auth_user;  -- day/created_at só pelo DEFAULT
-GRANT SELECT ON TABLE public.analytics_events TO auth_user;
+GRANT SELECT ON TABLE public.analytics_events TO auth_user;  -- 0003 troca por SELECT por coluna (sem `ip`)
 REVOKE UPDATE, DELETE ON TABLE public.analytics_events FROM anon, auth_user;
 
 DO $$
