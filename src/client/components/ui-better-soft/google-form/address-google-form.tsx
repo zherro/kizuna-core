@@ -101,6 +101,12 @@ type AddressFormProps = {
 
   /** Destaca o CEP (rótulo forte e campo maior) como campo principal. Default `false`. */
   emphasizeCep?: boolean;
+
+  /**
+   * `false`: CEP opcional — os campos de rua/número/bairro já vêm liberados (sem esperar CEP ou
+   * busca) e o rótulo vira "CEP (opcional)". Cidade/UF continuam vindo do CEP ou da busca. Default `true`.
+   */
+  requirePostalCode?: boolean;
 };
 
 // ============================================================
@@ -135,6 +141,7 @@ export function AddressForm({
   layout = 'full',
   searchLabel = 'Pesquisar localização',
   emphasizeCep = false,
+  requirePostalCode = true,
 }: AddressFormProps) {
   const cepId = useId();
   const features = useMemo(
@@ -197,8 +204,8 @@ export function AddressForm({
   const addressUnlocked = useMemo(() => {
     const cep = address.postalCode.replace(/\D/g, '');
 
-    return cep.length === 8 || address.latitude !== null;
-  }, [address.postalCode, address.latitude]);
+    return !requirePostalCode || cep.length === 8 || address.latitude !== null;
+  }, [requirePostalCode, address.postalCode, address.latitude]);
 
   // ============================================================
   // UPDATE
@@ -442,7 +449,7 @@ export function AddressForm({
             : 'mb-1.5 block text-xs font-medium text-muted-foreground'
         }
       >
-        CEP
+        {requirePostalCode ? 'CEP' : 'CEP (opcional)'}
       </label>
 
       <div className="relative">

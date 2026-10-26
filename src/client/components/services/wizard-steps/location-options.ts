@@ -26,6 +26,9 @@ export type LocationOptionConfig = {
   textKey?: string;
   /** Só `model: 'addresses'`: máximo de endereços por serviço (padrão 5, mín 1, máx 10). */
   maxAddresses?: number;
+  /** Só `model: 'address'`/`'addresses'`: `false` deixa o CEP opcional — basta rua, número e a
+   * cidade/UF (vindas da busca do endereço). Ex.: eventos, que muitas vezes não têm CEP. Padrão `true`. */
+  requireZipCode?: boolean;
 };
 
 /** Perfil do passo `location` (ver `StepProfiles`). */
@@ -91,6 +94,14 @@ export function validateLocationProfile(profile: LocationProfile) {
         throw new Error(
           `stepProfiles.location: maxAddresses inválido "${String(n)}" (inteiro de 1 a ${MAX_ADDRESSES_LIMIT})`
         );
+      }
+    }
+    if (option.requireZipCode !== undefined) {
+      if (typeof option.requireZipCode !== 'boolean') {
+        throw new Error('stepProfiles.location: "requireZipCode" precisa ser true ou false');
+      }
+      if (option.model === 'identifier') {
+        throw new Error('stepProfiles.location: "requireZipCode" só vale com model "address" ou "addresses"');
       }
     }
     if (seen.has(option.value)) {

@@ -20,6 +20,7 @@ import {
   addAddress,
   hasSinglePrimary,
   isAddressComplete,
+  missingAddressFields as listMissingFields,
   normalizePrimary,
   syncServiceAddresses,
 } from './service-addresses';
@@ -116,6 +117,7 @@ export function createStepLocation(profiles?: StepProfiles<LocationProfile>) {
     const addresses = state.addresses ?? [];
     const [address, setAddress] = useState<AddressValue>(initialAddress);
     const selected = options.find((option) => option.value === value);
+    const rules = { requireZipCode: selected?.requireZipCode };
 
     // Vínculos vazios em `extras` → completa com as respostas do formulário da categoria (eventos
     // importados gravavam `local_ref`/`pontos_de_venda` lá). Uma vez por anúncio.
@@ -164,7 +166,7 @@ export function createStepLocation(profiles?: StepProfiles<LocationProfile>) {
 
     const handleAddressesChange = (next: ServiceAddress[]) => {
       const list = normalizePrimary(next);
-      patch({ addresses: list, addressComplete: list.some(isAddressComplete) });
+      patch({ addresses: list, addressComplete: list.some((a) => isAddressComplete(a, rules)) });
     };
 
     // O endereço em si continua local-only (não vira coluna — ver comentário da função), mas o
@@ -173,20 +175,17 @@ export function createStepLocation(profiles?: StepProfiles<LocationProfile>) {
     // avançava assim que a opção presencial era escolhida, sem o usuário ter visto o endereço).
     const handleAddressChange = (next: AddressValue) => {
       setAddress(next);
-      const complete = Boolean(next.postalCode.trim() && next.street.trim() && next.number.trim());
+      const complete = isAddressComplete(
+        { zipCode: next.postalCode, street: next.street, number: next.number, city: next.city, state: next.state },
+        rules
+      );
       patch({ addressComplete: complete });
     };
 
     // Presencial com lista: diz o que falta no endereço principal (senão o botão de avançar
     // fica desabilitado sem nenhuma explicação — ex.: endereço importado sem CEP).
     const primaryAddress = addresses.find((a) => a.isPrimary) ?? addresses[0];
-    const missingAddressFields = isAddresses && primaryAddress
-      ? [
-          !primaryAddress.zipCode?.trim() ? 'CEP' : null,
-          !primaryAddress.street?.trim() ? 'endereço' : null,
-          !primaryAddress.number?.trim() ? 'número' : null,
-        ].filter((f): f is string => f !== null)
-      : [];
+    const missingAddressFields = isAddresses && primaryAddress ? listMissingFields(primaryAddress, rules) : [];
 
     const selectedHint = selected
       ? (optionMessages[selected.textKey ?? selected.value]?.hint ??
@@ -246,6 +245,7 @@ export function createStepLocation(profiles?: StepProfiles<LocationProfile>) {
               features={{ search: true, modalSearch: true, locationSelection: false, map: false }}
               layout="compact"
               searchLabel={t.location.addressSearch}
+              requirePostalCode={selected.requireZipCode !== false}
             />
           </div>
         ) : null}
@@ -256,6 +256,7 @@ export function createStepLocation(profiles?: StepProfiles<LocationProfile>) {
               addresses={addresses}
               onChange={handleAddressesChange}
               maxAddresses={resolveMaxAddresses(selected)}
+              requireZipCode={selected?.requireZipCode !== false}
               labels={{
                 search: t.location.addressSearch,
                 ...addressesLabels,
@@ -326,7 +327,10 @@ export function createLocationStep(
         // qualquer modo — o endereço agora é persistido, então vale também em edit/review.
         const list = ctx.state.addresses ?? [];
         const primary = list.find((a) => a.isPrimary);
-        return list.some(isAddressComplete) && hasSinglePrimary(list) && isAddressComplete(primary!);
+        const rules = { requireZipCode: option.requireZipCode };
+        return (
+          list.some((a) => isAddressComplete(a, rules)) && hasSinglePrimary(list) && isAddressComplete(primary!, rules)
+        );
       }
       if (option.model !== 'address' || ctx.mode !== 'create') return true;
       return Boolean(ctx.state.addressComplete);
@@ -348,7 +352,8 @@ export function createLocationStep(
       const saved = await syncServiceAddresses(
         String(serviceId),
         ctx.state.addresses ?? [],
-        ctx.state.addressesSnapshot ?? []
+        ctx.state.addressesSnapshot ?? [],
+        { requireZipCode: option.requireZipCode }
       );
       ctx.patch({ addresses: saved, addressesSnapshot: saved });
     },

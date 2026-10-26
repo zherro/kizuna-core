@@ -7,6 +7,8 @@ import {
   addAddress,
   diffAddresses,
   emptyServiceAddress,
+  isAddressComplete,
+  missingAddressFields,
   normalizePrimary,
   removeAddress,
   runLimited,
@@ -150,6 +152,50 @@ describe('AddressListEditor — apelido em tag', () => {
     fireEvent.keyDown(input, { key: 'Enter' });
     expect(labels()).toEqual(['']);
     expect(screen.getByText('Endereço principal')).toBeTruthy();
+  });
+});
+
+describe('CEP opcional (requireZipCode: false)', () => {
+  const noZip = { requireZipCode: false };
+  it('padrão exige CEP; sem CEP vale rua + número + cidade/UF', () => {
+    const semCep = full({ zipCode: '', city: 'Cuiabá', state: 'MT' });
+    expect(isAddressComplete(semCep)).toBe(false);
+    expect(isAddressComplete(semCep, noZip)).toBe(true);
+    expect(isAddressComplete({ ...semCep, city: '' }, noZip)).toBe(false);
+  });
+
+  it('lista o que falta conforme a regra', () => {
+    const a = full({ zipCode: '', number: '', city: '', state: '' });
+    expect(missingAddressFields(a)).toEqual(['CEP', 'número']);
+    expect(missingAddressFields(a, noZip)).toEqual(['número', 'cidade']);
+  });
+
+  it('diff não apaga o endereço gravado sem CEP', () => {
+    const saved = full({ id: '1', zipCode: '', city: 'Cuiabá', state: 'MT' });
+    expect(diffAddresses([saved], [saved], noZip).toDelete).toEqual([]);
+    expect(diffAddresses([saved], [saved]).toDelete.map((a) => a.id)).toEqual(['1']);
+  });
+
+  it('sem CEP, o IBGE sai da cidade + UF', async () => {
+    const calls: string[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        calls.push(url);
+        if (url.startsWith('/api/location/cities')) {
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({ items: [{ value: '5108402', label: 'Várzea Grande' }] }),
+          };
+        }
+        return { ok: true, status: 200, json: async () => ({ item: { id: '7' } }) };
+      })
+    );
+    const a = full({ zipCode: '', cityIbge: null, city: 'varzea grande', state: 'mt' });
+    const [out] = await syncServiceAddresses('9', [a], [], noZip);
+    expect(calls[0]).toBe('/api/location/cities?uf=MT');
+    expect(out.cityIbge).toBe('5108402');
   });
 });
 

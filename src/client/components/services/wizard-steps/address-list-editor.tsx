@@ -60,11 +60,14 @@ export function AddressListEditor({
   onChange,
   maxAddresses,
   labels,
+  requireZipCode = true,
 }: {
   addresses: ServiceAddress[];
   onChange: (addresses: ServiceAddress[]) => void;
   maxAddresses: number;
   labels?: AddressListLabels;
+  /** `false`: CEP opcional (`LocationOptionConfig.requireZipCode`) — campos liberados sem ele. */
+  requireZipCode?: boolean;
 }) {
   const l = { ...DEFAULT_LABELS, ...labels };
   const canAdd = addresses.length < maxAddresses;
@@ -127,7 +130,8 @@ export function AddressListEditor({
               }
               features={FORM_FEATURES}
               layout="compact"
-              emphasizeCep
+              emphasizeCep={requireZipCode}
+              requirePostalCode={requireZipCode}
               searchLabel={l.search}
             />
           </li>

@@ -349,6 +349,7 @@ No `stepProfiles.location`, `model: "addresses"` permite N endereços (com um pr
 | -------------- | ------- | ------ | ---------------------------------------------- |
 | `model`        | string  | —      | `address`, `addresses` ou `identifier`.        |
 | `maxAddresses` | inteiro | `5`    | Só com `addresses`; de 1 a 10.                 |
+| `requireZipCode` | booleano | `true` | Só com `address`/`addresses`. `false` deixa o CEP opcional: o endereço fica completo com rua, número e cidade/UF (vindas da busca). Sem CEP, o IBGE da cidade sai pelo nome. |
 
 ```json
 "stepProfiles": {

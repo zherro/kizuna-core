@@ -28,11 +28,37 @@ export function emptyServiceAddress(isPrimary = false): ServiceAddress {
   };
 }
 
-/** Completo = CEP + rua + número (mesma regra do passo antigo). */
+/** Regras de endereço de uma opção do passo `location` (`LocationOptionConfig`). */
+export type AddressRules = {
+  /** `false`: CEP opcional — no lugar dele vale cidade + UF (ex.: eventos). Padrão `true`. */
+  requireZipCode?: boolean;
+};
+
+/**
+ * Completo = CEP + rua + número (mesma regra do passo antigo). Com `requireZipCode: false`, o CEP
+ * sai e entram cidade + UF — sem eles o anúncio não acharia a cidade (`city_ibge`).
+ */
 export function isAddressComplete(
-  a: Pick<ServiceAddress, 'zipCode' | 'street' | 'number'>
+  a: Pick<ServiceAddress, 'zipCode' | 'street' | 'number'> & Partial<Pick<ServiceAddress, 'city' | 'state'>>,
+  rules?: AddressRules
 ): boolean {
-  return Boolean(a.zipCode?.trim() && a.street?.trim() && a.number?.trim());
+  const base = Boolean(a.street?.trim() && a.number?.trim());
+  if (rules?.requireZipCode === false) return base && Boolean(a.city?.trim() && a.state?.trim());
+  return base && Boolean(a.zipCode?.trim());
+}
+
+/** Campos que faltam pra `isAddressComplete` (rótulos da tela, na ordem do formulário). */
+export function missingAddressFields(
+  a: Pick<ServiceAddress, 'zipCode' | 'street' | 'number'> & Partial<Pick<ServiceAddress, 'city' | 'state'>>,
+  rules?: AddressRules
+): string[] {
+  const zipOptional = rules?.requireZipCode === false;
+  return [
+    !zipOptional && !a.zipCode?.trim() ? 'CEP' : null,
+    !a.street?.trim() ? 'endereço' : null,
+    !a.number?.trim() ? 'número' : null,
+    zipOptional && !(a.city?.trim() && a.state?.trim()) ? 'cidade' : null,
+  ].filter((f): f is string => f !== null);
 }
 
 export function hasSinglePrimary(addresses: ServiceAddress[]): boolean {
@@ -141,9 +167,13 @@ export type AddressDiff = {
   toUpdate: ServiceAddress[];
 };
 
-/** Só o que mudou. Linhas incompletas (sem CEP/rua/número) nunca são gravadas. */
-export function diffAddresses(current: ServiceAddress[], prev: ServiceAddress[]): AddressDiff {
-  const persistable = current.filter(isAddressComplete);
+/** Só o que mudou. Linhas incompletas (`isAddressComplete` com `rules`) nunca são gravadas. */
+export function diffAddresses(
+  current: ServiceAddress[],
+  prev: ServiceAddress[],
+  rules?: AddressRules
+): AddressDiff {
+  const persistable = current.filter((a) => isAddressComplete(a, rules));
   const keptIds = new Set(persistable.map((a) => a.id).filter(Boolean));
   const prevById = new Map(prev.filter((p) => p.id).map((p) => [p.id as string, p]));
   return {
@@ -177,10 +207,35 @@ function payload(serviceId: string, a: ServiceAddress) {
   return { ...rest, serviceId };
 }
 
-/** Preenche `cityIbge` via /api/location/cep (plugin location). Best-effort: falha → null. */
+function normalizeName(v: string): string {
+  return v.normalize('NFD').replace(/\p{Diacritic}/gu, '').trim().toLowerCase();
+}
+
+/** Sem CEP: IBGE pela cidade + UF na lista do seletor (/api/location/cities). Falha → null. */
+async function ibgeByCity(city: string, state: string): Promise<string | null> {
+  const uf = state.trim().toUpperCase();
+  if (!city.trim() || !/^[A-Z]{2}$/.test(uf)) return null;
+  try {
+    const res = await fetch(`/api/location/cities?uf=${uf}`, { cache: 'no-store' });
+    if (!res.ok) return null;
+    const data = (await res.json().catch(() => null)) as { items?: Array<{ value?: unknown; label?: unknown }> } | null;
+    const name = normalizeName(city);
+    const hit = data?.items?.find((c) => typeof c.label === 'string' && normalizeName(c.label) === name);
+    const ibge = String(hit?.value ?? '').replace(/\D/g, '');
+    return ibge || null;
+  } catch {
+    return null;
+  }
+}
+
+/** Preenche `cityIbge` via /api/location/cep (plugin location); sem CEP, pela cidade + UF. Best-effort: falha → null. */
 async function withIbge(a: ServiceAddress): Promise<ServiceAddress> {
   const cep = a.zipCode.replace(/\D/g, '');
-  if (a.cityIbge || cep.length !== 8) return a;
+  if (a.cityIbge) return a;
+  if (cep.length !== 8) {
+    const ibge = await ibgeByCity(a.city ?? '', a.state ?? '');
+    return ibge ? { ...a, cityIbge: ibge } : a;
+  }
   try {
     const res = await fetch(`/api/location/cep?cep=${cep}`, { cache: 'no-store' });
     if (!res.ok) return a;
@@ -201,10 +256,11 @@ async function withIbge(a: ServiceAddress): Promise<ServiceAddress> {
 export async function syncServiceAddresses(
   serviceId: string,
   current: ServiceAddress[],
-  prev: ServiceAddress[]
+  prev: ServiceAddress[],
+  rules?: AddressRules
 ): Promise<ServiceAddress[]> {
-  const diff = diffAddresses(current, prev);
-  const persistable = current.filter(isAddressComplete);
+  const diff = diffAddresses(current, prev, rules);
+  const persistable = current.filter((a) => isAddressComplete(a, rules));
   if (diff.toDelete.length + diff.toCreate.length + diff.toUpdate.length === 0) {
     return persistable;
   }

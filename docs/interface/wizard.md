@@ -305,7 +305,7 @@ outro é só o conteúdo do perfil:
 
 | Passo      | Perfil                                                                                     | Padrão do core                             |
 | ---------- | ------------------------------------------------------------------------------------------ | ------------------------------------------ |
-| `location` | `{ options: [{ value, model: "address"\|"addresses"\|"identifier", icon?, textKey?, maxAddresses? }] }`                | `no_estabelecimento` com `addresses` (máx. 5); `no_cliente` e `remoto` com `identifier`          |
+| `location` | `{ options: [{ value, model: "address"\|"addresses"\|"identifier", icon?, textKey?, maxAddresses?, requireZipCode? }] }`                | `no_estabelecimento` com `addresses` (máx. 5); `no_cliente` e `remoto` com `identifier`          |
 | `price`    | `{ options: [{ value, textKey? }], startingPrice?: bool, priceTable?: bool, expiresAt?: bool|"optional"|"required" }`               | todas as formas de cobrança + "a partir de", sem tabela |
 
 - **Seleção inicial** — `defaultValue` (um `value` de `options`) já abre com aquela opção
@@ -338,6 +338,7 @@ remover, marcar o principal), gravada em `service_addresses` (ver [Plugin servic
 | Chave          | Padrão | Efeito                                                                                          |
 | -------------- | ------ | ----------------------------------------------------------------------------------------------- |
 | `maxAddresses` | `5`    | Máximo de endereços por serviço (inteiro de 1 a 10). Só vale com `addresses`; em outro model lança erro. |
+| `requireZipCode` | `true` | `false` deixa o CEP opcional (ex.: eventos): completo = rua + número + cidade/UF; o formulário libera os campos sem CEP e o IBGE da cidade sai pelo nome (`/api/location/cities`). Só com `address`/`addresses`. Por perfil, então vale por grupo/categoria (`byGroup`/`byCategory`). |
 
 * Sempre há **um único endereço principal**.
 * **Endereço só no estabelecimento**: só a opção com `addresses` (`no_estabelecimento`) exige ao menos

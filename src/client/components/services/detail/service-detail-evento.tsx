@@ -190,7 +190,14 @@ export const ServiceDetailEventoSidebar: ServiceDetailVariantComponent = ({ serv
         <div className="mt-4 flex items-start gap-2 text-sm text-muted-foreground">
           <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
           <span>
-            <span className="font-semibold text-foreground">{place.name}</span>
+            {/* Com lugar vinculado (`local_ref`), o nome leva à página dele — o endereço é o do lugar. */}
+            {venue?.href ? (
+              <Link href={venue.href} className="font-semibold text-foreground underline-offset-2 hover:text-brand hover:underline">
+                {place.name}
+              </Link>
+            ) : (
+              <span className="font-semibold text-foreground">{place.name}</span>
+            )}
             {place.rest && <span className="block">{place.rest}</span>}
           </span>
         </div>
