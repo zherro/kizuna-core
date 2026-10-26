@@ -3,7 +3,7 @@ import { ArticleByline } from '../../content/article-byline';
 import { ArticleFigure } from '../../content/article-figure';
 import { ArticleHeader } from '../../content/article-header';
 import { ArticleSources } from '../../content/article-sources';
-import { kickerTone } from '../../home/news-highlights-format';
+import { NewsTags } from '../../home/news-tags';
 import { photosFor } from '../service-helpers';
 import { AdDescription } from './ad-description';
 import { AdShareButton } from './ad-share-button';
@@ -35,7 +35,6 @@ export type NewsArticleProps = {
  * largura de leitura (~68 caracteres) e as fontes no fim. Puro: recebe tudo pronto.
  */
 export function NewsArticle({ title, meta, coverUrl, body, actions, trackView = (n) => n }: NewsArticleProps) {
-  const tone = kickerTone(meta.kicker);
   const credit = meta.photoCredit;
 
   return (
@@ -46,9 +45,7 @@ export function NewsArticle({ title, meta, coverUrl, body, actions, trackView = 
           <div className="space-y-6 sm:space-y-8">
             <div className="max-w-4xl">
               <ArticleHeader
-                kicker={meta.kicker}
-                kickerColor={tone.text}
-                kickerMarker={tone.solid}
+                tags={<NewsTags group={meta.group} category={meta.category} size="md" />}
                 title={title}
                 meta={
                   <ArticleByline

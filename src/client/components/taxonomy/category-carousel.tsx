@@ -13,7 +13,7 @@ import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useResourceOptions } from "../../hooks";
 import { resolveLucideIcon } from "../../../lib/lucide-icon";
-import { Typography } from "../ui/typography";
+import { SectionHeading, SectionHeadingLink } from "../ui-better-soft/headers/section-heading";
 
 type StatRow = {
   id: string | number;
@@ -415,18 +415,13 @@ function Header({
   compact?: boolean;
   style?: CSSProperties | undefined;
 }) {
-  // flex (não Grid): no mobile o Grid empilhava e o "ver todas" caía numa linha sozinho.
+  // Mesmo cabeçalho de seção dos outros blocos da home (título, barra e "ver todas").
   return (
-    <div className="flex items-baseline justify-between gap-4">
-      <Typography.H5 font="display" className="min-w-0">{title}</Typography.H5>
-      {allLabel && allHref ? (
-        <Link
-          href={allHref}
-          className="relative shrink-0 whitespace-nowrap text-sm font-medium text-muted-foreground after:absolute after:-inset-2 after:content-[''] underline-offset-4 hover:text-foreground underline"
-        >
-          {allLabel}
-        </Link>
-      ) : null}
-    </div>
+    <SectionHeading
+      title={title}
+      // o trilho já tem o próprio espaço acima (mt-4 / mt-6)
+      className="mb-0"
+      action={allLabel && allHref ? <SectionHeadingLink href={allHref}>{allLabel}</SectionHeadingLink> : null}
+    />
   );
 }

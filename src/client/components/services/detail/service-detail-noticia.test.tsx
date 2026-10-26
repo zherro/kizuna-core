@@ -28,7 +28,8 @@ describe('NewsArticle', () => {
   it('matéria: h1, chapéu, autor/data, foto com alt do crédito, h2 do corpo e fontes', () => {
     const out = html();
     expect(out).toMatch(/<h1[^>]*>Mega-Sena acumula<\/h1>/);
-    expect(out).toContain('Loterias');
+    expect(out).toContain('>Notícias<');
+    expect(out).toContain('>Cidade<');
     expect(out).toContain('Redação');
     expect(out).toContain('25 de outubro de 2026, 8h');
     expect(out).toContain('alt="Lotérica"');

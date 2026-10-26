@@ -29,6 +29,9 @@ export type NewsPhotoCredit = {
 export type NewsArticleMeta = {
   /** Chapéu: 1ª subcategoria > categoria > grupo > "Notícias". */
   kicker: string;
+  /** Etiquetas da matéria: grupo (neutra) e categoria (colorida). */
+  group: string | null;
+  category: string;
   /** Instante de publicação (`data_publicacao`, senão `createdAt`); `null` sem data válida. */
   publishedAt: Date | null;
   /** Data por extenso ("25 de outubro de 2026, 8h"); `null` sem data. */
@@ -145,6 +148,8 @@ export function newsArticleMeta(
 
   return {
     kicker,
+    group: str(service.categoryGroup?.name),
+    category: str(service.category?.name) || kicker,
     publishedAt,
     publishedLabel: publishedAt ? formatNewsPublished(publishedAt, timeZone) : null,
     author: str(answers.autor),

@@ -20,11 +20,11 @@ export function CityInvite() {
 
   return (
     <>
-      <div className="mx-auto w-full max-w-[1600px] px-4 pt-3 sm:px-6">
+      <div className="mx-auto w-full max-w-[1600px] px-4 pt-2 sm:px-6">
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="relative inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/40 px-3 py-1.5 after:absolute after:inset-x-0 after:-inset-y-2 after:content-[''] text-xs font-medium text-foreground transition-colors hover:bg-muted"
+          className="relative inline-flex min-h-[28px] items-center gap-1.5 rounded-md text-xs font-medium text-muted-foreground underline-offset-4 transition-colors after:absolute after:inset-x-0 after:-inset-y-2 after:content-[''] hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <MapPin className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
           {location?.cityName

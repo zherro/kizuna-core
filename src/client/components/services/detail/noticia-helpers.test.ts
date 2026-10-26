@@ -98,6 +98,8 @@ describe('newsArticleMeta', () => {
       { subcategoryNames: ['Loterias'], timeZone: TZ }
     );
     expect(meta.kicker).toBe('Loterias');
+    expect(meta.category).toBe('Cidade');
+    expect(meta.group).toBe('Notícias');
     expect(meta.publishedAt?.toISOString()).toBe('2026-10-25T12:00:00.000Z');
     expect(meta.publishedLabel).toBe('25 de outubro de 2026, 8h');
     expect(meta.author).toBe('Redação');

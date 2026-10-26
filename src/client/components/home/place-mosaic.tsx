@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { MapPin, Shuffle, X } from 'lucide-react';
 import { useEffect, useId, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import type { PlaceHighlightItem } from './place-highlights';
+import { SectionHeading, SectionHeadingLink } from '../ui-better-soft/headers/section-heading';
 import { normalizePlaceKicker, placeTone, type PlaceTone } from './place-highlights-tone';
 import {
   bentoTileKind,
@@ -164,7 +165,7 @@ export function PlaceMosaic({
   const sectionClass = [
     '@container',
     contained ? 'mx-auto w-full max-w-[1600px] px-4 sm:px-6' : '',
-    'pb-12',
+    'pb-14 sm:pb-16',
     className ?? '',
   ]
     .filter(Boolean)
@@ -174,26 +175,12 @@ export function PlaceMosaic({
 
   return (
     <section aria-labelledby={headingId} className={sectionClass}>
-      <div className="mb-4 flex items-end justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <span
-            aria-hidden="true"
-            className="h-5 w-1 shrink-0 rounded-full"
-            style={{ backgroundImage: headTone.wash }}
-          />
-          <h2 id={headingId} className="font-display text-xl font-black leading-tight tracking-tight">
-            {title}
-          </h2>
-        </div>
-        {moreHref ? (
-          <Link
-            href={moreHref}
-            className={`-mr-3 inline-flex min-h-11 shrink-0 items-center rounded-full px-3 text-sm font-semibold text-primary transition-colors hover:bg-muted ${FOCUS_RING}`}
-          >
-            {moreLabel}
-          </Link>
-        ) : null}
-      </div>
+      <SectionHeading
+        id={headingId}
+        title={title}
+        accent={headTone.wash}
+        action={moreHref ? <SectionHeadingLink href={moreHref}>{moreLabel}</SectionHeadingLink> : null}
+      />
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
         {kickers.length > 1 ? (

@@ -9,6 +9,9 @@ export type NewsHighlightItem = {
   title: string;
   /** Chapéu (ex.: "Política", "Esportes") — a subcategoria da notícia, ou a categoria. */
   kicker: string;
+  /** Grupo ("Notícias") e categoria, as duas etiquetas do card. Sem eles, vale só o `kicker`. */
+  group?: string | null;
+  category?: string | null;
   summary?: string;
   image?: string | null;
   /** Instante de publicação (ISO com fuso, ou `Date`). Sem ele a linha não mostra tempo. */

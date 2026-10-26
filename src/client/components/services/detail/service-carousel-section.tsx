@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import type { ServiceResult } from '../../search/search-types';
 import { hueGradient, type ServiceDetailConfig } from './category-style';
 import { ServiceCarousel } from './service-carousel';
+import { SectionHeading } from '../../ui-better-soft/headers/section-heading';
 import type { AnalyticsSource, EventRule } from '../../../../shared/analytics';
 
 /**
@@ -48,16 +49,7 @@ export function ServiceCarouselSection({
 
   return (
     <section className={className}>
-      <div className="mb-5 flex items-center gap-3">
-        <span
-          className="h-5 w-1 shrink-0 rounded-full"
-          style={{ backgroundImage: hueGradient(hue ?? 230) }}
-        />
-        <div>
-          <h2 className="font-display text-xl font-black leading-tight tracking-tight">{title}</h2>
-          {subtitleLabel && <p className="text-xs text-muted-foreground">{subtitleLabel}</p>}
-        </div>
-      </div>
+      <SectionHeading title={title} subtitle={subtitleLabel} accent={hueGradient(hue ?? 230)} />
 
       <ServiceCarousel
         services={services}

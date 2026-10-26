@@ -1,8 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { ChevronRight, Newspaper } from 'lucide-react';
+import { Newspaper } from 'lucide-react';
 import { useId, useState, useSyncExternalStore } from 'react';
+import { NewsTags } from './news-tags';
+import { SectionHeading, SectionHeadingLink } from '../ui-better-soft/headers/section-heading';
 import {
   NEWS_DEFAULT_TIME_ZONE,
   formatNewsAbsolute,
@@ -71,17 +73,8 @@ function NewsTime({
   );
 }
 
-function Kicker({ text, className = '' }: { text: string; className?: string }) {
-  const tone = kickerTone(text);
-  return (
-    <span
-      className={`inline-flex min-w-0 items-center gap-1.5 text-[0.7rem] font-bold uppercase leading-none tracking-[0.08em] ${className}`}
-      style={{ color: tone.text }}
-    >
-      <span aria-hidden="true" className="h-2 w-2 shrink-0 rounded-[2px]" style={{ background: tone.solid }} />
-      <span className="truncate">{text}</span>
-    </span>
-  );
+function ItemTags({ item, className = '' }: { item: NewsHighlightItem; className?: string }) {
+  return <NewsTags group={item.group} category={item.category?.trim() || item.kicker} className={className} />;
 }
 
 /** Imagem com fallback: sem `src` (ou se ela falhar) mostra um painel no matiz do chapéu. */
@@ -151,7 +144,7 @@ function Lead({ item, timeZone }: { item: NewsHighlightItem; timeZone: string })
         {/* a "tira" de papel sobre a foto: o elemento de assinatura do bloco */}
         <span className="relative -mt-12 mx-3 block rounded-2xl border border-border bg-card p-5 shadow-[0_18px_40px_-24px_color-mix(in_oklch,var(--foreground)_45%,transparent)] @md:-mt-20 @md:mx-6 @md:p-7 @4xl:mr-10">
           <span className="flex items-center justify-between gap-3">
-            <Kicker text={item.kicker} />
+            <ItemTags item={item} />
             <NewsTime value={item.publishedAt} timeZone={timeZone} className="shrink-0 text-xs text-muted-foreground" />
           </span>
           <h3 className="mt-3 text-balance font-display text-[1.65rem] font-black leading-[1.08] tracking-tight text-[var(--foreground-display)] decoration-2 underline-offset-[6px] group-hover:underline @md:text-[2.1rem] @6xl:text-[2.5rem]">
@@ -190,7 +183,7 @@ function PairLead({ item, timeZone }: { item: NewsHighlightItem; timeZone: strin
         </span>
         <span className="relative -mt-10 mx-3 block rounded-2xl border border-border bg-card p-5 shadow-[0_18px_40px_-24px_color-mix(in_oklch,var(--foreground)_45%,transparent)] @sm:-mt-14 @sm:mx-4 @md:p-6">
           <span className="flex items-center justify-between gap-3">
-            <Kicker text={item.kicker} />
+            <ItemTags item={item} />
             <NewsTime value={item.publishedAt} timeZone={timeZone} className="shrink-0 text-xs text-muted-foreground" />
           </span>
           <h3 className="mt-3 text-balance font-display text-[1.45rem] font-black leading-[1.1] tracking-tight text-[var(--foreground-display)] decoration-2 underline-offset-[6px] group-hover:underline @md:text-[1.7rem]">
@@ -219,8 +212,8 @@ function Row({ item, index, timeZone }: { item: NewsHighlightItem; index: number
           {index}
         </span>
         <span className="min-w-0 flex-1">
-          <Kicker text={item.kicker} className="max-w-full" />
-          <span className="mt-1.5 line-clamp-3 font-display text-[1.05rem] font-bold leading-snug text-[var(--foreground-display)] decoration-1 underline-offset-4 group-hover:underline">
+          <ItemTags item={item} />
+          <span className="mt-2 line-clamp-3 font-display text-[1.05rem] font-bold leading-snug text-[var(--foreground-display)] decoration-1 underline-offset-4 group-hover:underline">
             {item.title}
           </span>
           <NewsTime value={item.publishedAt} timeZone={timeZone} className="mt-1.5 block text-xs text-muted-foreground" />
@@ -258,23 +251,11 @@ export function NewsHighlights({
 
   const section = (
     <section aria-labelledby={headingId} className={`@container ${className ?? ''}`}>
-      <div className="mb-5 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <span aria-hidden="true" className="h-5 w-1 shrink-0 rounded-full bg-primary" />
-          <h2 id={headingId} className="font-display text-xl font-black leading-tight tracking-tight">
-            {title}
-          </h2>
-        </div>
-        {moreHref ? (
-          <Link
-            href={moreHref}
-            className="-mr-2 inline-flex min-h-[44px] items-center gap-0.5 rounded-full px-3 text-sm font-semibold text-primary outline-none transition-colors hover:bg-primary/10 focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            {moreLabel}
-            <ChevronRight aria-hidden="true" className="h-4 w-4" />
-          </Link>
-        ) : null}
-      </div>
+      <SectionHeading
+        id={headingId}
+        title={title}
+        action={moreHref ? <SectionHeadingLink href={moreHref}>{moreLabel}</SectionHeadingLink> : null}
+      />
 
       <div className="grid grid-cols-1 gap-8 @4xl:grid-cols-12 @4xl:gap-10">
         {leads.length === 2 ? (
@@ -304,5 +285,5 @@ export function NewsHighlights({
   );
 
   if (!contained) return section;
-  return <div className="mx-auto w-full max-w-[1600px] px-4 pb-10 sm:px-6">{section}</div>;
+  return <div className="mx-auto w-full max-w-[1600px] px-4 pb-14 sm:px-6 sm:pb-16">{section}</div>;
 }

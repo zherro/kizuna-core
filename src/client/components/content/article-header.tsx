@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react';
 
 export type ArticleHeaderProps = {
+  /** Substitui a linha do kicker (ex.: as etiquetas de grupo/categoria da notícia). */
+  tags?: ReactNode;
   /** Linha de contexto acima do título (ex.: "Casa noturna · Cuiabá", ou o chapéu da notícia). */
   kicker?: string;
   /** Cor do texto do kicker (ex.: `kickerTone(kicker).text`); sem ela, a cor da marca. */
@@ -21,10 +23,12 @@ export function formatDateBR(iso: string): string {
   return m ? `${m[3]}/${m[2]}/${m[1]}` : iso;
 }
 
-export function ArticleHeader({ kicker, kickerColor, kickerMarker, title, summary, updatedAt, meta }: ArticleHeaderProps) {
+export function ArticleHeader({ tags, kicker, kickerColor, kickerMarker, title, summary, updatedAt, meta }: ArticleHeaderProps) {
   return (
     <header>
-      {kicker ? (
+      {tags ? (
+        <div>{tags}</div>
+      ) : kicker ? (
         <p
           className={`flex items-center gap-2 text-sm font-semibold ${kickerColor ? '' : 'text-brand'}`}
           style={kickerColor ? { color: kickerColor } : undefined}
