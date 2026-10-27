@@ -14,6 +14,7 @@ import { variantCardProps } from './event-card';
 import { TrackView } from '../../../analytics/track-view';
 import { withSource } from '../../../analytics/source';
 import type { AnalyticsSource, EventRule } from '../../../../shared/analytics';
+import { useGroupNames } from '../../../hooks/use-group-names';
 
 /**
  * Trilha horizontal de scroll livre com `ListingResultCard` (`variant="strip"`) — mesmo embla das
@@ -46,6 +47,7 @@ export function ServiceCarousel({
   source?: AnalyticsSource;
 }) {
   const [emblaRef, emblaApi] = useEmblaCarousel({ align: 'start', dragFree: true });
+  const groupNameOf = useGroupNames();
   const [canPrev, setCanPrev] = useState(false);
   const [canNext, setCanNext] = useState(false);
 
@@ -96,6 +98,7 @@ export function ServiceCarousel({
                 whenLabel={extra?.whenLabel}
                 cardStyle={extra?.cardStyle ?? 'default'}
                 tagLabel={service.category}
+                groupLabel={groupNameOf(service.category_group_slug)}
                 subtitleLabel={service.subcategory}
                 imageUrl={service.cover_file_id ? thumbUrl(service.cover_file_id) : null}
                 locationLabel={extra?.locationLabel ?? (showCity ? formatLocationLabel(service) : null)}
