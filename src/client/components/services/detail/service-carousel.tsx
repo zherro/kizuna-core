@@ -4,7 +4,8 @@ import { Fragment, useCallback, useEffect, useState, type ReactNode } from 'reac
 import useEmblaCarousel from 'embla-carousel-react';
 import Link from 'next/link';
 import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
-import { ListingResultCard } from '../../ui-better-soft/lists/listing-result-card';
+import { ListingResultCard, RESULT_CARD_WIDTH } from '../../ui-better-soft/lists/listing-result-card';
+import { cn } from '../../../../lib/utils';
 import type { ServiceResult } from '../../search/search-types';
 import { thumbUrl, cardPriceParts } from '../service-helpers';
 import { serviceHref } from '../../../../shared/city-routing/city-slug';
@@ -108,7 +109,7 @@ export function ServiceCarousel({
             );
             const adAfter =
               adSlot && index === Math.min(1, services.length - 1) ? (
-                <div className="w-[280px] shrink-0 empty:hidden">{adSlot}</div>
+                <div className={cn(RESULT_CARD_WIDTH, 'shrink-0 empty:hidden')}>{adSlot}</div>
               ) : null;
             if (!impressionRule) {
               return adAfter ? (
@@ -140,7 +141,7 @@ export function ServiceCarousel({
           {moreHref ? (
             <Link
               href={withSource(moreHref, source)}
-              className="group/more flex w-[280px] shrink-0 flex-col items-center justify-center gap-3 rounded-[var(--ui-radius-card-compact,0.75rem)] border-[length:var(--ui-border-w-card,1px)] border-dashed border-border bg-muted/40 p-6 text-center text-foreground transition hover:-translate-y-0.5 hover:bg-muted hover:shadow-md"
+              className={cn(RESULT_CARD_WIDTH, "group/more flex shrink-0 flex-col items-center justify-center gap-3 rounded-[var(--ui-radius-card-compact,0.75rem)] border-[length:var(--ui-border-w-card,1px)] border-dashed border-border bg-muted/40 p-6 text-center text-foreground transition hover:-translate-y-0.5 hover:bg-muted hover:shadow-md")}
             >
               <span className="flex h-11 w-11 items-center justify-center rounded-full border border-border bg-background transition group-hover/more:border-primary group-hover/more:text-primary">
                 <ArrowRight className="h-5 w-5" aria-hidden="true" />

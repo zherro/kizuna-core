@@ -2,7 +2,8 @@
 
 import type { ReactNode } from 'react';
 import { MapPin, SearchX } from 'lucide-react';
-import { ListingResultCard } from '../ui-better-soft/lists/listing-result-card';
+import { ListingResultCard, RESULT_CARD_WIDTH } from '../ui-better-soft/lists/listing-result-card';
+import { cn } from '../../../lib/utils';
 import { cardPriceParts } from '../services/service-helpers';
 import { resolveServiceCardVariant, type ServiceDetailConfig } from '../services/detail/category-style';
 import { variantCardProps } from '../services/detail/event-card';
@@ -13,9 +14,10 @@ import type { ServiceResult } from './search-types';
 import { formatLocationLabel } from './format-location-label';
 import { serviceHref } from '../../../shared/city-routing/city-slug';
 
-// Até 5 por linha no desktop: card e imagem mais contidos em tela larga.
+// Colunas com a largura do card do carrossel (`RESULT_CARD_WIDTH`, ~6 por tela): o card da busca tem
+// a mesma proporção do da home e do detalhe. No celular, 1 coluna cheia.
 const GRID_CLASS =
-  'grid grid-cols-1 gap-4 min-[500px]:grid-cols-2 min-[900px]:gap-y-6 min-[900px]:grid-cols-3 min-[1100px]:grid-cols-4 min-[1360px]:grid-cols-5';
+  'grid grid-cols-1 gap-4 sm:grid-cols-[repeat(auto-fill,clamp(240px,calc((100vw_-_144px)/6),300px))] sm:justify-between sm:gap-y-6';
 
 export type ResultsScope = 'city' | 'state' | 'related' | 'empty';
 
@@ -168,7 +170,7 @@ export function SearchResultsView({
             key={i}
             className={
               layout === 'strip'
-                ? 'h-56 w-[280px] shrink-0 animate-pulse rounded-xl bg-muted'
+                ? cn(RESULT_CARD_WIDTH, 'h-56 shrink-0 animate-pulse rounded-xl bg-muted')
                 : 'h-72 animate-pulse rounded-2xl bg-muted'
             }
           />

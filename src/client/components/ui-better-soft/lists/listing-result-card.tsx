@@ -7,12 +7,19 @@ import { MediaResultCard } from './media-result-card';
  * Cartão de resultado de listagem de marketplace, genérico, em duas densidades:
  *
  * - `variant="grid"` (padrão): cartão vertical completo (compõe `MediaResultCard`).
- * - `variant="strip"`: cartão compacto de largura fixa (~280px), pensado para trilha horizontal
+ * - `variant="strip"`: cartão compacto de largura fixa (`RESULT_CARD_WIDTH`, ~6 por tela), pensado para trilha horizontal
  *   com scroll (mobile).
  *
  * Recebe tudo pronto via props — não sabe se o item é serviço, produto ou evento. Preço já vem
  * formatado (`priceLabel`).
  */
+/**
+ * Largura do card no carrossel (home, detalhe) e de cada coluna da grade da busca: ~6 por tela no
+ * desktop (100vw − 64px de margem − 5 gaps de 16px, ÷ 6), entre 240 e 300px. Mesma largura em todo
+ * lugar = mesma proporção. Literal (não montar a string): o Tailwind precisa achá-la no código.
+ */
+export const RESULT_CARD_WIDTH = 'w-[clamp(240px,calc((100vw_-_144px)/6),300px)]';
+
 export type ListingResultCardProps = {
   href: string;
   title: string;
@@ -265,7 +272,7 @@ export function ListingResultCard({
     </div>
   );
 
-  // Evento, cinema e lugar/notícia: o MESMO card no carrossel (280px) e na grade (largura da coluna)
+  // Evento, cinema e lugar/notícia: o MESMO card no carrossel (`RESULT_CARD_WIDTH`) e na grade (largura da coluna)
   // — sem CTA, o card inteiro é o link; data e local ficam inteiros, sem disputar espaço com botão.
   if (variant === 'strip' || compactFooter) {
     return (
@@ -273,7 +280,7 @@ export function ListingResultCard({
         href={href}
         className={cn(
           'group flex flex-col overflow-hidden rounded-[var(--ui-radius-card-compact,0.75rem)] border-[length:var(--ui-border-w-card,1px)] border-border bg-card shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] transition hover:-translate-y-0.5 hover:shadow-md',
-          variant === 'strip' ? 'w-[280px] shrink-0' : 'w-full',
+          variant === 'strip' ? cn(RESULT_CARD_WIDTH, 'shrink-0') : 'w-full',
           className
         )}
       >
