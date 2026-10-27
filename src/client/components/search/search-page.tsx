@@ -27,6 +27,7 @@ import { LocationGate } from './location-gate';
 import { SearchChat } from './search-chat';
 import { SearchFiltersPanel } from './search-filters-panel';
 import { SearchResultsView, type RelaxedFrom, type ResultsScope } from './search-results-view';
+import { SearchBrowseRails, normalizeBrowseRails, type BrowseRailConfig } from './search-browse-rails';
 import { regionGroupsFor, type RegionConfig, type RegionGroup } from '../../../shared/regions';
 import type { ServiceDetailConfig } from '../services/detail/category-style';
 import type { EventRule } from '../../../shared/analytics';
@@ -39,6 +40,8 @@ import { useResourceOptions } from '../../hooks';
 import { Typography } from '../ui/typography';
 import {
   countActiveFilters,
+  isBrowseMode,
+  orderForGroup,
   shouldHideCategoryCarousel,
   useSearchFilters,
   type SearchDefaults,
@@ -96,6 +99,12 @@ export type SearchPageProps = {
   /** `search.defaultGroup` + `search.orderByGroup` do kizuna.config.json: grupo já marcado ao
    * chegar sem filtro e ordenação por grupo (ver `SearchDefaults`). */
   defaults?: SearchDefaults;
+  /**
+   * `search.browseGroups` do kizuna.config.json, na ordem: slug de grupo, ou `{ groups, title }` para
+   * juntar vários grupos numa trilha. Sem filtro além da cidade, a busca mostra um carrossel por item
+   * (vitrine) em vez da lista misturada; qualquer filtro ou texto volta à lista. Vazio = sempre a lista.
+   */
+  browseGroups?: BrowseRailConfig[];
 };
 
 const REGION_PAGE_SIZE = 12;
@@ -132,6 +141,7 @@ function SearchPageInner({
   aiEnabled = true,
   regions = [],
   defaults,
+  browseGroups = [],
 }: SearchPageProps) {
   // A cidade do topo (seletor do header): reage na hora quando o usuário troca.
   const { location: stored } = useUserLocation();
@@ -164,6 +174,9 @@ function SearchPageInner({
     (slug: string | null | undefined) => findGroupBySlug(filterTaxonomy, slug)?.name ?? null,
     [filterTaxonomy]
   );
+  // Sem filtro além da cidade: vitrine com um carrossel por grupo (ver `browseGroups`).
+  const browseRails = useMemo(() => normalizeBrowseRails(browseGroups), [browseGroups]);
+  const browsing = browseRails.length > 0 && isBrowseMode(filters);
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -321,6 +334,11 @@ function SearchPageInner({
   useEffect(() => {
     // Sem cidade carregada ainda (1º render, antes de ler o seletor do topo): não busca sem cidade.
     if (!location.state) return;
+    // na vitrine quem busca são as trilhas (`SearchBrowseRails`)
+    if (browsing) {
+      setLoading(false);
+      return;
+    }
     const controller = new AbortController();
     const seed = Math.random() * 2 - 1;
     setLoading(true);
@@ -444,7 +462,7 @@ function SearchPageInner({
     // direto/inicial. Se entrasse na dependência, o próprio `updatePageParam` do "carregar mais"
     // (que também escreve em `searchParams`) disparava esse efeito de novo a cada página.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bodyKey, runSearch, toSearchAdsBody, location.state, regions, filters.cityIds]);
+  }, [bodyKey, runSearch, toSearchAdsBody, location.state, regions, filters.cityIds, browsing]);
 
   const loadMore = useCallback(async () => {
     const body = effectiveBodyRef.current;
@@ -806,7 +824,7 @@ function SearchPageInner({
       <section
         className={cn(
           'mx-auto w-full max-w-[1900px] px-4 pt-4 lg:hidden',
-          cityEmptyWithRegion && 'hidden'
+          (cityEmptyWithRegion || browsing) && 'hidden'
         )}
       >
         <SearchResultsView
@@ -862,7 +880,25 @@ function SearchPageInner({
             className="min-w-0 space-y-10"
             style={holdHeight !== null ? { minHeight: holdHeight } : undefined}
           >
-            {cityEmptyWithRegion ? (
+            {browsing ? (
+              <SearchBrowseRails
+                rails={browseRails}
+                baseBody={toSearchAdsBody(0)}
+                runSearch={runSearch}
+                orderFor={(slug) => orderForGroup(defaults?.orderByGroup, slug)}
+                groupNameOf={groupNameOf}
+                hrefFor={(slug) => {
+                  const sp = new URLSearchParams(searchParams.toString());
+                  sp.set('group', slug);
+                  sp.delete('page');
+                  return `${basePath}?${sp.toString()}`;
+                }}
+                detailConfig={serviceDetailConfig}
+                impressionRule={impressionRule}
+                source="search"
+                emptyLabel={`Nada publicado em ${locationLabel} ainda.`}
+              />
+            ) : cityEmptyWithRegion ? (
               <p className="rounded-[var(--ui-radius-card-sm,0.5rem)] border-[length:var(--ui-border-w-card,1px)] border-dashed border-border bg-card px-4 py-3 text-sm text-muted-foreground">
                 Nada em <span className="font-medium text-foreground">{locationLabel}</span> com
                 esses filtros ainda — veja o que tem por perto:
@@ -890,7 +926,7 @@ function SearchPageInner({
               sponsoredSlot={sponsoredSlot}
             />
             )}
-            {regionResults.map((group) => (
+            {!browsing && regionResults.map((group) => (
               <SearchResultsView
                 key={group.key}
                 results={group.items}

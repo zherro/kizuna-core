@@ -58,6 +58,34 @@ No `kizuna.config.json` (`search`), repassados ao `SearchPage` via `defaults`:
 
 O título dos resultados segue o grupo filtrado ("Eventos em Cuiabá"); sem grupo, "Serviços em …".
 
+### Vitrine por grupo (`browseGroups`)
+
+`search.browseGroups`: trilhas na ordem, repassadas ao `SearchPage` pela prop `browseGroups`. Cada
+item é um slug de grupo (`categories_group.slug`) ou `{ "groups": [...], "title": "..." }` para
+juntar vários grupos numa trilha só — os itens dos grupos se alternam; sem `title`, o título é o
+nome dos grupos ligados por "e"; o "Ver mais" leva à busca do primeiro grupo. Quando a /busca está **sem filtro além da
+cidade** (sem grupo, categoria, especialidade, texto, preço nem ordenação escolhida —
+`isBrowseMode` em `src/client/components/search/use-search-filters.ts`), a lista misturada dá
+lugar a um carrossel por trilha (`SearchBrowseRails`): a mesma RPC com `p_group_category_slug` de
+cada grupo, na ordenação de `orderByGroup`, 12 itens por trilha. Trilha sem anúncio na cidade some. Buscar um texto ou marcar qualquer filtro volta à lista.
+
+```json
+"search": {
+  "defaultGroup": null,
+  "browseGroups": [
+    { "groups": ["eventos", "cultura-e-arte"], "title": "Eventos e cultura" },
+    "cinema",
+    "noticias",
+    { "groups": ["bares-e-vida-noturna", "lugares"], "title": "Bares e lugares" }
+  ]
+}
+```
+
+{% hint style="warning" %}
+Com `browseGroups`, deixe `defaultGroup` em `null`: um grupo padrão já marca o filtro ao abrir a
+página e a vitrine nunca aparece.
+{% endhint %}
+
 ## Filtro por local_ref (`p_local_refs`, migração 0009)
 
 `p_local_refs jsonb` (último parâmetro, default `NULL`): o anúncio entra se o `local_ref` dele (em

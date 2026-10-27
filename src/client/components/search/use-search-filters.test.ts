@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   countActiveFilters,
+  isBrowseMode,
   parseCategoryIds,
   parseCityIds,
   serializeCityIds,
@@ -46,6 +47,22 @@ describe('countActiveFilters', () => {
 
   it('"estado inteiro" (cidades vazias) conta como filtro de cidade editado', () => {
     expect(countActiveFilters({ ...base, cityIds: [] })).toBe(1);
+  });
+});
+
+describe('isBrowseMode', () => {
+  it('só cidade (do topo ou do filtro) = vitrine', () => {
+    expect(isBrowseMode(base)).toBe(true);
+    expect(isBrowseMode({ ...base, cityId: 1, cityName: 'X', cityIds: ['5103403'] })).toBe(true);
+  });
+
+  it('qualquer outro filtro, texto ou ordenação = lista', () => {
+    expect(isBrowseMode({ ...base, groupSlug: 'eventos' })).toBe(false);
+    expect(isBrowseMode({ ...base, categoryIds: [3] })).toBe(false);
+    expect(isBrowseMode({ ...base, subcategoryIds: [9] })).toBe(false);
+    expect(isBrowseMode({ ...base, query: 'show' })).toBe(false);
+    expect(isBrowseMode({ ...base, priceMin: 10 })).toBe(false);
+    expect(isBrowseMode({ ...base, sort: 'price' })).toBe(false);
   });
 });
 

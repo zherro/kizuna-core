@@ -25,7 +25,9 @@
     "ai": true,
     "_comment_defaults": "\"defaultGroup\": slug do grupo já selecionado quando a /busca abre sem grupo, categoria nem texto (\"Todas as categorias\" no filtro mostra tudo; a URL ganha ?group=todos). null = todos. \"orderByGroup\": ordenação por slug do grupo, \"default\" para os demais, no formato \"campo:asc|desc\" — campos: occurs_at (quando acontece; asc = próximos primeiro), created_at, expires_at, price, title; \"relevance\" = ordem de sempre. Só com \"Ordenar por: Relevância\". Requer services 0016 + search 0011.",
     "defaultGroup": null,
-    "orderByGroup": { "default": "relevance" }
+    "orderByGroup": { "default": "relevance" },
+    "_comment_browseGroups": "\"browseGroups\": trilhas na ordem — slug de grupo (categories_group.slug) ou { \"groups\": [slugs], \"title\": \"...\" } para juntar grupos numa trilha. Sem filtro além da cidade, a /busca mostra um carrossel por trilha (vitrine) em vez da lista misturada; buscar texto ou marcar qualquer filtro volta à lista. Vazio = sempre a lista. Com browseGroups, deixe defaultGroup null. Ver docs/plugins/search.md.",
+    "browseGroups": []
   },
   "header": {
     "_comment": "\"variant\": classic (padrão) | compact — layout do cabeçalho do site.",

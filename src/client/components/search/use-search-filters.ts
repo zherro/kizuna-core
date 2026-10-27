@@ -128,6 +128,23 @@ export function countActiveFilters(f: SearchFilters): number {
 }
 
 /**
+ * Busca "sem filtro": nada além da localização (cidade do topo e cidades do filtro) — sem grupo,
+ * categoria, especialidade, texto, preço nem ordenação escolhida. É quando a página troca a lista
+ * misturada pelos carrosséis por grupo (`search.browseGroups`).
+ */
+export function isBrowseMode(f: SearchFilters): boolean {
+  return (
+    !f.groupSlug &&
+    f.categoryIds.length === 0 &&
+    f.subcategoryIds.length === 0 &&
+    !f.query &&
+    f.priceMin == null &&
+    f.priceMax == null &&
+    f.sort === 'relevance'
+  );
+}
+
+/**
  * O carrossel de categorias só some quando há categoria E mais algum filtro (especialidade, texto ou
  * preço). Só com a categoria ele continua — quem está navegando ainda quer ver as outras.
  */
