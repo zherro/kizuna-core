@@ -54,8 +54,8 @@ export function MediaResultCard({
       <div
         className={cn(
           'relative w-full overflow-hidden bg-gradient-to-br from-brand-soft to-secondary',
-          // no mobile a imagem fica ~15% mais baixa
-          isPoster ? 'aspect-square max-sm:aspect-[1/0.85]' : 'aspect-[3/2] max-sm:aspect-[3/1.7]'
+          // ~30px mais baixa que o quadrado/3:2 num card de ~280px; no mobile ~15% mais baixa
+          isPoster ? 'aspect-[1/0.9] max-sm:aspect-[1/0.85]' : 'aspect-video max-sm:aspect-[3/1.7]'
         )}
       >
         {image && (
@@ -64,8 +64,9 @@ export function MediaResultCard({
             alt={imageAlt}
             loading="lazy"
             className={cn(
-              'h-full w-full transition duration-500 group-hover:scale-105',
-              isPoster ? 'object-contain p-2' : 'object-cover'
+              'h-full w-full transition duration-500',
+              // pôster: zoom leve que corta um pouco do topo e do rodapé da arte, sem virar recorte
+              isPoster ? 'scale-[1.15] object-contain group-hover:scale-[1.2]' : 'object-cover group-hover:scale-105'
             )}
           />
         )}

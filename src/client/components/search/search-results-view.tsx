@@ -13,9 +13,10 @@ import type { ServiceResult } from './search-types';
 import { formatLocationLabel } from './format-location-label';
 import { serviceHref } from '../../../shared/city-routing/city-slug';
 
-// Até 5 por linha no desktop: card e imagem mais contidos em tela larga.
+// Até 5 por linha no desktop: card e imagem mais contidos em tela larga. Respiro lateral maior
+// (gap-x-10) deixa cada card ~20px mais estreito sem mudar o número de colunas.
 const GRID_CLASS =
-  'grid grid-cols-1 gap-4 min-[500px]:grid-cols-2 min-[900px]:grid-cols-3 min-[1100px]:grid-cols-4 min-[1360px]:grid-cols-5';
+  'grid grid-cols-1 gap-4 min-[500px]:grid-cols-2 min-[900px]:gap-x-10 min-[900px]:gap-y-6 min-[900px]:grid-cols-3 min-[1100px]:grid-cols-4 min-[1360px]:grid-cols-5';
 
 export type ResultsScope = 'city' | 'state' | 'related' | 'empty';
 
