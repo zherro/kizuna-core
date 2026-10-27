@@ -1294,6 +1294,7 @@ const PLACE_MOSAIC_DEMO: PlaceHighlightItem[] = [
 
 function PlaceMosaicDemo() {
   const [variant, setVariant] = useState<'bento' | 'columns' | 'strips' | 'auto'>('bento');
+  const [four, setFour] = useState(false);
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-2">
@@ -1308,8 +1309,24 @@ function PlaceMosaicDemo() {
             {v}
           </button>
         ))}
+        <button
+          type="button"
+          onClick={() => setFour((on) => !on)}
+          aria-pressed={four}
+          className="min-h-11 rounded-full border px-4 text-sm aria-pressed:bg-foreground aria-pressed:text-background"
+        >
+          4 lugares
+        </button>
       </div>
-      <PlaceMosaic items={PLACE_MOSAIC_DEMO} variant={variant} seed="demo" moreHref="#todos" contained={false} />
+      <PlaceMosaic
+        items={PLACE_MOSAIC_DEMO}
+        variant={variant}
+        seed="demo"
+        moreHref="#todos"
+        contained={false}
+        limit={four ? 4 : undefined}
+        narrow={four}
+      />
     </div>
   );
 }
@@ -1360,11 +1377,11 @@ const NEWS_HIGHLIGHTS_DEMO: NewsHighlightItem[] = [
 ];
 
 function NewsHighlightsDemo() {
-  const [leadCount, setLeadCount] = useState<1 | 2>(1);
+  const [leadCount, setLeadCount] = useState<1 | 2 | 4>(1);
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-2">
-        {([1, 2] as const).map((n) => (
+        {([1, 2, 4] as const).map((n) => (
           <button
             key={n}
             type="button"
@@ -1372,7 +1389,7 @@ function NewsHighlightsDemo() {
             aria-pressed={leadCount === n}
             className={`rounded-full border px-3 py-1 text-sm ${leadCount === n ? 'border-foreground bg-foreground text-background' : 'border-border'}`}
           >
-            {n === 1 ? '1 manchete' : '2 manchetes'}
+            {n === 1 ? '1 manchete' : `${n} manchetes`}
           </button>
         ))}
       </div>

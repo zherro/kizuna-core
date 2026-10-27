@@ -131,6 +131,7 @@ type PlaceMosaicProps = {
   limit?: number;          // máximo de lugares; aplicado ANTES dos chips
   shuffle?: boolean;       // embaralha no navegador a cada visita e só então corta em limit (default false)
   contained?: boolean;     // container da home (default true)
+  narrow?: boolean;        // com contained: container de 1280px e peças mais espaçadas (default false)
   className?: string;
   labels?: { all?: string; surprise?: string; filterBy?: string; drawn?: string; open?: string; close?: string };
 };
@@ -248,6 +249,10 @@ Tailwind, não a largura da janela), então funciona igual numa coluna estreita 
 * a partir de 42rem: manchete na largura toda, lista em duas colunas;
 * a partir de 56rem: manchete à esquerda (7 de 12 colunas), lista à direita.
 
+Com `leadCount={4}` são **quatro manchetes compactas** em grade 2x2 (foto 3:2 e, abaixo, chapéu,
+título e tempo; sem resumo nem tira sobreposta), nas mesmas 8 colunas; a partir de 36rem ficam
+duas por linha, no celular empilham. Se não houver notícias para as quatro, cai para 2 e depois 1.
+
 Com `leadCount={2}` são **duas manchetes** lado a lado no lugar da grande (a partir de 42rem; no
 celular empilham). A partir de 56rem elas ocupam 8 de 12 colunas e a lista 4, e a foto de cada uma
 cresce até a altura da lista (a proporção 4:3 é o mínimo), sem faixa vazia embaixo. Título e "tira"
@@ -273,9 +278,10 @@ type NewsHighlightsProps = {
   moreHref?: string;   // liga o link "Ver todas" no cabeçalho
   moreLabel?: string;  // default "Ver todas"
   listLimit?: number;  // linhas na lista além das manchetes (default 5)
-  leadCount?: 1 | 2;   // manchetes em destaque (default 1)
+  leadCount?: 1 | 2 | 4; // manchetes em destaque (default 1)
   timeZone?: string;   // fuso das datas exibidas (default America/Sao_Paulo)
   contained?: boolean; // container da home (default true)
+  narrow?: boolean;    // com contained: container de 1280px e mais respiro (default false)
   className?: string;
 };
 ```
@@ -322,7 +328,8 @@ No starter, `loadHomeNews` em `src/lib/noticias.ts` (servidor) busca os anúncio
 completa resumo (`services.description`) e data (`answers.data_publicacao` do formulário
 `noticias`, com `services.created_at` de reserva), ordena do mais recente para o mais antigo e
 corta no `limit` (default 6: manchete + 5). `homeNewsMoreHref(city)` monta o link da busca. Com
-`home.newsLeads: 2`, o `HomeNews` pede 7 (duas manchetes + 5) e passa `leadCount={2}`.
+`home.newsLeads: 2` (ou `4`), o `HomeNews` pede 7 (ou 9) e passa o `leadCount` correspondente;
+`home.newsNarrow: true` passa `narrow`.
 
 ```tsx
 import { NewsHighlights } from '@kizuna/core/client/components/home/news-highlights';
