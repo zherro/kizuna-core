@@ -222,6 +222,15 @@ export async function listResource(resource: string, request: Request) {
     total,
     totalPages,
   });
+  // Listagem pública marcada como cacheável: navegador guarda 1/5 do TTL, CDN o TTL inteiro e
+  // serve velho enquanto renova. Nunca em recurso autenticado (resposta por usuário).
+  if (config.publicCacheSeconds && config.listRequiresAuth === false) {
+    const ttl = config.publicCacheSeconds;
+    result.headers.set(
+      'Cache-Control',
+      `public, max-age=${Math.floor(ttl / 5)}, s-maxage=${ttl}, stale-while-revalidate=${ttl * 2}`
+    );
+  }
   // Só em dev: aparece na aba Network > Timing do navegador (separa sessão × PostgREST × resto).
   if (process.env.NODE_ENV !== 'production') {
     const ms = (n: number) => n.toFixed(1);

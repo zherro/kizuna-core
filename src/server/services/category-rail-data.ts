@@ -1,3 +1,4 @@
+import { unstable_cache } from 'next/cache';
 import { serverFetchResource } from '../postgrest-crud';
 import type { ServiceResult } from '../../client/components/search/search-types';
 import { runServiceSearch } from './service-search';
@@ -35,27 +36,30 @@ export type CategoryRailData = {
   hasMore: boolean;
 };
 
-export async function loadCategoryRail(
-  target: string | CategoryRailTarget,
-  options: {
-    limit?: number;
-    cityIbge?: string;
-    /** Cidades irmãs (`regions`): a 1ª é a selecionada; o filtro vale para qualquer uma delas. */
-    cityIbges?: string[];
-  } = {}
-): Promise<CategoryRailData | null> {
-  const limit =
-    options.limit && options.limit > 0 ? Math.floor(options.limit) : DEFAULT_CATEGORY_RAIL_LIMIT;
-  const resolved = typeof target === 'string' ? { slug: target } : target;
-  const kind = resolved.group ? 'group' : 'category';
-  const slug = (resolved.group ?? resolved.slug ?? '').trim();
-  if (!slug) return null;
+type CategoryRailOptions = {
+  limit?: number;
+  cityIbge?: string;
+  /** Cidades irmãs (`regions`): a 1ª é a selecionada; o filtro vale para qualquer uma delas. */
+  cityIbges?: string[];
+};
 
+/** TTL do cache dos dados da trilha (s): a home não muda a cada segundo; poupa o PostgREST. */
+export const CATEGORY_RAIL_CACHE_SECONDS = 300;
+
+// Sem `.catch` aqui de propósito: erro precisa propagar pra NÃO ser cacheado (senão uma falha
+// momentânea congelaria a trilha vazia por 5 min). Quem chama trata. "Sem anúncios" (null) cacheia.
+async function fetchCategoryRail(
+  kind: 'category' | 'group',
+  slug: string,
+  limit: number,
+  cityIbge: string | undefined,
+  cityIbges: string[] | undefined
+): Promise<CategoryRailData | null> {
   const rows = await serverFetchResource<TaxonomyRow>(
     kind === 'group' ? 'categories_group' : 'categories_public',
     { slug, active: 'true' },
     { auth: null, limit: 1 }
-  ).catch(() => []);
+  );
   const row = rows[0];
   const id = Number(row?.id);
   if (!row || !Number.isFinite(id)) return null;
@@ -63,17 +67,17 @@ export async function loadCategoryRail(
   const poolSize = limit * CATEGORY_RAIL_POOL_FACTOR;
   const filter = kind === 'group' ? { p_group_category_slug: row.slug } : { p_category_id: id };
   const seed = Math.random() * 2 - 1;
-  const cities = options.cityIbges?.length ? options.cityIbges : null;
+  const cities = cityIbges?.length ? cityIbges : null;
   const items = await runServiceSearch(
     {
       ...filter,
       p_page_size: poolSize,
-      p_city_ibge: cities?.[0] ?? options.cityIbge ?? null,
+      p_city_ibge: cities?.[0] ?? cityIbge ?? null,
       // só manda quando há irmãs — sem a chave, a RPC aceita a assinatura antiga também
       ...(cities && cities.length > 1 ? { p_city_ibges: cities } : {}),
     },
     seed
-  ).catch(() => []);
+  );
   if (items.length === 0) return null;
 
   return {
@@ -83,4 +87,23 @@ export async function loadCategoryRail(
     limit,
     hasMore: items.length > limit,
   };
+}
+
+const cachedCategoryRail = unstable_cache(fetchCategoryRail, ['category-rail'], {
+  revalidate: CATEGORY_RAIL_CACHE_SECONDS,
+  tags: ['category-rail'],
+});
+
+export async function loadCategoryRail(
+  target: string | CategoryRailTarget,
+  options: CategoryRailOptions = {}
+): Promise<CategoryRailData | null> {
+  const limit =
+    options.limit && options.limit > 0 ? Math.floor(options.limit) : DEFAULT_CATEGORY_RAIL_LIMIT;
+  const resolved = typeof target === 'string' ? { slug: target } : target;
+  const kind = resolved.group ? 'group' : 'category';
+  const slug = (resolved.group ?? resolved.slug ?? '').trim();
+  if (!slug) return null;
+
+  return cachedCategoryRail(kind, slug, limit, options.cityIbge, options.cityIbges).catch(() => null);
 }

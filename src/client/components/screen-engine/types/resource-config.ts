@@ -4,6 +4,11 @@ export type ResourceConfig = {
   schema?: string;
   table: string;
   listRequiresAuth?: boolean;
+  /**
+   * Só com `listRequiresAuth: false`: segundos de cache HTTP (navegador + CDN) da listagem. Para
+   * dados públicos que mudam pouco (taxonomia da home) — evita bater no PostgREST a cada visita.
+   */
+  publicCacheSeconds?: number;
   returnRepresentation?: boolean;
   returnCountPreferDisabled?: boolean;
   /**

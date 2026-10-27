@@ -5,6 +5,8 @@ const { serverFetchResource, pgrstRpc } = vi.hoisted(() => ({
   pgrstRpc: vi.fn(),
 }));
 
+// `unstable_cache` exige o runtime do Next; aqui só repassa a função (o cache é do Next).
+vi.mock('next/cache', () => ({ unstable_cache: <F>(fn: F) => fn }));
 vi.mock('../postgrest-crud', () => ({ serverFetchResource }));
 vi.mock('../postrest/conn', () => ({ pgrstRpc }));
 // `../regions` lê o kizuna.config.json do projeto (alias `@/`), que não existe aqui.
