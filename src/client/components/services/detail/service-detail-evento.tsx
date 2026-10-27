@@ -36,6 +36,7 @@ import {
   eventPlaceMapUrl,
   resolveEventPlace,
   isFreeEvent,
+  mapsSearchUrl,
   parseNames,
   parseSalePoints,
   parseSessionDays,
@@ -253,6 +254,15 @@ export const ServiceDetailEvento: ServiceDetailVariantComponent = ({ service, ex
     venue && !venue.cityName
       ? { ...venue, cityName: eventCityFromAddress(endereco) }
       : venue;
+  // "Ver localização" do local: coordenadas do endereço do evento (copiado do lugar) quando houver;
+  // senão a busca pelo nome + endereço + cidade do lugar.
+  const venueMapUrl = venueWithCity
+    ? location?.lat != null && location?.lng != null
+      ? mapsSearchUrl(`${location.lat},${location.lng}`)
+      : mapsSearchUrl(
+          [venueWithCity.title, venueWithCity.address || location?.address, venueWithCity.cityName].filter(Boolean).join(', ')
+        )
+    : null;
   const siteUrl = safeHttpUrl(answers.link);
   const telefone = textField(answers.contato_telefone);
   const whatsapp = textField(answers.contato_whatsapp);
@@ -379,7 +389,7 @@ export const ServiceDetailEvento: ServiceDetailVariantComponent = ({ service, ex
         </Section>
       )}
 
-      {venueWithCity && (renderVenueCard ? renderVenueCard({ venue: venueWithCity }) : <VenueCard venue={venueWithCity} hue={hue} />)}
+      {venueWithCity && (renderVenueCard ? renderVenueCard({ venue: venueWithCity, mapUrl: venueMapUrl }) : <VenueCard venue={venueWithCity} hue={hue} mapUrl={venueMapUrl} />)}
 
       {salePointItems.length > 0 && (
         <Section title="Onde comprar" hue={hue}>

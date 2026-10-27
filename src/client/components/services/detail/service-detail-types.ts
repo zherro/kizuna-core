@@ -75,5 +75,5 @@ export type ServiceDetailSlots = {
    * bloco inteiro (útil quando o projeto não expõe perfil público de prestador). */
   renderProviderCard?: (ctx: { provider: ProviderProfile }) => ReactNode;
   /** Substitui o card "Onde acontece" do evento (local resolvido em `data.venue`). */
-  renderVenueCard?: (ctx: { venue: ServiceVenue }) => ReactNode;
+  renderVenueCard?: (ctx: { venue: ServiceVenue; mapUrl: string | null }) => ReactNode;
 };

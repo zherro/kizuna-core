@@ -66,6 +66,14 @@ describe('ServiceDetailEvento venue', () => {
     expect(screen.queryByText('Local')).toBeNull();
   });
 
+  it('o local tem "Ver localização" abrindo o mapa', () => {
+    renderEvento(null, { venue, extraFields: extraWithAddress });
+    const map = screen.getByRole('link', { name: /Ver localização/ });
+    expect(map.getAttribute('href')).toMatch(/^https:\/\/www\.google\.com\/maps\/search\//);
+    expect(decodeURIComponent(map.getAttribute('href')!)).toContain('Casa X');
+    expect(map.getAttribute('target')).toBe('_blank');
+  });
+
   it('sem venue mantém a seção Local do endereço', () => {
     renderEvento(null, { venue: null, extraFields: extraWithAddress });
     expect(screen.queryByText('Onde acontece')).toBeNull();
@@ -74,7 +82,8 @@ describe('ServiceDetailEvento venue', () => {
 
   it('organizador igual ao local não duplica o link', () => {
     renderEvento({ uid: 'casa1', title: 'Casa X', href: '/cuiaba-mt/anuncio/casa1' }, { venue });
-    expect(screen.getAllByRole('link')).toHaveLength(1);
+    const toVenue = screen.getAllByRole('link').filter((a) => a.getAttribute('href') === '/cuiaba-mt/anuncio/casa1');
+    expect(toVenue).toHaveLength(1);
     expect(screen.queryByText('Organizado por')).toBeNull();
     expect(screen.getByText('Realização')).toBeTruthy();
   });

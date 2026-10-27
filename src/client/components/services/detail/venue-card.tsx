@@ -1,14 +1,25 @@
 import Link from 'next/link';
-import { ChevronRight, MapPin } from 'lucide-react';
+import { ChevronRight, ExternalLink, MapPin } from 'lucide-react';
 import type { ServiceVenue } from '../../../../server/services/service-detail-data';
 import { Section } from './service-detail-cinema';
 
 /**
  * "Onde acontece" — o local do evento (anúncio da variant `lugar`) como um cartão-link: foto,
  * nome, endereço e cidade levam à página do local. A faixa lateral usa o hue da categoria do
- * evento; sem foto, um bloco tingido com o pino ocupa o lugar dela.
+ * evento; sem foto, um bloco tingido com o pino ocupa o lugar dela. Com `mapUrl`, um "Ver
+ * localização" abaixo do cartão abre o mapa (nova aba).
  */
-export function VenueCard({ venue, hue, title = 'Onde acontece' }: { venue: ServiceVenue; hue: number; title?: string }) {
+export function VenueCard({
+  venue,
+  hue,
+  title = 'Onde acontece',
+  mapUrl,
+}: {
+  venue: ServiceVenue;
+  hue: number;
+  title?: string;
+  mapUrl?: string | null;
+}) {
   const tint = `hsl(${hue} 70% 50% / 0.14)`;
   return (
     <Section title={title} hue={hue}>
@@ -33,6 +44,16 @@ export function VenueCard({ venue, hue, title = 'Onde acontece' }: { venue: Serv
         </div>
         <ChevronRight aria-hidden className="h-5 w-5 shrink-0 self-center text-muted-foreground transition-transform group-hover:translate-x-0.5" />
       </Link>
+      {mapUrl && (
+        <a
+          href={mapUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-1 inline-flex items-center gap-1.5 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground"
+        >
+          <ExternalLink aria-hidden className="h-3.5 w-3.5" /> Ver localização
+        </a>
+      )}
     </Section>
   );
 }
