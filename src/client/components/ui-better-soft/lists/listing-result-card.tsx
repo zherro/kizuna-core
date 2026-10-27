@@ -288,16 +288,22 @@ export function ListingResultCard({
     );
   }
 
+  // Evento, cinema e lugar/notícia lado a lado na grade com a mesma altura: mesmo tile de imagem
+  // (lugar em `cover`) e o mesmo rodapé — duas linhas de info (data ou subtítulo + local) e o CTA.
+  const compactFooter = isPosterCard || isLugar;
+  const footerTopLine = isEvento ? whenLabel : subtitleLabel;
+
   return (
     <MediaResultCard
       className={className}
       href={href}
       image={imageUrl}
       imageAlt={title}
-      imageAspect={resolvedImageAspect}
+      imageAspect={isLugar && !imageAspect ? 'poster' : resolvedImageAspect}
+      imageFit={isLugar ? 'cover' : undefined}
       titleLines={2}
       title={title}
-      subtitle={subtitleLabel ?? undefined}
+      subtitle={compactFooter ? undefined : subtitleLabel ?? undefined}
       badgeTopLeft={
         highlighted ? (
           <span className="inline-flex items-center gap-1 rounded-full bg-amber-500 px-2 py-0.5 text-[11px] font-semibold text-white">
@@ -314,7 +320,10 @@ export function ListingResultCard({
       }
       badgeBottomLeft={isEvento && dateLabel ? <DateBlock date={dateLabel} /> : undefined}
       leading={
-        isPosterCard ? undefined : (
+        compactFooter ? (
+          // lugar só mostra a nota quando tem avaliações
+          isLugar && showRating ? <RatingChip rating={rating} reviewCount={reviewCount} /> : undefined
+        ) : (
           <div className="flex flex-col gap-2">
             {showRating && <RatingChip rating={rating} reviewCount={reviewCount} />}
             {locationLabel && <LocationLine label={locationLabel} />}
@@ -323,14 +332,20 @@ export function ListingResultCard({
         )
       }
       footer={
-        isPosterCard ? (
-          // mesma altura e mesma disposição para cinema e evento: info à esquerda, CTA à direita
+        compactFooter ? (
+          // mesma altura e mesma disposição para evento, cinema e lugar: info à esquerda, CTA à direita
           <div className="flex min-h-8 w-full items-end justify-between gap-2">
             <div className="flex min-w-0 flex-col justify-end">
-              {isEvento && whenLabel && (
-                <span className="inline-flex min-w-0 items-center gap-1 text-xs font-semibold leading-4 text-foreground">
-                  <CalendarDays className="h-3.5 w-3.5 shrink-0 text-brand" />
-                  <span className="truncate">{whenLabel}</span>
+              {footerTopLine && (
+                <span
+                  className={cn(
+                    'inline-flex min-w-0 items-center gap-1 text-xs leading-4',
+                    isEvento ? 'font-semibold text-foreground' : 'text-muted-foreground'
+                  )}
+                  title={footerTopLine}
+                >
+                  {isEvento && <CalendarDays className="h-3.5 w-3.5 shrink-0 text-brand" />}
+                  <span className="truncate">{footerTopLine}</span>
                 </span>
               )}
               {locationLabel && (

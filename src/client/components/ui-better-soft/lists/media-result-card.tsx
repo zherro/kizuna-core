@@ -27,6 +27,10 @@ type MediaResultCardProps = {
    * teria) com `object-contain`: a capa aparece inteira, sem cortar nem esticar, mesmo que sobre
    * moldura nas laterais. */
   imageAspect?: 'landscape' | 'poster';
+  /** Como a imagem preenche o tile. Default: `contain` (com zoom leve) no `poster`, `cover` no
+   * `landscape`. `poster` + `cover` = tile da altura do pôster com foto full-bleed (ex.: lugar ao
+   * lado de eventos, todos com a mesma altura). */
+  imageFit?: 'contain' | 'cover';
   /** Quantas linhas o título pode ocupar antes de truncar. Default 2; `poster` costuma pedir 3
    * (títulos maiores, menos espaço horizontal por causa da capa em pé). */
   titleLines?: 2 | 3;
@@ -45,10 +49,12 @@ export function MediaResultCard({
   footer,
   href,
   imageAspect = 'landscape',
+  imageFit,
   titleLines = 2,
   className,
 }: Readonly<MediaResultCardProps>) {
   const isPoster = imageAspect === 'poster';
+  const contain = (imageFit ?? (isPoster ? 'contain' : 'cover')) === 'contain';
   const content = (
     <>
       <div
@@ -66,7 +72,7 @@ export function MediaResultCard({
             className={cn(
               'h-full w-full transition duration-500',
               // pôster: zoom leve que corta um pouco do topo e do rodapé da arte, sem virar recorte
-              isPoster ? 'scale-[1.15] object-contain group-hover:scale-[1.2]' : 'object-cover group-hover:scale-105'
+              contain ? 'scale-[1.15] object-contain group-hover:scale-[1.2]' : 'object-cover group-hover:scale-105'
             )}
           />
         )}
