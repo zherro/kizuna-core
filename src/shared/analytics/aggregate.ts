@@ -34,6 +34,12 @@ export type AnalyticsRow = {
   day: string;
   event_type: AnalyticsEvent;
   source: string;
+  /** Contexto da visita (migração 0003). Ausente/nulo em linhas antigas. Nunca inclui o IP bruto. */
+  device?: string | null;
+  region_city?: string | null;
+  region_uf?: string | null;
+  ip_masked?: string | null;
+  ip_key?: string | null;
 };
 /** Metadados de um anúncio vindos do resource `services` (título e categoria). */
 export type EntityMeta = { title: string; categoryKey: string; categoryLabel: string };
@@ -75,6 +81,19 @@ export type OwnerStats = {
     rating?: number | null;
     ratingCount?: number;
   })[];
+  /** Views do período por aparelho (`unknown` quando nulo), maior primeiro. */
+  byDevice: { device: string; views: number; share: number }[];
+  /** Views do período por cidade+UF (só UF = a UF; nada = `_none`), maior primeiro. */
+  byRegion: {
+    key: string;
+    label: string;
+    uf: string;
+    city: string | null;
+    views: number;
+    share: number;
+  }[];
+  /** Até 50 IPs (mascarados) com mais views; `visitorDays` = visitor_hash distintos. Sem IP bruto. */
+  byIp: { ipKey: string; ipMasked: string; views: number; visitorDays: number }[];
   /** Total de avaliações publicadas dos anúncios do tenant (base de `metrics.rating`). */
   ratingCount: number;
   /** Houve mais linhas do que o limite de leitura: números do início do período podem estar baixos. */
@@ -226,6 +245,63 @@ export function buildOwnerStats(input: {
     }))
     .sort((a, b) => b.views - a.views);
 
+  const pct = (n: number, total: number) => (total > 0 ? Math.round((n / total) * 100) : 0);
+  // Empate de views: ordem alfabética (label/aparelho/ipMasked/ipKey) para saída determinística.
+  const cmp = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
+  const currentViews = current.filter((r) => r.event_type === 'view');
+
+  const devMap = new Map<string, number>();
+  const regMap = new Map<string, { label: string; uf: string; city: string | null; views: number }>();
+  for (const r of currentViews) {
+    const device = r.device || 'unknown';
+    devMap.set(device, (devMap.get(device) ?? 0) + 1);
+
+    const city = r.region_city?.trim() || null;
+    const uf = r.region_uf?.trim() || '';
+    const key = city ? (uf ? `${city}|${uf}` : city) : uf || UNCATEGORIZED_KEY;
+    const reg = regMap.get(key) ?? {
+      label: city ? (uf ? `${city}/${uf}` : city) : uf || 'Não informado',
+      uf,
+      city,
+      views: 0,
+    };
+    reg.views += 1;
+    regMap.set(key, reg);
+  }
+  const byDevice: OwnerStats['byDevice'] = [...devMap.entries()]
+    .map(([device, views]) => ({ device, views, share: pct(views, currentViews.length) }))
+    .sort((a, b) => b.views - a.views || cmp(a.device, b.device));
+  const byRegion: OwnerStats['byRegion'] = [...regMap.entries()]
+    .map(([key, { views, ...rest }]) => ({
+      key,
+      ...rest,
+      views,
+      share: pct(views, currentViews.length),
+    }))
+    .sort((a, b) => b.views - a.views || cmp(a.label, b.label));
+
+  const ipMap = new Map<string, { ipMasked: string; views: number; visitors: Set<string> }>();
+  for (const r of currentViews) {
+    if (!r.ip_key) continue;
+    const ip = ipMap.get(r.ip_key) ?? {
+      ipMasked: r.ip_masked || '',
+      views: 0,
+      visitors: new Set<string>(),
+    };
+    ip.views += 1;
+    ip.visitors.add(r.visitor_hash);
+    ipMap.set(r.ip_key, ip);
+  }
+  const byIp: OwnerStats['byIp'] = [...ipMap.entries()]
+    .map(([ipKey, { ipMasked, views, visitors }]) => ({
+      ipKey,
+      ipMasked,
+      views,
+      visitorDays: visitors.size,
+    }))
+    .sort((a, b) => b.views - a.views || cmp(a.ipMasked, b.ipMasked) || cmp(a.ipKey, b.ipKey))
+    .slice(0, 50);
+
   return {
     days,
     from: bounds.from,
@@ -236,6 +312,9 @@ export function buildOwnerStats(input: {
     bySource,
     byCategory,
     entities,
+    byDevice,
+    byRegion,
+    byIp,
     ratingCount,
     truncated,
     empty: current.length === 0 && previous.length === 0,

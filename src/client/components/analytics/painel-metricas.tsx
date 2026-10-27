@@ -14,6 +14,9 @@ import {
   type MetricGroup,
   type PeriodDays,
 } from '../../../shared/analytics/metrics';
+import { DeviceBreakdown } from './device-breakdown';
+import { IpBreakdown } from './ip-breakdown';
+import { RegionBreakdown } from './region-breakdown';
 
 const CHART_W = 640;
 const CHART_H = 120;
@@ -274,6 +277,11 @@ export function PainelMetricas({ tenantId }: { tenantId: string }) {
             firstCol="Origem"
             rows={sourceRows}
           />
+          <div className="grid gap-8 lg:grid-cols-2">
+            <DeviceBreakdown items={stats.byDevice ?? []} />
+            <RegionBreakdown items={stats.byRegion ?? []} />
+          </div>
+          <IpBreakdown items={stats.byIp ?? []} />
           <BreakdownTable title="Por categoria" firstCol="Categoria" rows={categoryRows} />
 
           <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">

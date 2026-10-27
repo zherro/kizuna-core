@@ -40,7 +40,7 @@ describe('sendTrack / trackEvent', () => {
     sendTrack({ entityType: 'service', entityId: ID, event: 'view', visibleMs: 1600.4, source: 'search' });
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url, init] = fetchMock.mock.calls[0]!;
-    expect(url).toBe('/api/resources/fn_analytics_track');
+    expect(url).toBe('/api/analytics/track');
     expect(init.method).toBe('POST');
     const body = JSON.parse(init.body);
     expect(body).toMatchObject({
@@ -51,6 +51,31 @@ describe('sendTrack / trackEvent', () => {
       p_visible_ms: 1600,
     });
     expect(body.p_visitor_hash).toMatch(/^[0-9a-f]{32}$/);
+  });
+
+  it('envia p_device classificado e nunca o user-agent', () => {
+    sendTrack({ entityType: 'service', entityId: ID, event: 'view', visibleMs: 1600 });
+    const raw = fetchMock.mock.calls[0]![1].body as string;
+    expect(JSON.parse(raw).p_device).toMatch(/^(mobile|tablet|desktop)$/);
+    expect(raw).not.toContain(navigator.userAgent);
+  });
+
+  it('classifica como mobile pelo UA de celular', () => {
+    vi.stubGlobal('navigator', {
+      webdriver: false,
+      userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148 Safari/604.1',
+    });
+    sendTrack({ entityType: 'service', entityId: ID, event: 'view', visibleMs: 1600 });
+    expect(JSON.parse(fetchMock.mock.calls[0]![1].body).p_device).toBe('mobile');
+  });
+
+  it('sendBeacon aponta para a rota do servidor', () => {
+    const beacon = vi.fn().mockReturnValue(true);
+    vi.stubGlobal('navigator', { webdriver: false, userAgent: 'Mozilla/5.0 (Windows NT 10.0) Chrome/126 Safari/537.36', sendBeacon: beacon });
+    sendTrack({ entityType: 'service', entityId: ID, event: 'view', visibleMs: 1600 });
+    expect(beacon).toHaveBeenCalledTimes(1);
+    expect(beacon.mock.calls[0][0]).toBe('/api/analytics/track');
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it('trackEvent envia visible_ms 0 e origem padrão', () => {

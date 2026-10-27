@@ -175,3 +175,95 @@ describe('buildOwnerStats', () => {
     expect(s.series).toHaveLength(3);
   });
 });
+
+describe('buildOwnerStats: aparelho, região e IP mascarado', () => {
+  const bounds = { from: '2026-09-27', to: '2026-09-29', prevFrom: '2026-09-24', prevTo: '2026-09-26' };
+  const A = '0b1d5a1e-7c3e-4a9a-9d0e-2f5f6a7b8c9d';
+  const mk = (extra: Partial<AnalyticsRow>, day = '2026-09-28'): AnalyticsRow => ({
+    entity_id: A,
+    visitor_hash: 'v1',
+    day,
+    event_type: 'view',
+    source: 'search',
+    ...extra,
+  });
+  const build = (rows: AnalyticsRow[]) => buildOwnerStats({ days: 3, bounds, rows });
+
+  it('byDevice: views por aparelho, unknown quando nulo, share inteiro, desc', () => {
+    const s = build([
+      mk({ visitor_hash: 'a', device: 'mobile' }),
+      mk({ visitor_hash: 'b', device: 'mobile' }),
+      mk({ visitor_hash: 'c', device: 'desktop' }),
+      mk({ visitor_hash: 'd', device: null }),
+      mk({ visitor_hash: 'e', event_type: 'impression', device: 'tablet' }),
+      mk({ visitor_hash: 'f', device: 'tablet' }, '2026-09-25'),
+    ]);
+    expect(s.byDevice).toEqual([
+      { device: 'mobile', views: 2, share: 50 },
+      { device: 'desktop', views: 1, share: 25 },
+      { device: 'unknown', views: 1, share: 25 },
+    ]);
+  });
+
+  it('byRegion: junta cidade+UF, só UF vira a UF, vazio vira Não informado', () => {
+    const s = build([
+      mk({ visitor_hash: 'a', region_city: 'Cuiabá', region_uf: 'MT' }),
+      mk({ visitor_hash: 'b', region_city: 'Cuiabá', region_uf: 'MT' }),
+      mk({ visitor_hash: 'c', region_uf: 'MT' }),
+      mk({ visitor_hash: 'd' }),
+    ]);
+    expect(s.byRegion).toEqual([
+      { key: 'Cuiabá|MT', label: 'Cuiabá/MT', uf: 'MT', city: 'Cuiabá', views: 2, share: 50 },
+      { key: 'MT', label: 'MT', uf: 'MT', city: null, views: 1, share: 25 },
+      { key: '_none', label: 'Não informado', uf: '', city: null, views: 1, share: 25 },
+    ]);
+  });
+
+  it('byIp: só com ip_key, views = view, visitorDays distintos, mostra mascarado', () => {
+    const ip = { ip_key: 'k1', ip_masked: '187.12.x.x' };
+    const s = build([
+      mk({ visitor_hash: 'a', ...ip }),
+      mk({ visitor_hash: 'a', ...ip }, '2026-09-29'),
+      mk({ visitor_hash: 'b', ...ip }),
+      mk({ visitor_hash: 'c', event_type: 'contact_click', ...ip }),
+      mk({ visitor_hash: 'z', ip_key: 'old', ip_masked: '1.1.x.x' }, '2026-09-25'),
+      mk({ visitor_hash: 'n' }),
+      mk({ visitor_hash: 'i', event_type: 'impression', ip_key: 'imp', ip_masked: '9.9.x.x' }),
+    ]);
+    expect(s.byIp).toEqual([{ ipKey: 'k1', ipMasked: '187.12.x.x', views: 3, visitorDays: 2 }]);
+  });
+
+  it('byIp: visitorDays conta visitor_hash distintos', () => {
+    const ip = { ip_key: 'k1', ip_masked: '187.12.x.x' };
+    const s = build([
+      mk({ visitor_hash: 'a', ...ip }),
+      mk({ visitor_hash: 'a', ...ip }, '2026-09-29'),
+      mk({ visitor_hash: 'b', ...ip }),
+    ]);
+    expect(s.byIp).toEqual([{ ipKey: 'k1', ipMasked: '187.12.x.x', views: 3, visitorDays: 2 }]);
+  });
+
+  it('byIp: teto de 50, ordenado por views desc com desempate por ipMasked', () => {
+    const rows = Array.from({ length: 60 }, (_, i) =>
+      mk({ visitor_hash: `v${i}`, ip_key: `k${i}`, ip_masked: `10.0.${i}.x` })
+    );
+    rows.push(mk({ visitor_hash: 'extra', ip_key: 'k59', ip_masked: '10.0.59.x' }));
+    const s = build(rows);
+    expect(s.byIp).toHaveLength(50);
+    expect(s.byIp[0]).toMatchObject({ ipKey: 'k59', views: 2 });
+  });
+
+  it('nenhum objeto carrega a chave ip', () => {
+    const s = build([
+      mk({ device: 'mobile', region_uf: 'MT', ip_key: 'k1', ip_masked: '1.2.x.x' }),
+    ]);
+    for (const o of [...s.byDevice, ...s.byRegion, ...s.byIp]) expect(o).not.toHaveProperty('ip');
+  });
+
+  it('sem linhas: listas vazias', () => {
+    const s = build([]);
+    expect(s.byDevice).toEqual([]);
+    expect(s.byRegion).toEqual([]);
+    expect(s.byIp).toEqual([]);
+  });
+});

@@ -31,6 +31,8 @@ node kizuna-core/cli db run kizuna-core/plugins/pages/0002_pages_seed.sql   # p�
 node kizuna-core/cli token service              # opcional → POSTGREST_SERVICE_TOKEN no .env (só servidor)
 ```
 
+O token de serviço é opcional, exceto para o plugin `analytics`: sem `POSTGREST_SERVICE_TOKEN` as métricas não são gravadas ([Analytics](../plugins/analytics.md)).
+
 Depois do install, commite: `src/ package.json package-lock.json tsconfig*.json
 postcss.config.mjs next.config.ts next-env.d.ts kizuna.lock`.
 

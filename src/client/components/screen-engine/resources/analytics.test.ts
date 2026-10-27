@@ -13,6 +13,8 @@ describe('analytics resources', () => {
     expect(cfg.listRequiresAuth).not.toBe(false);
     expect(cfg.maxPageSize).toBe(1000);
     expect(cfg.returnCountPreferDisabled).toBe(true);
-    expect(cfg.select).toBe('entity_id,visitor_hash,day,event_type,source');
+    expect(cfg.select).toBe(
+      'entity_id,visitor_hash,day,event_type,source,device,region_city,region_uf,ip_masked,ip_key'
+    );
   });
 });

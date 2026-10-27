@@ -40,9 +40,9 @@ export type EventRule = {
 };
 
 export type CollectConfig = {
-  /** Grava tipo de dispositivo, navegador e SO. */
+  /** Grava só a categoria do aparelho: mobile, tablet ou desktop (nunca navegador nem SO). */
   device: boolean;
-  /** Grava país/estado/cidade (derivados do IP). */
+  /** Grava cidade e UF aproximadas (derivadas do IP). */
   region: boolean;
   /** Grava o IP do evento. */
   ip: boolean;

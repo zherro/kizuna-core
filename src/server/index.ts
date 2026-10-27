@@ -156,6 +156,13 @@ export {
 } from './services/tag-rail-data';
 export { createContactHandler } from './tickets/contact-handler';
 export {
+  createAnalyticsTrackHandler,
+  lookupIpRegion,
+  revealAnalyticsIp,
+  type AnalyticsTrackHandlerOptions,
+  type IpRegion,
+} from './analytics';
+export {
   createContactTicket,
   validateContactInput,
   type ContactInput,

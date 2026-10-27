@@ -1,6 +1,7 @@
 import {
   ANALYTICS_SOURCES,
   buildOwnerStats,
+  classifyDevice,
   UNCATEGORIZED_KEY,
   UNCATEGORIZED_LABEL,
   type EntityMeta,
@@ -22,7 +23,7 @@ export type TrackPayload = {
   source?: AnalyticsSource;
 };
 
-const TRACK_URL = '/api/resources/fn_analytics_track';
+const TRACK_URL = '/api/analytics/track';
 const EVENTS_URL = '/api/resources/analytics_events';
 const SERVICES_URL = '/api/resources/services';
 const SERVICES_PAGE_SIZE = 100;
@@ -42,6 +43,7 @@ export function sendTrack(p: TrackPayload): void {
     p_visitor_hash: getVisitorId(),
     p_source: p.source && ANALYTICS_SOURCES.includes(p.source) ? p.source : 'direct',
     p_visible_ms: Math.round(p.visibleMs ?? 0),
+    p_device: classifyDevice(navigator.userAgent, window.innerWidth),
   });
   try {
     if (

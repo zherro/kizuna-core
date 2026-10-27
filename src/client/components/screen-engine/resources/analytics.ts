@@ -13,7 +13,9 @@ export const resourceAnalytics: Record<string, ResourceConfig> = {
   analytics_events: {
     schema: 'public',
     table: 'analytics_events',
-    select: 'entity_id,visitor_hash,day,event_type,source',
+    // Lista explícita: auth_user NÃO tem SELECT em `ip` (bruto) — `select=*` daria permission denied.
+    select:
+      'entity_id,visitor_hash,day,event_type,source,device,region_city,region_uf,ip_masked,ip_key',
     primaryKey: 'id',
     defaultOrder: 'id',
     searchableColumns: [],

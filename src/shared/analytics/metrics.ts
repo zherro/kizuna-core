@@ -77,6 +77,13 @@ export function formatMetric(format: MetricFormat, value: number): string {
   }
 }
 
+export const DEVICE_LABELS: Record<string, string> = {
+  mobile: 'Celular',
+  tablet: 'Tablet',
+  desktop: 'Computador',
+  unknown: 'Não informado',
+};
+
 export const SOURCE_LABELS: Record<string, string> = {
   search: 'Busca',
   home: 'Página inicial',

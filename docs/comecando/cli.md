@@ -179,6 +179,8 @@ node kizuna-core/cli db run kizuna-core/plugins/pages/0002_pages_seed.sql   # p�
 node kizuna-core/cli token service              # opcional → POSTGREST_SERVICE_TOKEN no .env (só servidor)
 ```
 
+O token de serviço é opcional, exceto para o plugin `analytics`: sem `POSTGREST_SERVICE_TOKEN` as métricas não são gravadas ([Analytics](../plugins/analytics.md)).
+
 ## Fluxo — sync bidirecional
 
 - **Melhorou algo no projeto** que devia estar no core: `kizuna sync` (o submódulo precisa estar
