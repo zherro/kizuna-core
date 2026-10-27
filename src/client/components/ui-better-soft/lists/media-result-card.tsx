@@ -81,7 +81,7 @@ export function MediaResultCard({
         {badgeBottomLeft && <div className="absolute bottom-3 left-3">{badgeBottomLeft}</div>}
       </div>
 
-      <div className="flex flex-1 flex-col gap-3 p-4">
+      <div className="flex flex-1 flex-col gap-3 p-[11px]">
         <div>
           <h3
             className={cn(

@@ -159,6 +159,11 @@ function SearchPageInner({
   // Nome do grupo em vigor para o título ("Eventos em Cuiabá").
   const { taxonomy: filterTaxonomy } = useFilterTaxonomy();
   const activeGroupName = findGroupBySlug(filterTaxonomy, filters.groupSlug)?.name ?? null;
+  // Nome do grupo de cada resultado (a busca só traz o slug) — vai no selo do card junto da categoria.
+  const groupNameOf = useCallback(
+    (slug: string | null | undefined) => findGroupBySlug(filterTaxonomy, slug)?.name ?? null,
+    [filterTaxonomy]
+  );
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -817,6 +822,7 @@ function SearchPageInner({
           onClearFilters={resetFilters}
           onChangeLocation={() => setLocationOpen(true)}
           serviceDetailConfig={serviceDetailConfig}
+          groupNameOf={groupNameOf}
           impressionRule={impressionRule}
           source={listSource}
         />
@@ -878,6 +884,7 @@ function SearchPageInner({
               loadingMore={loadingMore}
               onLoadMore={loadMore}
               serviceDetailConfig={serviceDetailConfig}
+              groupNameOf={groupNameOf}
               impressionRule={impressionRule}
           source={listSource}
               sponsoredSlot={sponsoredSlot}
@@ -896,6 +903,7 @@ function SearchPageInner({
                 onClearFilters={resetFilters}
                 onChangeLocation={() => setLocationOpen(true)}
                 serviceDetailConfig={serviceDetailConfig}
+                groupNameOf={groupNameOf}
                 impressionRule={impressionRule}
           source={listSource}
               />

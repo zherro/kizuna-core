@@ -46,6 +46,8 @@ type Props = {
   heading?: string;
   /** Nome do grupo filtrado — vira o sujeito do título ("Eventos em Cuiabá"). */
   groupName?: string | null;
+  /** Nome do grupo pelo slug (`category_group_slug`) — o card mostra "Grupo · Categoria" no selo. */
+  groupNameOf?: (slug: string | null | undefined) => string | null;
   /** Com `scope="related"`: o filtro que não teve resultado (mostra o aviso "nada em X"). */
   relaxedFrom?: RelaxedFrom | null;
   /** Nome do que não teve resultado: a categoria ou o texto buscado. */
@@ -122,13 +124,14 @@ export function SearchResultsView({
   impressionRule = null,
   heading,
   groupName = null,
+  groupNameOf,
   relaxedFrom = null,
   relaxedLabel = null,
   source = 'search',
   sponsoredSlot = null,
 }: Props) {
   const card = (r: ServiceResult, variant: 'strip' | 'grid') => {
-    const item = <ListingResultCard key={r.uid} {...toCardProps(r, serviceDetailConfig)} href={withSource(serviceHref(r), source)} variant={variant} />;
+    const item = <ListingResultCard key={r.uid} {...toCardProps(r, serviceDetailConfig)} groupLabel={groupNameOf?.(r.category_group_slug) ?? null} href={withSource(serviceHref(r), source)} variant={variant} />;
     if (!impressionRule) return item;
     return (
       <TrackView

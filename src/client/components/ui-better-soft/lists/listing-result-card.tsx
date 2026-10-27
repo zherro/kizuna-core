@@ -36,6 +36,8 @@ export type ListingResultCardProps = {
   priceCaption?: string | null;
   /** Badge no topo-direito (ex. categoria). */
   tagLabel?: string | null;
+  /** Grupo da categoria ("Eventos"): no selo, em destaque antes da categoria (`tagLabel`). */
+  groupLabel?: string | null;
   /** Linha sob o título (ex. subcategoria). */
   subtitleLabel?: string | null;
   imageUrl?: string | null;
@@ -125,6 +127,24 @@ function RatingChip({
   );
 }
 
+/**
+ * Selo do tipo do card sobre a capa, nas cores do tema: grupo em destaque (brand cheio) e a
+ * categoria mais suave (brand-soft) na mesma pílula. Categoria igual ao grupo ("Cinema") não repete.
+ */
+function TypeBadge({ group, category }: { group?: string | null; category?: string | null }) {
+  const strong = group || category;
+  const soft = group && category && category.trim().toLowerCase() !== group.trim().toLowerCase() ? category : null;
+  return (
+    <span
+      className="inline-flex max-w-[14rem] items-stretch overflow-hidden rounded-full text-[11px] leading-4 shadow-sm ring-1 ring-brand/20"
+      title={soft ? `${strong} · ${soft}` : strong ?? undefined}
+    >
+      <span className="shrink-0 bg-brand px-2 py-0.5 font-semibold text-brand-foreground">{strong}</span>
+      {soft && <span className="truncate bg-brand-soft px-2 py-0.5 font-medium text-brand">{soft}</span>}
+    </span>
+  );
+}
+
 function LocationLine({ label }: { label: string }) {
   return (
     <span className="inline-flex max-w-full items-center gap-1 text-xs text-muted-foreground" title={label}>
@@ -186,6 +206,7 @@ export function ListingResultCard({
   imageAspect,
   cardStyle = 'default',
   tagLabel,
+  groupLabel,
   dateLabel,
   whenLabel,
   priceCaption,
@@ -312,11 +333,7 @@ export function ListingResultCard({
         ) : undefined
       }
       badgeTopRight={
-        tagLabel ? (
-          <span className="inline-flex items-center rounded-full bg-background/90 px-2 py-0.5 text-[11px] font-semibold text-foreground shadow">
-            {tagLabel}
-          </span>
-        ) : undefined
+        tagLabel || groupLabel ? <TypeBadge group={groupLabel} category={tagLabel} /> : undefined
       }
       badgeBottomLeft={isEvento && dateLabel ? <DateBlock date={dateLabel} /> : undefined}
       leading={
