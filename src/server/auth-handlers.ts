@@ -9,6 +9,7 @@
  */
 
 import { NextResponse } from 'next/server';
+import { trustedClientIp } from './client-ip';
 import { randomUUID } from 'node:crypto';
 import type { PermissionMap } from '../types/auth';
 import { apiError } from './api-error';
@@ -50,12 +51,7 @@ function asError(error: unknown): Error {
   return new Error(typeof error === 'string' ? error : JSON.stringify(error));
 }
 
-/** IP do cliente pelos headers de proxy — `''` quando não há (dev sem proxy). */
-function clientIp(request: Request): string {
-  const forwarded = request.headers.get('x-forwarded-for');
-  if (forwarded) return forwarded.split(',')[0]!.trim();
-  return request.headers.get('x-real-ip')?.trim() || '';
-}
+const clientIp = trustedClientIp;
 
 /** Resposta 400 padrão para captcha ausente/inválido. */
 function captchaRejection(reason: string): Response {

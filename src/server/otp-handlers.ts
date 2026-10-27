@@ -8,6 +8,7 @@
  */
 
 import { NextResponse } from 'next/server';
+import { trustedClientIp } from './client-ip';
 import { createHmac, randomInt, randomUUID } from 'node:crypto';
 import { apiError } from './api-error';
 import { getSession, sessionCookieOptions } from './auth';
@@ -24,11 +25,7 @@ type OtpHandlerOptions = { config?: OtpConfig };
 export type OtpRequestBody = { phone?: string; purpose?: OtpPurpose; captchaToken?: string | null };
 export type OtpVerifyBody = { phone?: string; code?: string; purpose?: OtpPurpose };
 
-function clientIp(request: Request): string {
-  const forwarded = request.headers.get('x-forwarded-for');
-  if (forwarded) return forwarded.split(',')[0]!.trim();
-  return request.headers.get('x-real-ip')?.trim() || '';
-}
+const clientIp = trustedClientIp;
 
 /** HMAC com o segredo do servidor: o banco nunca vê o código nem um hash quebrável dele. */
 export function hashOtpCode(phone: string, purpose: OtpPurpose, code: string): string {
