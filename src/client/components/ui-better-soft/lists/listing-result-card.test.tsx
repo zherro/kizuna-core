@@ -42,10 +42,10 @@ describe('ListingResultCard cardStyle="evento"', () => {
     expect(screen.queryByText('A partir de')).toBeNull();
   });
 
-  it('grid: local, CTA do evento e sem nota', () => {
+  it('grid: mesmo card do carrossel — local, sem CTA e sem nota', () => {
     render(<ListingResultCard {...evento} />);
     expect(screen.getByText('Arena Pantanal')).toBeTruthy();
-    expect(screen.getByText('Ver evento')).toBeTruthy();
+    expect(screen.queryByText('Ver evento')).toBeNull();
     expect(screen.queryByText('4,5')).toBeNull();
     expect(screen.queryByText('Novo')).toBeNull();
   });

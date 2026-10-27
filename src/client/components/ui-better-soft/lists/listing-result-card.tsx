@@ -265,12 +265,15 @@ export function ListingResultCard({
     </div>
   );
 
-  if (variant === 'strip') {
+  // Evento, cinema e lugar/notícia: o MESMO card no carrossel (260px) e na grade (largura da coluna)
+  // — sem CTA, o card inteiro é o link; data e local ficam inteiros, sem disputar espaço com botão.
+  if (variant === 'strip' || compactFooter) {
     return (
       <Link
         href={href}
         className={cn(
-          'group flex w-[260px] shrink-0 flex-col overflow-hidden rounded-[var(--ui-radius-card-compact,0.75rem)] border-[length:var(--ui-border-w-card,1px)] border-border bg-card shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] transition hover:-translate-y-0.5 hover:shadow-md',
+          'group flex flex-col overflow-hidden rounded-[var(--ui-radius-card-compact,0.75rem)] border-[length:var(--ui-border-w-card,1px)] border-border bg-card shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] transition hover:-translate-y-0.5 hover:shadow-md',
+          variant === 'strip' ? 'w-[260px] shrink-0' : 'w-full',
           className
         )}
       >
@@ -342,11 +345,10 @@ export function ListingResultCard({
       href={href}
       image={imageUrl}
       imageAlt={title}
-      imageAspect={tileAspect}
-      imageFit={isLugar ? 'cover' : undefined}
+      imageAspect={resolvedImageAspect}
       titleLines={2}
       title={title}
-      subtitle={compactFooter ? undefined : subtitleLabel ?? undefined}
+      subtitle={subtitleLabel ?? undefined}
       badgeTopLeft={
         highlighted ? (
           <span className="inline-flex items-center gap-1 rounded-full bg-amber-500 px-2 py-0.5 text-[11px] font-semibold text-white">
@@ -355,43 +357,27 @@ export function ListingResultCard({
         ) : undefined
       }
       badgeTopRight={typeBadge ?? undefined}
-      badgeBottomLeft={isEvento && dateLabel ? <DateBlock date={dateLabel} /> : undefined}
       leading={
-        compactFooter ? (
-          // lugar só mostra a nota quando tem avaliações
-          isLugar && showRating ? <RatingChip rating={rating} reviewCount={reviewCount} /> : undefined
-        ) : (
-          <div className="flex flex-col gap-2">
-            {showRating && <RatingChip rating={rating} reviewCount={reviewCount} />}
-            {locationLabel && <LocationLine label={locationLabel} />}
-            {!isLugar && <ProviderRow providerName={providerName} providerAvatarUrl={providerAvatarUrl} />}
-          </div>
-        )
+        <div className="flex flex-col gap-2">
+          {showRating && <RatingChip rating={rating} reviewCount={reviewCount} />}
+          {locationLabel && <LocationLine label={locationLabel} />}
+          <ProviderRow providerName={providerName} providerAvatarUrl={providerAvatarUrl} />
+        </div>
       }
       footer={
-        compactFooter ? (
-          // mesma altura e mesma disposição para evento, cinema e lugar: info à esquerda, CTA à direita
-          <div className="flex min-h-8 w-full items-end justify-between gap-2">
-            {footerInfo}
-            <span className="ml-auto inline-flex shrink-0 items-center rounded-[var(--ui-radius-pill,0.375rem)] bg-brand px-3 py-1.5 text-xs font-semibold text-brand-foreground transition group-hover:bg-brand/90">
-              {ctaLabel}
-            </span>
-          </div>
-        ) : (
-          <>
-            {priceLabel != null && (
-              <PriceBlock label={priceLabel} caption={priceCaption} className="text-lg font-black leading-none" />
+        <>
+          {priceLabel != null && (
+            <PriceBlock label={priceLabel} caption={priceCaption} className="text-lg font-black leading-none" />
+          )}
+          <span
+            className={cn(
+              'inline-flex shrink-0 items-center rounded-[var(--ui-radius-pill,0.375rem)] bg-brand px-3 py-1.5 text-xs font-semibold text-brand-foreground transition group-hover:bg-brand/90',
+              priceLabel == null && 'ml-auto'
             )}
-            <span
-              className={cn(
-                'inline-flex shrink-0 items-center rounded-[var(--ui-radius-pill,0.375rem)] bg-brand px-3 py-1.5 text-xs font-semibold text-brand-foreground transition group-hover:bg-brand/90',
-                priceLabel == null && 'ml-auto'
-              )}
-            >
-              {ctaLabel}
-            </span>
-          </>
-        )
+          >
+            {ctaLabel}
+          </span>
+        </>
       }
     />
   );
