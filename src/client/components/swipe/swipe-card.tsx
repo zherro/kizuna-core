@@ -1,5 +1,6 @@
 'use client';
 
+import { forwardRef } from 'react';
 import { Star } from 'lucide-react';
 import type { ServiceResult } from '../search/search-types';
 import { formatLocationLabel } from '../search/format-location-label';
@@ -21,29 +22,47 @@ type Props = {
   handlers?: React.DOMAttributes<HTMLElement>;
 };
 
-export function SwipeCard({ item, dragX = 0, className = '', style, handlers }: Props) {
+/**
+ * Card do deck. O arraste NÃO passa por props/estado: a página move o `<article>` (ref) e os
+ * overlays `[data-swipe-like]`/`[data-swipe-pass]` direto no DOM. `dragX` fica só para o render
+ * inicial/estático (testes).
+ */
+export const SwipeCard = forwardRef<HTMLElement, Props>(function SwipeCard(
+  { item, dragX = 0, className = '', style, handlers },
+  ref
+) {
   const img = coverUrl(item.cover_file_id);
   const location = formatLocationLabel(item);
   return (
     <article
+      ref={ref}
       {...handlers}
       style={style}
-      className={`absolute inset-0 overflow-hidden rounded-[var(--ui-radius-card-lg,1.5rem)] border-[length:var(--ui-border-w-card,1px)] border-border shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] bg-card ${className}`}
+      className={`absolute inset-0 overflow-hidden rounded-[var(--ui-radius-card-lg,1.5rem)] border-[length:var(--ui-border-w-card,1px)] border-border shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] bg-card select-none will-change-transform [-webkit-user-select:none] [-webkit-touch-callout:none] touch-none ${className}`}
     >
       {img ? (
-        <img src={img} alt={item.title} className="pointer-events-none h-full w-full object-cover" />
+        <img
+          src={img}
+          alt={item.title}
+          draggable={false}
+          loading="eager"
+          decoding="async"
+          className="pointer-events-none h-full w-full select-none object-cover"
+        />
       ) : (
         <div className="h-full w-full bg-muted" />
       )}
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-foreground/90 via-foreground/25 to-transparent" />
 
       <span
+        data-swipe-like
         className="pointer-events-none absolute left-4 top-4 rounded-lg border-2 border-primary px-3 py-1 text-sm font-bold uppercase text-primary"
         style={{ opacity: Math.max(0, Math.min(1, dragX / 110)) }}
       >
         Curtir
       </span>
       <span
+        data-swipe-pass
         className="pointer-events-none absolute right-4 top-4 rounded-lg border-2 border-destructive px-3 py-1 text-sm font-bold uppercase text-destructive"
         style={{ opacity: Math.max(0, Math.min(1, -dragX / 110)) }}
       >
@@ -70,4 +89,4 @@ export function SwipeCard({ item, dragX = 0, className = '', style, handlers }: 
       </div>
     </article>
   );
-}
+});

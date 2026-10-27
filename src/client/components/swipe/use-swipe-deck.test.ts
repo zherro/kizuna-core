@@ -15,7 +15,7 @@ const card = (n: number) => ({
 const range = (a: number, b: number) => Array.from({ length: b - a }, (_, i) => card(a + i));
 
 const baseBody = {
-  p_state: 'PR', p_city_id: null, p_city_ibge: null, p_group_category_slug: null,
+  p_state: 'PR', p_city_id: null, p_city_ibge: null, p_group_category_slug: null, p_group_slugs: [],
   p_category_id: null, p_subcategories: null, p_query: null,
   p_price_min: null, p_price_max: null,
 };
@@ -54,15 +54,15 @@ describe('useSwipeDeck', () => {
     expect(localStorage.length).toBe(0);
   });
 
-  it('prefetch ao restar 5, com p_exclude da fila e dedup', async () => {
+  it('prefetch ao restar 8, com p_exclude da fila e dedup', async () => {
     api.fetchDeck.mockResolvedValueOnce(range(0, 20)).mockResolvedValueOnce(range(18, 30));
     const { result } = renderHook(() => useSwipeDeck({ baseBody, filterKey: 'a', loggedIn: true }));
     await waitFor(() => expect(result.current.cards).toHaveLength(20));
-    for (let i = 0; i < 15; i++) act(() => result.current.decide('skip'));
+    for (let i = 0; i < 12; i++) act(() => result.current.decide('skip'));
     await waitFor(() => expect(api.fetchDeck).toHaveBeenCalledTimes(2));
-    expect(api.fetchDeck.mock.calls[1][0].p_exclude).toEqual(['u15', 'u16', 'u17', 'u18', 'u19']);
+    expect(api.fetchDeck.mock.calls[1][0].p_exclude).toEqual(range(12, 20).map((c) => c.uid));
     await waitFor(() => expect(result.current.cards.map((c) => c.uid)).toEqual(
-      ['u15', 'u16', 'u17', 'u18', 'u19', ...range(20, 30).map((c) => c.uid)]
+      [...range(12, 20).map((c) => c.uid), ...range(20, 30).map((c) => c.uid)]
     ));
   });
 
@@ -85,7 +85,7 @@ describe('useSwipeDeck', () => {
     api.fetchDeck.mockResolvedValueOnce(range(0, 20)).mockResolvedValueOnce(range(15, 20));
     const { result } = renderHook(() => useSwipeDeck({ baseBody, filterKey: 'a', loggedIn: true }));
     await waitFor(() => expect(result.current.cards).toHaveLength(20));
-    for (let i = 0; i < 15; i++) act(() => result.current.decide('skip'));
+    for (let i = 0; i < 12; i++) act(() => result.current.decide('skip'));
     await waitFor(() => expect(api.fetchDeck).toHaveBeenCalledTimes(2));
     await waitFor(() => expect(result.current.exhausted).toBe(true));
     expect(api.fetchDeck).toHaveBeenCalledTimes(2);

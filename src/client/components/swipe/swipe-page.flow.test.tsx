@@ -11,7 +11,7 @@ const api = vi.hoisted(() => ({
 }));
 vi.mock('./swipe-api', () => api);
 vi.mock('../search/location-gate', () => ({ LocationGate: (p: { children: React.ReactNode }) => <>{p.children}</> }));
-vi.mock('../search/search-filters-panel', () => ({ SearchFiltersPanel: () => null }));
+vi.mock('./swipe-topic-picker', () => ({ SwipeTopicPicker: () => <div>fake-picker</div> }));
 vi.mock('../search/use-search-filters', () => {
   const filters = { groupSlug: null, categoryIds: [], subcategoryIds: [], query: null, priceMin: null, priceMax: null };
   const toSearchAdsBody = () => ({ p_state: 'PR', p_city_id: null, p_city_ibge: null, p_group_category_slug: null,
@@ -55,6 +55,7 @@ beforeEach(() => {
   api.recordSwipe.mockClear();
   router.push.mockClear();
   window.history.replaceState(null, '');
+  localStorage.setItem('kizuna:swipe:topics', JSON.stringify(['servicos']));
 });
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); sessionStorage.clear(); localStorage.clear(); });
 

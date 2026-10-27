@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { fetchDeck, fetchLiked, recordSwipe } from './swipe-api';
+import { fetchDeck, fetchLiked, recordSwipe, clearDecidedCache } from './swipe-api';
 
 const deckBody = {
-  p_state: 'MT', p_city_id: null, p_city_ibge: null, p_group_category_slug: null,
+  p_state: 'MT', p_city_id: null, p_city_ibge: null, p_group_category_slug: null, p_group_slugs: [],
   p_category_id: null, p_subcategories: null, p_query: null, p_seed: 0.1, p_page_size: 20,
   p_exclude: null, p_price_min: null, p_price_max: null,
 };
@@ -22,7 +22,10 @@ function routes(opts: { reactions?: [number, unknown]; search?: [number, unknown
   return fn;
 }
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  clearDecidedCache();
+});
 
 describe('swipe-api', () => {
   it('fetchDeck = busca menos o que o usuário já decidiu (curtidos e passados recentes)', async () => {
@@ -54,6 +57,40 @@ describe('swipe-api', () => {
   it('fetchDeck lança se a busca falhar (não mascara como deck vazio)', async () => {
     routes({ search: [500, {}] });
     await expect(fetchDeck(deckBody)).rejects.toThrow('fn_search_services 500');
+  });
+
+  it('fetchDeck com 2+ temas consulta cada grupo e intercala; 1 tema usa o slug', async () => {
+    const fn = vi.fn(async (url: string, init?: RequestInit) => {
+      if (url.includes('service_reactions?')) return new Response(JSON.stringify({ items: [] }));
+      const slug = JSON.parse(String(init?.body)).p_group_category_slug;
+      const items = slug === 'a' ? [{ uid: 'a1' }, { uid: 'a2' }, { uid: 'a3' }] : [{ uid: 'b1' }, { uid: 'a1' }];
+      return new Response(JSON.stringify({ items }));
+    });
+    vi.stubGlobal('fetch', fn);
+    const deck = await fetchDeck({ ...deckBody, p_group_slugs: ['a', 'b'] });
+    expect(deck.map((d) => d.uid)).toEqual(['a1', 'b1', 'a2', 'a3']);
+    const sent = fn.mock.calls
+      .filter((c) => String(c[0]).includes('fn_search_services'))
+      .map((c) => JSON.parse(String((c[1] as RequestInit).body)));
+    expect(sent.every((b) => !('p_group_slugs' in b))).toBe(true);
+    expect(sent.map((b) => b.p_group_category_slug).sort()).toEqual(['a', 'b']);
+
+    fn.mockClear();
+    await fetchDeck({ ...deckBody, p_group_slugs: ['b'] });
+    const one = fn.mock.calls.find((c) => String(c[0]).includes('fn_search_services'))!;
+    expect(JSON.parse(String((one[1] as RequestInit).body)).p_group_category_slug).toBe('b');
+  });
+
+  it('fetchDeck respeita p_page_size no multi-grupo e reaproveita decididos até recordSwipe', async () => {
+    const fn = routes({ search: [200, { items: [{ uid: 'x' }, { uid: 'y' }] }] });
+    const deck = await fetchDeck({ ...deckBody, p_group_slugs: ['a', 'b'], p_page_size: 1 });
+    expect(deck).toHaveLength(1);
+    await fetchDeck(deckBody);
+    const reactionCalls = () => fn.mock.calls.filter((c) => String(c[0]).includes('service_reactions?')).length;
+    expect(reactionCalls()).toBe(1);
+    await recordSwipe(['x'], 'skip');
+    await fetchDeck(deckBody);
+    expect(reactionCalls()).toBe(2);
   });
 
   it('fetchLiked lê o resource liked_services e lança em não-OK', async () => {

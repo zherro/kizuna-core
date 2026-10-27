@@ -13,6 +13,8 @@ export type SwipeDeckBody = Omit<SearchAdsBody, 'p_page'> & {
   p_exclude: string[] | null;
   p_price_min: number | null;
   p_price_max: number | null;
+  /** Temas (slugs de `categories_group`) escolhidos no questionário; vazio = todos os grupos. */
+  p_group_slugs: string[];
 };
 
 export type LikedItem = {
@@ -31,4 +33,4 @@ export type LikedItem = {
 };
 
 export const SWIPE_BATCH = 20;
-export const SWIPE_PREFETCH_AT = 5;
+export const SWIPE_PREFETCH_AT = 8;
