@@ -27,13 +27,15 @@ export type NewsHighlightsProps = {
   moreLabel?: string;
   /** Quantas notícias na lista além das manchetes. Default 5. */
   listLimit?: number;
-  /** Manchetes em destaque: 1 (grande, padrão) ou 2 (lado a lado no espaço da manchete; no celular
-   * empilham). Com 2, peça `2 + listLimit` itens a quem carrega. */
-  leadCount?: 1 | 2;
+  /** Manchetes em destaque: 1 (grande, padrão), 2 (lado a lado no espaço da manchete) ou 4 (cartões
+   * compactos 2x2). No celular empilham. Peça `leadCount + listLimit` itens a quem carrega. */
+  leadCount?: 1 | 2 | 4;
   /** Fuso das datas exibidas. Default `America/Sao_Paulo`. */
   timeZone?: string;
   /** aplica o container da home (max-w-[1600px]). Default true. */
   contained?: boolean;
+  /** Com `contained`, usa um container mais estreito (max-w-[1280px]) e mais respiro. Default false. */
+  narrow?: boolean;
   className?: string;
 };
 
@@ -198,6 +200,35 @@ function PairLead({ item, timeZone }: { item: NewsHighlightItem; timeZone: strin
   );
 }
 
+/** Uma das quatro manchetes (grade 2x2): cartão contido — foto e, abaixo, chapéu, título e tempo.
+ * Sem resumo nem tira sobreposta, para as quatro não pesarem ao lado da lista. */
+function CompactLead({ item, timeZone }: { item: NewsHighlightItem; timeZone: string }) {
+  return (
+    <article className="min-w-0">
+      <Link
+        href={item.href}
+        className="group block rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-4 focus-visible:ring-offset-background"
+      >
+        <span className="block overflow-hidden rounded-2xl bg-muted">
+          <NewsImage
+            src={item.image}
+            kicker={item.kicker}
+            size="thumb"
+            className="aspect-[3/2] w-full transition-transform duration-700 ease-out motion-safe:group-hover:scale-[1.03]"
+          />
+        </span>
+        <span className="mt-3.5 flex items-center justify-between gap-3">
+          <ItemTags item={item} />
+          <NewsTime value={item.publishedAt} timeZone={timeZone} className="shrink-0 text-xs text-muted-foreground" />
+        </span>
+        <h3 className="mt-2 line-clamp-3 text-balance font-display text-[1.2rem] font-black leading-[1.15] tracking-tight text-[var(--foreground-display)] decoration-2 underline-offset-[5px] group-hover:underline @4xl:text-[1.3rem]">
+          {item.title}
+        </h3>
+      </Link>
+    </article>
+  );
+}
+
 function Row({ item, index, timeZone }: { item: NewsHighlightItem; index: number; timeZone: string }) {
   return (
     <li className="border-b border-border last:border-b-0">
@@ -228,7 +259,8 @@ function Row({ item, index, timeZone }: { item: NewsHighlightItem; index: number
 
 /**
  * Bloco "Notícias" da home: manchete grande (foto + tira de papel sobreposta com chapéu, título,
- * resumo e tempo), ou duas lado a lado com `leadCount={2}`, ao lado de uma lista numerada das seguintes, em ordem de publicação. Contrato
+ * resumo e tempo), duas lado a lado com `leadCount={2}` ou quatro compactas (2x2) com
+ * `leadCount={4}`, ao lado de uma lista numerada das seguintes, em ordem de publicação. Contrato
  * puro — quem chama já entrega os itens ordenados (mais recente primeiro). Sem itens → `null`.
  */
 export function NewsHighlights({
@@ -240,13 +272,15 @@ export function NewsHighlights({
   leadCount = 1,
   timeZone = NEWS_DEFAULT_TIME_ZONE,
   contained = true,
+  narrow = false,
   className,
 }: NewsHighlightsProps) {
   const headingId = useId();
   const valid = items.filter((item) => item.href && item.title?.trim());
   if (valid.length === 0) return null;
-  // Duas manchetes só quando há notícia para as duas; senão, a manchete única de sempre.
-  const leads = valid.slice(0, leadCount === 2 && valid.length >= 2 ? 2 : 1);
+  // Usa o maior arranjo que as notícias preenchem (4 → 2 → 1), sem deixar cartão vazio.
+  const leadSize = [4, 2, 1].find((n) => n <= leadCount && n <= valid.length) ?? 1;
+  const leads = valid.slice(0, leadSize);
   const list = valid.slice(leads.length, leads.length + Math.max(0, listLimit));
 
   const section = (
@@ -258,7 +292,13 @@ export function NewsHighlights({
       />
 
       <div className="grid grid-cols-1 gap-8 @4xl:grid-cols-12 @4xl:gap-10">
-        {leads.length === 2 ? (
+        {leads.length === 4 ? (
+          <div className="grid min-w-0 grid-cols-1 gap-x-6 gap-y-9 @xl:grid-cols-2 @4xl:col-span-8 @4xl:gap-x-8 @4xl:gap-y-10">
+            {leads.map((item) => (
+              <CompactLead key={item.href} item={item} timeZone={timeZone} />
+            ))}
+          </div>
+        ) : leads.length === 2 ? (
           <div className="grid min-w-0 grid-cols-1 gap-8 @2xl:grid-cols-2 @2xl:gap-6 @4xl:col-span-8">
             {leads.map((item) => (
               <PairLead key={item.href} item={item} timeZone={timeZone} />
@@ -270,8 +310,8 @@ export function NewsHighlights({
         {list.length > 0 ? (
           <nav
             aria-label={`Mais ${title.toLowerCase()}`}
-            // com duas manchetes elas ganham 8 colunas: a lista (miniatura + título) cabe bem em 4
-            className={`min-w-0 ${leads.length === 2 ? '@4xl:col-span-4' : '@4xl:col-span-5'}`}
+            // com 2 ou 4 manchetes elas ganham 8 colunas: a lista (miniatura + título) cabe bem em 4
+            className={`min-w-0 ${leads.length > 1 ? '@4xl:col-span-4' : '@4xl:col-span-5'}`}
           >
             <ol className="@2xl:grid @2xl:grid-cols-2 @2xl:gap-x-8 @4xl:block">
               {list.map((item, i) => (
@@ -285,5 +325,11 @@ export function NewsHighlights({
   );
 
   if (!contained) return section;
-  return <div className="mx-auto w-full max-w-[1600px] px-4 pb-14 sm:px-6 sm:pb-16">{section}</div>;
+  return (
+    <div
+      className={`mx-auto w-full px-4 sm:px-6 ${narrow ? 'max-w-[1280px] pb-16 sm:pb-24' : 'max-w-[1600px] pb-14 sm:pb-16'}`}
+    >
+      {section}
+    </div>
+  );
 }

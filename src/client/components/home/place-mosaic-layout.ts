@@ -35,8 +35,9 @@ export function mosaicDaySeed(date: Date = new Date(), timeZone = 'America/Sao_P
 
 /**
  * Variante efetiva. `auto` escolhe pela contagem (+ `seed`, ex.: o dia): poucos itens ficam em
- * `strips` (bento e colunas precisam de volume pra parecer mosaico); com 4+ a variante gira
- * entre as três de forma determinística.
+ * `strips` (bento e colunas precisam de volume pra parecer mosaico); exatamente 4 é `bento` (o
+ * bloco 4x3 fecha certinho, enquanto as faixas deixariam uma peça sozinha e as colunas, uma por
+ * coluna); com 5+ a variante gira entre as três de forma determinística.
  */
 export function resolveMosaicVariant(
   variant: PlaceMosaicVariantProp,
@@ -45,6 +46,7 @@ export function resolveMosaicVariant(
 ): PlaceMosaicVariant {
   if (variant !== 'auto') return variant;
   if (count < 4) return 'strips';
+  if (count === 4) return 'bento';
   return AUTO_VARIANTS[mosaicHash(`${seed}|${count}`) % AUTO_VARIANTS.length];
 }
 

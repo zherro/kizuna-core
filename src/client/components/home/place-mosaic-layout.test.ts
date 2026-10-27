@@ -16,6 +16,7 @@ describe('resolveMosaicVariant', () => {
   });
   it('auto é determinístico e com poucos itens usa strips', () => {
     expect(resolveMosaicVariant('auto', 3, 'a')).toBe('strips');
+    expect(resolveMosaicVariant('auto', 4, 'a')).toBe('bento');
     expect(resolveMosaicVariant('auto', 8, '2026-10-25')).toBe(resolveMosaicVariant('auto', 8, '2026-10-25'));
   });
   it('auto gira entre as três variantes conforme a semente', () => {

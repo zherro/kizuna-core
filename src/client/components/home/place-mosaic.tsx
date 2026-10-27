@@ -69,6 +69,8 @@ export type PlaceMosaicProps = {
   shuffle?: boolean;
   /** Aplica o container da home (max-w-[1600px]). Default true. */
   contained?: boolean;
+  /** Com `contained`, usa um container mais estreito (max-w-[1280px]) e peças mais espaçadas. Default false. */
+  narrow?: boolean;
   className?: string;
   labels?: PlaceMosaicLabels;
 };
@@ -103,6 +105,7 @@ export function PlaceMosaic({
   limit,
   shuffle = false,
   contained = true,
+  narrow = false,
   className,
   labels,
 }: PlaceMosaicProps) {
@@ -164,8 +167,8 @@ export function PlaceMosaic({
 
   const sectionClass = [
     '@container',
-    contained ? 'mx-auto w-full max-w-[1600px] px-4 sm:px-6' : '',
-    'pb-14 sm:pb-16',
+    contained ? `mx-auto w-full px-4 sm:px-6 ${narrow ? 'max-w-[1280px]' : 'max-w-[1600px]'}` : '',
+    narrow ? 'pb-16 sm:pb-24' : 'pb-14 sm:pb-16',
     className ?? '',
   ]
     .filter(Boolean)
@@ -225,6 +228,7 @@ export function PlaceMosaic({
           drawnHref={drawnHref}
           registerTile={registerTile}
           contained={contained}
+          roomy={narrow}
         />
       </div>
 
@@ -308,16 +312,23 @@ function Mosaic({
   drawnHref,
   registerTile,
   contained,
+  roomy,
 }: {
   variant: PlaceMosaicVariant;
   items: PlaceHighlightItem[];
   drawnHref: string | null;
   registerTile: RegisterTile;
   contained: boolean;
+  /** Espaço maior entre as peças (bloco `narrow`). */
+  roomy: boolean;
 }) {
   if (variant === 'bento') {
     return (
-      <ul className="grid auto-rows-[9rem] grid-flow-dense grid-cols-2 gap-2.5 @2xl:auto-rows-[10rem] @2xl:grid-cols-4 @2xl:gap-3 @5xl:auto-rows-[11.5rem]">
+      <ul
+        className={`grid auto-rows-[9rem] grid-flow-dense grid-cols-2 @2xl:auto-rows-[10rem] @2xl:grid-cols-4 @5xl:auto-rows-[11.5rem] ${
+          roomy ? 'gap-3 @2xl:gap-5' : 'gap-2.5 @2xl:gap-3'
+        }`}
+      >
         {items.map((item, i) => {
           const kind = bentoTileKind(i);
           const big = kind === 'hero' || kind === 'wide';
@@ -339,11 +350,17 @@ function Mosaic({
 
   if (variant === 'columns') {
     return (
-      <ul className="columns-2 gap-2.5 @2xl:columns-3 @2xl:gap-3 @5xl:columns-4">
+      <ul
+        className={`columns-2 @2xl:columns-3 @5xl:columns-4 ${roomy ? 'gap-3 @2xl:gap-5' : 'gap-2.5 @2xl:gap-3'}`}
+      >
         {items.map((item) => {
           const height = columnTileHeight(item.title);
           return (
-            <li key={item.href} ref={registerTile(item.href)} className="mb-2.5 break-inside-avoid @2xl:mb-3">
+            <li
+              key={item.href}
+              ref={registerTile(item.href)}
+              className={`break-inside-avoid ${roomy ? 'mb-3 @2xl:mb-5' : 'mb-2.5 @2xl:mb-3'}`}
+            >
               <Tile
                 item={item}
                 size={height === 'tall' ? 'md' : 'sm'}
@@ -360,7 +377,9 @@ function Mosaic({
 
   return (
     <ul
-      className={`flex snap-x snap-mandatory gap-2.5 overflow-x-auto py-2 [scrollbar-width:none] @3xl:grid @3xl:grid-cols-4 @3xl:gap-3 @3xl:overflow-visible @3xl:px-0 @3xl:py-0 [&::-webkit-scrollbar]:hidden ${
+      className={`flex snap-x snap-mandatory gap-2.5 overflow-x-auto py-2 [scrollbar-width:none] @3xl:grid @3xl:grid-cols-4 @3xl:overflow-visible @3xl:px-0 @3xl:py-0 [&::-webkit-scrollbar]:hidden ${
+        roomy ? '@3xl:gap-5' : '@3xl:gap-3'
+      } ${
         contained ? '-mx-4 scroll-px-4 px-4 sm:-mx-6 sm:scroll-px-6 sm:px-6 @3xl:mx-0' : ''
       }`}
     >
