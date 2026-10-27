@@ -29,6 +29,10 @@ export type LocationOptionConfig = {
   /** Só `model: 'address'`/`'addresses'`: `false` deixa o CEP opcional — basta rua, número e a
    * cidade/UF (vindas da busca do endereço). Ex.: eventos, que muitas vezes não têm CEP. Padrão `true`. */
   requireZipCode?: boolean;
+  /** Só `model: 'addresses'`: chave de um vínculo único de `refs` (ex.: `local_ref`). Escolher o
+   * anúncio ali copia o endereço principal dele para o endereço principal deste; com o vínculo
+   * preenchido, o endereço deixa de ser obrigatório (o do lugar vale). */
+  addressFromRef?: string;
 };
 
 /** Perfil do passo `location` (ver `StepProfiles`). */
@@ -102,6 +106,17 @@ export function validateLocationProfile(profile: LocationProfile) {
       }
       if (option.model === 'identifier') {
         throw new Error('stepProfiles.location: "requireZipCode" só vale com model "address" ou "addresses"');
+      }
+    }
+    if (option.addressFromRef !== undefined) {
+      if (option.model !== 'addresses') {
+        throw new Error('stepProfiles.location: "addressFromRef" só vale com model "addresses"');
+      }
+      const ref = profile.refs?.find((r) => r.key === option.addressFromRef);
+      if (!ref || ref.multiple) {
+        throw new Error(
+          `stepProfiles.location: addressFromRef "${String(option.addressFromRef)}" precisa ser a key de um vínculo único em "refs"`
+        );
       }
     }
     if (seen.has(option.value)) {

@@ -305,7 +305,7 @@ outro é só o conteúdo do perfil:
 
 | Passo      | Perfil                                                                                     | Padrão do core                             |
 | ---------- | ------------------------------------------------------------------------------------------ | ------------------------------------------ |
-| `location` | `{ options: [{ value, model: "address"\|"addresses"\|"identifier", icon?, textKey?, maxAddresses?, requireZipCode? }] }`                | `no_estabelecimento` com `addresses` (máx. 5); `no_cliente` e `remoto` com `identifier`          |
+| `location` | `{ options: [{ value, model: "address"\|"addresses"\|"identifier", icon?, textKey?, maxAddresses?, requireZipCode?, addressFromRef? }] }`                | `no_estabelecimento` com `addresses` (máx. 5); `no_cliente` e `remoto` com `identifier`          |
 | `price`    | `{ options: [{ value, textKey? }], startingPrice?: bool, priceTable?: bool, expiresAt?: bool|"optional"|"required" }`               | todas as formas de cobrança + "a partir de", sem tabela |
 
 - **Seleção inicial** — `defaultValue` (um `value` de `options`) já abre com aquela opção
@@ -338,7 +338,8 @@ remover, marcar o principal), gravada em `service_addresses` (ver [Plugin servic
 | Chave          | Padrão | Efeito                                                                                          |
 | -------------- | ------ | ----------------------------------------------------------------------------------------------- |
 | `maxAddresses` | `5`    | Máximo de endereços por serviço (inteiro de 1 a 10). Só vale com `addresses`; em outro model lança erro. |
-| `requireZipCode` | `true` | `false` deixa o CEP opcional (ex.: eventos): completo = rua + número + cidade/UF; o formulário libera os campos sem CEP e o IBGE da cidade sai pelo nome (`/api/location/cities`). Só com `address`/`addresses`. Por perfil, então vale por grupo/categoria (`byGroup`/`byCategory`). |
+| `requireZipCode` | `true` | `false` deixa o CEP opcional (ex.: eventos): completo = rua + número + cidade/UF; o formulário vem aberto (busca primeiro, rua/número/cidade/UF digitáveis, CEP por último) e o IBGE da cidade sai pelo nome (`/api/location/cities`). Só com `address`/`addresses`. Por perfil, então vale por grupo/categoria (`byGroup`/`byCategory`). |
+| `addressFromRef` | — | Key de um vínculo único de `refs` (ex.: `local_ref`). Escolher o anúncio ali aplica o endereço principal dele no endereço principal deste (mantém id/apelido → PATCH); com o vínculo preenchido, o endereço fica opcional. O vínculo aparece antes do endereço. Só com `addresses`. |
 
 * Sempre há **um único endereço principal**.
 * **Endereço só no estabelecimento**: só a opção com `addresses` (`no_estabelecimento`) exige ao menos

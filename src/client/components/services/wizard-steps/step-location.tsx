@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAppPreferences } from '../../../providers/app-preferences-provider';
 import { Building2, Home, Wifi, type LucideIcon } from 'lucide-react';
 import { resolveLucideIcon } from '../../../../lib/lucide-icon';
@@ -18,13 +18,15 @@ import { StepHeader } from './step-header';
 import { AddressListEditor, type AddressListLabels } from './address-list-editor';
 import {
   addAddress,
+  applyAddressToPrimary,
+  fetchRefPrimaryAddress,
   hasSinglePrimary,
   isAddressComplete,
   missingAddressFields as listMissingFields,
   normalizePrimary,
   syncServiceAddresses,
 } from './service-addresses';
-import { LocationRefsEditor, refPersistValue } from './location-refs';
+import { LocationRefsEditor, refPersistValue, refSingleValue } from './location-refs';
 import { StepHint } from './step-hint';
 import {
   DEFAULT_LOCATION_PROFILE,
@@ -118,6 +120,13 @@ export function createStepLocation(profiles?: StepProfiles<LocationProfile>) {
     const [address, setAddress] = useState<AddressValue>(initialAddress);
     const selected = options.find((option) => option.value === value);
     const rules = { requireZipCode: selected?.requireZipCode };
+    // Vínculo que fornece o endereço (`addressFromRef`, ex.: local do evento): escolher o lugar
+    // aplica o endereço dele aqui, e preenchido o endereço vira opcional.
+    const addressRef = selected?.model === 'addresses' ? selected.addressFromRef : undefined;
+    const refFilled = addressRef ? Boolean(refSingleValue(state.serviceRefs?.[addressRef])) : false;
+    const [copyNote, setCopyNote] = useState<string | null>(null);
+    const stateRef = useRef(state);
+    stateRef.current = state;
 
     // Vínculos vazios em `extras` → completa com as respostas do formulário da categoria (eventos
     // importados gravavam `local_ref`/`pontos_de_venda` lá). Uma vez por anúncio.
@@ -185,7 +194,32 @@ export function createStepLocation(profiles?: StepProfiles<LocationProfile>) {
     // Presencial com lista: diz o que falta no endereço principal (senão o botão de avançar
     // fica desabilitado sem nenhuma explicação — ex.: endereço importado sem CEP).
     const primaryAddress = addresses.find((a) => a.isPrimary) ?? addresses[0];
-    const missingAddressFields = isAddresses && primaryAddress ? listMissingFields(primaryAddress, rules) : [];
+    const missingAddressFields =
+      isAddresses && primaryAddress && !refFilled ? listMissingFields(primaryAddress, rules) : [];
+
+    const handleRefChange = (key: string, v: unknown) => {
+      patch({ serviceRefs: { ...(state.serviceRefs ?? {}), [key]: v } });
+      if (key !== addressRef) return;
+      const ref = refSingleValue(v);
+      if (!ref) {
+        setCopyNote(null);
+        return;
+      }
+      setCopyNote('Buscando o endereço do local…');
+      void fetchRefPrimaryAddress(ref).then((copied) => {
+        // Trocou de local enquanto buscava → a resposta antiga não vale mais.
+        if (refSingleValue(stateRef.current.serviceRefs?.[key]) !== ref) return;
+        if (!copied) {
+          setCopyNote('Esse local não tem endereço cadastrado. Se quiser, preencha o endereço abaixo.');
+          return;
+        }
+        const list = applyAddressToPrimary(stateRef.current.addresses ?? [], copied);
+        patch({ addresses: list, addressComplete: list.some((a) => isAddressComplete(a, rules)) });
+        setCopyNote('Endereço preenchido com o do local.');
+      });
+    };
+    const addressRefs = refs.filter((r) => r.key === addressRef);
+    const otherRefs = refs.filter((r) => r.key !== addressRef);
 
     const selectedHint = selected
       ? (optionMessages[selected.textKey ?? selected.value]?.hint ??
@@ -250,6 +284,12 @@ export function createStepLocation(profiles?: StepProfiles<LocationProfile>) {
           </div>
         ) : null}
 
+        {addressRefs.length ? (
+          <LocationRefsEditor refs={addressRefs} values={state.serviceRefs ?? {}} onChange={handleRefChange} />
+        ) : null}
+
+        {copyNote && isAddresses ? <StepHint tone="info">{copyNote}</StepHint> : null}
+
         {isAddresses ? (
           <div className="border-t border-border pt-6">
             <AddressListEditor
@@ -277,11 +317,7 @@ export function createStepLocation(profiles?: StepProfiles<LocationProfile>) {
           <StepHint tone="info">{selectedHint}</StepHint>
         ) : null}
 
-        <LocationRefsEditor
-          refs={refs}
-          values={state.serviceRefs ?? {}}
-          onChange={(key, v) => patch({ serviceRefs: { ...(state.serviceRefs ?? {}), [key]: v } })}
-        />
+        <LocationRefsEditor refs={otherRefs} values={state.serviceRefs ?? {}} onChange={handleRefChange} />
       </div>
     );
   };
@@ -325,6 +361,8 @@ export function createLocationStep(
       if (option.model === 'addresses') {
         // Presencial com lista: ≥1 endereço completo e exatamente 1 principal (completo), em
         // qualquer modo — o endereço agora é persistido, então vale também em edit/review.
+        // Local escolhido (`addressFromRef`) → o endereço é o dele; o próprio fica opcional.
+        if (option.addressFromRef && refSingleValue(ctx.state.serviceRefs?.[option.addressFromRef])) return true;
         const list = ctx.state.addresses ?? [];
         const primary = list.find((a) => a.isPrimary);
         const rules = { requireZipCode: option.requireZipCode };

@@ -131,3 +131,29 @@ describe('validateLocationProfile labels', () => {
     ).toThrow(/titulo/);
   });
 });
+
+describe('validateLocationProfile — CEP opcional e endereço do local', () => {
+  const localRef = { key: 'local_ref', label: 'Local', groups: ['lugares'] };
+  it('aceita requireZipCode e addressFromRef de um vínculo único', () => {
+    expect(() =>
+      validateLocationProfile({
+        options: [
+          { value: 'no_estabelecimento', model: 'addresses', requireZipCode: false, addressFromRef: 'local_ref' },
+        ],
+        refs: [localRef],
+      })
+    ).not.toThrow();
+  });
+  it('rejeita requireZipCode em identifier', () => {
+    expect(() =>
+      validateLocationProfile({ options: [{ value: 'remoto', model: 'identifier', requireZipCode: false }] })
+    ).toThrow(/requireZipCode/);
+  });
+  it('rejeita addressFromRef sem vínculo ou com vínculo múltiplo', () => {
+    const option = { value: 'no_estabelecimento' as const, model: 'addresses' as const, addressFromRef: 'local_ref' };
+    expect(() => validateLocationProfile({ options: [option] })).toThrow(/addressFromRef/);
+    expect(() =>
+      validateLocationProfile({ options: [option], refs: [{ ...localRef, multiple: true }] })
+    ).toThrow(/addressFromRef/);
+  });
+});

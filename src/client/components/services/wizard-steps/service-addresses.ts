@@ -302,3 +302,61 @@ export async function syncServiceAddresses(
 
   return persistable.map((a) => saved.get(a.clientId) ?? a);
 }
+
+// ---------------------------------------------------------------------------------------------
+// Endereço vindo de outro anúncio (ex.: o lugar escolhido como local do evento)
+// ---------------------------------------------------------------------------------------------
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+type AddressRow = Partial<Omit<ServiceAddress, 'clientId'>> & { active?: boolean };
+
+/**
+ * Endereço principal (senão o primeiro) do anúncio `ref` — uid ou `extras.codigo` — via
+ * /api/resources. Só os campos de endereço (sem id/apelido). Não achou ou falhou → null.
+ */
+export async function fetchRefPrimaryAddress(ref: string): Promise<AddressRow | null> {
+  const value = ref.trim();
+  if (!value) return null;
+  try {
+    const q = new URLSearchParams({ page: '1', pageSize: '1' });
+    q.set(UUID_RE.test(value) ? 'filter.uid' : 'filter.extras->>codigo', value);
+    const res = await fetch(`/api/resources/services?${q}`, { cache: 'no-store' });
+    if (!res.ok) return null;
+    const service = ((await res.json().catch(() => null)) as { items?: Array<{ id?: unknown }> } | null)
+      ?.items?.[0];
+    if (service?.id == null) return null;
+
+    const qa = new URLSearchParams({ page: '1', pageSize: '10', 'filter.service_id': String(service.id) });
+    const resA = await fetch(`/api/resources/service_addresses?${qa}`, { cache: 'no-store' });
+    if (!resA.ok) return null;
+    const rows = ((await resA.json().catch(() => null)) as { items?: AddressRow[] } | null)?.items ?? [];
+    const live = rows.filter((r) => r.active !== false);
+    const row = live.find((r) => r.isPrimary) ?? live[0];
+    if (!row) return null;
+    return {
+      zipCode: row.zipCode ?? '',
+      street: row.street ?? '',
+      number: row.number ?? '',
+      complement: row.complement ?? '',
+      neighborhood: row.neighborhood ?? '',
+      city: row.city ?? '',
+      state: row.state ?? '',
+      cityIbge: row.cityIbge ?? null,
+      latitude: row.latitude ?? null,
+      longitude: row.longitude ?? null,
+      placeId: row.placeId ?? null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Aplica `copied` no endereço principal (mantém `id` e apelido → vira PATCH ao salvar); sem linha,
+ * cria a principal. `clientId` novo de propósito: o `AddressForm` só lê `value` na montagem.
+ */
+export function applyAddressToPrimary(addresses: ServiceAddress[], copied: AddressRow): ServiceAddress[] {
+  const list = addresses.length ? normalizePrimary(addresses) : [emptyServiceAddress(true)];
+  return list.map((a) => (a.isPrimary ? { ...a, ...copied, clientId: newClientId(), isPrimary: true } : a));
+}

@@ -630,9 +630,20 @@ export function AddressForm({
 
       {/* CITY / STATE */}
       <div className="grid grid-cols-[1fr_90px] gap-4">
-        <Field label="Cidade" value={address.city} disabled />
+        {/* Com CEP, cidade/UF vêm dele (ou da busca); sem CEP obrigatório, dá pra digitar. */}
+        <Field
+          label="Cidade"
+          value={address.city}
+          disabled={requirePostalCode || disabled}
+          onChange={(value) => updateAddress({ city: value })}
+        />
 
-        <Field label="UF" value={address.state} disabled />
+        <Field
+          label="UF"
+          value={address.state}
+          disabled={requirePostalCode || disabled}
+          onChange={(value) => updateAddress({ state: value.toUpperCase().slice(0, 2) })}
+        />
       </div>
 
       {/* COORDINATES */}
@@ -675,6 +686,23 @@ export function AddressForm({
       />
     </BodyPortal>
   );
+
+  // CEP opcional: o layout compacto (que só mostra o CEP até resolver) daria a impressão de que
+  // ele é obrigatório — então tudo aberto, com a busca primeiro e o CEP por último.
+  if (!requirePostalCode) {
+    return (
+      <>
+        <div className={cn('space-y-4', className)}>
+          {searchTrigger}
+          {coordsField}
+          {detailFields}
+          {cepField}
+        </div>
+
+        {searchDrawer}
+      </>
+    );
+  }
 
   if (layout === 'compact') {
     return (

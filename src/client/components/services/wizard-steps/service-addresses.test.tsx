@@ -5,7 +5,9 @@ import { useState } from 'react';
 import { AddressListEditor } from './address-list-editor';
 import {
   addAddress,
+  applyAddressToPrimary,
   diffAddresses,
+  fetchRefPrimaryAddress,
   emptyServiceAddress,
   isAddressComplete,
   missingAddressFields,
@@ -196,6 +198,53 @@ describe('CEP opcional (requireZipCode: false)', () => {
     const [out] = await syncServiceAddresses('9', [a], [], noZip);
     expect(calls[0]).toBe('/api/location/cities?uf=MT');
     expect(out.cityIbge).toBe('5108402');
+  });
+});
+
+describe('endereço do local (addressFromRef)', () => {
+  const UID = 'dfb6753c-1495-43ca-94ab-907eb1dd9273';
+  const stub = (services: unknown[], addresses: unknown[]) => {
+    const urls: string[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        urls.push(decodeURIComponent(url));
+        const items = url.startsWith('/api/resources/services?') ? services : addresses;
+        return { ok: true, status: 200, json: async () => ({ items }) };
+      })
+    );
+    return urls;
+  };
+
+  it('busca o lugar pelo uid e devolve o endereço principal (sem id)', async () => {
+    const urls = stub(
+      [{ id: '42' }],
+      [
+        { id: '1', street: 'Rua B', number: '2', isPrimary: false, active: true },
+        { id: '2', street: 'Av. Musiva', number: '100', city: 'Cuiabá', state: 'MT', cityIbge: '5103403', isPrimary: true, active: true },
+      ]
+    );
+    const out = await fetchRefPrimaryAddress(UID);
+    expect(urls[0]).toContain(`filter.uid=${UID}`);
+    expect(urls[1]).toContain('filter.service_id=42');
+    expect(out).toMatchObject({ street: 'Av. Musiva', number: '100', cityIbge: '5103403' });
+    expect(out).not.toHaveProperty('id');
+  });
+
+  it('código (não uuid) busca por extras->>codigo; sem lugar → null', async () => {
+    const urls = stub([], []);
+    expect(await fetchRefPrimaryAddress('musiva-cuiaba')).toBeNull();
+    expect(urls[0]).toContain('filter.extras->>codigo=musiva-cuiaba');
+  });
+
+  it('aplica na principal mantendo id e apelido, com clientId novo; lista vazia cria a principal', () => {
+    const primary = full({ id: '9', clientId: 'p', label: 'Casa', isPrimary: true });
+    const [out] = applyAddressToPrimary([primary], { street: 'Av. Musiva', number: '100' });
+    expect(out).toMatchObject({ id: '9', label: 'Casa', street: 'Av. Musiva', isPrimary: true });
+    expect(out.clientId).not.toBe('p');
+    const [created] = applyAddressToPrimary([], { street: 'Av. Musiva', number: '100' });
+    expect(created).toMatchObject({ street: 'Av. Musiva', isPrimary: true });
+    expect(created.id).toBeUndefined();
   });
 });
 

@@ -30,6 +30,8 @@ export type AddressListLabels = {
   empty?: string;
   limit?: string;
   search?: string;
+  /** Rótulo da busca quando o CEP é opcional (`requireZipCode: false`). */
+  searchNoZip?: string;
 };
 
 const DEFAULT_LABELS: Required<AddressListLabels> = {
@@ -45,6 +47,7 @@ const DEFAULT_LABELS: Required<AddressListLabels> = {
   empty: 'Nenhum endereço ainda.',
   limit: 'Limite de endereços atingido.',
   search: 'Não sei meu CEP',
+  searchNoZip: 'Pesquisar endereço ou local',
 };
 
 const FORM_FEATURES = { search: true, modalSearch: true, locationSelection: false, map: false };
@@ -132,7 +135,7 @@ export function AddressListEditor({
               layout="compact"
               emphasizeCep={requireZipCode}
               requirePostalCode={requireZipCode}
-              searchLabel={l.search}
+              searchLabel={requireZipCode ? l.search : l.searchNoZip}
             />
           </li>
         ))}
