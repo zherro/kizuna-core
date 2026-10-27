@@ -226,10 +226,10 @@ export function PainelStats() {
             <Link
               key={metric.id}
               href="/painel/metricas"
-              className="group flex min-w-0 flex-col gap-2 rounded-2xl border border-border bg-card p-3 shadow-sm transition-colors hover:border-primary/40 sm:p-4"
+              className="group flex min-w-0 flex-col gap-1 rounded-xl border border-border bg-card p-2 shadow-sm transition-colors hover:border-primary/40"
             >
               <div className="flex items-center justify-between">
-                <span className="rounded-lg bg-primary/10 p-1.5 text-primary sm:p-2">
+                <span className="rounded-lg bg-primary/10 p-1.5 text-primary">
                   <Icon className="h-4 w-4" />
                 </span>
                 {delta !== 0 ? (
@@ -246,7 +246,7 @@ export function PainelStats() {
                 ) : null}
               </div>
               <div className="min-w-0">
-                <p className="text-xl font-semibold tracking-tight sm:text-2xl">
+                <p className="text-lg font-semibold leading-tight tracking-tight sm:text-xl">
                   {value === null ? '—' : formatMetric(metric.format, value)}
                 </p>
                 <p className="line-clamp-2 text-[11px] leading-tight text-muted-foreground sm:text-xs">
