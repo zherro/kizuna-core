@@ -230,7 +230,9 @@ export function QuillEditor({ value, onChange, placeholder, headings = true, emo
           theme="snow"
           value={quillValue.current}
           onChange={(html: string) => {
-            if (!showSource) onChange(html);
+            // O getSemanticHTML do Quill 2 troca todo espaço por &nbsp; (o texto não quebra linha e o
+            // código fica ilegível); volta a ser espaço comum.
+            if (!showSource) onChange(html.replace(/&nbsp;/g, ' '));
           }}
           modules={modules}
           placeholder={placeholder ?? 'Escreva a descrição do anúncio...'}

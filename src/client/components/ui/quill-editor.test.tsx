@@ -5,12 +5,12 @@ import { useEffect, useState } from 'react';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 
 // Imita o Quill: quando o `value` muda, ele reescreve o HTML no formato dele (aqui, troca <div>
-// por <p>) e devolve pelo onChange — é o que apagava o HTML colado no modo código.
+// por <p>; e, como o getSemanticHTML do Quill 2, todo espaço vira &nbsp;) e devolve pelo onChange.
 vi.mock('next/dynamic', () => ({
   default: () =>
     function FakeQuill({ value, onChange }: { value: string; onChange: (v: string) => void }) {
       useEffect(() => {
-        const normalized = value.replace(/<(\/?)div>/g, '<$1p>');
+        const normalized = value.replace(/<(\/?)div>/g, '<$1p>').replace(/ /g, '&nbsp;');
         if (normalized !== value) onChange(normalized);
       }, [value, onChange]);
       return <div data-testid="quill" />;
@@ -39,5 +39,12 @@ describe('<QuillEditor> modo código', () => {
     fireEvent.change(screen.getByLabelText(/código html/i), { target: { value: html } });
     expect((screen.getByLabelText(/código html/i) as HTMLTextAreaElement).value).toBe(html);
     expect(screen.getByTestId('saved').textContent).toBe(html);
+  });
+});
+
+describe('<QuillEditor> editor visual', () => {
+  it('não grava &nbsp; no lugar dos espaços (getSemanticHTML do Quill 2)', () => {
+    render(<Harness initial="<div>A Noite é um Jogo</div>" />);
+    expect(screen.getByTestId('saved').textContent).toBe('<p>A Noite é um Jogo</p>');
   });
 });
