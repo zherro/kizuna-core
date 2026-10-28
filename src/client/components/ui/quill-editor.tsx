@@ -59,7 +59,13 @@ export function QuillEditor({ value, onChange, placeholder, headings = true, emo
   // No modo código o Quill (escondido) fica congelado: se recebesse o HTML digitado/colado, ele o
   // reescreveria no formato dele e devolveria pelo onChange, apagando o que foi colado.
   const quillValue = useRef(value);
-  if (!showSource) quillValue.current = value;
+  // O getSemanticHTML do Quill 2 troca todo espaço por &nbsp;; quem usa recebe espaço comum, mas o
+  // Quill tem de receber de volta o HTML dele: se recebesse a versão limpa, acharia que o conteúdo
+  // mudou, regravaria e emitiria &nbsp; de novo (loop que derrubava o editor).
+  const lastEmitted = useRef<{ raw: string; clean: string } | null>(null);
+  if (!showSource) {
+    quillValue.current = lastEmitted.current?.clean === value ? lastEmitted.current.raw : value;
+  }
 
   // O toolbar é o JSX abaixo (botões `ql-*` ganham ícone e ação do próprio Quill); fixo por montagem.
   const modules = useMemo(() => ({ toolbar: { container: `#${toolbarId}` } }), [toolbarId]);
@@ -230,9 +236,10 @@ export function QuillEditor({ value, onChange, placeholder, headings = true, emo
           theme="snow"
           value={quillValue.current}
           onChange={(html: string) => {
-            // O getSemanticHTML do Quill 2 troca todo espaço por &nbsp; (o texto não quebra linha e o
-            // código fica ilegível); volta a ser espaço comum.
-            if (!showSource) onChange(html.replace(/&nbsp;/g, ' '));
+            if (showSource) return;
+            const clean = html.replace(/&nbsp;/g, ' ');
+            lastEmitted.current = { raw: html, clean };
+            onChange(clean);
           }}
           modules={modules}
           placeholder={placeholder ?? 'Escreva a descrição do anúncio...'}

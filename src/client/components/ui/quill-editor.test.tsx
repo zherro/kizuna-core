@@ -1,18 +1,27 @@
 // @vitest-environment jsdom
 import { describe, expect, it, afterEach } from 'vitest';
 import { vi } from 'vitest';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 
-// Imita o Quill: quando o `value` muda, ele reescreve o HTML no formato dele (aqui, troca <div>
-// por <p>; e, como o getSemanticHTML do Quill 2, todo espaço vira &nbsp;) e devolve pelo onChange.
+// Imita o react-quill-new + Quill 2: a cada render compara o `value` recebido com o último HTML que
+// conhece (como o shouldComponentUpdate dele); se forem diferentes, regrava o conteúdo e, se o HTML
+// dele (getSemanticHTML: <div> vira <p>, espaço vira &nbsp;) sair diferente, devolve pelo onChange.
 vi.mock('next/dynamic', () => ({
   default: () =>
     function FakeQuill({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+      const known = useRef<string | null>(null);
+      const rewrites = useRef(0);
       useEffect(() => {
-        const normalized = value.replace(/<(\/?)div>/g, '<$1p>').replace(/ /g, '&nbsp;');
-        if (normalized !== value) onChange(normalized);
-      }, [value, onChange]);
+        if (value === known.current) return;
+        if (++rewrites.current > 20) throw new Error('loop: o Quill recebeu de volta um HTML que não é dele');
+        known.current = value;
+        const semantic = value.replace(/<(\/?)div>/g, '<$1p>').replace(/ /g, '&nbsp;');
+        if (semantic !== value) {
+          known.current = semantic;
+          onChange(semantic);
+        }
+      });
       return <div data-testid="quill" />;
     },
 }));
@@ -22,11 +31,12 @@ import { QuillEditor } from './quill-editor';
 afterEach(cleanup);
 
 function Harness({ initial = '<p>oi</p>' }: { initial?: string }) {
-  const [value, setValue] = useState(initial);
+  // Como o wizard: todo onChange gera estado novo (re-render), mesmo com o mesmo texto.
+  const [state, setState] = useState({ value: initial });
   return (
     <>
-      <QuillEditor value={value} onChange={setValue} source />
-      <output data-testid="saved">{value}</output>
+      <QuillEditor value={state.value} onChange={(value) => setState({ value })} source />
+      <output data-testid="saved">{state.value}</output>
     </>
   );
 }
