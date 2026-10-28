@@ -149,6 +149,16 @@ export {
   type CategoryRailTarget,
 } from './services/category-rail-data';
 export {
+  loadTodayFeed,
+  localDayKey,
+  startsOnDay,
+  TODAY_TIME_ZONE,
+  DEFAULT_TODAY_LIMIT,
+  type TodaySection,
+  type TodaySectionConfig,
+  type LoadTodayFeedOptions,
+} from './services/today-feed-data';
+export {
   loadServicesByTags,
   buildTagSearchParams,
   type ServiceTagRailData,

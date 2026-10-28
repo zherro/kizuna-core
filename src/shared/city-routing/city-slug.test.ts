@@ -31,6 +31,10 @@ describe('isRoutableSlug', () => {
     expect(isRoutableSlug('busca')).toBe(false);
     expect(isRoutableSlug('turismo')).toBe(false);
     expect(RESERVED_SLUGS.has('turismo')).toBe(true);
+    expect(isRoutableSlug('hoje')).toBe(false);
+    expect(RESERVED_SLUGS.has('hoje')).toBe(true);
+    expect(isRoutableSlug('mapa')).toBe(false);
+    expect(RESERVED_SLUGS.has('mapa')).toBe(true);
     expect(isRoutableSlug('registre-se')).toBe(false);
     expect(isRoutableSlug('Cuiaba-MT')).toBe(false);
     expect(isRoutableSlug('')).toBe(false);

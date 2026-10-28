@@ -20,6 +20,8 @@ export const RESERVED_SLUGS: ReadonlySet<string> = new Set([
   'busca',
   'descobrir',
   'turismo',
+  'hoje',
+  'mapa',
   'curtidos',
   'anuncios',
   'anuncio',
