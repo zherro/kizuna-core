@@ -30,20 +30,20 @@ export function DiscoverCta({
   const link = (
       <Link
         href="/descobrir"
-        className="mt-5 flex items-center gap-4 overflow-hidden rounded-2xl gradient-hero p-5 shadow-lg shadow-primary/20 transition-transform active:scale-[0.99]"
+        className={`flex h-full flex-col items-start justify-center gap-3 overflow-hidden rounded-3xl gradient-hero p-4 shadow-lg shadow-primary/20 transition-transform active:scale-[0.99] lg:flex-row lg:items-center lg:gap-4 lg:p-5 ${contained ? "mt-5" : ""}`}
       >
         <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-background/25 text-background">
           <Flame className="h-6 w-6" />
         </span>
         <span className="min-w-0">
-          <span className="block font-serif text-lg font-bold text-background">
+          <span className="block font-serif text-lg font-bold leading-tight text-background">
             Descobrir no swipe
           </span>
-          <span className="block text-sm text-background/90">
+          <span className="hidden text-sm text-background/90 sm:block">
             Arraste: esse não, esse sim. Monte sua agenda em segundos.
           </span>
         </span>
-        <ArrowRight className="ml-auto h-5 w-5 shrink-0 text-background" />
+        <ArrowRight aria-hidden="true" className="ml-auto hidden h-5 w-5 shrink-0 text-background lg:block" />
       </Link>
   );
 

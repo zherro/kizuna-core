@@ -6,15 +6,16 @@ export type TodayCalloutProps = {
   href: string;
   now?: Date;
   title?: string;
+  /** aplica o container da home (max-w-[1600px]). Default true; false dentro de uma grade de cartões. */
+  contained?: boolean;
 };
 
 /** Cartão da home que leva à página "Hoje", com a data de hoje. Sempre aparece (a página trata o vazio). */
-export function TodayCallout({ href, now, title = 'O que tem pra hoje' }: TodayCalloutProps) {
-  return (
-    <div className="mx-auto w-full max-w-[1600px] px-4 pb-10 sm:px-6 sm:pb-12">
+export function TodayCallout({ href, now, title = 'O que tem pra hoje', contained = true }: TodayCalloutProps) {
+  const link = (
       <Link
         href={href}
-        className="group relative isolate flex min-h-24 items-center gap-4 overflow-hidden rounded-3xl border border-primary/20 px-5 py-5 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:gap-6 sm:px-8 sm:py-6"
+        className="group relative isolate flex h-full min-h-24 items-center gap-4 overflow-hidden rounded-3xl border border-primary/20 px-5 py-5 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:gap-6 sm:px-8 sm:py-6"
         style={{
           backgroundImage:
             'linear-gradient(135deg, color-mix(in oklch, var(--primary) 16%, var(--background)) 0%, color-mix(in oklch, var(--accent) 24%, var(--background)) 100%)',
@@ -36,6 +37,7 @@ export function TodayCallout({ href, now, title = 'O que tem pra hoje' }: TodayC
           <ArrowRight aria-hidden="true" className="h-4 w-4 motion-safe:transition-transform motion-safe:group-hover:translate-x-0.5" />
         </span>
       </Link>
-    </div>
   );
+  if (!contained) return link;
+  return <div className="mx-auto w-full max-w-[1600px] px-4 pb-10 sm:px-6 sm:pb-12">{link}</div>;
 }
