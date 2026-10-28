@@ -56,6 +56,10 @@ export function QuillEditor({ value, onChange, placeholder, headings = true, emo
   const [videoUrl, setVideoUrl] = useState('');
   const [videoError, setVideoError] = useState('');
   const [showSource, setShowSource] = useState(false);
+  // No modo código o Quill (escondido) fica congelado: se recebesse o HTML digitado/colado, ele o
+  // reescreveria no formato dele e devolveria pelo onChange, apagando o que foi colado.
+  const quillValue = useRef(value);
+  if (!showSource) quillValue.current = value;
 
   // O toolbar é o JSX abaixo (botões `ql-*` ganham ícone e ação do próprio Quill); fixo por montagem.
   const modules = useMemo(() => ({ toolbar: { container: `#${toolbarId}` } }), [toolbarId]);
@@ -224,8 +228,10 @@ export function QuillEditor({ value, onChange, placeholder, headings = true, emo
         <ReactQuill
           forwardedRef={quillRef}
           theme="snow"
-          value={value}
-          onChange={onChange}
+          value={quillValue.current}
+          onChange={(html: string) => {
+            if (!showSource) onChange(html);
+          }}
           modules={modules}
           placeholder={placeholder ?? 'Escreva a descrição do anúncio...'}
         />
