@@ -7,6 +7,7 @@ import {
   findCityByNameState,
   findCityBySlug,
   isRoutableSlug,
+  RESERVED_SLUGS,
   serviceHref,
   type RoutableCity,
 } from './city-slug';
@@ -28,6 +29,8 @@ describe('isRoutableSlug', () => {
     expect(isRoutableSlug('cuiaba-mt')).toBe(true);
     expect(isRoutableSlug('cuiaba')).toBe(false);
     expect(isRoutableSlug('busca')).toBe(false);
+    expect(isRoutableSlug('turismo')).toBe(false);
+    expect(RESERVED_SLUGS.has('turismo')).toBe(true);
     expect(isRoutableSlug('registre-se')).toBe(false);
     expect(isRoutableSlug('Cuiaba-MT')).toBe(false);
     expect(isRoutableSlug('')).toBe(false);
