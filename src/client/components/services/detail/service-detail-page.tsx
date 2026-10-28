@@ -21,6 +21,7 @@ import { NOTICIA_RELATED_TITLE, ServiceDetailNoticia } from './service-detail-no
 import { ServiceLocationSection } from './service-location-section';
 import { AdPhotoMosaic } from './ad-photo-mosaic';
 import { AdShareButton } from './ad-share-button';
+import { RootEditLink } from './root-edit-link';
 import { ServiceReactionButtons } from './service-reaction-buttons';
 import { ServiceCarouselSection } from './service-carousel-section';
 import { AdTrackingProvider, SourcedTrackView } from '../../../analytics/ad-tracking';
@@ -134,6 +135,8 @@ export type ServiceDetailPageProps = {
   searchHref?: string;
   /** Plugin analytics: regra da visualização (`resolveEventRule`, calculada no servidor). Sem isso, nada é contado. */
   analytics?: { viewRule: EventRule | null };
+  /** Tela de edição deste anúncio no painel: com ela, root vê um botão "Editar" no topo. */
+  editHref?: string;
 };
 
 /**
@@ -154,6 +157,7 @@ export function ServiceDetailPage({
   path,
   searchHref = '/busca',
   analytics,
+  editHref,
 }: ServiceDetailPageProps) {
   const { service, subcategoryNames, provider, extraFields, related, tagRails, randomServices, siblings, location } = data;
 
@@ -217,6 +221,7 @@ export function ServiceDetailPage({
           )}
           <ChevronRight className="h-3 w-3 shrink-0" />
           <span className="truncate text-foreground">{service.title}</span>
+          {editHref && <RootEditLink href={editHref} />}
         </nav>
 
         {FullPage ? (

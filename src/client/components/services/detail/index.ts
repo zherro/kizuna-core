@@ -45,6 +45,7 @@ export type {
 export { ServiceLocationSection } from './service-location-section';
 export { AdPhotoMosaic } from './ad-photo-mosaic';
 export { AdShareButton } from './ad-share-button';
+export { RootEditLink } from './root-edit-link';
 export { AdExtraFields } from './ad-extra-fields';
 export { AdDescription } from './ad-description';
 export { ServiceCarousel } from './service-carousel';
