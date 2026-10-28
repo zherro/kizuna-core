@@ -10,4 +10,7 @@ import { withProjectRegionCities } from '../../../../server/regions';
  */
 export const rpcSearch: Record<string, RpcConfig> = {
   fn_search_services: { schema: 'public', requiresAuth: false, mapParams: withProjectRegionCities },
+  // Mapa (search 0012): pinos por raio, leves, e o detalhe de um anúncio sob demanda. Públicas.
+  fn_map_pins: { schema: 'public', requiresAuth: false },
+  fn_map_place: { schema: 'public', requiresAuth: false },
 };
