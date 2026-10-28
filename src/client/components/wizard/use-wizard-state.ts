@@ -39,7 +39,7 @@ export interface UseWizardStateReturn<S> {
   goContinue: () => Promise<void>;
   /** `force` ignora o limite do passo mais avançado — só para desenvolvimento (pular direto a um passo). */
   jumpTo: (i: number, opts?: { force?: boolean }) => Promise<void>;
-  finish: () => Promise<{ href: string | null }>;
+  finish: () => Promise<{ ok: boolean; href: string | null }>;
 }
 
 export function useWizardState<S extends Record<string, unknown>>(
@@ -190,10 +190,10 @@ export function useWizardState<S extends Record<string, unknown>>(
     [clampedIndex, furthestIndex, steps.length, currentStep, runStepPersist]
   );
 
-  const finish = useCallback(async (): Promise<{ href: string | null }> => {
+  const finish = useCallback(async (): Promise<{ ok: boolean; href: string | null }> => {
     const ok = await runStepPersist(currentStep);
-    if (!ok) return { href: null };
-    return { href: config.finishHrefByMode?.[mode] ?? null };
+    if (!ok) return { ok, href: null };
+    return { ok, href: config.finishHrefByMode?.[mode] ?? null };
   }, [runStepPersist, currentStep, config, mode]);
 
   return {

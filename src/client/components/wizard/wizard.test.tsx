@@ -2,8 +2,9 @@
 import { describe, expect, it, afterEach, vi } from 'vitest';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 
+const pushMock = vi.fn();
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), prefetch: vi.fn() }),
+  useRouter: () => ({ push: pushMock, replace: vi.fn(), prefetch: vi.fn() }),
 }));
 
 const submitResourceMock = vi.fn(async () => ({
@@ -24,6 +25,7 @@ import { Wizard } from './wizard';
 afterEach(() => {
   cleanup();
   submitResourceMock.mockClear();
+  pushMock.mockClear();
 });
 
 const cfg = defineWizard({
@@ -65,6 +67,35 @@ describe('<Wizard>', () => {
     render(<Wizard config={persistCfg} mode="create" entities={{}} initialResourceId={null} />);
     fireEvent.click(screen.getByRole('button', { name: /salvar/i }));
     expect(submitResourceMock).toHaveBeenCalled();
+  });
+});
+
+describe('<Wizard> Concluir', () => {
+  const one = defineWizard({
+    resource: 'x',
+    steps: ['a'],
+    registry: { a: { key: 'a', label: 'Passo A', Component: () => <p>conteudo A</p> } },
+    finishHrefByMode: { create: '/criado' },
+  });
+
+  it('em edição sem destino próprio no config, sai mesmo assim (não fica parado)', async () => {
+    render(<Wizard config={one} mode="edit" entities={{}} initialResourceId="1" />);
+    fireEvent.click(screen.getByRole('button', { name: /concluir/i }));
+    await vi.waitFor(() => expect(pushMock).toHaveBeenCalledWith('/painel'));
+  });
+
+  it('usa onExit quando não há destino para o modo', async () => {
+    const onExit = vi.fn();
+    render(<Wizard config={one} mode="edit" entities={{}} initialResourceId="1" onExit={onExit} />);
+    fireEvent.click(screen.getByRole('button', { name: /concluir/i }));
+    await vi.waitFor(() => expect(onExit).toHaveBeenCalledTimes(1));
+    expect(pushMock).not.toHaveBeenCalled();
+  });
+
+  it('com destino configurado, vai para ele', async () => {
+    render(<Wizard config={one} mode="create" entities={{}} initialResourceId={null} lockLayout />);
+    fireEvent.click(screen.getByRole('button', { name: /concluir/i }));
+    await vi.waitFor(() => expect(pushMock).toHaveBeenCalledWith('/criado'));
   });
 });
 

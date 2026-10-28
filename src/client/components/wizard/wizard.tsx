@@ -288,9 +288,13 @@ export function Wizard<S extends Record<string, unknown> = Record<string, unknow
     leave();
   };
 
+  // Sem destino para o modo (ex.: `edit`, ou `create` que virou `edit` ao criar a linha), sai
+  // pelo mesmo caminho do Cancelar — senão o Concluir salva e fica parado.
   const handleFinish = () => {
-    void finish().then(({ href }) => {
+    void finish().then(({ ok, href }) => {
+      if (!ok) return;
       if (href) router.push(href);
+      else leave();
     });
   };
 
