@@ -54,6 +54,12 @@ busca para ordenar (`p_order => 'occurs_at:asc'`, search 0011).
 Índices parciais (todos `WHERE active`): `(service_id, is_primary DESC)`, `(state, city_ibge)`,
 `(city_ibge)` e o índice único do endereço principal.
 
+**`city_ibge` vazio (migration 0017):** a busca filtra cidade só por esse código, então endereço sem
+ele some da busca. O trigger `service_addresses_fill_city_ibge` preenche o código quando ele chega
+vazio, pelo nome da cidade (sem acento e sem caixa) dentro da UF em `location_city` (plugin
+location). Não achou: grava sem o código e não derruba o save. A 0017 também preenche os endereços
+já gravados sem ele.
+
 ### Acesso (RLS)
 
 | Política            | Quem                | O quê                                                                          |

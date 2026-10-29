@@ -112,6 +112,7 @@ export function toAddressValue(a: ServiceAddress): Partial<AddressValue> {
     neighborhood: a.neighborhood,
     city: a.city,
     state: a.state,
+    cityIbge: a.cityIbge,
     country: 'BR',
     latitude: a.latitude,
     longitude: a.longitude,
@@ -119,7 +120,10 @@ export function toAddressValue(a: ServiceAddress): Partial<AddressValue> {
   };
 }
 
-/** AddressValue → campos de ServiceAddress. Se o CEP mudou, o IBGE antigo deixa de valer. */
+/**
+ * AddressValue → campos de ServiceAddress. O IBGE que o formulário trouxe (CEP ou cidade escolhida
+ * na lista) vale; sem ele, se o CEP mudou, o IBGE antigo deixa de valer.
+ */
 export function fromAddressValue(prev: ServiceAddress, v: AddressValue): Partial<ServiceAddress> {
   const zip = v.postalCode.replace(/\D/g, '');
   return {
@@ -133,7 +137,7 @@ export function fromAddressValue(prev: ServiceAddress, v: AddressValue): Partial
     latitude: v.latitude,
     longitude: v.longitude,
     placeId: v.placeId,
-    cityIbge: zip === prev.zipCode ? prev.cityIbge : null,
+    cityIbge: v.cityIbge || (zip === prev.zipCode && v.city === prev.city ? prev.cityIbge : null),
   };
 }
 
@@ -228,22 +232,27 @@ async function ibgeByCity(city: string, state: string): Promise<string | null> {
   }
 }
 
-/** Preenche `cityIbge` via /api/location/cep (plugin location); sem CEP, pela cidade + UF. Best-effort: falha → null. */
+/**
+ * Preenche `cityIbge` via /api/location/cep (plugin location); sem CEP — ou se a consulta do CEP
+ * falhar —, pela cidade + UF. Best-effort: falha → sem código (o banco ainda tenta pelo nome,
+ * services 0017).
+ */
 async function withIbge(a: ServiceAddress): Promise<ServiceAddress> {
-  const cep = a.zipCode.replace(/\D/g, '');
   if (a.cityIbge) return a;
-  if (cep.length !== 8) {
+  const byCity = async () => {
     const ibge = await ibgeByCity(a.city ?? '', a.state ?? '');
     return ibge ? { ...a, cityIbge: ibge } : a;
-  }
+  };
+  const cep = a.zipCode.replace(/\D/g, '');
+  if (cep.length !== 8) return byCity();
   try {
     const res = await fetch(`/api/location/cep?cep=${cep}`, { cache: 'no-store' });
-    if (!res.ok) return a;
+    if (!res.ok) return byCity();
     const data = (await res.json().catch(() => null)) as { ibge?: string } | null;
     const ibge = String(data?.ibge ?? '').replace(/\D/g, '');
-    return ibge ? { ...a, cityIbge: ibge } : a;
+    return ibge ? { ...a, cityIbge: ibge } : byCity();
   } catch {
-    return a;
+    return byCity();
   }
 }
 

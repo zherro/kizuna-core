@@ -199,6 +199,25 @@ describe('CEP opcional (requireZipCode: false)', () => {
     expect(calls[0]).toBe('/api/location/cities?uf=MT');
     expect(out.cityIbge).toBe('5108402');
   });
+
+  it('com CEP, se a consulta do CEP falha, o IBGE sai da cidade + UF', async () => {
+    const calls: string[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        calls.push(url);
+        if (url.startsWith('/api/location/cep')) return { ok: false, status: 502, json: async () => ({}) };
+        if (url.startsWith('/api/location/cities')) {
+          return { ok: true, status: 200, json: async () => ({ items: [{ value: '5103403', label: 'Cuiabá' }] }) };
+        }
+        return { ok: true, status: 200, json: async () => ({ item: { id: '7' } }) };
+      })
+    );
+    const a = full({ zipCode: '78048000', cityIbge: null, city: 'Cuiabá', state: 'MT' });
+    const [out] = await syncServiceAddresses('9', [a], []);
+    expect(calls.slice(0, 2)).toEqual(['/api/location/cep?cep=78048000', '/api/location/cities?uf=MT']);
+    expect(out.cityIbge).toBe('5103403');
+  });
 });
 
 describe('endereço do local (addressFromRef)', () => {

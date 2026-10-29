@@ -6,6 +6,7 @@ import { createPortal } from 'react-dom';
 import { Crosshair, Loader2, MapPin, Navigation, Search, X } from 'lucide-react';
 
 import { cn } from '../../../../lib/utils';
+import { SearchableSelect, type SelectOption } from '../../ui/searchable-select';
 
 // ============================================================
 // TYPES
@@ -19,6 +20,8 @@ export type AddressValue = {
   neighborhood: string;
   city: string;
   state: string;
+  /** Código IBGE da cidade, quando conhecido (CEP ou cidade escolhida na lista). */
+  cityIbge?: string | null;
   country: string;
 
   latitude: number | null;
@@ -104,7 +107,7 @@ type AddressFormProps = {
 
   /**
    * `false`: CEP opcional — os campos de rua/número/bairro já vêm liberados (sem esperar CEP ou
-   * busca) e o rótulo vira "CEP (opcional)". Cidade/UF continuam vindo do CEP ou da busca. Default `true`.
+   * busca) e o rótulo vira "CEP (opcional)"; cidade e UF são escolhidas numa lista. Default `true`.
    */
   requirePostalCode?: boolean;
 };
@@ -167,6 +170,8 @@ export function AddressForm({
 
     state: value?.state ?? '',
 
+    cityIbge: value?.cityIbge ?? null,
+
     country: value?.country ?? 'BR',
 
     latitude: value?.latitude ?? null,
@@ -179,6 +184,9 @@ export function AddressForm({
   });
 
   const [cepLoading, setCepLoading] = useState(false);
+  // CEP não encontrado ou consulta fora do ar: libera os campos e a escolha da cidade na lista.
+  const [cepError, setCepError] = useState<string | null>(null);
+  const manualCity = cepError !== null;
 
   const [searchOpen, setSearchOpen] = useState(false);
 
@@ -204,8 +212,8 @@ export function AddressForm({
   const addressUnlocked = useMemo(() => {
     const cep = address.postalCode.replace(/\D/g, '');
 
-    return !requirePostalCode || cep.length === 8 || address.latitude !== null;
-  }, [requirePostalCode, address.postalCode, address.latitude]);
+    return !requirePostalCode || manualCity || cep.length === 8 || address.latitude !== null;
+  }, [requirePostalCode, manualCity, address.postalCode, address.latitude]);
 
   // ============================================================
   // UPDATE
@@ -213,9 +221,15 @@ export function AddressForm({
 
   function updateAddress(changes: Partial<AddressValue>) {
     setAddress((current) => {
+      // Cidade/UF mudaram sem código novo: o IBGE antigo deixa de valer (o salvar descobre de novo).
+      const cityChanged =
+        !('cityIbge' in changes) &&
+        ((changes.city !== undefined && changes.city !== current.city) ||
+          (changes.state !== undefined && changes.state !== current.state));
       const next = {
         ...current,
         ...changes,
+        ...(cityChanged ? { cityIbge: null } : {}),
       };
 
       onChange?.(next);
@@ -237,6 +251,7 @@ export function AddressForm({
     });
 
     if (postalCode.length !== 8) {
+      setCepError(null);
       return;
     }
 
@@ -244,36 +259,37 @@ export function AddressForm({
   }
 
   async function searchCep(postalCode: string) {
+    const failed = 'Não achamos esse CEP. Preencha o endereço e escolha a cidade na lista.';
     try {
       setCepLoading(true);
+      setCepError(null);
 
-      const response = await fetch(`https://viacep.com.br/ws/${postalCode}/json/`);
+      // Pela rota do servidor (plugin location): não depende do navegador alcançar o ViaCEP.
+      const response = await fetch(`/api/location/cep?cep=${postalCode}`, { cache: 'no-store' });
+      const data = (await response.json().catch(() => null)) as {
+        street?: string;
+        neighborhood?: string;
+        city?: string;
+        state?: string;
+        ibge?: string;
+      } | null;
 
-      if (!response.ok) {
-        throw new Error('Erro ao consultar CEP');
-      }
-
-      const data = await response.json();
-
-      if (data.erro) {
+      if (!response.ok || !data?.city) {
+        setCepError(failed);
         return;
       }
 
       updateAddress({
         postalCode,
-
-        street: data.logradouro ?? '',
-
-        neighborhood: data.bairro ?? '',
-
-        city: data.localidade ?? '',
-
-        state: data.uf ?? '',
-
+        street: data.street ?? '',
+        neighborhood: data.neighborhood ?? '',
+        city: data.city,
+        state: String(data.state ?? '').toUpperCase(),
+        cityIbge: String(data.ibge ?? '').replace(/\D/g, '') || null,
         country: 'BR',
       });
-    } catch (error) {
-      console.error('Erro ao consultar CEP:', error);
+    } catch {
+      setCepError(failed);
     } finally {
       setCepLoading(false);
     }
@@ -479,6 +495,12 @@ export function AddressForm({
           />
         )}
       </div>
+
+      {cepError && (
+        <p role="alert" className="mt-1.5 text-xs text-destructive">
+          {cepError}
+        </p>
+      )}
     </div>
   );
 
@@ -629,22 +651,22 @@ export function AddressForm({
       />
 
       {/* CITY / STATE */}
-      <div className="grid grid-cols-[1fr_90px] gap-4">
-        {/* Com CEP, cidade/UF vêm dele (ou da busca); sem CEP obrigatório, dá pra digitar. */}
-        <Field
-          label="Cidade"
-          value={address.city}
-          disabled={requirePostalCode || disabled}
-          onChange={(value) => updateAddress({ city: value })}
+      {/* Com CEP, cidade/UF vêm dele (ou da busca). Sem CEP obrigatório, ou se o CEP falhou, a
+          cidade é escolhida na lista — já com o código IBGE, que a busca usa para achar o anúncio. */}
+      {!requirePostalCode || manualCity ? (
+        <CityStatePicker
+          city={address.city}
+          state={address.state}
+          cityIbge={address.cityIbge ?? null}
+          disabled={disabled}
+          onChange={(changes) => updateAddress(changes)}
         />
-
-        <Field
-          label="UF"
-          value={address.state}
-          disabled={requirePostalCode || disabled}
-          onChange={(value) => updateAddress({ state: value.toUpperCase().slice(0, 2) })}
-        />
-      </div>
+      ) : (
+        <div className="grid grid-cols-[1fr_90px] gap-4">
+          <Field label="Cidade" value={address.city} disabled />
+          <Field label="UF" value={address.state} disabled />
+        </div>
+      )}
 
       {/* COORDINATES */}
       {address.latitude !== null && address.longitude !== null && (
@@ -714,6 +736,7 @@ export function AddressForm({
         detailFields={detailFields}
         searchDrawer={searchDrawer}
         resolved={resolved}
+        expanded={manualCity}
         summary={buildSearchValue(address) || 'Endereço incompleto'}
       />
     );
@@ -751,6 +774,7 @@ function CompactAddressForm({
   detailFields,
   searchDrawer,
   resolved,
+  expanded,
   summary,
 }: {
   className?: string;
@@ -760,6 +784,8 @@ function CompactAddressForm({
   detailFields: ReactNode;
   searchDrawer: ReactNode;
   resolved: boolean;
+  /** CEP falhou: os campos ficam abertos já na tela (sem eles não haveria como seguir). */
+  expanded: boolean;
   summary: string;
 }) {
   const [editOpen, setEditOpen] = useState(false);
@@ -787,6 +813,7 @@ function CompactAddressForm({
             {cepField}
             {searchTrigger}
             {coordsField}
+            {expanded && detailFields}
           </div>
         )}
       </div>
@@ -892,6 +919,116 @@ function EditAddressDrawer({ onClose, children }: { onClose: () => void; childre
 // ============================================================
 // FIELD
 // ============================================================
+
+const STATES_BR: SelectOption[] = [
+  'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA',
+  'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO',
+].map((uf) => ({ value: uf, label: uf }));
+
+const normalizeCityName = (v: string) =>
+  v.normalize('NFD').replace(/\p{Diacritic}/gu, '').trim().toLowerCase();
+
+/** UF + cidade em listas pesquisáveis; a cidade vem de /api/location/cities (valor = código IBGE). */
+function CityStatePicker({
+  city,
+  state,
+  cityIbge,
+  disabled,
+  onChange,
+}: {
+  city: string;
+  state: string;
+  cityIbge: string | null;
+  disabled?: boolean;
+  onChange: (changes: Partial<AddressValue>) => void;
+}) {
+  const ufId = useId();
+  const cityId = useId();
+  const uf = state.trim().toUpperCase();
+  const [options, setOptions] = useState<SelectOption[]>([]);
+  const [loading, setLoading] = useState(false);
+  // Lista fora do ar: volta para texto livre (o banco acha o IBGE pelo nome, services 0017).
+  const [listFailed, setListFailed] = useState(false);
+
+  useEffect(() => {
+    if (!/^[A-Z]{2}$/.test(uf)) {
+      setOptions([]);
+      return;
+    }
+    let alive = true;
+    setLoading(true);
+    fetch(`/api/location/cities?uf=${uf}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { items?: Array<{ value?: unknown; label?: unknown }> } | null) => {
+        if (!alive) return;
+        setListFailed(!data);
+        setOptions(
+          (data?.items ?? [])
+            .filter((i) => i.value != null && typeof i.label === 'string')
+            .map((i) => ({ value: String(i.value), label: String(i.label) }))
+        );
+      })
+      .catch(() => {
+        if (alive) {
+          setOptions([]);
+          setListFailed(true);
+        }
+      })
+      .finally(() => {
+        if (alive) setLoading(false);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [uf]);
+
+  // Endereço antigo (só o nome da cidade): acha a opção pelo nome.
+  const selected =
+    (cityIbge && options.some((o) => o.value === cityIbge) ? cityIbge : null) ??
+    options.find((o) => normalizeCityName(o.label) === normalizeCityName(city))?.value ??
+    '';
+
+  const labelClass = 'mb-1.5 block text-xs font-medium text-muted-foreground';
+
+  return (
+    <div className="grid grid-cols-[90px_1fr] gap-4">
+      <div>
+        <label htmlFor={ufId} className={labelClass}>
+          UF
+        </label>
+        <SearchableSelect
+          id={ufId}
+          value={uf}
+          options={STATES_BR}
+          placeholder="UF"
+          disabled={disabled}
+          onChange={(value) => {
+            if (value !== uf) onChange({ state: value, city: '', cityIbge: null });
+          }}
+        />
+      </div>
+      {listFailed ? (
+        <Field label="Cidade" value={city} disabled={disabled} onChange={(value) => onChange({ city: value })} />
+      ) : (
+        <div>
+          <label htmlFor={cityId} className={labelClass}>
+            Cidade
+          </label>
+          <SearchableSelect
+            id={cityId}
+            value={selected}
+            options={options}
+            disabled={disabled || !uf}
+            placeholder={!uf ? 'Escolha a UF primeiro' : loading ? 'Carregando cidades...' : 'Selecione a cidade'}
+            onChange={(value) =>
+              onChange({ city: options.find((o) => o.value === value)?.label ?? '', cityIbge: value || null })
+            }
+          />
+        </div>
+      )}
+    </div>
+  );
+}
 
 function Field({
   label,
