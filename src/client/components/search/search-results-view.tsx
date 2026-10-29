@@ -11,6 +11,7 @@ import { TrackView } from '../../analytics/track-view';
 import type { AnalyticsSource, EventRule } from '../../../shared/analytics';
 import { withSource } from '../../analytics/source';
 import type { ServiceResult } from './search-types';
+import { expiredLabelFor, type ExpiredByGroup } from './expired';
 import { formatLocationLabel } from './format-location-label';
 import { serviceHref } from '../../../shared/city-routing/city-slug';
 
@@ -41,6 +42,9 @@ type Props = {
    * decidir o estilo do CARD (hoje: esconder preço + capa em pé nas categorias em variant
    * `"cinema"`). Sem ela, todo card usa o estilo padrão (com preço, capa 3:2). */
   serviceDetailConfig?: ServiceDetailConfig | null;
+  /** `search.expired`: grupos que mostram vencidos recentes. O card de um anúncio vencido nesses
+   * grupos ganha o selo (ex. "Já aconteceu") e fica apagado. Sem a chave, nada muda. */
+  expiredByGroup?: ExpiredByGroup;
   /** Plugin analytics: regra da impressão (`resolveEventRule`); cada card conta ao ficar visível. */
   impressionRule?: EventRule | null;
   /** Título da lista no lugar do padrão por escopo (ex.: seção de região). */
@@ -122,6 +126,7 @@ export function SearchResultsView({
   loadingMore,
   onLoadMore,
   serviceDetailConfig,
+  expiredByGroup,
   impressionRule = null,
   heading,
   groupName = null,
@@ -132,7 +137,7 @@ export function SearchResultsView({
   sponsoredSlot = null,
 }: Props) {
   const card = (r: ServiceResult, variant: 'strip' | 'grid') => {
-    const item = <ListingResultCard key={r.uid} {...toCardProps(r, serviceDetailConfig)} groupLabel={groupNameOf?.(r.category_group_slug) ?? null} href={withSource(serviceHref(r), source)} variant={variant} />;
+    const item = <ListingResultCard key={r.uid} {...toCardProps(r, serviceDetailConfig)} expiredLabel={expiredLabelFor(expiredByGroup, r.category_group_slug, r.expires_at)} groupLabel={groupNameOf?.(r.category_group_slug) ?? null} href={withSource(serviceHref(r), source)} variant={variant} />;
     if (!impressionRule) return item;
     return (
       <TrackView

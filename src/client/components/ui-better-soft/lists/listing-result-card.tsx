@@ -64,7 +64,20 @@ export type ListingResultCardProps = {
   ctaLabel?: string;
   variant?: 'grid' | 'strip';
   className?: string;
+  /** Anúncio que já venceu (ex.: evento "Já aconteceu"): texto do selo sobre a capa. Preenchido, o
+   * card fica fosco (capa em cinza, corpo mais claro) mas segue clicável e legível; o selo de
+   * destaque (`highlighted`) some. Vazio/ausente = card normal. */
+  expiredLabel?: string | null;
 };
+
+/** Selo "já venceu" sobre a capa: contraste forte, fora do apagado do resto do card. */
+function ExpiredBadge({ label }: { label: string }) {
+  return (
+    <span className="inline-flex max-w-full items-center rounded-full bg-foreground/80 px-2.5 py-0.5 text-[11px] font-semibold leading-4 text-background shadow-sm ring-1 ring-background/30">
+      {label}
+    </span>
+  );
+}
 
 function DateBlock({ date, compact }: { date: { day: string; month: string }; compact?: boolean }) {
   return (
@@ -229,7 +242,11 @@ export function ListingResultCard({
   ctaLabel = 'Ver',
   variant = 'grid',
   className,
+  expiredLabel,
 }: Readonly<ListingResultCardProps>) {
+  const expired = expiredLabel?.trim() || null;
+  // vencido: o destaque (patrocinado) não faz sentido
+  const showHighlight = highlighted && !expired;
   const isCinema = cardStyle === 'cinema';
   const isEvento = cardStyle === 'evento';
   // Lugar: como o default, mas sem preço (vem null do chamador) e sem o "@anunciante".
@@ -281,6 +298,7 @@ export function ListingResultCard({
         className={cn(
           'group flex flex-col overflow-hidden rounded-[var(--ui-radius-card-compact,0.75rem)] border-[length:var(--ui-border-w-card,1px)] border-border bg-card shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] transition hover:-translate-y-0.5 hover:shadow-md',
           variant === 'strip' ? cn(RESULT_CARD_WIDTH, 'shrink-0') : 'w-full',
+          expired && 'hover:[&>div:last-child]:opacity-80',
           className
         )}
       >
@@ -298,11 +316,12 @@ export function ListingResultCard({
               className={cn(
                 'h-full w-full transition duration-500',
                 // pôster: zoom leve que corta um pouco do topo e do rodapé da arte (igual à grade)
-                containImage ? 'scale-[1.15] object-contain group-hover:scale-[1.2]' : 'object-cover group-hover:scale-105'
+                containImage ? 'scale-[1.15] object-contain group-hover:scale-[1.2]' : 'object-cover group-hover:scale-105',
+                expired && 'opacity-60 grayscale group-hover:opacity-80'
               )}
             />
           )}
-          {highlighted && (
+          {showHighlight && (
             <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-semibold text-white">
               <Sparkles className="h-3 w-3" /> {highlightLabel}
             </span>
@@ -313,8 +332,13 @@ export function ListingResultCard({
               <DateBlock date={dateLabel} compact />
             </div>
           )}
+          {expired && (
+            <div className="absolute bottom-2 right-2 max-w-[60%]">
+              <ExpiredBadge label={expired} />
+            </div>
+          )}
         </div>
-        <div className="flex flex-1 flex-col gap-1 p-[11px]">
+        <div className={cn('flex flex-1 flex-col gap-1 p-[11px] transition', expired && 'opacity-60')}>
           <h3
             className={cn(
               'text-sm font-bold leading-tight',
@@ -348,7 +372,12 @@ export function ListingResultCard({
 
   return (
     <MediaResultCard
-      className={className}
+      className={cn(
+        // vencido: capa em cinza e corpo mais claro (o selo, no badgeTopLeft, fica nítido); hover recupera
+        expired &&
+          '[&>div:first-child_img]:opacity-60 [&>div:first-child_img]:grayscale hover:[&>div:first-child_img]:opacity-80 [&>div:last-child]:opacity-60 hover:[&>div:last-child]:opacity-80',
+        className
+      )}
       href={href}
       image={imageUrl}
       imageAlt={title}
@@ -357,7 +386,9 @@ export function ListingResultCard({
       title={title}
       subtitle={subtitleLabel ?? undefined}
       badgeTopLeft={
-        highlighted ? (
+        expired ? (
+          <ExpiredBadge label={expired} />
+        ) : highlighted ? (
           <span className="inline-flex items-center gap-1 rounded-full bg-amber-500 px-2 py-0.5 text-[11px] font-semibold text-white">
             <Sparkles className="h-3 w-3" /> {highlightLabel}
           </span>

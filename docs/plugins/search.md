@@ -13,8 +13,8 @@ devolvem as mesmas colunas de local.
 
 `p_state`, `p_city_id`, `p_group_category_slug`, `p_category_id`, `p_subcategories` (jsonb),
 `p_query`, `p_seed`, `p_page`, `p_page_size`, **`p_city_ibge`** (texto), `p_exclude_category_slugs`,
-`p_city_ibges`, `p_category_ids`, `p_tags` (ver "Filtro por tag") e `p_local_refs` (ver "Filtro por
-local_ref"). O filtro de cidade usa
+`p_city_ibges`, `p_category_ids`, `p_tags` (ver "Filtro por tag"), `p_local_refs` (ver "Filtro por
+local_ref") e `p_expired_grace` (ver "Validade do anúncio"). O filtro de cidade usa
 `p_city_ibge`; `p_city_id` continua na assinatura por compatibilidade.
 
 `p_group_category_slug` (busca por grupo e carrossel de grupo da home) aceita o anúncio quando o
@@ -45,7 +45,7 @@ cada busca, critério a critério (o seguinte só desempata o anterior):
 5. aleatório com semente (`p_seed`) — varia entre buscas, mas é estável na paginação da mesma busca.
 
 Com `p_order`, o critério pedido entra logo depois do 1 (texto) e antes dos demais.
-Apelidos da 0010: `event_start` = `occurs_at:asc`, `recent` = `created_at:desc`. Só mande a chave
+Apelidos: `event_start` = `expires_at:asc` (a partir da 0013; antes `occurs_at:asc`), `recent` = `created_at:desc`. Só mande a chave
 quando houver: um banco sem a 0010 recusa a chamada — a `/busca` repete sem `p_order` nesse caso.
 
 No `kizuna.config.json` (`search`), repassados ao `SearchPage` via `defaults`:
@@ -165,6 +165,47 @@ O resultado continua com uma linha por serviço (semi-join, sem `JOIN` que dupli
 Anúncios com `services.expires_at` no passado não entram na busca nem no deck do swipe
 (`expires_at IS NULL OR expires_at > now()`, aplicado junto de `active` e `status`). Requer
 `services` 1.3.0. As curtidas (`liked_services`) não aplicam o filtro: o histórico continua visível.
+
+### Vencidos recentes por grupo (`p_expired_grace`, migração 0013)
+
+`p_expired_grace jsonb` (17º e último parâmetro, padrão `NULL`) é um mapa `{ "<slug do grupo>": dias }`,
+por exemplo `{"eventos": 2}`. Anúncio de um grupo listado ali, com `expires_at` vencido há no máximo
+esse número de dias, **continua na busca**; o filtro vira `expires_at > now() - N dias` para aquele
+grupo. O slug é o mesmo que a RPC devolve em `category_group_slug`.
+
+- Só valem dias inteiros de 1 a 365. Qualquer outro valor (texto, negativo, decimal, grupo ausente, ou
+  um `p_expired_grace` que não seja um objeto) conta 0: o anúncio vencido some, como sempre, sem erro.
+- **Ordem:** vencido vem sempre depois do não vencido, em qualquer ordenação (relevância, texto ou
+  `p_order`); entre os vencidos, o que venceu há menos tempo vem primeiro.
+- A RPC devolve `expires_at` (ver "Colunas retornadas"): é por ele que o cliente decide marcar o
+  card como "já aconteceu".
+- No site, o valor vem de `search.expired` do `kizuna.config.json`, no formato
+  `{ "eventos": { "days": 2, "label": "Já aconteceu" } }` (`days` vira o número do mapa; `label` é só
+  do cliente, a RPC não o recebe).
+- Sem a chave, nada muda. Banco sem a 0013 recusa a chamada com o parâmetro novo; o cliente só o envia
+  quando há grupo configurado.
+- O deck do swipe e os demais consumidores que não mandam o parâmetro seguem sem mostrar vencidos.
+
+#### Config `search.expired` (kizuna.config.json)
+
+```json
+"search": {
+  "expired": {
+    "eventos": { "days": 2, "label": "Já aconteceu" }
+  }
+}
+```
+
+| Chave   | Tipo            | Padrão        | Efeito                                                                                   |
+| ------- | --------------- | ------------- | ---------------------------------------------------------------------------------------- |
+| `days`  | inteiro, 1 a 365 | — (obrigatório) | Quantos dias depois do `expires_at` o anúncio do grupo segue na busca. Inválido = grupo ignorado. |
+| `label` | texto           | `"Encerrado"` | Selo mostrado sobre a capa do card vencido. Customize por grupo (ex. `"Já aconteceu"` em eventos). |
+
+A chave é o **slug do grupo** (`categories_group.slug`). O projeto lê o bloco em `src/app/busca/page.tsx`
+e o passa em `defaults.expiredByGroup` do `SearchPage`; o cliente envia `p_expired_grace` à RPC e marca
+o card de cada resultado com `expires_at` no passado: o card fica apagado (capa em cinza, texto mais
+claro) e ganha o selo, mas continua clicável. Vale na lista e nas trilhas da vitrine da `/busca`; a página de detalhe e os carrosséis de
+outras telas (relacionados, home) não mudam.
 
 ## Colunas retornadas
 

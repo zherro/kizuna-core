@@ -130,6 +130,9 @@ export type SearchAdsBody = {
    * expires_at, price, title; ausente = relevância. Só mande quando houver — a RPC anterior à 0010
    * recusa a chave. */
   p_order?: string;
+  /** Vencidos que ainda aparecem, por grupo: `{ "eventos": 2 }` = até 2 dias depois do `expires_at`
+   * (`fn_search_services` 0013). Só mande quando houver — a RPC anterior à 0013 recusa a chave. */
+  p_expired_grace?: Record<string, number>;
 };
 
 export type TaxonomySubcategory = { id: number; name: string };

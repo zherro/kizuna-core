@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { regionCitiesFor, type RegionConfig } from '../../../shared/regions';
+import { expiredGraceParam, type ExpiredByGroup } from './expired';
 import type {
   AgentFilter,
   SearchAdsBody,
@@ -24,7 +25,7 @@ export const ALL_GROUPS_PARAM = 'todos';
 export type SearchOrder = string;
 export const ORDER_FIELDS = ['occurs_at', 'created_at', 'expires_at', 'price', 'title'] as const;
 const ORDER_ALIASES: Record<string, string> = {
-  event_start: 'occurs_at:asc',
+  event_start: 'expires_at:asc',
   recent: 'created_at:desc',
 };
 
@@ -47,6 +48,10 @@ export type SearchDefaults = {
    * (inclusive "todos"). `'<campo>[:asc|desc]'` com campo de `ORDER_FIELDS`. Só vale com
    * "Ordenar por: Relevância". Ex.: `{ "eventos": "occurs_at:asc" }`. */
   orderByGroup?: Record<string, string>;
+  /** `search.expired`: grupos que mostram anúncios vencidos nos últimos N dias, com selo
+   * ("Já aconteceu"). Ex.: `{ "eventos": { "days": 2, "label": "Já aconteceu" } }`. Sem a chave,
+   * vencido não aparece (comportamento de sempre). */
+  expiredByGroup?: ExpiredByGroup;
 };
 
 /** Ordenação configurada para o grupo (`orderByGroup[slug]`, senão `default`, senão relevância). */
@@ -170,6 +175,7 @@ export function useSearchFilters(
 ) {
   const defaultGroupSlug = defaults.defaultGroupSlug?.trim() || null;
   const orderByGroup = defaults.orderByGroup;
+  const expiredByGroup = defaults.expiredByGroup;
   const router = useRouter();
   const params = useSearchParams();
 
@@ -291,6 +297,7 @@ export function useSearchFilters(
   }, [location.cityId]);
 
   const order = orderForGroup(orderByGroup, filters.groupSlug);
+  const expiredGrace = useMemo(() => expiredGraceParam(expiredByGroup), [expiredByGroup]);
 
   const toSearchAdsBody = useCallback(
     (seed: number, page = 0): SearchAdsBody => ({
@@ -315,8 +322,10 @@ export function useSearchFilters(
           : null,
       // Só manda `p_order` quando há ordenação configurada — a RPC anterior à search 0010 recusa a chave.
       ...(filters.sort === 'relevance' && order !== 'relevance' ? { p_order: order } : {}),
+      // Só manda quando há grupo configurado — a RPC anterior à search 0013 recusa a chave.
+      ...(expiredGrace ? { p_expired_grace: expiredGrace } : {}),
     }),
-    [filters, effectiveCityIds, excludeCategorySlugs, order]
+    [filters, effectiveCityIds, excludeCategorySlugs, order, expiredGrace]
   );
 
   return {

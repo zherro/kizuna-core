@@ -4,11 +4,25 @@
 -- card mostra a data a partir dela, em vez de abrir `form_results.answers.data_inicio`.
 -- `event_start` continua sendo devolvido (RPCs/consumidores antigos), mas o card não depende mais dele.
 --
--- O tipo de retorno muda (uma coluna a mais), então não dá para `CREATE OR REPLACE`: a função é
--- recriada (DROP + CREATE) com a mesma assinatura de 16 parâmetros e os mesmos GRANTs. O resto do
--- corpo é igual ao da 0011. Idempotente (DROP IF EXISTS).
+-- O tipo de retorno muda (uma coluna a mais) e a assinatura ganha um 17º parâmetro, então não dá para
+-- `CREATE OR REPLACE`: a função é recriada (DROP + CREATE) com os mesmos GRANTs. O DROP remove as DUAS
+-- assinaturas (a de 16 parâmetros da 0011 e a de 17 desta migração, se já aplicada) para não sobrar
+-- overload ambíguo no PostgREST. O resto do corpo é igual ao da 0011, com estas diferenças:
+--   (1) devolve `expires_at`;
+--   (2) `event_start` cai no dia do `expires_at` quando o formulário não tem `data_inicio`, e o apelido
+--       `p_order => 'event_start'` ordena por `expires_at:asc` (a data do evento passou a ser o
+--       "Acontece em");
+--   (3) novo `p_expired_grace jsonb` (padrão NULL): mapa `{ "<slug do grupo>": dias }`, ex. `{"eventos": 2}`.
+--       Anúncio daquele grupo com `expires_at` vencido há no máximo N dias continua na busca (o
+--       cliente o marca como "já aconteceu" pelo `expires_at` devolvido). Só valem dias inteiros de 1 a
+--       365; qualquer outro valor (texto, negativo, decimal, objeto que não seja um mapa) conta 0 = o
+--       comportamento de sempre (vencido some), sem erro. Sem a chave, nada muda.
+--   (4) vencido vem SEMPRE depois do não vencido, em qualquer ordenação (inclusive relevância e busca
+--       por texto); entre os vencidos, o que venceu há menos tempo primeiro.
+-- Idempotente (DROP IF EXISTS).
 
 DROP FUNCTION IF EXISTS public.fn_search_services(character varying, integer, character varying, bigint, jsonb, text, double precision, integer, integer, text, text[], text[], bigint[], jsonb, jsonb, text);
+DROP FUNCTION IF EXISTS public.fn_search_services(character varying, integer, character varying, bigint, jsonb, text, double precision, integer, integer, text, text[], text[], bigint[], jsonb, jsonb, text, jsonb);
 
 CREATE FUNCTION public.fn_search_services(
   p_state character varying,
@@ -26,7 +40,8 @@ CREATE FUNCTION public.fn_search_services(
   p_category_ids bigint[] DEFAULT NULL::bigint[],
   p_tags jsonb DEFAULT NULL::jsonb,
   p_local_refs jsonb DEFAULT NULL::jsonb,
-  p_order text DEFAULT NULL::text
+  p_order text DEFAULT NULL::text,
+  p_expired_grace jsonb DEFAULT NULL::jsonb
 )
 RETURNS TABLE(
   uid uuid,
@@ -69,13 +84,13 @@ DECLARE
   -- anúncios publicados com alguma das tags OU com local_ref pedido; NULL = sem filtro
   v_tag_ids bigint[];
   -- `p_order` = '<campo>[:asc|desc]' de uma lista fechada (colunas de services, nada de JSON);
-  -- apelidos da 0010: event_start = occurs_at:asc, recent = created_at:desc
+  -- apelidos: event_start = expires_at:asc (0013: o "Acontece em" do evento), recent = created_at:desc
   v_order text := lower(btrim(COALESCE(p_order, '')));
   v_field text;
   v_desc  boolean;
 BEGIN
   v_order := CASE v_order
-    WHEN 'event_start' THEN 'occurs_at:asc'
+    WHEN 'event_start' THEN 'expires_at:asc'
     WHEN 'recent' THEN 'created_at:desc'
     ELSE v_order
   END;
@@ -207,11 +222,28 @@ BEGIN
       s.created_at                         AS created_at,
       s.occurs_at                          AS occurs_at,
       s.expires_at                         AS expires_at,
+      -- vencido (ainda aparece só se o grupo tem tolerância em `p_expired_grace`): vai ao fim da lista
+      (s.expires_at IS NOT NULL AND s.expires_at <= now()) AS is_expired,
       s.starting_price::numeric            AS sort_price
     FROM public.services s
     LEFT JOIN public.categories c ON c.id = s.category_id
     LEFT JOIN public.categories_group cgs ON cgs.id = s.category_group_id
     LEFT JOIN public.categories_group cgc ON cgc.id = c.category_group_id
+    -- dias de tolerância do grupo do anúncio (mesmo slug devolvido em `category_group_slug`):
+    -- só inteiro de 1 a 365; o resto (ou sem mapa/sem o grupo) = 0. CASEs aninhados: o cast só roda
+    -- depois de o regex passar, e nunca estoura.
+    LEFT JOIN LATERAL (
+      SELECT COALESCE(
+        CASE WHEN jsonb_typeof(p_expired_grace) = 'object' THEN
+          CASE WHEN (p_expired_grace ->> COALESCE(cgs.slug, cgc.slug)) ~ '^\d{1,3}$' THEN
+            CASE WHEN (p_expired_grace ->> COALESCE(cgs.slug, cgc.slug))::integer BETWEEN 1 AND 365
+                 THEN (p_expired_grace ->> COALESCE(cgs.slug, cgc.slug))::integer
+            END
+          END
+        END,
+        0
+      ) AS days
+    ) gr ON true
     LEFT JOIN LATERAL (
       SELECT cs.name
       FROM public.service_categories_sub scs
@@ -235,7 +267,7 @@ BEGIN
       ON rs.domain = 'service' AND rs.reference_id = s.id::text
     WHERE s.active = true
       AND s.status = 'active'
-      AND (s.expires_at IS NULL OR s.expires_at > now())
+      AND (s.expires_at IS NULL OR s.expires_at > now() - make_interval(days => gr.days))
       AND (p_category_id IS NULL OR s.category_id = p_category_id)
       AND (v_tag_ids IS NULL OR s.id = ANY(v_tag_ids))
       AND (
@@ -308,6 +340,10 @@ BEGIN
       SELECT f.*
       FROM services_filtered f
       ORDER BY
+        -- vencidos (tolerância de `p_expired_grace`) sempre depois dos não vencidos; entre eles, o que
+        -- venceu há menos tempo primeiro
+        f.is_expired ASC,
+        CASE WHEN f.is_expired THEN f.expires_at END DESC NULLS LAST,
         CASE WHEN v_query IS NOT NULL THEN f.text_rank END DESC NULLS LAST,
         -- occurs_at crescente: o que ainda vai acontecer primeiro (do mais próximo ao mais
         -- distante), depois o que já passou; sem data por último
@@ -348,12 +384,19 @@ BEGIN
     COALESCE(ad.a_city, pg.provider_city)::text,
     COALESCE(ad.a_state, pg.provider_state)::text,
     COALESCE(ad.cnt, 0)::integer,
-    ev.event_start,
+    -- data de início do formulário (importador/legado); sem ela, o dia do "Acontece em" (expires_at,
+    -- fuso de Cuiabá) quando o anúncio tem formulário — o formulário novo não pede mais data de início
+    COALESCE(
+      ev.event_start,
+      CASE WHEN ev.has_form
+           THEN to_char(pg.expires_at AT TIME ZONE 'America/Cuiaba', 'YYYY-MM-DD')
+      END
+    )::character varying,
     ad.a_label::character varying,
     pg.expires_at
   FROM page pg
   LEFT JOIN LATERAL (
-    SELECT NULLIF(fr.answers->>'data_inicio', '')::character varying AS event_start
+    SELECT NULLIF(fr.answers->>'data_inicio', '')::character varying AS event_start, true AS has_form
     FROM public.form_results fr
     WHERE fr.domain = 'service'
       AND fr.reference_id = pg.service_id::text
@@ -377,7 +420,7 @@ BEGIN
 END;
 $function$;
 
-GRANT EXECUTE ON FUNCTION public.fn_search_services(character varying, integer, character varying, bigint, jsonb, text, double precision, integer, integer, text, text[], text[], bigint[], jsonb, jsonb, text)
+GRANT EXECUTE ON FUNCTION public.fn_search_services(character varying, integer, character varying, bigint, jsonb, text, double precision, integer, integer, text, text[], text[], bigint[], jsonb, jsonb, text, jsonb)
   TO anon, auth_user;
 
 INSERT INTO auth.plugin_registry (name, version)

@@ -281,6 +281,7 @@ function SearchPageInner({
       b.p_subcategories,
       b.p_query,
       b.p_order,
+      b.p_expired_grace,
     ]);
   }, [toSearchAdsBody]);
 
@@ -321,8 +322,9 @@ function SearchPageInner({
         });
       let res = await post(body);
       // Banco sem a search 0010 recusa `p_order`: repete na ordem de sempre em vez de ficar vazio.
-      if (!res.ok && body.p_order) {
-        const { p_order: _ignored, ...rest } = body;
+      // O mesmo vale para `p_expired_grace` (search 0013): repete sem as chaves novas.
+      if (!res.ok && (body.p_order || body.p_expired_grace)) {
+        const { p_order: _o, p_expired_grace: _g, ...rest } = body;
         res = await post(rest);
       }
       const data = (await res.json().catch(() => null)) as { items?: unknown[] } | null;
@@ -840,6 +842,7 @@ function SearchPageInner({
           onClearFilters={resetFilters}
           onChangeLocation={() => setLocationOpen(true)}
           serviceDetailConfig={serviceDetailConfig}
+          expiredByGroup={defaults?.expiredByGroup}
           groupNameOf={groupNameOf}
           impressionRule={impressionRule}
           source={listSource}
@@ -920,6 +923,7 @@ function SearchPageInner({
               loadingMore={loadingMore}
               onLoadMore={loadMore}
               serviceDetailConfig={serviceDetailConfig}
+              expiredByGroup={defaults?.expiredByGroup}
               groupNameOf={groupNameOf}
               impressionRule={impressionRule}
           source={listSource}
@@ -939,6 +943,7 @@ function SearchPageInner({
                 onClearFilters={resetFilters}
                 onChangeLocation={() => setLocationOpen(true)}
                 serviceDetailConfig={serviceDetailConfig}
+                expiredByGroup={defaults?.expiredByGroup}
                 groupNameOf={groupNameOf}
                 impressionRule={impressionRule}
           source={listSource}

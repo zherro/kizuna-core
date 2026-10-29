@@ -43,7 +43,7 @@ describe('normalizeOrder', () => {
   it('campo sem direção vira asc; apelidos da 0010 continuam', () => {
     expect(normalizeOrder('title')).toBe('title:asc');
     expect(normalizeOrder('PRICE:DESC')).toBe('price:desc');
-    expect(normalizeOrder('event_start')).toBe('occurs_at:asc');
+    expect(normalizeOrder('event_start')).toBe('expires_at:asc');
     expect(normalizeOrder('recent')).toBe('created_at:desc');
   });
 

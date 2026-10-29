@@ -8,7 +8,7 @@ import { Textarea } from '../ui/textarea';
 import { Label } from '../ui/label';
 import { Checkbox } from '../ui/checkbox';
 import { Switch } from '../ui/switch';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { SelectPopover } from '../ui-better-soft/select-popover';
 import { Separator } from '../ui/separator';
 import { Button } from '../ui/button';
 import { Tooltip } from '../ui/tooltip';
@@ -259,20 +259,20 @@ function BaseField({
       );
     case 'select':
       return withLabel(
-        <Select value={(value as string) ?? ''} onValueChange={(v) => onChange(v)}>
-          <SelectTrigger id={commonId} className="h-10 w-full text-sm">
-            <SelectValue>
+        <SelectPopover<string>
+          id={commonId}
+          value={(value as string) ?? ''}
+          options={options}
+          onChange={(v) => onChange(v)}
+          ariaLabel={field.label}
+          className="h-10 w-full justify-between text-sm"
+          listClassName="w-full"
+          triggerContent={
+            <span className={cn('truncate', !options.some((o) => o.value === value) && 'text-muted-foreground')}>
               {options.find((o) => o.value === value)?.label ?? field.placeholder ?? 'Selecione...'}
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            {options.map((o) => (
-              <SelectItem key={o.value} value={o.value}>
-                {o.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+            </span>
+          }
+        />
       );
     case 'multiselect': {
       const arr = (value as string[]) ?? [];
