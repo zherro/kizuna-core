@@ -163,7 +163,7 @@ export function SearchableSelect({
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Pesquisar..."
-                className="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
+                className="w-full min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
               />
               {query ? (
                 <button

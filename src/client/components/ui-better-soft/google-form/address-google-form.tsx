@@ -168,7 +168,7 @@ export function AddressForm({
 
     city: value?.city ?? '',
 
-    state: value?.state ?? '',
+    state: toUf(value?.state ?? ''),
 
     cityIbge: value?.cityIbge ?? null,
 
@@ -185,8 +185,15 @@ export function AddressForm({
 
   const [cepLoading, setCepLoading] = useState(false);
   // CEP não encontrado ou consulta fora do ar: libera os campos e a escolha da cidade na lista.
-  const [cepError, setCepError] = useState<string | null>(null);
-  const manualCity = cepError !== null;
+  const [cepStatus, setCepStatus] = useState<CepStatus>('idle');
+  const cepFailed = cepStatus === 'not_found' || cepStatus === 'unavailable';
+  const cepError = cepFailed ? cepErrorMessage(cepStatus, address.postalCode) : null;
+  const manualCity = cepFailed;
+
+  // Layout compacto: painel lateral onde o endereço é completado (abre sozinho após CEP/coordenadas).
+  const [editOpen, setEditOpen] = useState(false);
+  // Lista de cidades fora do ar: a cidade vira texto livre, e basta estar preenchida.
+  const [cityListFailed, setCityListFailed] = useState(false);
 
   const [searchOpen, setSearchOpen] = useState(false);
 
@@ -251,18 +258,19 @@ export function AddressForm({
     });
 
     if (postalCode.length !== 8) {
-      setCepError(null);
+      setCepStatus('idle');
       return;
     }
 
     await searchCep(postalCode);
+    // Achando ou não, o restante do endereço é completado no painel lateral.
+    if (layout === 'compact') setEditOpen(true);
   }
 
   async function searchCep(postalCode: string) {
-    const failed = 'Não achamos esse CEP. Preencha o endereço e escolha a cidade na lista.';
     try {
       setCepLoading(true);
-      setCepError(null);
+      setCepStatus('loading');
 
       // Pela rota do servidor (plugin location): não depende do navegador alcançar o ViaCEP.
       const response = await fetch(`/api/location/cep?cep=${postalCode}`, { cache: 'no-store' });
@@ -274,8 +282,13 @@ export function AddressForm({
         ibge?: string;
       } | null;
 
+      // 404 = o CEP não existe; qualquer outra falha = a consulta não respondeu.
+      if (response.status === 404) {
+        setCepStatus('not_found');
+        return;
+      }
       if (!response.ok || !data?.city) {
-        setCepError(failed);
+        setCepStatus('unavailable');
         return;
       }
 
@@ -284,12 +297,13 @@ export function AddressForm({
         street: data.street ?? '',
         neighborhood: data.neighborhood ?? '',
         city: data.city,
-        state: String(data.state ?? '').toUpperCase(),
+        state: toUf(String(data.state ?? '')),
         cityIbge: String(data.ibge ?? '').replace(/\D/g, '') || null,
         country: 'BR',
       });
+      setCepStatus('found');
     } catch {
-      setCepError(failed);
+      setCepStatus('unavailable');
     } finally {
       setCepLoading(false);
     }
@@ -341,13 +355,18 @@ export function AddressForm({
       }
       updateAddress({
         city: data.city,
-        state: data.state ?? '',
+        state: toUf(data.state ?? ''),
         ...(data.zipCode && data.zipCode.length === 8 ? { postalCode: data.zipCode } : {}),
       });
     } catch {
       setCoordsError('Coordenadas salvas, mas não foi possível consultar a cidade agora.');
     } finally {
       setCoordsLoading(false);
+      // Achando ou não a cidade, o restante do endereço é completado no painel lateral.
+      if (layout === 'compact') {
+        setCoordsOpen(false);
+        setEditOpen(true);
+      }
     }
   }
 
@@ -446,14 +465,19 @@ export function AddressForm({
     updateAddress(parsed);
 
     closeSearch();
+    // "Não sei meu CEP": o lugar escolhido é completado (número, cidade) no painel lateral.
+    if (layout === 'compact') setEditOpen(true);
   }
 
   // ============================================================
   // FIELDS
   // ============================================================
 
-  const fieldDisabled = disabled || !addressUnlocked;
+  // No painel lateral tudo já vem liberado (ele só abre depois do CEP, das coordenadas ou do resumo).
+  const fieldDisabled = disabled || (layout !== 'compact' && !addressUnlocked);
   const resolved = Boolean(address.street.trim() || address.city.trim());
+  // Cidade obrigatória: escolhida na lista (com IBGE) ou, com a lista fora do ar, digitada.
+  const cityOk = Boolean(address.cityIbge) || (cityListFailed && Boolean(address.city.trim() && address.state));
 
   const cepField = (
     <div>
@@ -504,7 +528,7 @@ export function AddressForm({
     </div>
   );
 
-  const searchTrigger = features.search && (
+  const searchTrigger = (label: string) => features.search && (
     <button
       type="button"
       disabled={disabled}
@@ -524,7 +548,7 @@ export function AddressForm({
       "
     >
       <Search className="h-4 w-4" />
-      {searchLabel}
+      {label}
     </button>
   );
 
@@ -653,12 +677,15 @@ export function AddressForm({
       {/* CITY / STATE */}
       {/* Com CEP, cidade/UF vêm dele (ou da busca). Sem CEP obrigatório, ou se o CEP falhou, a
           cidade é escolhida na lista — já com o código IBGE, que a busca usa para achar o anúncio. */}
-      {!requirePostalCode || manualCity ? (
+      {layout === 'compact' || !requirePostalCode || manualCity ? (
         <CityStatePicker
           city={address.city}
           state={address.state}
           cityIbge={address.cityIbge ?? null}
-          disabled={disabled}
+          // CEP achado: cidade e UF são as dele.
+          disabled={disabled || (cepStatus === 'found' && Boolean(address.cityIbge))}
+          missing={editOpen && !cityOk}
+          onListFailedChange={setCityListFailed}
           onChange={(changes) => updateAddress(changes)}
         />
       ) : (
@@ -709,36 +736,48 @@ export function AddressForm({
     </BodyPortal>
   );
 
-  // CEP opcional: o layout compacto (que só mostra o CEP até resolver) daria a impressão de que
-  // ele é obrigatório — então tudo aberto, com a busca primeiro e o CEP por último.
-  if (!requirePostalCode) {
+  if (layout === 'compact') {
+    const notice = cepError ?? coordsError;
     return (
       <>
-        <div className={cn('space-y-4', className)}>
-          {searchTrigger}
-          {coordsField}
-          {detailFields}
+        <div className={cn('space-y-3', className)}>
+          {(resolved || cepFailed) && (
+            <AddressSummary
+              summary={buildSearchValue(address) || 'Endereço incompleto'}
+              warning={!cityOk ? 'Cidade não definida — toque para escolher' : null}
+              disabled={disabled}
+              onEdit={() => setEditOpen(true)}
+            />
+          )}
           {cepField}
+          {searchTrigger(searchLabel)}
+          {coordsField}
         </div>
+
+        {editOpen && (
+          <BodyPortal>
+            <EditAddressDrawer
+              canFinish={cityOk}
+              onClose={() => setEditOpen(false)}
+              notice={
+                notice ? (
+                  <p
+                    role="status"
+                    className="rounded-[var(--ui-radius-card-compact,0.75rem)] border border-destructive/40 bg-destructive/10 px-3 py-2.5 text-xs font-medium text-destructive"
+                  >
+                    {notice}
+                  </p>
+                ) : null
+              }
+            >
+              {searchTrigger('Pesquisar endereço ou local')}
+              {detailFields}
+            </EditAddressDrawer>
+          </BodyPortal>
+        )}
 
         {searchDrawer}
       </>
-    );
-  }
-
-  if (layout === 'compact') {
-    return (
-      <CompactAddressForm
-        className={className}
-        cepField={cepField}
-        searchTrigger={searchTrigger}
-        coordsField={coordsField}
-        detailFields={detailFields}
-        searchDrawer={searchDrawer}
-        resolved={resolved}
-        expanded={manualCity}
-        summary={buildSearchValue(address) || 'Endereço incompleto'}
-      />
     );
   }
 
@@ -746,7 +785,7 @@ export function AddressForm({
     <>
       <div className={cn('space-y-4', className)}>
         {cepField}
-        {searchTrigger}
+        {searchTrigger(searchLabel)}
         {coordsField}
         {detailFields}
       </div>
@@ -761,76 +800,39 @@ export function AddressForm({
 // ============================================================
 
 /**
- * `layout="compact"`: só o CEP fica visível por padrão. Depois de resolvido (ou editado), um
- * resumo de uma linha substitui o formulário inteiro — "Editar" abre um painel lateral (tela
- * inteira no mobile) com o restante dos campos, que por sua vez pode abrir o `SearchDrawer` por cima. Poupa espaço de
- * tela no step e evita a sensação de formulário longo.
+ * `layout="compact"`: na tela ficam só o resumo do endereço, o CEP e o link de latitude/longitude.
+ * Digitar o CEP (ou aplicar as coordenadas) abre o painel lateral para completar o resto; o resumo
+ * reabre o painel.
  */
-function CompactAddressForm({
-  className,
-  cepField,
-  searchTrigger,
-  coordsField,
-  detailFields,
-  searchDrawer,
-  resolved,
-  expanded,
+function AddressSummary({
   summary,
+  warning,
+  disabled,
+  onEdit,
 }: {
-  className?: string;
-  cepField: ReactNode;
-  searchTrigger: ReactNode;
-  coordsField: ReactNode;
-  detailFields: ReactNode;
-  searchDrawer: ReactNode;
-  resolved: boolean;
-  /** CEP falhou: os campos ficam abertos já na tela (sem eles não haveria como seguir). */
-  expanded: boolean;
   summary: string;
+  warning: string | null;
+  disabled?: boolean;
+  onEdit: () => void;
 }) {
-  const [editOpen, setEditOpen] = useState(false);
-
   return (
-    <>
-      <div className={cn('space-y-3', className)}>
-        {resolved ? (
-          <button
-            type="button"
-            onClick={() => setEditOpen(true)}
-            className="flex w-full items-start gap-3 rounded-[var(--ui-radius-card-compact,0.75rem)] border-[length:var(--ui-border-w-card,1px)] border-border bg-[color:var(--ui-card-bg,var(--background))] shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] px-3.5 py-3 text-left transition-colors hover:bg-muted"
-          >
-            <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-            <span className="min-w-0 flex-1">
-              <span className="block text-xs text-muted-foreground">Endereço de referência</span>
-              <span className="mt-0.5 block truncate text-sm font-medium text-foreground">
-                {summary}
-              </span>
-            </span>
-            <span className="shrink-0 text-xs font-medium text-primary">Editar</span>
-          </button>
-        ) : (
-          <div className="space-y-3">
-            {cepField}
-            {searchTrigger}
-            {coordsField}
-            {expanded && detailFields}
-          </div>
-        )}
-      </div>
-
-      {editOpen && (
-        <BodyPortal>
-          <EditAddressDrawer onClose={() => setEditOpen(false)}>
-            {cepField}
-            {searchTrigger}
-            {coordsField}
-            {detailFields}
-          </EditAddressDrawer>
-        </BodyPortal>
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onEdit}
+      className={cn(
+        'flex w-full items-start gap-3 rounded-[var(--ui-radius-card-compact,0.75rem)] border-[length:var(--ui-border-w-card,1px)] bg-[color:var(--ui-card-bg,var(--background))] shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] px-3.5 py-3 text-left transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-50',
+        warning ? 'border-destructive/50' : 'border-border'
       )}
-
-      {searchDrawer}
-    </>
+    >
+      <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+      <span className="min-w-0 flex-1">
+        <span className="block text-xs text-muted-foreground">Endereço</span>
+        <span className="mt-0.5 block truncate text-sm font-medium text-foreground">{summary}</span>
+        {warning && <span className="mt-1 block text-xs font-medium text-destructive">{warning}</span>}
+      </span>
+      <span className="shrink-0 text-xs font-medium text-primary">Editar</span>
+    </button>
   );
 }
 
@@ -847,7 +849,19 @@ function BodyPortal({ children }: { children: ReactNode }) {
  * Painel lateral de edição: desliza da direita, 480px no desktop e tela inteira no mobile (mesmo
  * formato do `SearchDrawer`). Rodapé fixo com "Concluir" ao alcance do polegar; ESC e o fundo fecham.
  */
-function EditAddressDrawer({ onClose, children }: { onClose: () => void; children: ReactNode }) {
+function EditAddressDrawer({
+  onClose,
+  canFinish,
+  notice,
+  children,
+}: {
+  onClose: () => void;
+  /** `false`: "Concluir" bloqueado — falta escolher a cidade. */
+  canFinish: boolean;
+  /** Aviso no topo (CEP não encontrado, consulta fora do ar…). */
+  notice?: ReactNode;
+  children: ReactNode;
+}) {
   const [entered, setEntered] = useState(false);
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
@@ -889,8 +903,8 @@ function EditAddressDrawer({ onClose, children }: { onClose: () => void; childre
       >
         <header className="flex h-16 shrink-0 items-center justify-between gap-3 border-b border-border px-5">
           <div>
-            <h2 className="text-sm font-semibold text-foreground">Editar endereço</h2>
-            <p className="text-xs text-muted-foreground">CEP, busca ou latitude e longitude</p>
+            <h2 className="text-sm font-semibold text-foreground">Completar endereço</h2>
+            <p className="text-xs text-muted-foreground">Confira os dados e informe o que faltar</p>
           </div>
           <button
             type="button"
@@ -901,12 +915,19 @@ function EditAddressDrawer({ onClose, children }: { onClose: () => void; childre
             <X className="h-4 w-4" />
           </button>
         </header>
-        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-5 py-5">{children}</div>
-        <footer className="shrink-0 border-t border-border px-5 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-5 py-5">
+          {notice}
+          {children}
+        </div>
+        <footer className="shrink-0 space-y-2 border-t border-border px-5 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          {!canFinish && (
+            <p className="text-center text-xs font-medium text-destructive">Escolha a cidade para concluir.</p>
+          )}
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex h-11 w-full items-center justify-center rounded-[var(--ui-radius-control,0.5rem)] bg-primary text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+            disabled={!canFinish}
+            className="inline-flex h-11 w-full items-center justify-center rounded-[var(--ui-radius-control,0.5rem)] bg-primary text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:pointer-events-none disabled:opacity-50"
           >
             Concluir
           </button>
@@ -920,13 +941,41 @@ function EditAddressDrawer({ onClose, children }: { onClose: () => void; childre
 // FIELD
 // ============================================================
 
-const STATES_BR: SelectOption[] = [
-  'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA',
-  'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO',
-].map((uf) => ({ value: uf, label: uf }));
+const UF_NAMES: Record<string, string> = {
+  AC: 'Acre', AL: 'Alagoas', AP: 'Amapá', AM: 'Amazonas', BA: 'Bahia', CE: 'Ceará',
+  DF: 'Distrito Federal', ES: 'Espírito Santo', GO: 'Goiás', MA: 'Maranhão', MT: 'Mato Grosso',
+  MS: 'Mato Grosso do Sul', MG: 'Minas Gerais', PA: 'Pará', PB: 'Paraíba', PR: 'Paraná',
+  PE: 'Pernambuco', PI: 'Piauí', RJ: 'Rio de Janeiro', RN: 'Rio Grande do Norte',
+  RS: 'Rio Grande do Sul', RO: 'Rondônia', RR: 'Roraima', SC: 'Santa Catarina', SP: 'São Paulo',
+  SE: 'Sergipe', TO: 'Tocantins',
+};
+
+// Rótulo com sigla + nome: "mt" e "mato" acham o estado na pesquisa.
+const STATES_BR: SelectOption[] = Object.entries(UF_NAMES).map(([uf, name]) => ({
+  value: uf,
+  label: `${uf} · ${name}`,
+}));
 
 const normalizeCityName = (v: string) =>
   v.normalize('NFD').replace(/\p{Diacritic}/gu, '').trim().toLowerCase();
+
+/** Sigla da UF a partir da sigla ou do nome ("Mato Grosso", como o Google devolve); senão, o texto. */
+export function toUf(state: string): string {
+  const text = state.trim();
+  if (/^[A-Za-z]{2}$/.test(text)) return text.toUpperCase();
+  const name = normalizeCityName(text.replace(/^(estado d[eoa]s?)\s+/i, ''));
+  const hit = Object.entries(UF_NAMES).find(([, n]) => normalizeCityName(n) === name);
+  return hit ? hit[0] : text;
+}
+
+type CepStatus = 'idle' | 'loading' | 'found' | 'not_found' | 'unavailable';
+
+function cepErrorMessage(status: CepStatus, postalCode: string): string {
+  const cep = formatCep(postalCode);
+  return status === 'not_found'
+    ? `O CEP ${cep} não foi encontrado. Confira os números ou preencha o endereço e escolha a cidade.`
+    : `Não foi possível consultar o CEP ${cep} agora (o serviço de CEP não respondeu). Preencha o endereço e escolha a cidade.`;
+}
 
 /** UF + cidade em listas pesquisáveis; a cidade vem de /api/location/cities (valor = código IBGE). */
 function CityStatePicker({
@@ -934,17 +983,22 @@ function CityStatePicker({
   state,
   cityIbge,
   disabled,
+  missing,
+  onListFailedChange,
   onChange,
 }: {
   city: string;
   state: string;
   cityIbge: string | null;
   disabled?: boolean;
+  /** Cidade obrigatória ainda não escolhida: destaca o campo e explica. */
+  missing?: boolean;
+  onListFailedChange?: (failed: boolean) => void;
   onChange: (changes: Partial<AddressValue>) => void;
 }) {
   const ufId = useId();
   const cityId = useId();
-  const uf = state.trim().toUpperCase();
+  const uf = toUf(state);
   const [options, setOptions] = useState<SelectOption[]>([]);
   const [loading, setLoading] = useState(false);
   // Lista fora do ar: volta para texto livre (o banco acha o IBGE pelo nome, services 0017).
@@ -982,28 +1036,39 @@ function CityStatePicker({
     };
   }, [uf]);
 
-  // Endereço antigo (só o nome da cidade): acha a opção pelo nome.
-  const selected =
-    (cityIbge && options.some((o) => o.value === cityIbge) ? cityIbge : null) ??
-    options.find((o) => normalizeCityName(o.label) === normalizeCityName(city))?.value ??
-    '';
+  useEffect(() => {
+    onListFailedChange?.(listFailed);
+  }, [listFailed]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Endereço antigo ou vindo da busca/coordenadas (só o nome da cidade): acha a opção pelo nome.
+  const byIbge = cityIbge && options.some((o) => o.value === cityIbge) ? cityIbge : null;
+  const byName = options.find((o) => normalizeCityName(o.label) === normalizeCityName(city));
+  const selected = byIbge ?? byName?.value ?? '';
+
+  // Achou pelo nome: grava o código IBGE (é ele que põe o anúncio na busca e libera o "Concluir").
+  useEffect(() => {
+    if (!byIbge && byName) onChange({ city: byName.label, cityIbge: byName.value });
+  }, [byIbge, byName?.value]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // UF que não é sigla (dado antigo): mostra vazia para escolher de novo.
+  const ufValue = UF_NAMES[uf] ? uf : '';
+  const cityMissing = Boolean(missing) && !listFailed && Boolean(ufValue) && !loading && !selected;
   const labelClass = 'mb-1.5 block text-xs font-medium text-muted-foreground';
 
   return (
-    <div className="grid grid-cols-[90px_1fr] gap-4">
+    <div className="grid gap-4 sm:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
       <div>
         <label htmlFor={ufId} className={labelClass}>
           UF
         </label>
         <SearchableSelect
           id={ufId}
-          value={uf}
+          value={ufValue}
           options={STATES_BR}
-          placeholder="UF"
+          placeholder="Selecione o estado"
           disabled={disabled}
           onChange={(value) => {
-            if (value !== uf) onChange({ state: value, city: '', cityIbge: null });
+            if (value !== ufValue) onChange({ state: value, city: '', cityIbge: null });
           }}
         />
       </div>
@@ -1018,12 +1083,20 @@ function CityStatePicker({
             id={cityId}
             value={selected}
             options={options}
-            disabled={disabled || !uf}
-            placeholder={!uf ? 'Escolha a UF primeiro' : loading ? 'Carregando cidades...' : 'Selecione a cidade'}
+            disabled={disabled || !ufValue}
+            placeholder={!ufValue ? 'Escolha o estado primeiro' : loading ? 'Carregando cidades...' : 'Selecione a cidade'}
+            className={cn(cityMissing && '[&>button]:border-destructive')}
             onChange={(value) =>
               onChange({ city: options.find((o) => o.value === value)?.label ?? '', cityIbge: value || null })
             }
           />
+          {cityMissing && (
+            <p className="mt-1.5 text-xs text-destructive">
+              {city.trim()
+                ? `Não achamos "${city.trim()}" na lista de ${UF_NAMES[ufValue]}. Escolha a cidade.`
+                : 'Escolha a cidade na lista.'}
+            </p>
+          )}
         </div>
       )}
     </div>
@@ -1456,7 +1529,11 @@ function parseGoogleResult(result: AddressSearchResult): AddressValue {
 
     city: get('locality', 'administrative_area_level_2'),
 
-    state: get('administrative_area_level_1'),
+    // O Google manda o nome por extenso em longText ("Mato Grosso"); a lista de cidades precisa da sigla.
+    state: toUf(
+      components.find((item) => item.types?.includes('administrative_area_level_1'))?.shortText ??
+        get('administrative_area_level_1')
+    ),
 
     country: get('country') || 'BR',
 
