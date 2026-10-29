@@ -26,7 +26,7 @@ modalidade principal, de escolha única. Os endereços ficam em `service_address
 
 `services.expires_at` (`timestamptz`, **nula** = sem validade) guarda o fim da validade do anúncio, com o
 índice parcial `services_expires_at` (`WHERE active AND expires_at IS NOT NULL`). O wizard a preenche
-pelo perfil `price.expiresAt` (ver [Wizard](../interface/wizard.md)); no front vira `expiresAt`
+no topo do passo `dynamic-form`, pelo perfil `stepProfiles["dynamic-form"].expiresAt` (ver [Wizard](../interface/wizard.md)); no front vira `expiresAt`
 (ISO ou `null`). A busca e o swipe ignoram anúncios com `expires_at` no passado (`NULL` = sem
 validade); o `status` do anúncio continua `active`, então ele volta a aparecer se a data for limpa
 ou estendida. A leitura direta da tabela (`/api/resources/services`) não aplica esse filtro.

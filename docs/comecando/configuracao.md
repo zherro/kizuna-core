@@ -318,7 +318,10 @@ continuam sendo código.
 | `finishHrefByMode` | `{ create?, review?, … }`   | —           | Para onde redirecionar ao concluir, por modo.                     |
 
 O wizard de serviços (`wizards.servicos`) aceita ainda `stepProfiles` (opções de **local** e
-**preço** por grupo ou categoria, tabela de preços, seleção inicial, vínculos com outros anúncios),
+**preço** por grupo ou categoria, tabela de preços, seleção inicial, vínculos com outros anúncios,
+e a **validade do anúncio** no topo do passo `dynamic-form`:
+`"dynamic-form": { "byGroup": { "eventos": { "expiresAt": "required", "expiresAtLabels": { "label": "Acontece em" } } } }`,
+com `byCategory` para obrigar ou dispensar por categoria),
 `skipStepsByGroup` (esconder passos para certos grupos), `stepLabels` (nome do passo por grupo ou
 categoria) e `creatable` (em quais grupos/categorias o usuário pode **criar**
 anúncio: `{ "groups": ["eventos"], "categories": ["bares"] }`; sem a chave, tudo liberado; busca e
@@ -473,14 +476,20 @@ padrão do core: 3). Vale por grupo ou categoria, como os outros perfis.
 
 ### Validade do anúncio
 
-O perfil `price` aceita `"expiresAt": "required" | "optional" | true | false` (ausente = campo oculto),
-por categoria/grupo. Como o perfil escolhido substitui o anterior por inteiro, repita `options`:
+A validade é a coluna `services.expires_at` do anúncio. Na tela ela fica no topo do passo
+`dynamic-form`, configurada em `stepProfiles["dynamic-form"]` com
+`"expiresAt": "required" | "optional" | true | false` (ausente = campo oculto), por grupo/categoria, e
+`expiresAtLabels` para os textos (nos eventos, "Acontece em"). O perfil `price` não aceita mais
+`expiresAt`. O perfil escolhido substitui o anterior por inteiro:
 
 ```json
 "stepProfiles": {
-  "price": {
+  "dynamic-form": {
+    "byGroup": {
+      "eventos": { "expiresAt": "required", "expiresAtLabels": { "label": "Acontece em" } }
+    },
     "byCategory": {
-      "cinema": { "options": [{ "value": "day" }, { "value": "service" }], "expiresAt": "required" }
+      "feira-livre": { "expiresAt": "optional", "expiresAtLabels": { "label": "Acontece em" } }
     }
   }
 }

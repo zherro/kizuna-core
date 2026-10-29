@@ -80,7 +80,7 @@ export function ServiceCarousel({
                 { slug: service.category_slug, groupSlug: service.category_group_slug },
                 detailConfig
               ),
-              { startingPrice: service.price, priceUnit: service.price_type, startsAt: service.event_start,
+              { startingPrice: service.price, priceUnit: service.price_type, startsAt: service.event_start, expiresAt: service.expires_at,
                 venue: service.venue,
                 place: formatLocationLabel(service),
               }

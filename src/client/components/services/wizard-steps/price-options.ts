@@ -25,15 +25,18 @@ export type PriceProfile = {
   /** Tabela de preços (salva em `services.extras.priceTable`). `true` = todos os campos;
    * objeto = escolhe os campos e o limite de linhas. Padrão: sem tabela. */
   priceTable?: boolean | PriceTableConfig;
-  /** Validade do anúncio (`services.expires_at`). Ausente/`false` = campo oculto; `true` =
-   * `'optional'`; `'optional'` = pode deixar em branco; `'required'` = exige data futura. */
-  expiresAt?: false | true | 'optional' | 'required';
 };
 
 export type ExpiresAtMode = 'hidden' | 'optional' | 'required';
 
-/** Modo da validade no perfil: `hidden` (padrão), `optional` ou `required`. */
-export function resolveExpiresAtMode(profile: PriceProfile): ExpiresAtMode {
+/**
+ * Modo da validade do anúncio (`services.expires_at`, coluna do service) num perfil: `hidden`
+ * (ausente/`false`), `optional` (`true`/`'optional'`) ou `required`. Quem hospeda o campo na tela é
+ * o passo `dynamic-form` (`stepProfiles["dynamic-form"].expiresAt`); o passo `price` não o tem mais.
+ */
+export function resolveExpiresAtMode(profile: {
+  expiresAt?: false | true | 'optional' | 'required';
+}): ExpiresAtMode {
   const v = profile.expiresAt;
   if (v === 'required') return 'required';
   if (v === true || v === 'optional') return 'optional';
@@ -91,16 +94,9 @@ export function validatePriceProfile(profile: PriceProfile) {
       `stepProfiles.price: defaultValue "${String(profile.defaultValue)}" não está em "options"`
     );
   }
-  const expiresAt = profile.expiresAt as unknown;
-  if (
-    expiresAt !== undefined &&
-    expiresAt !== true &&
-    expiresAt !== false &&
-    expiresAt !== 'optional' &&
-    expiresAt !== 'required'
-  ) {
+  if ('expiresAt' in (profile as object)) {
     throw new Error(
-      `stepProfiles.price: expiresAt inválido "${String(expiresAt)}" (use true, false, 'optional' ou 'required')`
+      'stepProfiles.price: "expiresAt" saiu do passo de preço; use stepProfiles["dynamic-form"].expiresAt (a validade continua sendo o campo expires_at do service)'
     );
   }
   if (typeof profile.priceTable === 'object' && profile.priceTable !== null) {
@@ -171,6 +167,11 @@ export function isoToLocalDate(iso: string | null | undefined): string {
   if (!Number.isFinite(date.getTime())) return '';
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+/** Checa "data no passado" só ao criar ou depois de o usuário mexer na data (anúncio vencido não trava). */
+export function expiresAtCheckPast(mode: string, touched: ReadonlySet<unknown>) {
+  return mode === 'create' || touched.has('expiresAt');
 }
 
 export type ExpiresAtError = 'required' | 'past' | null;

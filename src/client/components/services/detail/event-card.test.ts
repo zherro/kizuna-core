@@ -9,6 +9,22 @@ describe('variantCardProps', () => {
     expect(p?.whenLabel).toMatch(/14 de nov.*20:00/);
   });
 
+  it('evento: o "Acontece em" (expires_at) manda sobre a data do formulário', () => {
+    const p = variantCardProps('evento', {
+      startsAt: '2026-11-01T20:00',
+      expiresAt: '2026-11-15T03:59:59.999Z', // 14/11 23:59 em Cuiabá
+    });
+    expect(p?.dateLabel).toEqual({ day: '14', month: 'nov' });
+    expect(p?.whenLabel).toMatch(/14 de nov/);
+    expect(p?.whenLabel).not.toMatch(/\d{2}:\d{2}/); // fim do dia não é horário do evento
+  });
+
+  it('evento: sem expires_at cai na data de início do formulário', () => {
+    const p = variantCardProps('evento', { startsAt: '2026-11-14T20:00', expiresAt: null });
+    expect(p?.dateLabel).toEqual({ day: '14', month: 'nov' });
+    expect(p?.whenLabel).toMatch(/20:00/);
+  });
+
   it('evento: local sempre com a cidade ("Local · Cidade")', () => {
     expect(variantCardProps('evento', { venue: 'Arena Pantanal', place: 'Cuiabá' })?.locationLabel).toBe(
       'Arena Pantanal · Cuiabá'

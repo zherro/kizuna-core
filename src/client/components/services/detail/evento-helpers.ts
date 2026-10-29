@@ -6,6 +6,8 @@
  */
 
 export const EVENT_TIME_ZONE = 'America/Sao_Paulo';
+/** Fuso em que o dia do `services.expires_at` ("Acontece em") é lido: o do local do evento (Mato Grosso, UTC-4). */
+export const EVENT_EXPIRES_TIME_ZONE = 'America/Cuiaba';
 
 export type EventAnswers = Record<string, unknown>;
 
@@ -291,15 +293,38 @@ export function eventEnd(answers: EventAnswers): string | null {
   return ends.sort()[ends.length - 1];
 }
 
-/** Evento já terminou? Usa o fim conhecido; sem datas, cai em `expiresAt` (ISO UTC). */
+/**
+ * Dia do evento (`AAAA-MM-DD`, fuso de Cuiabá por padrão) a partir de `services.expires_at` (ISO
+ * UTC) — o "Acontece em" do anúncio. `null` sem validade ou com valor que não é data. É a data que o card e o
+ * detalhe mostram; o `expires_at` é o fim desse dia, então o horário não vale como "hora do evento".
+ */
+export function eventDayFromExpiresAt(
+  expiresAt: unknown,
+  timeZone: string = EVENT_EXPIRES_TIME_ZONE
+): string | null {
+  const s = str(expiresAt);
+  if (!s) return null;
+  const t = new Date(s).getTime();
+  if (!Number.isFinite(t)) return null;
+  return new Intl.DateTimeFormat('sv-SE', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(t);
+}
+
+/**
+ * Evento já terminou? `services.expires_at` manda (é o "Acontece em"; passou, acabou). Sem validade,
+ * cai no fim conhecido das respostas do formulário (data_fim, sessões, data_inicio).
+ */
 export function isEventOver(answers: EventAnswers, expiresAt?: string | null, now: number = Date.now()): boolean {
-  const end = eventEnd(answers);
-  if (end) return end < nowLocalString(now);
   if (expiresAt) {
     const t = new Date(expiresAt).getTime();
-    return Number.isFinite(t) && t < now;
+    if (Number.isFinite(t)) return t < now;
   }
-  return false;
+  const end = eventEnd(answers);
+  return end ? end < nowLocalString(now) : false;
 }
 
 /** Tags sob o título: classificação + "Gratuito". */

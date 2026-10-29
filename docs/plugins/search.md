@@ -5,7 +5,7 @@ description: Plugin search — RPC fn_search_services, filtro de local por ender
 # Plugin `search`
 
 Busca pública de serviços: RPC `fn_search_services` (`SECURITY DEFINER`, chamável por `anon`) e a
-página `/busca`. Versão atual: **1.10.0** (`plugins/search/0011_search_order_fields.sql`). Depende de
+página `/busca`. Versão atual: **1.12.0** (`plugins/search/0013_search_expires_at.sql`). Depende de
 [`services`](services.md) 1.2.0 ou superior. o deck do plugin `swipe`
 devolvem as mesmas colunas de local.
 
@@ -177,6 +177,7 @@ Além de `uid`, `title`, `price`, `price_type`, `category`, `subcategory`, `spon
 | `address_count` | Total de endereços ativos do serviço (`0` sem endereço).                                        |
 
 | `category_slug` | `categories.slug` do anúncio (migração 0003): chave do estilo por categoria (`serviceDetail.variantByCategorySlug`). |
+| `expires_at` | `services.expires_at` (migração **0013**, plugin 1.12.0; `timestamptz`, `NULL` = sem validade). Nos eventos é o "Acontece em" (fim do dia no horário local do evento, em MT o de Cuiabá): o card do evento mostra a data a partir dele. Ausente em RPCs antigas; o cliente trata como opcional. |
 | `category_group_slug` | `categories_group.slug` do anúncio (migração **0005**, plugin 1.4.0), via `services.category_group_id` com fallback para o grupo da categoria: chave do estilo por grupo (`serviceDetail.variantByGroupSlug`). |
 
 Os cartões formatam `city` e `address_count` como "Cuiabá" ou "Cuiabá +2"; sem cidade usam a UF.

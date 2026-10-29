@@ -4,6 +4,7 @@ import { validateLocationProfile } from './location-options';
 import { validatePriceProfile } from './price-options';
 import { createLocationStep } from './step-location';
 import { createPriceStep } from './step-price';
+import { createDynamicFormStep, validateDynamicFormProfile } from './step-dynamic-form';
 import { createImagesStep, validateImagesProfile } from './step-images';
 import { allProfiles, resolveStepProfile } from './step-profiles';
 import type { ServiceWizardJsonConfig } from './wizard-config';
@@ -24,6 +25,8 @@ export function buildServiceWizardRegistry(
   for (const profile of allProfiles(profiles.location)) validateLocationProfile(profile);
   for (const profile of allProfiles(profiles.price)) validatePriceProfile(profile);
   for (const profile of allProfiles(profiles.images)) validateImagesProfile(profile);
+  const dynamicForm = profiles['dynamic-form'];
+  for (const profile of allProfiles(dynamicForm)) validateDynamicFormProfile(profile);
 
   const skip = json.skipStepsByGroup ?? {};
   const unknown = Object.keys(skip).filter((key) => !(key in base));
@@ -35,7 +38,7 @@ export function buildServiceWizardRegistry(
   if (unknownLabels.length) {
     throw new Error(`stepLabels: step(s) fora do registry: ${unknownLabels.join(', ')}`);
   }
-  if (!profiles.location && !profiles.price && !profiles.images && Object.keys(skip).length === 0 && Object.keys(labels).length === 0) {
+  if (!profiles.location && !profiles.price && !profiles.images && !dynamicForm && Object.keys(skip).length === 0 && Object.keys(labels).length === 0) {
     return base;
   }
 
@@ -43,6 +46,7 @@ export function buildServiceWizardRegistry(
   if (profiles.location) registry.location = createLocationStep(profiles.location);
   if (profiles.price) registry.price = createPriceStep(profiles.price);
   if (profiles.images) registry.images = createImagesStep(profiles.images);
+  if (dynamicForm) registry['dynamic-form'] = createDynamicFormStep(dynamicForm);
 
   for (const [key, slugs] of Object.entries(skip)) {
     const step = registry[key];

@@ -26,6 +26,7 @@ import type { ServiceDetailVariantComponent, ServiceSalePoint } from './service-
 import {
   eventClassification,
   eventDateParts,
+  eventDayFromExpiresAt,
   eventPriceInfo,
   eventoHeaderTags,
   formatBRL,
@@ -156,7 +157,7 @@ function TicketCard({ ticket }: { ticket: EventTicket }) {
  */
 export const ServiceDetailEventoSidebar: ServiceDetailVariantComponent = ({ service, extraFields, venue, location }) => {
   const answers = extraFields?.answers ?? {};
-  const date = eventDateParts(answers.data_inicio);
+  const date = eventDateParts(eventDayFromExpiresAt(service.expiresAt) ?? answers.data_inicio);
   const place = resolveEventPlace(venue, location, answers.endereco);
   const tickets = parseTickets(answers.ingressos);
   const price = eventPriceInfo({
@@ -229,7 +230,9 @@ export const ServiceDetailEventoSidebar: ServiceDetailVariantComponent = ({ serv
 export const ServiceDetailEvento: ServiceDetailVariantComponent = ({ service, extraFields, hue, labels, organizer, venue, location, salePoints, artists: resolvedArtists, renderVenueCard }) => {
   const answers = extraFields?.answers ?? {};
 
-  const when = formatEventWhen(answers);
+  // "Acontece em" = `services.expires_at` (campo do service); sem validade, a data do formulário.
+  const happensOn = eventDayFromExpiresAt(service.expiresAt);
+  const when = happensOn ? formatEventDay(happensOn) : formatEventWhen(answers);
   const classificacao = eventClassification(answers);
   const realizadorRaw = textField(answers.realizador);
   const realizador = realizadorRaw ? humanizeSlug(realizadorRaw) : null;
@@ -286,7 +289,7 @@ export const ServiceDetailEvento: ServiceDetailVariantComponent = ({ service, ex
         }
       : null;
   const factsRaw: (FactItem | null)[] = [
-    when ? { icon: <CalendarDays className="h-4 w-4" />, label: 'Data', value: when } : null,
+    when ? { icon: <CalendarDays className="h-4 w-4" />, label: happensOn ? 'Acontece em' : 'Data', value: when } : null,
     classificacao ? { icon: <Clapperboard className="h-4 w-4" />, label: 'Classificação', value: classificacao } : null,
     organizerFact ??
       (realizador ? { icon: <Users className="h-4 w-4" />, label: 'Realização', value: realizador } : null),

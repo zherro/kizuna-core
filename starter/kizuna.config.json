@@ -206,6 +206,7 @@
         "categories": ["hoteis-e-pousadas", "trilhas", "bares", "restaurantes"]
       },
       "stepProfiles": {
+        "_comment_dynamic-form": "Opcional: validade do anuncio (services.expires_at) no TOPO do passo do formulario dinamico. Ex.: \"dynamic-form\": { \"byGroup\": { \"eventos\": { \"expiresAt\": \"required\", \"expiresAtLabels\": { \"label\": \"Acontece em\" } } } }. expiresAt: required | optional | false. Por categoria use byCategory.<slug> (substitui o perfil do grupo, sem merge). Ver docs/interface/wizard.md.",
         "location": {
           "default": {
             "options": [

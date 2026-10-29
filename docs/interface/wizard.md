@@ -306,7 +306,7 @@ outro é só o conteúdo do perfil:
 | Passo      | Perfil                                                                                     | Padrão do core                             |
 | ---------- | ------------------------------------------------------------------------------------------ | ------------------------------------------ |
 | `location` | `{ options: [{ value, model: "address"\|"addresses"\|"identifier", icon?, textKey?, maxAddresses?, requireZipCode?, addressFromRef? }] }`                | `no_estabelecimento` com `addresses` (máx. 5); `no_cliente` e `remoto` com `identifier`          |
-| `price`    | `{ options: [{ value, textKey? }], startingPrice?: bool, priceTable?: bool, expiresAt?: bool|"optional"|"required" }`               | todas as formas de cobrança + "a partir de", sem tabela |
+| `price`    | `{ options: [{ value, textKey? }], startingPrice?: bool, priceTable?: bool }`               | todas as formas de cobrança + "a partir de", sem tabela |
 
 - **Seleção inicial** — `defaultValue` (um `value` de `options`) já abre com aquela opção
   selecionada, em `location` e `price`. **Sem `defaultValue` nada vem selecionado** (no `price` o passo
@@ -369,11 +369,13 @@ remover, marcar o principal), gravada em `service_addresses` (ver [Plugin servic
 }
 ```
 
-#### Validade do anúncio (`price.expiresAt`)
+#### Validade do anúncio (`dynamic-form`)
 
-O perfil `price` também controla a validade do anúncio (coluna `services.expires_at`, `timestamptz`,
-nula = sem validade). A obrigatoriedade é definida por categoria/grupo, com a mesma precedência dos
-outros perfis:
+A validade do anúncio é a coluna `services.expires_at` (`timestamptz`, nula = sem validade): é um
+campo **do service**, não uma resposta do formulário. Na tela ela fica no **topo do passo
+`dynamic-form`**, junto do contexto do anúncio (nos eventos, "Acontece em"), e é configurada em
+`stepProfiles["dynamic-form"]`. O passo `price` não tem mais esse campo (`price.expiresAt` lança erro
+no boot). A obrigatoriedade é por grupo/categoria, com a mesma precedência dos outros perfis:
 
 | Valor de `expiresAt`      | Modo       | Efeito                                                                              |
 | ------------------------- | ---------- | ----------------------------------------------------------------------------------- |
@@ -386,27 +388,31 @@ outros perfis:
 - Em edição/revisão, uma data **já vencida** de um anúncio existente não trava o passo; só trava se a
   pessoa alterar a data para o passado.
 - Valor inválido em `expiresAt` lança erro no boot (`true`, `false`, `"optional"` ou `"required"`).
-- Textos em `messages.wizard.price.expiresAt` (`label`, `optional`, `hint`, `clear`, `required`, `past`).
-- Como o perfil escolhido **substitui o anterior por inteiro**, uma categoria que exige validade precisa
-  repetir `options` (e o que mais quiser do perfil `default`). Exemplo — validade obrigatória só em cinema:
+- `expiresAtLabels` troca os textos do campo (`label`, `hint`, `optional`, `clear`, `required`,
+  `past`); o que faltar usa os padrões do core ("Válido até"…).
+- O campo vai para `services.expires_at` ao avançar do passo (`ctx.persist`); as respostas do
+  formulário seguem em `form_results`.
+- Como o perfil escolhido **substitui o anterior por inteiro**, repita `expiresAtLabels` na categoria
+  se quiser manter os textos. Exemplo — "Acontece em" obrigatório nos eventos, opcional em
+  `feira-livre` e sem campo em `show`:
 
 ```json
 "stepProfiles": {
-  "price": {
-    "default": { "options": [{ "value": "day" }, { "value": "service" }] },
+  "dynamic-form": {
+    "byGroup": {
+      "eventos": { "expiresAt": "required", "expiresAtLabels": { "label": "Acontece em" } }
+    },
     "byCategory": {
-      "cinema": {
-        "options": [{ "value": "day" }, { "value": "service" }],
-        "expiresAt": "required"
-      }
+      "feira-livre": { "expiresAt": "optional", "expiresAtLabels": { "label": "Acontece em" } },
+      "show": { "expiresAt": false }
     }
   }
 }
 ```
 
 {% hint style="info" %}
-A validade é gravada em `services.expires_at`, mas a busca e o swipe ainda **não** filtram anúncios
-vencidos.
+A busca e o swipe omitem anúncios com `services.expires_at` no passado (a leitura direta da tabela
+não filtra).
 {% endhint %}
 
 ```json
@@ -425,6 +431,10 @@ para certos grupos (sem grupo escolhido ainda, aparece). Chave de passo inexiste
 
 **`stepProfiles.images`** — `{ maxImages }` (1 a 20; padrão 3): limite de fotos do passo `images`
 por grupo/categoria (`createImagesStep`).
+
+**`stepProfiles["dynamic-form"]`** — `{ expiresAt, expiresAtLabels }`: validade do anúncio
+(`services.expires_at`) no topo do passo do formulário dinâmico (`createDynamicFormStep`). Detalhes
+em "Validade do anúncio" acima.
 
 **`stepLabels`** — `{ "<passo>": { default?, byGroup?, byCategory? } }`: nome do passo no stepper
 por grupo/categoria. Vira `WizardStep.labelFor(ctx)`, que o `Wizard` aplica antes de

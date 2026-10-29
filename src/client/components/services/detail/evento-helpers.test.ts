@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   eventDateParts,
+  eventDayFromExpiresAt,
   eventEnd,
   eventPriceInfo,
   eventPlaceMapUrl,
@@ -144,6 +145,28 @@ describe('encerrado', () => {
     expect(isEventOver({}, '2026-11-01T00:00:00Z', now)).toBe(true);
     expect(isEventOver({}, '2026-12-01T00:00:00Z', now)).toBe(false);
     expect(isEventOver({}, null, now)).toBe(false);
+  });
+
+  it('expiresAt (Acontece em) manda sobre as datas do formulário', () => {
+    // formulário diz que já passou, mas o "Acontece em" ainda não venceu
+    expect(isEventOver({ data_inicio: '2026-11-01' }, '2026-11-15T02:59:59.999Z', now)).toBe(false);
+    // e o contrário: formulário no futuro, "Acontece em" vencido
+    expect(isEventOver({ data_inicio: '2026-12-01' }, '2026-11-01T02:59:59.999Z', now)).toBe(true);
+  });
+});
+
+describe('eventDayFromExpiresAt', () => {
+  it('fim do dia em Cuiabá continua sendo o mesmo dia', () => {
+    // 23:59:59.999 em Cuiabá (UTC-4) = 03:59:59.999Z do dia seguinte
+    expect(eventDayFromExpiresAt('2026-11-15T03:59:59.999Z')).toBe('2026-11-14');
+    expect(eventDayFromExpiresAt('2026-11-14T12:00:00Z')).toBe('2026-11-14');
+    // outro fuso, quando o projeto pedir
+    expect(eventDayFromExpiresAt('2026-11-15T02:59:59.999Z', 'America/Sao_Paulo')).toBe('2026-11-14');
+  });
+  it('sem validade ou valor inválido → null', () => {
+    expect(eventDayFromExpiresAt(null)).toBeNull();
+    expect(eventDayFromExpiresAt('')).toBeNull();
+    expect(eventDayFromExpiresAt('lixo')).toBeNull();
   });
 });
 

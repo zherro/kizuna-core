@@ -1,4 +1,4 @@
-import { eventDateParts, formatEventWhen } from './evento-helpers';
+import { eventDateParts, eventDayFromExpiresAt, formatEventDay, formatEventWhen } from './evento-helpers';
 
 export type VariantCardProps = {
   cardStyle: 'cinema' | 'evento' | 'lugar';
@@ -20,8 +20,9 @@ export type VariantCardProps = {
  * `ListingResultCard`. Retorna `null` para variants sem card próprio (`service`/outras): o chamador
  * mantém o comportamento padrão.
  *
- * `startsAt` = `answers.data_inicio` (AAAA-MM-DDTHH:MM) quando a listagem o tiver; `free` =
- * `answers.gratuito`.
+ * `expiresAt` = `services.expires_at` (ISO UTC): o "Acontece em" do evento, e a data que o card
+ * mostra. Só quando o anúncio não tem validade (ou a RPC é anterior à 0013) o card cai em
+ * `startsAt` = `answers.data_inicio` (AAAA-MM-DDTHH:MM); `free` = `answers.gratuito`.
  */
 export function variantCardProps(
   variantId: string,
@@ -30,6 +31,8 @@ export function variantCardProps(
     priceUnit?: string | null;
     free?: boolean;
     startsAt?: string | null;
+    /** Validade do anúncio (`services.expires_at`): o "Acontece em" do evento. */
+    expiresAt?: string | null;
     /** Nome do local (`service_addresses.label`). */
     venue?: string | null;
     /** Cidade já formatada (`formatLocationLabel`). */
@@ -51,14 +54,16 @@ export function variantCardProps(
   if (variantId === 'evento') {
     // O card do evento mostra a data, não o valor (o valor está no detalhe).
     const where = [input.venue?.trim(), input.place?.trim()].filter(Boolean).join(' · ');
+    // "Acontece em" (expires_at) manda; sem ele, a data de início do formulário.
+    const day = eventDayFromExpiresAt(input.expiresAt);
     return {
       ...(where ? { locationLabel: where } : {}),
       cardStyle: 'evento',
       ctaLabel: 'Ver evento',
       priceLabel: null,
       priceCaption: null,
-      dateLabel: eventDateParts(input.startsAt),
-      whenLabel: formatEventWhen({ data_inicio: input.startsAt }),
+      dateLabel: day ? eventDateParts(day) : eventDateParts(input.startsAt),
+      whenLabel: day ? formatEventDay(day) : formatEventWhen({ data_inicio: input.startsAt }),
     };
   }
   return null;

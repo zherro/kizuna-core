@@ -1,15 +1,13 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { AppPreferencesProvider } from '../../../providers/app-preferences-provider';
-import { createPriceStep } from './step-price';
+import { createDynamicFormStep, type DynamicFormProfile } from './step-dynamic-form';
 import {
   endOfLocalDayToIso,
   isoToLocalDate,
   resolveExpiresAtMode,
   validateExpiresAt,
   validatePriceProfile,
-  type PriceProfile,
 } from './price-options';
 import { buildServiceWizardRegistry } from './build-registry';
 import { SERVICE_WIZARD_STEPS } from './index';
@@ -18,29 +16,15 @@ import type { WizardStepContext, WizardStepProps } from '../../wizard/types';
 
 afterEach(cleanup);
 
-if (typeof window !== 'undefined' && !window.matchMedia) {
-  window.matchMedia = ((query: string) => ({
-    matches: false,
-    media: query,
-    addEventListener: () => {},
-    removeEventListener: () => {},
-    addListener: () => {},
-    removeListener: () => {},
-    dispatchEvent: () => false,
-    onchange: null,
-  })) as unknown as typeof window.matchMedia;
-}
-
 const entities = {
   groups: [{ id: 'g1', slug: 'eventos' }],
   categories: [
-    { id: 'c1', slug: 'cinema' },
-    { id: 'c2', slug: 'pintor' },
+    { id: 'c1', slug: 'cinema', formKey: 'f1' },
+    { id: 'c2', slug: 'pintor', formKey: 'f2' },
   ],
 };
-const opts = [{ value: 'quote' }];
-const profiles = (expiresAt: PriceProfile['expiresAt']) => ({
-  default: { options: opts, expiresAt },
+const profiles = (expiresAt: DynamicFormProfile['expiresAt']) => ({
+  default: { expiresAt },
 });
 
 const DAY = 86_400_000;
@@ -55,45 +39,52 @@ const ctx = (
     state: {
       groupId: 'g1',
       categoryId: 'c1',
-      priceUnit: 'quote',
-      startingPrice: 0,
       expiresAt: null,
+      dynamicFormValid: true,
       ...state,
     },
-    entities,
+    entities: { ...entities },
     mode: 'create',
     touched: new Set(),
     ...extra,
   }) as unknown as WizardStepContext<ServiceWizardState>;
 
-describe('resolveExpiresAtMode / validatePriceProfile', () => {
+describe('resolveExpiresAtMode / perfis', () => {
   it('ausente/false = hidden; true/optional = optional; required = required', () => {
-    expect(resolveExpiresAtMode({ options: opts })).toBe('hidden');
-    expect(resolveExpiresAtMode({ options: opts, expiresAt: false })).toBe('hidden');
-    expect(resolveExpiresAtMode({ options: opts, expiresAt: true })).toBe('optional');
-    expect(resolveExpiresAtMode({ options: opts, expiresAt: 'optional' })).toBe('optional');
-    expect(resolveExpiresAtMode({ options: opts, expiresAt: 'required' })).toBe('required');
+    expect(resolveExpiresAtMode({})).toBe('hidden');
+    expect(resolveExpiresAtMode({ expiresAt: false })).toBe('hidden');
+    expect(resolveExpiresAtMode({ expiresAt: true })).toBe('optional');
+    expect(resolveExpiresAtMode({ expiresAt: 'optional' })).toBe('optional');
+    expect(resolveExpiresAtMode({ expiresAt: 'required' })).toBe('required');
   });
 
-  it('validatePriceProfile rejeita expiresAt inválido', () => {
-    expect(() => validatePriceProfile({ options: opts, expiresAt: 'required' })).not.toThrow();
-    expect(() => validatePriceProfile({ options: opts, expiresAt: true })).not.toThrow();
-    expect(() => validatePriceProfile({ options: opts, expiresAt: 'sempre' as never })).toThrow(
-      /expiresAt/
-    );
-    expect(() => validatePriceProfile({ options: opts, expiresAt: 1 as never })).toThrow(
-      /expiresAt/
-    );
+  it('o passo de preço não aceita mais expiresAt (a validade vive no dynamic-form)', () => {
+    expect(() => validatePriceProfile({ options: [{ value: 'quote' }] })).not.toThrow();
+    expect(() =>
+      validatePriceProfile({ options: [{ value: 'quote' }], expiresAt: 'required' } as never)
+    ).toThrow(/dynamic-form/);
   });
 
-  it('buildServiceWizardRegistry valida o perfil no boot', () => {
+  it('buildServiceWizardRegistry valida o perfil do dynamic-form no boot', () => {
+    expect(() =>
+      buildServiceWizardRegistry(SERVICE_WIZARD_STEPS, {
+        resource: 'services',
+        steps: ['dynamic-form'],
+        stepProfiles: { 'dynamic-form': { default: { expiresAt: 'x' as never } } },
+      })
+    ).toThrow(/expiresAt/);
+  });
+
+  it('buildServiceWizardRegistry recusa expiresAt no perfil de preço', () => {
     expect(() =>
       buildServiceWizardRegistry(SERVICE_WIZARD_STEPS, {
         resource: 'services',
         steps: ['price'],
-        stepProfiles: { price: { default: { options: opts, expiresAt: 'x' as never } } },
+        stepProfiles: {
+          price: { default: { options: [{ value: 'quote' }], expiresAt: true } as never },
+        },
       })
-    ).toThrow(/expiresAt/);
+    ).toThrow(/dynamic-form/);
   });
 });
 
@@ -122,9 +113,9 @@ describe('helpers de data', () => {
   });
 });
 
-describe('createPriceStep — canContinue', () => {
-  const cc = (p: PriceProfile['expiresAt'], c: WizardStepContext<ServiceWizardState>) =>
-    createPriceStep(profiles(p)).canContinue!(c);
+describe('createDynamicFormStep — canContinue', () => {
+  const cc = (p: DynamicFormProfile['expiresAt'], c: WizardStepContext<ServiceWizardState>) =>
+    createDynamicFormStep(profiles(p)).canContinue!(c);
 
   it('hidden ignora a data', () => {
     expect(cc(undefined, ctx({ expiresAt: past }))).toBe(true);
@@ -139,6 +130,9 @@ describe('createPriceStep — canContinue', () => {
     expect(cc('required', ctx({ expiresAt: past }))).toBe(false);
     expect(cc('required', ctx({ expiresAt: future }))).toBe(true);
   });
+  it('formulário inválido continua barrando', () => {
+    expect(cc('optional', ctx({ dynamicFormValid: false }))).toBe(false);
+  });
   it('edit/review: data já vencida não barra, a menos que o usuário a tenha alterado', () => {
     expect(cc('required', ctx({ expiresAt: past }, { mode: 'edit' }))).toBe(true);
     expect(cc('optional', ctx({ expiresAt: past }, { mode: 'review' }))).toBe(true);
@@ -148,63 +142,70 @@ describe('createPriceStep — canContinue', () => {
     expect(cc('required', ctx({}, { mode: 'edit' }))).toBe(false);
   });
   it('byCategory substitui o perfil por inteiro', () => {
-    const step = createPriceStep({
-      default: { options: opts },
-      byCategory: { cinema: { options: opts, expiresAt: 'required' } },
+    const step = createDynamicFormStep({
+      default: {},
+      byCategory: { cinema: { expiresAt: 'required' } },
     });
     expect(step.canContinue!(ctx({ categoryId: 'c1' }))).toBe(false); // cinema: obrigatório
     expect(step.canContinue!(ctx({ categoryId: 'c2' }))).toBe(true); // default: oculto
   });
 });
 
-describe('createPriceStep — persist', () => {
-  const run = async (p: PriceProfile['expiresAt'], state: Partial<ServiceWizardState>) => {
+describe('createDynamicFormStep — persist', () => {
+  const run = async (p: DynamicFormProfile['expiresAt'], state: Partial<ServiceWizardState>) => {
     const persist = vi.fn().mockResolvedValue({ ok: true, item: null });
-    const persistExtras = vi.fn().mockResolvedValue({ ok: true });
-    await createPriceStep(profiles(p)).persist!(ctx(state, { persist, persistExtras }));
-    return persist.mock.calls[0][0] as Record<string, unknown>;
+    const c = ctx(state, { persist, persistExtras: vi.fn() });
+    // as respostas do formulário têm o próprio persist; aqui só importa o que vai pro service
+    (c.entities as Record<string, unknown>).dynamicFormRef = {
+      current: { persist: async () => true, getValues: () => ({}) },
+    };
+    await createDynamicFormStep(profiles(p)).persist!(c);
+    return persist.mock.calls[0]?.[0] as Record<string, unknown> | undefined;
   };
-  it('optional/required enviam expiresAt (inclusive null pra limpar)', async () => {
+  it('optional/required enviam expiresAt ao service (inclusive null pra limpar)', async () => {
     expect(await run('required', { expiresAt: future })).toMatchObject({ expiresAt: future });
     const cleared = await run('optional', { expiresAt: null });
-    expect('expiresAt' in cleared).toBe(true);
-    expect(cleared.expiresAt).toBeNull();
+    expect(cleared && 'expiresAt' in cleared).toBe(true);
+    expect(cleared?.expiresAt).toBeNull();
   });
   it('hidden não envia a chave (preserva o valor do baseline)', async () => {
-    const payload = await run(undefined, { expiresAt: future });
-    expect('expiresAt' in payload).toBe(false);
+    expect(await run(undefined, { expiresAt: future })).toBeUndefined();
   });
 });
 
-describe('StepPrice — campo Válido até', () => {
+describe('dynamic-form — campo de validade', () => {
   const renderStep = (
-    p: PriceProfile['expiresAt'],
+    p: DynamicFormProfile,
     state: Partial<ServiceWizardState>,
     patch = vi.fn()
   ) => {
-    const C = createPriceStep(profiles(p)).Component;
-    const props = { ...ctx(state), patch } as unknown as WizardStepProps<ServiceWizardState>;
-    return render(
-      <AppPreferencesProvider>
-        <C {...props} />
-      </AppPreferencesProvider>
-    );
+    const C = createDynamicFormStep({ default: p }).Component;
+    const props = {
+      ...ctx(state),
+      patch,
+      resourceId: 1,
+    } as unknown as WizardStepProps<ServiceWizardState>;
+    return render(<C {...props} />);
   };
 
   it('hidden: sem campo', () => {
-    renderStep(undefined, {});
+    renderStep({}, {});
     expect(screen.queryByLabelText(/Válido até/)).toBeNull();
   });
   it('optional: rótulo com (opcional); required: sem', () => {
-    renderStep('optional', {});
+    renderStep({ expiresAt: 'optional' }, {});
     expect(screen.getByLabelText(/Válido até \(opcional\)/)).toBeTruthy();
     cleanup();
-    renderStep('required', {});
+    renderStep({ expiresAt: 'required' }, {});
     expect(screen.getByLabelText('Válido até')).toBeTruthy();
+  });
+  it('rótulo vem do perfil (ex.: Acontece em)', () => {
+    renderStep({ expiresAt: 'required', expiresAtLabels: { label: 'Acontece em' } }, {});
+    expect(screen.getByLabelText('Acontece em')).toBeTruthy();
   });
   it('exibe a data local e grava fim do dia em ISO; limpar manda null', () => {
     const patch = vi.fn();
-    renderStep('optional', { expiresAt: endOfLocalDayToIso('2030-06-15') }, patch);
+    renderStep({ expiresAt: 'optional' }, { expiresAt: endOfLocalDayToIso('2030-06-15') }, patch);
     const input = screen.getByLabelText(/Válido até/) as HTMLInputElement;
     expect(input.value).toBe('2030-06-15');
     fireEvent.change(input, { target: { value: '2030-07-01' } });

@@ -12,7 +12,7 @@ import { createLocationStep } from './step-location';
 import { createPriceStep } from './step-price';
 import { createImagesStep } from './step-images';
 import { StepDescription } from './step-description';
-import { StepDynamicForm, dynamicFormCategory, getDynamicFormHolder } from './step-dynamic-form';
+import { createDynamicFormStep } from './step-dynamic-form';
 import { StepModeration } from './step-moderation';
 import { linksStep } from './step-links';
 import { syncServiceSubcategories } from './sync-service-subcategories';
@@ -113,20 +113,8 @@ export const SERVICE_WIZARD_STEPS: Record<string, WizardStep<ServiceWizardState>
     },
   },
 
-  'dynamic-form': {
-    key: 'dynamic-form',
-    label: 'Formulário',
-    Component: StepDynamicForm,
-    enabled: (ctx) => {
-      const cat = dynamicFormCategory(ctx) as ServiceCategory | undefined;
-      return Boolean(String(cat?.formKey ?? '').trim()) && ctx.resourceId != null;
-    },
-    canContinue: (ctx) => ctx.state.dynamicFormValid !== false,
-    persist: async (ctx) => {
-      const ok = (await getDynamicFormHolder(ctx).current?.persist()) ?? false;
-      if (!ok) throw new Error('Nao foi possivel salvar as respostas do formulario.');
-    },
-  },
+  // Padrão do core (sem validade); o projeto liga via `stepProfiles.dynamic-form` (ver build-registry.ts).
+  'dynamic-form': createDynamicFormStep(),
 
   // Opcional e só com a permissão `services.link` (ver step-links.tsx).
   links: linksStep,
@@ -156,7 +144,11 @@ export { StepLocation } from './step-location';
 export { StepPrice } from './step-price';
 export { StepImages, createImagesStep, createStepImages, DEFAULT_MAX_SERVICE_IMAGES, type ImagesProfile } from './step-images';
 export { StepDescription } from './step-description';
-export { StepDynamicForm } from './step-dynamic-form';
+export {
+  StepDynamicForm,
+  createDynamicFormStep,
+  type DynamicFormProfile,
+} from './step-dynamic-form';
 export { StepModeration } from './step-moderation';
 export { StepLinks } from './step-links';
 export { moderateService, type ModerateServiceArgs } from './moderate-service';
