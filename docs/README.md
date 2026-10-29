@@ -24,6 +24,7 @@ mantém projeto ↔ core alinhados.
 | Sessão, tenant, permissões                         | [Auth & permissões](arquitetura/auth.md)                    |
 | Montar uma tela administrativa                     | [Screen Engine](interface/screen-engine.md)                 |
 | Montar um fluxo em passos                          | [Wizard](interface/wizard.md)                               |
+| Analisar performance, cache ou RLS (specs de skills) | [Análise](analise/README.md)                                |
 | Ativar ou criar um plugin                          | [Plugins](plugins/README.md)                                |
 
 ## Seções
@@ -33,6 +34,7 @@ mantém projeto ↔ core alinhados.
 * **[Interface](interface/README.md)** — componentes, screen engine e wizard.
 * **[Serviços](servicos/README.md)** — storage de arquivos, e-mail e IA.
 * **[Plugins](plugins/README.md)** — os módulos de banco opcionais e como ativá-los.
+* **[Análise](analise/README.md)** — specs das skills de performance, cache, SQL/PostgREST, RLS e limpeza de código.
 * **[Manutenção](manutencao/README.md)** — hardening, backlog e como escrever esta documentação.
 
 ## Convenções desta documentação

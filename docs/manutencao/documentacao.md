@@ -18,6 +18,7 @@ docs/
 ├── interface/           componentes, screen engine, wizard
 ├── servicos/            storage, e-mail, IA
 ├── plugins/             plugins de banco
+├── analise/             specs das skills de performance, cache, RLS e limpeza
 └── manutencao/          hardening, backlog, esta página
 ```
 

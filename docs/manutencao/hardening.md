@@ -10,3 +10,5 @@ rate-limit por IP em `/api/auth/*`): ver `git log`.
 
 > Para um projeto novo sobre o `kizuna-core`, copie as seções Segurança/Performance do
 > `PENDENCIAS.md` do foco-total como ponto de partida do seu próprio tracker.
+
+Para analisar performance, cache e RLS de forma repetível, use as specs em [Análise](../analise/README.md).

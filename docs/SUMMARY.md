@@ -47,6 +47,18 @@
   * [Plugin tickets](plugins/tickets.md)
   * [Plugin ads](plugins/ads.md)
 
+## Análise (performance e segurança)
+
+* [Visão geral](analise/README.md)
+  * [Next.js — performance de página](analise/nextjs-performance.md)
+  * [Recursos bloqueantes](analise/recursos-bloqueantes.md)
+  * [Cache — estratégia em camadas](analise/cache.md)
+  * [SQL / PostgREST / Postgres](analise/sql-postgrest-tuning.md)
+  * [Segurança — RLS das tabelas](analise/seguranca-rls.md)
+  * [Design de código e limpeza](analise/code-design.md)
+  * [Plano de melhoria (template)](analise/plano-de-melhoria.md)
+  * [Como virar skill](analise/como-virar-skill.md)
+
 ## Manutenção
 
 * [Visão geral](manutencao/README.md)
