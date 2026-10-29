@@ -5,6 +5,8 @@ import { createDynamicFormStep, type DynamicFormProfile } from './step-dynamic-f
 import {
   endOfLocalDayToIso,
   isoToLocalDate,
+  isoToLocalTime,
+  localDateTimeToIso,
   resolveExpiresAtMode,
   validateExpiresAt,
   validatePriceProfile,
@@ -113,6 +115,34 @@ describe('helpers de data', () => {
   });
 });
 
+describe('hora de término (localDateTimeToIso / isoToLocalTime)', () => {
+  it('roundtrip com segundos e ms zerados', () => {
+    const iso = localDateTimeToIso('2030-06-15', '21:30')!;
+    const d = new Date(iso);
+    expect([d.getFullYear(), d.getMonth(), d.getDate(), d.getHours(), d.getMinutes(), d.getSeconds(), d.getMilliseconds()]).toEqual([
+      2030, 5, 15, 21, 30, 0, 0,
+    ]);
+    expect(isoToLocalDate(iso)).toBe('2030-06-15');
+    expect(isoToLocalTime(iso)).toBe('21:30');
+  });
+  it('fim do dia (sem hora) lê como vazio', () => {
+    expect(isoToLocalTime(endOfLocalDayToIso('2030-06-15'))).toBe('');
+    expect(isoToLocalTime(null)).toBe('');
+    expect(isoToLocalTime('lixo')).toBe('');
+  });
+  it('rejeita data inexistente e hora inválida', () => {
+    expect(localDateTimeToIso('2026-02-31', '10:00')).toBeNull();
+    expect(localDateTimeToIso('2030-06-15', '25:00')).toBeNull();
+    expect(localDateTimeToIso('2030-06-15', '')).toBeNull();
+    expect(localDateTimeToIso('', '10:00')).toBeNull();
+  });
+  it('hora já passada hoje barra pela validação do instante', () => {
+    const d = new Date();
+    d.setHours(d.getHours() - 2);
+    expect(validateExpiresAt('optional', d.toISOString(), true)).toBe('past');
+  });
+});
+
 describe('createDynamicFormStep — canContinue', () => {
   const cc = (p: DynamicFormProfile['expiresAt'], c: WizardStepContext<ServiceWizardState>) =>
     createDynamicFormStep(profiles(p)).canContinue!(c);
@@ -212,5 +242,36 @@ describe('dynamic-form — campo de validade', () => {
     expect(patch).toHaveBeenCalledWith({ expiresAt: endOfLocalDayToIso('2030-07-01') });
     fireEvent.click(screen.getByRole('button', { name: 'Limpar data' }));
     expect(patch).toHaveBeenCalledWith({ expiresAt: null });
+  });
+
+  it('hora de término: desabilitada sem data; grava horário local com a hora escolhida', () => {
+    renderStep({ expiresAt: 'optional' }, {});
+    expect((screen.getByLabelText(/Hora de término/) as HTMLInputElement).disabled).toBe(true);
+    cleanup();
+
+    const patch = vi.fn();
+    renderStep({ expiresAt: 'optional' }, { expiresAt: endOfLocalDayToIso('2030-06-15') }, patch);
+    const t = screen.getByLabelText(/Hora de término/) as HTMLInputElement;
+    expect(t.disabled).toBe(false);
+    expect(t.value).toBe('');
+    fireEvent.change(t, { target: { value: '22:30' } });
+    expect(patch).toHaveBeenCalledWith({ expiresAt: localDateTimeToIso('2030-06-15', '22:30') });
+  });
+
+  it('trocar o dia mantém a hora; limpar a hora volta ao fim do dia na mesma data', () => {
+    const patch = vi.fn();
+    renderStep({ expiresAt: 'optional' }, { expiresAt: localDateTimeToIso('2030-06-15', '22:30') }, patch);
+    const date = screen.getByLabelText(/Válido até/) as HTMLInputElement;
+    const time = screen.getByLabelText(/Hora de término/) as HTMLInputElement;
+    expect(time.value).toBe('22:30');
+    fireEvent.change(date, { target: { value: '2030-07-01' } });
+    expect(patch).toHaveBeenCalledWith({ expiresAt: localDateTimeToIso('2030-07-01', '22:30') });
+    fireEvent.change(time, { target: { value: '' } });
+    expect(patch).toHaveBeenCalledWith({ expiresAt: endOfLocalDayToIso('2030-06-15') });
+  });
+
+  it('rótulo da hora vem do perfil (timeLabel)', () => {
+    renderStep({ expiresAt: 'required', expiresAtLabels: { label: 'Acontece em', timeLabel: 'Termina às' } }, {});
+    expect(screen.getByLabelText('Termina às')).toBeTruthy();
   });
 });

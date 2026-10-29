@@ -383,13 +383,22 @@ no boot). A obrigatoriedade é por grupo/categoria, com a mesma precedência dos
 | `true` ou `"optional"`    | `optional` | Campo "Válido até (opcional)". Pode ficar em branco; se preenchido, não pode ser passado. |
 | `"required"`              | `required` | Campo "Válido até" obrigatório, com data hoje ou futura.                            |
 
-- O campo é uma data (`input date`); o core grava o **fim do dia local** convertido para ISO UTC, e
-  mostra a data local ao editar. Há botão para limpar (grava `null`).
+- O campo é uma **data** (`input date`) com **hora de término opcional** (`input time`, desabilitado
+  enquanto não há data). Sem hora, o core grava o **fim do dia local** (23:59:59.999) convertido para
+  ISO UTC; com hora, grava aquele horário local (segundos e ms zerados). Ao editar, o fim do dia lê como
+  "sem hora" (campo de hora vazio). Trocar o dia mantém a hora; limpar a hora volta ao fim do dia na
+  mesma data. Há botão para limpar tudo (grava `null`). A validação "no passado" é pelo instante, então
+  uma hora que já passou hoje também barra.
+- A hora de término importa porque o `expires_at` é quando o anúncio sai da busca: o evento fica visível
+  até acabar. O card e o detalhe do evento mostram o dia e, havendo hora, "até 23:00" (lida no fuso de
+  Cuiabá); sem hora, só o dia.
 - Em edição/revisão, uma data **já vencida** de um anúncio existente não trava o passo; só trava se a
   pessoa alterar a data para o passado.
 - Valor inválido em `expiresAt` lança erro no boot (`true`, `false`, `"optional"` ou `"required"`).
 - `expiresAtLabels` troca os textos do campo (`label`, `hint`, `optional`, `clear`, `required`,
-  `past`); o que faltar usa os padrões do core ("Válido até"…).
+  `past`, `timeLabel` e `timeHint`); o que faltar usa os padrões do core ("Válido até", "Hora de
+  término (opcional)"…). `timeLabel` é o rótulo do campo de hora; `timeHint` é a dica que aparece
+  quando já há data.
 - O campo vai para `services.expires_at` ao avançar do passo (`ctx.persist`); as respostas do
   formulário seguem em `form_results`.
 - Como o perfil escolhido **substitui o anterior por inteiro**, repita `expiresAtLabels` na categoria

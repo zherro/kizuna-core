@@ -315,6 +315,42 @@ export function eventDayFromExpiresAt(
 }
 
 /**
+ * Hora de término ("HH:MM", fuso de Cuiabá por padrão) gravada no `services.expires_at`. `null` quando
+ * o valor é o fim do dia (23:59:59, o que se grava quando só a data foi escolhida) ou não é data:
+ * sem hora, o card e o detalhe não mostram sufixo.
+ */
+export function eventEndTimeFromExpiresAt(
+  expiresAt: unknown,
+  timeZone: string = EVENT_EXPIRES_TIME_ZONE
+): string | null {
+  const s = str(expiresAt);
+  if (!s) return null;
+  const t = new Date(s).getTime();
+  if (!Number.isFinite(t)) return null;
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone,
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(t);
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? '';
+  const [hh, mm, ss] = [get('hour'), get('minute'), get('second')];
+  if (hh === '23' && mm === '59' && ss === '59') return null;
+  return `${hh}:${mm}`;
+}
+
+/** "sáb., 14 de nov." ou, com hora de término, "sáb., 14 de nov. · até 23:00" — a data do "Acontece em". */
+export function formatEventExpiry(expiresAt: unknown, timeZone: string = EVENT_EXPIRES_TIME_ZONE): string | null {
+  const day = eventDayFromExpiresAt(expiresAt, timeZone);
+  if (!day) return null;
+  const label = formatEventDay(day);
+  if (!label) return null;
+  const until = eventEndTimeFromExpiresAt(expiresAt, timeZone);
+  return until ? `${label} · até ${until}` : label;
+}
+
+/**
  * Evento já terminou? `services.expires_at` manda (é o "Acontece em"; passou, acabou). Sem validade,
  * cai no fim conhecido das respostas do formulário (data_fim, sessões, data_inicio).
  */

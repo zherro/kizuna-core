@@ -479,7 +479,8 @@ padrão do core: 3). Vale por grupo ou categoria, como os outros perfis.
 A validade é a coluna `services.expires_at` do anúncio. Na tela ela fica no topo do passo
 `dynamic-form`, configurada em `stepProfiles["dynamic-form"]` com
 `"expiresAt": "required" | "optional" | true | false` (ausente = campo oculto), por grupo/categoria, e
-`expiresAtLabels` para os textos (nos eventos, "Acontece em"). O perfil `price` não aceita mais
+`expiresAtLabels` para os textos (nos eventos, "Acontece em"; inclui `timeLabel` e `timeHint` da hora de
+término opcional, sem hora vale o fim do dia). O perfil `price` não aceita mais
 `expiresAt`. O perfil escolhido substitui o anterior por inteiro:
 
 ```json

@@ -5,6 +5,8 @@ import { Input } from '../../ui/input';
 import {
   endOfLocalDayToIso,
   isoToLocalDate,
+  isoToLocalTime,
+  localDateTimeToIso,
   type ExpiresAtError,
   type ExpiresAtMode,
 } from './price-options';
@@ -17,15 +19,21 @@ export type ExpiresAtLabels = {
   clear?: string;
   required?: string;
   past?: string;
+  /** Rótulo do campo de hora de término. */
+  timeLabel?: string;
+  /** Dica sob o campo, mostrada quando já há data. */
+  timeHint?: string;
 };
 
 export const EXPIRES_AT_DEFAULTS: Required<ExpiresAtLabels> = {
   label: 'Válido até',
   optional: '(opcional)',
-  hint: 'Depois dessa data o anúncio deixa de valer. O prazo termina no fim do dia escolhido.',
+  hint: 'Depois dessa data o anúncio deixa de valer. Sem hora de término, o prazo vai até o fim do dia escolhido.',
   clear: 'Limpar data',
   required: 'Informe até quando o anúncio vale',
   past: 'A data não pode estar no passado',
+  timeLabel: 'Hora de término (opcional)',
+  timeHint: 'Informe a hora para o anúncio sair no horário certo. Sem hora, vale o fim do dia.',
 };
 
 /** Junta os textos na ordem: `overrides` (config do projeto) → `base` (mensagens i18n) → padrão do core. */
@@ -44,8 +52,9 @@ export function resolveExpiresAtLabels(
 }
 
 /**
- * Campo de data da validade do anúncio (`services.expires_at`, fim do dia escolhido). Compartilhado
- * entre o passo de preço e o passo do formulário dinâmico — cada um decide se e onde mostra.
+ * Campo da validade do anúncio (`services.expires_at`): data + hora de término opcional. Sem hora,
+ * grava o fim do dia escolhido; com hora, aquele horário local. Compartilhado entre os passos do
+ * wizard — cada um decide se e onde mostra.
  */
 export function ExpiresAtField({
   id,
@@ -62,22 +71,49 @@ export function ExpiresAtField({
   labels: Required<ExpiresAtLabels>;
   onChange: (iso: string | null) => void;
 }) {
+  const date = isoToLocalDate(value);
+  const time = isoToLocalTime(value);
+  const labelClass = 'block text-sm font-medium text-foreground';
   return (
     <div className="space-y-1.5">
-      <label htmlFor={id} className="block text-sm font-medium text-foreground">
-        {labels.label}
-        {mode === 'optional' ? ` ${labels.optional}` : ''}
-      </label>
-      <div className="flex max-w-md gap-2">
-        <Input
-          id={id}
-          type="date"
-          value={isoToLocalDate(value)}
-          min={isoToLocalDate(new Date().toISOString())}
-          onChange={(event) => onChange(endOfLocalDayToIso(event.target.value))}
-          aria-invalid={error ? true : undefined}
-          className="h-12 text-base"
-        />
+      <div className="grid max-w-xl grid-cols-1 items-end gap-3 sm:grid-cols-[minmax(0,1fr)_9.5rem_auto]">
+        <div className="space-y-1.5">
+          <label htmlFor={id} className={labelClass}>
+            {labels.label}
+            {mode === 'optional' ? ` ${labels.optional}` : ''}
+          </label>
+          <Input
+            id={id}
+            type="date"
+            value={date}
+            min={isoToLocalDate(new Date().toISOString())}
+            onChange={(event) => {
+              const next = event.target.value;
+              // trocar o dia mantém a hora de término já escolhida
+              onChange(time ? localDateTimeToIso(next, time) : endOfLocalDayToIso(next));
+            }}
+            aria-invalid={error ? true : undefined}
+            className="h-12 text-base"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <label htmlFor={`${id}-time`} className={labelClass}>
+            {labels.timeLabel}
+          </label>
+          <Input
+            id={`${id}-time`}
+            type="time"
+            value={time}
+            disabled={!date}
+            onChange={(event) => {
+              const next = event.target.value;
+              // hora limpa volta ao fim do dia, mantendo a data
+              onChange(next ? localDateTimeToIso(date, next) : endOfLocalDayToIso(date));
+            }}
+            aria-invalid={error ? true : undefined}
+            className="h-12 text-base"
+          />
+        </div>
         {value ? (
           <Button
             type="button"
@@ -96,6 +132,7 @@ export function ExpiresAtField({
       ) : (
         <p className="text-xs text-muted-foreground">{labels.hint}</p>
       )}
+      {date && !error ? <p className="text-xs text-muted-foreground">{labels.timeHint}</p> : null}
     </div>
   );
 }

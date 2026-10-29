@@ -1,4 +1,4 @@
-import { eventDateParts, eventDayFromExpiresAt, formatEventDay, formatEventWhen } from './evento-helpers';
+import { eventDateParts, eventDayFromExpiresAt, formatEventExpiry, formatEventWhen } from './evento-helpers';
 
 export type VariantCardProps = {
   cardStyle: 'cinema' | 'evento' | 'lugar';
@@ -63,7 +63,7 @@ export function variantCardProps(
       priceLabel: null,
       priceCaption: null,
       dateLabel: day ? eventDateParts(day) : eventDateParts(input.startsAt),
-      whenLabel: day ? formatEventDay(day) : formatEventWhen({ data_inicio: input.startsAt }),
+      whenLabel: day ? formatEventExpiry(input.expiresAt) : formatEventWhen({ data_inicio: input.startsAt }),
     };
   }
   return null;

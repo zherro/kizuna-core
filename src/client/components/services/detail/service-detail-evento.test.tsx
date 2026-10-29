@@ -195,3 +195,30 @@ describe('ServiceDetailEvento artistas', () => {
     expect(screen.getByRole('link', { name: 'Banda Z' }).getAttribute('href')).toBe('/cuiaba-mt/anuncio/bz');
   });
 });
+
+describe('ServiceDetailEvento — "Acontece em" (expires_at)', () => {
+  const renderWithExpiry = (expiresAt: string) =>
+    render(
+      <>
+        {ServiceDetailEvento({
+          service: { ...service, expiresAt } as ServiceRecord,
+          extraFields,
+          subcategoryNames: [],
+          hue: 200,
+          labels,
+        })}
+      </>
+    );
+
+  it('sem hora: só o dia', () => {
+    renderWithExpiry('2026-12-20T03:59:59.999Z'); // 19/12 fim do dia em Cuiabá
+    expect(screen.getByText('Acontece em')).toBeTruthy();
+    expect(screen.getByText(/19 de dez/)).toBeTruthy();
+    expect(screen.queryByText(/até \d{2}:\d{2}/)).toBeNull();
+  });
+
+  it('com hora de término: "até HH:MM"', () => {
+    renderWithExpiry('2026-12-20T02:00:00.000Z'); // 19/12 22:00 em Cuiabá
+    expect(screen.getByText(/19 de dez.* · até 22:00/)).toBeTruthy();
+  });
+});

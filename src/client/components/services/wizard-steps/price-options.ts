@@ -160,6 +160,40 @@ export function endOfLocalDayToIso(date: string): string | null {
   return local.toISOString();
 }
 
+/**
+ * "YYYY-MM-DD" + "HH:MM" (inputs date e time) → esse horário local (segundos e ms zerados) em ISO UTC.
+ * Entrada inválida ou data que o Date "corrige" (ex.: 2026-02-31, 25:00) → `null`.
+ */
+export function localDateTimeToIso(date: string, time: string): string | null {
+  const d = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
+  const t = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(time);
+  if (!d || !t) return null;
+  const [y, mo, day, h, mi] = [Number(d[1]), Number(d[2]), Number(d[3]), Number(t[1]), Number(t[2])];
+  const local = new Date(y, mo - 1, day, h, mi, 0, 0);
+  if (local.getFullYear() !== y || local.getMonth() !== mo - 1 || local.getDate() !== day) return null;
+  return local.toISOString();
+}
+
+/**
+ * ISO → "HH:MM" no fuso local (o que o input time mostra). Vazio quando não há hora: valor vazio,
+ * inválido ou o fim do dia (23:59:59.999), que é o que se grava quando só a data foi escolhida.
+ */
+export function isoToLocalTime(iso: string | null | undefined): string {
+  if (!iso) return '';
+  const date = new Date(iso);
+  if (!Number.isFinite(date.getTime())) return '';
+  if (
+    date.getHours() === 23 &&
+    date.getMinutes() === 59 &&
+    date.getSeconds() === 59 &&
+    date.getMilliseconds() === 999
+  ) {
+    return '';
+  }
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
 /** ISO → "YYYY-MM-DD" no fuso local (o que o input date mostra). Vazio/inválido → `''`. */
 export function isoToLocalDate(iso: string | null | undefined): string {
   if (!iso) return '';

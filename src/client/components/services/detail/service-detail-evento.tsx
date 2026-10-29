@@ -27,6 +27,7 @@ import {
   eventClassification,
   eventDateParts,
   eventDayFromExpiresAt,
+  formatEventExpiry,
   eventPriceInfo,
   eventoHeaderTags,
   formatBRL,
@@ -232,7 +233,7 @@ export const ServiceDetailEvento: ServiceDetailVariantComponent = ({ service, ex
 
   // "Acontece em" = `services.expires_at` (campo do service); sem validade, a data do formulário.
   const happensOn = eventDayFromExpiresAt(service.expiresAt);
-  const when = happensOn ? formatEventDay(happensOn) : formatEventWhen(answers);
+  const when = happensOn ? formatEventExpiry(service.expiresAt) : formatEventWhen(answers);
   const classificacao = eventClassification(answers);
   const realizadorRaw = textField(answers.realizador);
   const realizador = realizadorRaw ? humanizeSlug(realizadorRaw) : null;
