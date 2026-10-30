@@ -19,10 +19,10 @@ describe('variantCardProps', () => {
     expect(p?.whenLabel).not.toMatch(/\d{2}:\d{2}/); // fim do dia não é horário do evento
   });
 
-  it('evento: com hora de término no expires_at, o rótulo ganha "até HH:MM"', () => {
+  it('evento: com hora de início no expires_at, o rótulo ganha "· HH:MM"', () => {
     const p = variantCardProps('evento', { expiresAt: '2026-11-15T03:00:00.000Z' }); // 14/11 23:00 em Cuiabá
     expect(p?.dateLabel).toEqual({ day: '14', month: 'nov' });
-    expect(p?.whenLabel).toMatch(/14 de nov.* · até 23:00$/);
+    expect(p?.whenLabel).toMatch(/14 de nov.* · 23:00$/);
   });
 
   it('evento: sem expires_at cai na data de início do formulário', () => {

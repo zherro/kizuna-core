@@ -315,11 +315,11 @@ export function eventDayFromExpiresAt(
 }
 
 /**
- * Hora de término ("HH:MM", fuso de Cuiabá por padrão) gravada no `services.expires_at`. `null` quando
- * o valor é o fim do dia (23:59:59, o que se grava quando só a data foi escolhida) ou não é data:
- * sem hora, o card e o detalhe não mostram sufixo.
+ * Hora de início do evento ("HH:MM", fuso de Cuiabá por padrão) gravada no `services.expires_at`. `null`
+ * quando o valor é o fim do dia (23:59:59, o que se grava quando só a data foi escolhida) ou não é data:
+ * sem hora, o card e o detalhe mostram só o dia.
  */
-export function eventEndTimeFromExpiresAt(
+export function eventTimeFromExpiresAt(
   expiresAt: unknown,
   timeZone: string = EVENT_EXPIRES_TIME_ZONE
 ): string | null {
@@ -340,14 +340,14 @@ export function eventEndTimeFromExpiresAt(
   return `${hh}:${mm}`;
 }
 
-/** "sáb., 14 de nov." ou, com hora de término, "sáb., 14 de nov. · até 23:00" — a data do "Acontece em". */
+/** "sáb., 14 de nov." ou, com hora de início, "sáb., 14 de nov. · 21:00" — a data do "Acontece em". */
 export function formatEventExpiry(expiresAt: unknown, timeZone: string = EVENT_EXPIRES_TIME_ZONE): string | null {
   const day = eventDayFromExpiresAt(expiresAt, timeZone);
   if (!day) return null;
   const label = formatEventDay(day);
   if (!label) return null;
-  const until = eventEndTimeFromExpiresAt(expiresAt, timeZone);
-  return until ? `${label} · até ${until}` : label;
+  const time = eventTimeFromExpiresAt(expiresAt, timeZone);
+  return time ? `${label} · ${time}` : label;
 }
 
 /**

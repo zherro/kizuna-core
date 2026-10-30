@@ -217,8 +217,8 @@ describe('ServiceDetailEvento — "Acontece em" (expires_at)', () => {
     expect(screen.queryByText(/até \d{2}:\d{2}/)).toBeNull();
   });
 
-  it('com hora de término: "até HH:MM"', () => {
+  it('com hora de início: "· HH:MM"', () => {
     renderWithExpiry('2026-12-20T02:00:00.000Z'); // 19/12 22:00 em Cuiabá
-    expect(screen.getByText(/19 de dez.* · até 22:00/)).toBeTruthy();
+    expect(screen.getByText(/19 de dez.* · 22:00/)).toBeTruthy();
   });
 });

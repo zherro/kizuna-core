@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   eventDateParts,
   eventDayFromExpiresAt,
-  eventEndTimeFromExpiresAt,
+  eventTimeFromExpiresAt,
   formatEventExpiry,
   eventEnd,
   eventPriceInfo,
@@ -289,20 +289,20 @@ describe('resolveEventPlace', () => {
   });
 });
 
-describe('eventEndTimeFromExpiresAt / formatEventExpiry', () => {
+describe('eventTimeFromExpiresAt / formatEventExpiry', () => {
   it('lê a hora no fuso de Cuiabá (UTC-4)', () => {
-    expect(eventEndTimeFromExpiresAt('2026-11-15T03:00:00.000Z')).toBe('23:00'); // 14/11 23:00 em Cuiabá
-    expect(eventEndTimeFromExpiresAt('2026-11-14T22:30:00Z')).toBe('18:30');
-    expect(eventEndTimeFromExpiresAt('2026-11-14T22:30:00Z', 'America/Sao_Paulo')).toBe('19:30');
+    expect(eventTimeFromExpiresAt('2026-11-15T03:00:00.000Z')).toBe('23:00'); // 14/11 23:00 em Cuiabá
+    expect(eventTimeFromExpiresAt('2026-11-14T22:30:00Z')).toBe('18:30');
+    expect(eventTimeFromExpiresAt('2026-11-14T22:30:00Z', 'America/Sao_Paulo')).toBe('19:30');
   });
   it('fim do dia (23:59:59) e valores inválidos → null', () => {
-    expect(eventEndTimeFromExpiresAt('2026-11-15T03:59:59.999Z')).toBeNull();
-    expect(eventEndTimeFromExpiresAt(null)).toBeNull();
-    expect(eventEndTimeFromExpiresAt('lixo')).toBeNull();
+    expect(eventTimeFromExpiresAt('2026-11-15T03:59:59.999Z')).toBeNull();
+    expect(eventTimeFromExpiresAt(null)).toBeNull();
+    expect(eventTimeFromExpiresAt('lixo')).toBeNull();
   });
-  it('formatEventExpiry: dia, com "até HH:MM" só quando há hora', () => {
+  it('formatEventExpiry: dia, com "· HH:MM" (início) só quando há hora', () => {
     expect(formatEventExpiry('2026-11-15T03:59:59.999Z')).toMatch(/14 de nov\.?$/);
-    expect(formatEventExpiry('2026-11-15T03:00:00.000Z')).toMatch(/14 de nov.* · até 23:00$/);
+    expect(formatEventExpiry('2026-11-15T03:00:00.000Z')).toMatch(/14 de nov.* · 23:00$/);
     expect(formatEventExpiry(null)).toBeNull();
   });
 });
