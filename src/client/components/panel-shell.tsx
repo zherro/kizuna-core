@@ -10,6 +10,13 @@ import { cn } from '../../lib/utils';
 
 export type PanelNavIcon = ComponentType<{ className?: string }>;
 
+export type PanelNavAccessCondition = {
+  /** Resource key from the JWT's `perms` claim — passes if `user.hasPerm(resource)` is true. */
+  permResource?: string;
+  /** Passes if `user.is_root` — a different axis from `permResource`/`hasPerm`. */
+  rootOnly?: boolean;
+};
+
 export type PanelNavItem = {
   title: string;
   href: string;
@@ -20,12 +27,57 @@ export type PanelNavItem = {
   devOnly?: boolean;
   /** Hidden unless `user.is_root` — a different axis from `permResource`/`hasPerm`. */
   rootOnly?: boolean;
+  /**
+   * Alternative to `permResource`/`rootOnly`: visible (and reachable via direct
+   * navigation) if ANY of these conditions passes. Used by "hub" items that
+   * aggregate access to several sub-resources — the hub link itself has no
+   * single `permResource` of its own.
+   */
+  visibleIf?: PanelNavAccessCondition[];
+  /**
+   * Hides the item from the rendered sidebar while keeping it valid for
+   * `checkPagePermission` — use when a real screen's navigation moved into a
+   * hub page but the screen's own URL didn't change.
+   */
+  sidebarHidden?: boolean;
 };
 
 export type PanelNavGroup = {
   title: string;
   items: PanelNavItem[];
 };
+
+/** User shape needed to evaluate access — a subset of `useAuth()`'s `user`. */
+export type PanelNavAccessUser =
+  | {
+      hasPerm?: (resource: string) => boolean;
+      is_root?: boolean;
+    }
+  | null
+  | undefined;
+
+/**
+ * Whether `item` is reachable by `user` — same rule `PanelShellBase` uses for
+ * both sidebar visibility and direct-navigation permission checks. Exported
+ * so other consumers (e.g. a command palette) apply the identical rule
+ * instead of re-implementing it.
+ */
+export function isPanelNavItemAccessible(
+  item: Pick<PanelNavItem, 'permResource' | 'rootOnly' | 'visibleIf'>,
+  user: PanelNavAccessUser
+): boolean {
+  if (item.visibleIf && item.visibleIf.length > 0) {
+    return item.visibleIf.some(
+      (cond) =>
+        (!cond.permResource || (user?.hasPerm?.(cond.permResource) ?? false)) &&
+        (!cond.rootOnly || (user?.is_root ?? false))
+    );
+  }
+  return (
+    (!item.permResource || (user?.hasPerm?.(item.permResource) ?? false)) &&
+    (!item.rootOnly || (user?.is_root ?? false))
+  );
+}
 
 export type PanelShellBranding = {
   /** Small uppercase kicker over the menu title and in the sidebar header. */
@@ -52,6 +104,16 @@ export type PanelShellBaseProps = {
   /** Optional trailing badge for a nav item (e.g. an unread count). */
   renderItemBadge?: (item: PanelNavItem, collapsed: boolean) => ReactNode;
   /**
+   * Extra content rendered on the right of the single full-bleed header (e.g. a wizard's
+   * mode label + layout toggle). Only shown on full-bleed routes.
+   */
+  fullBleedHeaderExtra?: ReactNode;
+  /**
+   * Extra content rendered on the right of the standard (non full-bleed)
+   * header, before the user card — e.g. a search trigger.
+   */
+  headerExtra?: ReactNode;
+  /**
    * When true (default), a pathname that matches no visible nav item calls `notFound()`.
    * Set false to let the shell render any `/painel` route regardless of the nav list.
    */
@@ -64,6 +126,8 @@ export function PanelShellBase({
   branding,
   isFullBleedRoute,
   renderItemBadge,
+  fullBleedHeaderExtra,
+  headerExtra,
   enforcePagePermission = true,
 }: PanelShellBaseProps) {
   const { user, logout } = useAuth();
@@ -75,17 +139,16 @@ export function PanelShellBase({
   const fullBleed = isFullBleedRoute?.(pathname) ?? false;
 
   const menuTitle = branding.menuTitle ?? 'Menu do painel';
-  const menuDescription =
-    branding.menuDescription ?? 'Navegue entre os modulos administrativos.';
+  const menuDescription = branding.menuDescription ?? 'Navegue entre os modulos administrativos.';
+
+  const passesAccessGate = (item: PanelNavItem) => isPanelNavItemAccessible(item, user);
 
   const visibleNavigationGroups = navGroups
     .map((group) => ({
       ...group,
       items: group.items.filter(
         (item) =>
-          (!item.permResource || (user?.hasPerm(item.permResource) ?? false)) &&
-          (!item.devOnly || isDevEnvironment) &&
-          (!item.rootOnly || (user?.is_root ?? false))
+          passesAccessGate(item) && (!item.devOnly || isDevEnvironment) && !item.sidebarHidden
       ),
     }))
     .filter((group) => group.items.length > 0);
@@ -93,60 +156,34 @@ export function PanelShellBase({
   const checkPagePermission = (path: string = pathname) => {
     const item = navGroups
       .flatMap((group) => group.items)
-      .find(
-        (candidate) =>
-          path?.startsWith(candidate.href) &&
-          (candidate.rootOnly
-            ? (user?.is_root ?? false)
-            : (user?.hasPerm(candidate.permResource ?? 'default') ?? false))
-      );
+      .find((candidate) => path?.startsWith(candidate.href) && passesAccessGate(candidate));
 
     if (item) return;
     notFound();
   };
 
-  if (enforcePagePermission) {
+  // Só aplica o gate quando já sabemos quem é o usuário. `user` null aqui =
+  // hidratação pendente (o layout de /painel já redireciona pra /login se não há
+  // sessão), não "acesso negado" — bloquear nesse estado manda pra notFound() no F5.
+  if (enforcePagePermission && user) {
     void checkPagePermission();
   }
 
-  if (fullBleed) {
-    return (
-      <div className="flex h-full min-h-full flex-1 flex-col bg-background">
-        <header className="sticky top-0 z-30 border-b border-border bg-background/95 backdrop-blur">
-          <div className="flex h-16 items-center px-4 md:px-6">
-            <Link href="/painel" className="inline-flex items-center gap-3">
-              <span
-                className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-sm font-semibold text-primary"
-                aria-hidden="true"
-              >
-                {branding.shortLabel}
-              </span>
-              <span className="text-sm font-semibold tracking-[0.2em] text-foreground uppercase">
-                {branding.fullLabel}
-              </span>
-            </Link>
-          </div>
-        </header>
-
-        <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex h-full min-h-0 overflow-hidden bg-muted/20">
+  const renderDrawer = (overlayOnly: boolean) => (
+    <>
       {mobileOpen ? (
         <button
           type="button"
           aria-label="Fechar menu lateral"
-          className="fixed inset-0 z-40 bg-black/40 lg:hidden"
+          className={cn('fixed inset-0 z-40 bg-black/40', !overlayOnly && 'lg:hidden')}
           onClick={() => setMobileOpen(false)}
         />
       ) : null}
 
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 flex border-r border-border bg-background transition-transform duration-200 lg:fixed lg:translate-x-0',
+          'fixed inset-y-0 left-0 z-50 flex border-r border-border bg-background transition-transform duration-200',
+          !overlayOnly && 'lg:fixed lg:translate-x-0',
           collapsed ? 'w-24' : 'w-72',
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         )}
@@ -240,6 +277,48 @@ export function PanelShellBase({
           </nav>
         </div>
       </aside>
+    </>
+  );
+
+  if (fullBleed) {
+    return (
+      <div className="flex h-full min-h-full flex-1 flex-col bg-background">
+        {renderDrawer(true)}
+        <header className="sticky top-0 z-30 shrink-0 border-b border-border bg-background/95 backdrop-blur">
+          <div className="flex h-16 items-center gap-3 px-4 md:px-6">
+            <button
+              type="button"
+              onClick={() => setMobileOpen(true)}
+              className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}
+              aria-label="Abrir menu"
+            >
+              <Menu className="mr-1 h-4 w-4" /> Menu
+            </button>
+            <Link href="/painel" className="inline-flex items-center gap-3">
+              <span
+                className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-primary/10 text-sm font-semibold text-primary"
+                aria-hidden="true"
+              >
+                {branding.shortLabel}
+              </span>
+              <span className="hidden text-sm font-semibold tracking-[0.2em] text-foreground uppercase sm:inline">
+                {branding.fullLabel}
+              </span>
+            </Link>
+            <div id="wz-header-slot" className="ml-auto flex min-w-0 items-center gap-2">
+              {fullBleedHeaderExtra}
+            </div>
+          </div>
+        </header>
+
+        <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex h-full min-h-0 overflow-hidden bg-muted/20">
+      {renderDrawer(false)}
 
       <div
         className={cn(
@@ -276,22 +355,25 @@ export function PanelShellBase({
               </button>
             </div>
 
-            <div className="ml-auto flex min-w-0 items-center gap-3 rounded-2xl border border-border bg-card px-3 py-2 shadow-sm">
-              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
-                {user?.initials}
+            <div className="ml-auto flex items-center gap-3">
+              {headerExtra}
+              <div className="flex min-w-0 items-center gap-3 rounded-2xl border border-border bg-card px-3 py-2 shadow-sm">
+                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+                  {user?.initials}
+                </div>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-foreground">{user?.name}</p>
+                  <p className="truncate text-xs text-muted-foreground">{user?.subtitle}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void logout()}
+                  className={buttonVariants({ variant: 'ghost', size: 'sm' })}
+                >
+                  <LogOut className="h-4 w-4" />
+                  <span className="hidden sm:inline">Sair</span>
+                </button>
               </div>
-              <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-foreground">{user?.name}</p>
-                <p className="truncate text-xs text-muted-foreground">{user?.subtitle}</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => void logout()}
-                className={buttonVariants({ variant: 'ghost', size: 'sm' })}
-              >
-                <LogOut className="h-4 w-4" />
-                <span className="hidden sm:inline">Sair</span>
-              </button>
             </div>
           </div>
         </header>

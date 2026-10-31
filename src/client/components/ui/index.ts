@@ -13,11 +13,6 @@ export {
 } from './dropdown-menu';
 export { Badge } from './badge';
 export { Error404Illustration } from './illustration';
-export {
-  Accordion,
-  AccordionItem,
-  AccordionTrigger,
-  AccordionContent,
-} from './accordion';
+export { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from './accordion';
 export { RadioGroup, RadioGroupItem } from './radio-group';
 export { Tooltip } from './tooltip';

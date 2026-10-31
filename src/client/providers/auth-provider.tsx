@@ -1,6 +1,14 @@
 'use client';
 
-import { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import type { PermissionMap } from '../../types/auth';
 
 export interface PublicSession {
@@ -29,8 +37,14 @@ function buildAuthUser(raw: PublicSession): AuthUser {
   // permission row (plugins never auto-grant, see plugins/README.md), it bypasses the check
   // entirely — so the client-side gate (nav items, page guards keyed off `permResource`) must
   // bypass the same way, or a root-only feature with no explicit grant just disappears for root.
+  //
+  // No implicit "default" bypass here on purpose — every resource, baseline nav included, is a
+  // real row in the catalog and must be granted via `auth.role_grants` (see
+  // db/migrations/0002_rbac_app_permissions.sql in the consuming project for the baseline
+  // `default.view` grant to every template role). A resource simply absent from `perms` is
+  // "not granted", full stop.
   const hasPerm = (resource: string, action: keyof PermissionMap[string] = 'view') =>
-    raw.is_root === true || perms[resource]?.[action] === true || resource === 'default';
+    raw.is_root === true || perms[resource]?.[action] === true;
 
   const makeInitials = (str: string) =>
     str
@@ -101,6 +115,25 @@ export function AuthProvider({
 
   const setUser = useCallback((raw: PublicSession | null) => {
     setUserRaw(raw ? buildAuthUser(raw) : null);
+  }, []);
+
+  // Hidratação client-side: quando o layout raiz NÃO passa `initialUser` (para
+  // as páginas públicas poderem ser estáticas — ver docs/HARDENING.md), busca a
+  // sessão uma vez via `GET /api/auth/me`. Se `initialUser` veio do servidor
+  // (ex.: layout de /painel), pula. Um `setUser` manual (pós login/registro)
+  // também trava a hidratação.
+  const hydrated = useRef(initialUser != null);
+  useEffect(() => {
+    if (hydrated.current) return;
+    hydrated.current = true;
+    const ac = new AbortController();
+    fetch('/api/auth/me', { credentials: 'same-origin', signal: ac.signal })
+      .then((r) => (r.ok ? r.json() : { user: null }))
+      .then((d: { user?: PublicSession | null }) => {
+        if (d?.user) setUserRaw(buildAuthUser(d.user));
+      })
+      .catch(() => {});
+    return () => ac.abort();
   }, []);
 
   const logout = useCallback(async () => {

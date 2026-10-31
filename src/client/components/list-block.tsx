@@ -21,7 +21,6 @@ import { EmptyStateCard } from './ui-better-soft/lists/empty-state-card';
 import { useTable } from '../hooks';
 import type { ResourceConfig } from '../../types/resource';
 import { postgrestResources } from '@/lib/server/resources';
-import { formatServicePrice } from '@/components/services/service-type';
 import { cn } from '../../lib/utils';
 import { TONE_BADGE, type ThemeTone } from '../../lib/ui-tone';
 
@@ -55,12 +54,15 @@ const ACTION_ICON_MAP: Record<'edit' | 'review', string> = {
   review: 'ClipboardCheck',
 };
 
-/** Named formatters that need real domain logic (not expressible as plain data) — keyed by name so `screens/*.ts` can reference one without importing/passing a function. */
-const NAMED_FORMATTERS: Record<string, (value: unknown, item: Record<string, unknown>) => string> =
-  {
-    servicePrice: (value, item) =>
-      formatServicePrice(Number(value) || 0, String(item.priceUnit ?? 'quote')),
-  };
+// Formatters de domínio — o mapa + `registerNamedFormatter` vivem num módulo
+// neutro (ver list-block-formatters.ts) para o consumidor poder registrar de
+// código que também carrega no servidor. Re-export aqui por compat.
+export {
+  NAMED_FORMATTERS,
+  registerNamedFormatter,
+  type NamedFormatter,
+} from './list-block-formatters';
+import { NAMED_FORMATTERS } from './list-block-formatters';
 
 export type FieldFormat =
   | { type: 'text' }

@@ -16,9 +16,10 @@ export async function callRbacRpc(
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ schema: 'auth', functionName, params }),
     });
-    const data = (await res.json().catch(() => null)) as
-      | { message?: string; payload?: unknown }
-      | null;
+    const data = (await res.json().catch(() => null)) as {
+      message?: string;
+      payload?: unknown;
+    } | null;
     if (!res.ok) {
       return { ok: false, message: data?.message || 'Não foi possível salvar a alteração.' };
     }

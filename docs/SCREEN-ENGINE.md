@@ -113,8 +113,8 @@ lista a partir de `config.list`; `useResourceOptions` **uma vez** se houver um c
 
 ```ts
 type ResourceScreenConfig = {
-  resource: string;             // chave em postgrestResources
-  entitySingular: string;       // "categoria" — usado em títulos gerados
+  resource: string; // chave em postgrestResources
+  entitySingular: string; // "categoria" — usado em títulos gerados
   entityPlural: string;
   pageSize?: number;
   orderBy?: string;
@@ -143,7 +143,12 @@ export const CATEGORIES_RESOURCE: ResourceScreenConfig = {
     { name: 'description', label: 'Descricao', type: 'textarea', maxLength: 240 },
     { name: 'active', label: 'Status', type: 'switch', defaultValue: true },
   ],
-  list: { primaryField: 'name', secondaryField: 'slug', statusField: 'active', descriptionField: 'description' },
+  list: {
+    primaryField: 'name',
+    secondaryField: 'slug',
+    statusField: 'active',
+    descriptionField: 'description',
+  },
   messages: { saveError: 'Nao foi possivel salvar.', saveSuccess: 'Salvo.' },
 };
 ```
@@ -186,7 +191,10 @@ Existe um `postgrestResource` `things` e você quer `/painel/things-admin`.
 ```ts
 // resources/things.ts — "como o recurso se edita"
 export const THINGS_RESOURCE: ResourceScreenConfig = {
-  resource: 'things', entitySingular: 'item', entityPlural: 'itens', orderBy: 'name',
+  resource: 'things',
+  entitySingular: 'item',
+  entityPlural: 'itens',
+  orderBy: 'name',
   fields: [
     { name: 'name', label: 'Nome', type: 'text' },
     { name: 'active', label: 'Status', type: 'switch', defaultValue: true },
@@ -255,13 +263,13 @@ entre telas). `screens/*.ts` = "o que aparece nesta página, nesta ordem". Se ou
 
 ### 2.6 Vocabulário de campo (`ResourceScreenField`)
 
-| `type` | Quando | Props extras |
-|---|---|---|
-| `text` | texto curto | `placeholder?` |
-| `textarea` | texto longo | `placeholder?`, `maxLength?`, `rows?` |
-| `switch` | booleano | `defaultValue?` |
-| `relation` | opções de **outro** `postgrestResource` | `optionsResource`, `optionsLabelField?` (default `"name"`), `optionsFilter?` |
-| `select` | opções **fixas**, enum fechado do domínio | `options: {value,label}[]` |
+| `type`     | Quando                                    | Props extras                                                                 |
+| ---------- | ----------------------------------------- | ---------------------------------------------------------------------------- |
+| `text`     | texto curto                               | `placeholder?`                                                               |
+| `textarea` | texto longo                               | `placeholder?`, `maxLength?`, `rows?`                                        |
+| `switch`   | booleano                                  | `defaultValue?`                                                              |
+| `relation` | opções de **outro** `postgrestResource`   | `optionsResource`, `optionsLabelField?` (default `"name"`), `optionsFilter?` |
+| `select`   | opções **fixas**, enum fechado do domínio | `options: {value,label}[]`                                                   |
 
 `relation` quando as opções vêm de uma tabela (mudam sem redeploy); `select` quando é um enum
 `CHECK` do banco. **Um `relation` por formulário** — ver [3.1](#31-um-relation-por-formulário).
@@ -337,15 +345,15 @@ página é uma linha.
 
 ## Parte 4 — Erros já vividos
 
-| Sintoma | Causa | Onde |
-|---|---|---|
-| `ComponentType<never>` não aceito como JSX | Registro tipado `<never>` em vez de `<any>` (heterogêneo por natureza) | [1.3](#13-o-registro-de-componentes--registryts) |
-| Artigo/gênero errado numa mensagem genérica | Tentativa de adivinhar gênero por string — sempre falsa; use texto neutro, `messages` sobrescreve | — |
-| `useResourceOptions` dentro de `stats.map()` | Hook chamado número variável de vezes quebra rules of hooks — um componente por card | [2.7](#27-contadores-reais-stat-cards) |
-| `Cannot read properties of undefined (…)` em runtime, `tsc` limpo | Props soltos onde o bloco esperava `{ config: {...} }` | [3.2](#32-props-não-é-checado) |
-| Tela não-admin travaria para usuário comum | `createScreenPage` aplica gate ADMIN — faça o gate à mão | [3.3](#33-createscreenpage-é-admin-only) |
-| `stat-cards` sempre em 0, sem erro visível | `select: 'count'` (nem é sintaxe válida) contra deployment com agregação desabilitada (`PGRST123`); hook descartou o erro. Fix: contar via `useTable` `total` | [2.7](#27-contadores-reais-stat-cards) |
-| `Only plain objects can be passed to Client Components` em runtime, `tsc` limpo | `props` de um bloco `'use client'` continha ícone (`ComponentType`) / `formatter` (função). Fix: ícone → string (`ICON_MAP`), formatter → `FieldFormat` declarativo | [1.4](#14-renderscreen--o-resolvedor) |
+| Sintoma                                                                         | Causa                                                                                                                                                               | Onde                                             |
+| ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| `ComponentType<never>` não aceito como JSX                                      | Registro tipado `<never>` em vez de `<any>` (heterogêneo por natureza)                                                                                              | [1.3](#13-o-registro-de-componentes--registryts) |
+| Artigo/gênero errado numa mensagem genérica                                     | Tentativa de adivinhar gênero por string — sempre falsa; use texto neutro, `messages` sobrescreve                                                                   | —                                                |
+| `useResourceOptions` dentro de `stats.map()`                                    | Hook chamado número variável de vezes quebra rules of hooks — um componente por card                                                                                | [2.7](#27-contadores-reais-stat-cards)           |
+| `Cannot read properties of undefined (…)` em runtime, `tsc` limpo               | Props soltos onde o bloco esperava `{ config: {...} }`                                                                                                              | [3.2](#32-props-não-é-checado)                   |
+| Tela não-admin travaria para usuário comum                                      | `createScreenPage` aplica gate ADMIN — faça o gate à mão                                                                                                            | [3.3](#33-createscreenpage-é-admin-only)         |
+| `stat-cards` sempre em 0, sem erro visível                                      | `select: 'count'` (nem é sintaxe válida) contra deployment com agregação desabilitada (`PGRST123`); hook descartou o erro. Fix: contar via `useTable` `total`       | [2.7](#27-contadores-reais-stat-cards)           |
+| `Only plain objects can be passed to Client Components` em runtime, `tsc` limpo | `props` de um bloco `'use client'` continha ícone (`ComponentType`) / `formatter` (função). Fix: ícone → string (`ICON_MAP`), formatter → `FieldFormat` declarativo | [1.4](#14-renderscreen--o-resolvedor)            |
 
 Ao descobrir um erro novo, adicione uma linha aqui **e** na versão curta da skill/doc de referência
 rápida do projeto consumidor.
@@ -369,21 +377,21 @@ pré-requisitos:
 
 ### Peças
 
-| Peça | Arquivo (`@kizuna/core/client/components/screen-engine/…`) |
-|---|---|
-| Tipos (`ScreenConfig`/`ScreenBlock`/`ScreenContext`) | `types.ts` |
-| Registro de componentes | `registry.ts` |
-| Renderizador (Server Component) | `render-screen.tsx` |
-| Tipos do bloco CRUD | `resource-screen-types.ts` / `@kizuna/core/types` |
-| Configs de recurso (`ResourceScreenConfig`, 1 por recurso) | `resources/*.ts` |
-| Configs de tela (1 por rota) | `screens/*.ts` |
-| Bloco CRUD genérico (client) | `../resource-screen.tsx` |
-| Campo único (framework-agnóstico) | `../dynamic-field.tsx` |
-| Form dinâmico para step de wizard | `../dynamic-step-form.tsx` |
-| Bloco de cabeçalho (server-safe) | `../page-header-block.tsx` |
-| Bloco de listagem genérico | `../list-block.tsx` |
-| Context (`$params`/`$searchParams`/`$session`) | `context.ts` |
-| Fábrica de `page.tsx` (gate ADMIN + context) | `screen-page.tsx` |
+| Peça                                                       | Arquivo (`@kizuna/core/client/components/screen-engine/…`) |
+| ---------------------------------------------------------- | ---------------------------------------------------------- |
+| Tipos (`ScreenConfig`/`ScreenBlock`/`ScreenContext`)       | `types.ts`                                                 |
+| Registro de componentes                                    | `registry.ts`                                              |
+| Renderizador (Server Component)                            | `render-screen.tsx`                                        |
+| Tipos do bloco CRUD                                        | `resource-screen-types.ts` / `@kizuna/core/types`          |
+| Configs de recurso (`ResourceScreenConfig`, 1 por recurso) | `resources/*.ts`                                           |
+| Configs de tela (1 por rota)                               | `screens/*.ts`                                             |
+| Bloco CRUD genérico (client)                               | `../resource-screen.tsx`                                   |
+| Campo único (framework-agnóstico)                          | `../dynamic-field.tsx`                                     |
+| Form dinâmico para step de wizard                          | `../dynamic-step-form.tsx`                                 |
+| Bloco de cabeçalho (server-safe)                           | `../page-header-block.tsx`                                 |
+| Bloco de listagem genérico                                 | `../list-block.tsx`                                        |
+| Context (`$params`/`$searchParams`/`$session`)             | `context.ts`                                               |
+| Fábrica de `page.tsx` (gate ADMIN + context)               | `screen-page.tsx`                                          |
 
 **DOIS "resource" diferentes, não confundir:**
 

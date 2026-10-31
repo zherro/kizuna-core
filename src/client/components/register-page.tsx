@@ -1,10 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import * as Yup from 'yup';
 import { AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { TurnstileWidget } from './captcha';
 import { useAuth, type PublicSession } from '../providers/auth-provider';
 import { useForm } from '../hooks/use-form';
 import { Button } from './ui/button';
@@ -41,6 +42,8 @@ export function RegisterPageContent({
 }: RegisterPageProps) {
   const router = useRouter();
   const { user, setUser } = useAuth();
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const captchaRequired = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
 
   useEffect(() => {
     if (user) router.replace(redirectTo);
@@ -75,6 +78,7 @@ export function RegisterPageContent({
             email: values.email,
             password: values.password,
             acceptTerms: values.acceptTerms,
+            captchaToken,
           }),
         });
 
@@ -82,6 +86,7 @@ export function RegisterPageContent({
 
         if (!response.ok) {
           setError(data.message || 'Nao foi possivel criar a conta.');
+          setCaptchaToken(null);
           return;
         }
 
@@ -220,7 +225,13 @@ export function RegisterPageContent({
             </div>
           ) : null}
 
-          <Button type="submit" className="w-full" disabled={form.submitting}>
+          <TurnstileWidget onToken={setCaptchaToken} />
+
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={form.submitting || (captchaRequired && !captchaToken)}
+          >
             {form.submitting ? 'Criando...' : 'Criar conta'}
           </Button>
 

@@ -26,7 +26,7 @@ Nome curto, snake_case, um substantivo do domínio (`agenda`, `onboarding`, não
 
 O `0001_*.sql` é schema/RLS/RBAC. Arquivos numerados seguintes (`0002_`, `0003_`, …) são
 opcionais — o instalador aplica todos os `NNNN_*.sql` da pasta do plugin em ordem de nome. Use um
-`0002_*_seed.sql` só para dados *genéricos de verdade* (ex.: `plugins/pages/0002_pages_seed.sql`
+`0002_*_seed.sql` só para dados _genéricos de verdade_ (ex.: `plugins/pages/0002_pages_seed.sql`
 com páginas neutras); conteúdo específico de um app continua no `db/extras/` do consumidor.
 
 ## Passo 2 — O que o `0001_*.sql` precisa ter

@@ -1,0 +1,33 @@
+import { redirect, notFound } from 'next/navigation';
+import { getSession } from '../../../server';
+import { KIZUNA_SCREEN_REGISTRY } from './kizuna-screen-registry';
+/**
+ * O único lugar onde o gate de permissão de uma tela de painel de plugin vive.
+ * Chamado pelo `page.tsx` fino da rota catch-all `/painel/[...kizuna]` com os
+ * segmentos da URL. Resolve a chave contra `KIZUNA_SCREEN_REGISTRY`; `notFound()`
+ * numa chave desconhecida ou slot sem componente (404 normal do Next, não 500);
+ * `redirect('/painel')` se a entrada exige `permResource` e a sessão não tem.
+ */
+export async function resolveKizunaScreen(segments, options = {}) {
+    const key = segments.join('/');
+    const entry = KIZUNA_SCREEN_REGISTRY[key];
+    if (!entry) {
+        notFound();
+    }
+    if (entry.permResource || entry.adminOnly) {
+        const session = await getSession();
+        const isRoot = session?.is_root === true;
+        const ok = entry.adminOnly
+            ? isRoot || (session?.tenant_type ?? '').toUpperCase() === 'ADMIN'
+            : !!session && (isRoot || session.perms?.[entry.permResource]?.view === true);
+        if (!ok) {
+            redirect('/painel');
+        }
+    }
+    const Component = entry.component ?? options.slotComponents?.[key];
+    if (!Component) {
+        notFound();
+    }
+    return { Component };
+}
+//# sourceMappingURL=resolve-kizuna-screen.js.map

@@ -76,7 +76,7 @@ see `STATUS.md` for the open decision on cutover.
 Guards what a **non-root** admin can hand out. A tenant admin may only `allow`/grant a permission
 they currently hold themselves (`auth.fun_auth_can_grant`), and may only assign a role whose
 entire grant set is within that ceiling (`auth.fun_auth_can_assign_role`). `deny` and role
-*removal* are unrestricted beyond the `tenant_member.manage` gate. `is_root` can edit the global
+_removal_ are unrestricted beyond the `tenant_member.manage` gate. `is_root` can edit the global
 template roles' grants; a tenant admin cannot.
 
 The ready-made RBAC admin screens (`@kizuna/core/client/components/rbac/*` — `RolesManagerScreen`,

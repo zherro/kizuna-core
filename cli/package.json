@@ -1,0 +1,9 @@
+{
+  "name": "@kizuna/cli",
+  "private": true,
+  "type": "module",
+  "main": "index.mjs",
+  "bin": {
+    "kizuna": "index.mjs"
+  }
+}

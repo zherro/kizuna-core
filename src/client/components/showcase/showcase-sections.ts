@@ -6,6 +6,7 @@ export type ShowcaseSectionId =
   | 'alerts'
   | 'progress'
   | 'experience-pill'
+  | 'wizard-layout-toggle'
   | 'bottom-progress-bar'
   | 'mosaic-grid'
   | 'admin-page-reader'
@@ -179,6 +180,21 @@ export function ProgressSample() {
 
 export function HeroHighlight() {
   return <ExperiencePill text="Experiencia rapida para comprar e vender local" />;
+}`,
+  },
+  {
+    id: 'wizard-layout-toggle',
+    groupId: 'ui-better-soft',
+    label: 'Wizard Layout Toggle',
+    description:
+      'Segmented control que alterna o wizard entre o stepper e o questionário vertical imersivo.',
+    usageCode: `import { useState } from 'react';
+import { WizardLayoutToggle } from '../wizard/wizard-layout-toggle';
+import type { WizardLayout } from '../wizard/wizard-layout';
+
+export function LayoutToggleExample() {
+  const [layout, setLayout] = useState<WizardLayout>('scroll');
+  return <WizardLayoutToggle value={layout} onChange={setLayout} />;
 }`,
   },
   {

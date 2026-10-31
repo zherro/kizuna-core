@@ -18,7 +18,7 @@ import { SearchableSelect } from '@kizuna/core/client/components/ui/searchable-s
 import { useAuth } from '@kizuna/core/client/providers/auth-provider';
 import { useForm } from '@kizuna/core/client';
 import { validateDocument } from '../../../lib/validate-doc';
-import { stripHtml } from '@/components/services/service-type';
+import { stripHtml } from '../../../lib/helper/text.helper';
 
 const STATES_BR = [
   'AC',
@@ -112,6 +112,9 @@ type AccountFormValues = {
   zipCode: string;
   state: string;
   city: string;
+  /** IBGE municipality code for `city` (7 digits). Empty when the row predates the picker's
+   *  id capture or the user typed a city the picker didn't resolve. */
+  cityIbge: string;
   bio: string;
   avatarUrl: string;
 };
@@ -128,6 +131,7 @@ function buildInitialValues(config: UserDataFieldsConfig): AccountFormValues {
     zipCode: '',
     state: '',
     city: '',
+    cityIbge: '',
     bio: '',
     avatarUrl: '',
   };
@@ -523,6 +527,7 @@ export function AccountForm({
       zipCode: String(existingRecord.zipCode ?? ''),
       state: String(existingRecord.state ?? ''),
       city: String(existingRecord.city ?? ''),
+      cityIbge: String(existingRecord.cityIbge ?? ''),
       bio: String(existingRecord.bio ?? ''),
       avatarUrl: String(existingRecord.avatarUrl ?? ''),
     });
@@ -549,10 +554,13 @@ export function AccountForm({
 
     fetch(`https://viacep.com.br/ws/${digits}/json/`)
       .then((res) => res.json())
-      .then((data: { erro?: boolean; uf?: string; localidade?: string }) => {
+      .then((data: { erro?: boolean; uf?: string; localidade?: string; ibge?: string }) => {
         if (!active || data.erro) return;
         if (data.uf) void formik.setFieldValue('state', data.uf);
         if (data.localidade) void formik.setFieldValue('city', data.localidade);
+        // ViaCEP carries the IBGE municipality code — keep it so the exact-city match works
+        // without the user re-picking the city from the dropdown.
+        void formik.setFieldValue('cityIbge', data.ibge ?? '');
       })
       .catch(() => {
         // noop: CEP lookup is a convenience — user can still fill state/city manually
@@ -568,8 +576,9 @@ export function AccountForm({
   }, [formik.values.zipCode]);
 
   // City options for the selected state — reuses the same IBGE-backed endpoint the search page
-  // uses (`/api/agenda/cities?uf=`). Options are keyed by city name (not the IBGE id) since
-  // `user_data.city` is a plain text column, not an FK.
+  // uses (`/api/agenda/cities?uf=`), whose `value` is the IBGE municipality code. The select
+  // operates on that code (persisted to `user_data.city_ibge`); the plain-text `city` name is
+  // kept in sync from the chosen option's label.
   useEffect(() => {
     const uf = formik.values.state.trim().toUpperCase();
     if (!uf) {
@@ -585,7 +594,7 @@ export function AccountForm({
       .then((data: { items?: { value: string; label: string }[] }) => {
         if (!active) return;
         const items = Array.isArray(data.items) ? data.items : [];
-        setCityOptions(items.map((item) => ({ value: item.label, label: item.label })));
+        setCityOptions(items.map((item) => ({ value: item.value, label: item.label })));
       })
       .catch(() => {
         if (active) setCityOptions([]);
@@ -599,6 +608,18 @@ export function AccountForm({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formik.values.state]);
+
+  // Legacy rows have `city` (name) but no `city_ibge` — once the option list for the state is
+  // loaded, resolve the code by matching the stored name so the select shows the city and the
+  // exact-match filter has something to work with.
+  useEffect(() => {
+    if (formik.values.cityIbge || !formik.values.city || cityOptions.length === 0) return;
+    const match = cityOptions.find(
+      (o) => o.label.trim().toLowerCase() === formik.values.city.trim().toLowerCase()
+    );
+    if (match) void formik.setFieldValue('cityIbge', match.value);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cityOptions, formik.values.city, formik.values.cityIbge]);
 
   // `documentNumber` is displayed masked, but the hydration effect above sets it straight from
   // the server's digits-only value — re-mask whenever it drifts from its own masked form. No-op
@@ -1090,7 +1111,10 @@ export function AccountForm({
                 <div className="grid gap-4 sm:grid-cols-3">
                   <div className="space-y-1.5">
                     <Label htmlFor="zipCode">
-                      CEP {cepLookupLoading && <span className="text-muted-foreground">(buscando...)</span>}
+                      CEP{' '}
+                      {cepLookupLoading && (
+                        <span className="text-muted-foreground">(buscando...)</span>
+                      )}
                     </Label>
                     <Input
                       id="zipCode"
@@ -1130,8 +1154,14 @@ export function AccountForm({
                     </Label>
                     <SearchableSelect
                       id="city"
-                      value={formik.values.city}
-                      onChange={(value) => formik.setFieldValue('city', value)}
+                      value={formik.values.cityIbge}
+                      onChange={(value) => {
+                        void formik.setFieldValue('cityIbge', value);
+                        void formik.setFieldValue(
+                          'city',
+                          cityOptions.find((o) => o.value === value)?.label ?? ''
+                        );
+                      }}
                       onBlur={() => formik.setFieldTouched('city', true)}
                       options={cityOptions}
                       disabled={!formik.values.state}

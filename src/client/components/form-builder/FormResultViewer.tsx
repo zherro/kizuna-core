@@ -59,7 +59,11 @@ export function FormResultViewer({ schema, values }: Props) {
                     {f.label || key}
                   </span>
                   <span className="truncate">
-                    {visible ? formatValue(values[key]) : <em className="text-muted-foreground">oculto</em>}
+                    {visible ? (
+                      formatValue(values[key])
+                    ) : (
+                      <em className="text-muted-foreground">oculto</em>
+                    )}
                   </span>
                 </div>
               );

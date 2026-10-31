@@ -1,0 +1,26 @@
+import { PRICE_UNIT_LABEL } from './service-labels';
+export function fileUrl(id) {
+    return `/api/public/storage/files/${id}/content`;
+}
+/** First image url for a service's card/hero — `extras.coverFileId`, falling back to the first of
+ * `extras.images`. `services` has no dedicated image columns yet, so both live in `extras`.
+ * Shared by the ad detail page and the provider profile page. */
+export function coverImage(service) {
+    const images = service.extras?.images;
+    const list = Array.isArray(images) ? images : [];
+    const coverFileId = service.extras?.coverFileId;
+    const cover = coverFileId ?? list[0] ?? null;
+    return cover != null && cover !== '' ? fileUrl(cover) : null;
+}
+export function formatServicePrice(startingPrice, priceUnit) {
+    if (priceUnit === 'quote' || !startingPrice)
+        return 'Sob consulta';
+    const amount = new Intl.NumberFormat('pt-BR', {
+        style: 'currency',
+        currency: 'BRL',
+        minimumFractionDigits: 2,
+    }).format(Number(startingPrice));
+    const unitLabel = PRICE_UNIT_LABEL[priceUnit] ?? priceUnit;
+    return `${amount} · ${unitLabel}`;
+}
+//# sourceMappingURL=service-helpers.js.map

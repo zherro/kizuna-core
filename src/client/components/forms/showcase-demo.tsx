@@ -65,11 +65,7 @@ export function FormsShowcaseDemo() {
           >
             Continuar
           </button>
-          {!valid ? (
-            <p className="text-xs text-red-400">
-              {Object.values(errors)[0]}
-            </p>
-          ) : null}
+          {!valid ? <p className="text-xs text-red-400">{Object.values(errors)[0]}</p> : null}
         </div>
 
         {captured ? (

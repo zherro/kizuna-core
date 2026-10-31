@@ -6,12 +6,7 @@ import { Textarea } from '../ui/textarea';
 import { Label } from '../ui/label';
 import { Switch } from '../ui/switch';
 import { Button } from '../ui/button';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '../ui/accordion';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../ui/accordion';
 import { Copy, Trash2, GripVertical, Plus, Lock, Unlock } from 'lucide-react';
 import {
   KEY_REGEX,
@@ -219,9 +214,7 @@ export function FieldEditor({
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() =>
-                    setVisible({ field: priorFields[0].key, op: 'truthy' })
-                  }
+                  onClick={() => setVisible({ field: priorFields[0].key, op: 'truthy' })}
                 >
                   <Plus className="mr-1 h-3.5 w-3.5" /> Mostrar só quando...
                 </Button>
@@ -246,9 +239,7 @@ export function FieldEditor({
                     <select
                       className="h-9 w-full rounded-md border bg-background px-2 text-sm"
                       value={field.visibleWhen.op}
-                      onChange={(e) =>
-                        setVisible({ op: e.target.value as VisibleWhen['op'] })
-                      }
+                      onChange={(e) => setVisible({ op: e.target.value as VisibleWhen['op'] })}
                     >
                       {VISIBLE_OPS.map((op) => (
                         <option key={op} value={op}>

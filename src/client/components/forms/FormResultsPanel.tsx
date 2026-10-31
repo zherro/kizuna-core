@@ -34,9 +34,7 @@ export function FormResultsPanel({
       ) : error ? (
         <p className="text-xs text-red-400">{error}</p>
       ) : !data ? (
-        <p className="text-xs text-muted-foreground">
-          Nenhuma resposta registrada para este item.
-        </p>
+        <p className="text-xs text-muted-foreground">Nenhuma resposta registrada para este item.</p>
       ) : (
         <FormResultViewer
           schema={(data.schemaSnapshot ?? {}) as FormSchema}

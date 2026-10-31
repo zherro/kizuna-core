@@ -1,0 +1,1 @@
+{"version":3,"file":"rbac-rpc.d.ts","sourceRoot":"","sources":["../../../../src/client/components/rbac/rbac-rpc.ts"],"names":[],"mappings":"AAEA;;;;;GAKG;AACH,wBAAsB,WAAW,CAC/B,YAAY,EAAE,MAAM,EACpB,MAAM,EAAE,MAAM,CAAC,MAAM,EAAE,OAAO,CAAC,GAC9B,OAAO,CAAC;IAAE,EAAE,EAAE,OAAO,CAAC;IAAC,OAAO,CAAC,EAAE,MAAM,CAAC;IAAC,OAAO,CAAC,EAAE,OAAO,CAAA;CAAE,CAAC,CAkB/D"}

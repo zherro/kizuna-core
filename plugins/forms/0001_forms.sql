@@ -133,6 +133,13 @@ WITH CHECK (submitted_by = auth.fun_auth_user_id());
 --    not fit the generic PATCH /api/resources/:resource/:id flow (no id known at capture time),
 --    so this RPC (exposed via the existing /api/postgrest/rpc proxy) is the way in. Not
 --    SECURITY DEFINER — RLS on both tables already scopes it for the invoker.
+--
+--    The `forms` lookup below is intentionally NOT scoped to the caller's own tenant: forms_select_policy
+--    already makes any active form readable by every tenant (and anon) — forms are a shared,
+--    reusable catalog (see `is_reusable`), not per-tenant private config. A consumer whose forms
+--    are managed by a different tenant than the one submitting answers (e.g. a shared taxonomy
+--    admin owning `form_key`s that provider tenants fill in) must still resolve them. Only the
+--    write side (INSERT/UPDATE on `forms`, gated by forms_insert/update_policy) is tenant-permissioned.
 -- ---------------------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.fn_form_result_upsert(
   p_form_key     text,
@@ -144,15 +151,14 @@ CREATE OR REPLACE FUNCTION public.fn_form_result_upsert(
  LANGUAGE plpgsql
 AS $function$
 DECLARE
-  v_tenant_id uuid := auth.fun_auth_current_tenant_id();
   v_form      public.forms%ROWTYPE;
   v_result    public.form_results%ROWTYPE;
 BEGIN
   SELECT * INTO v_form
   FROM public.forms
-  WHERE tenant_id = v_tenant_id
-    AND form_key = p_form_key
+  WHERE form_key = p_form_key
     AND active = true
+  ORDER BY tenant_id = auth.fun_auth_current_tenant_id() DESC
   LIMIT 1;
 
   IF NOT FOUND THEN

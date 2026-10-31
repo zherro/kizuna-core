@@ -11,7 +11,15 @@ import {
 
 type AppTheme = 'light' | 'dark' | 'system';
 type ResolvedTheme = 'light' | 'dark';
-export type AppThemeColor = 'blue' | 'green' | 'purple' | 'teal' | 'red' | 'orange' | 'coral';
+export type AppThemeColor =
+  | 'blue'
+  | 'green'
+  | 'purple'
+  | 'teal'
+  | 'red'
+  | 'orange'
+  | 'coral'
+  | 'terracotta';
 
 const LANGUAGE_STORAGE_KEY = 'foco-total-language';
 const THEME_STORAGE_KEY = 'foco-total-theme';
@@ -48,7 +56,7 @@ function getSystemTheme(): ResolvedTheme {
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
-const THEME_COLORS: readonly AppThemeColor[] = [
+export const THEME_COLORS: readonly AppThemeColor[] = [
   'blue',
   'green',
   'purple',
@@ -56,6 +64,7 @@ const THEME_COLORS: readonly AppThemeColor[] = [
   'red',
   'orange',
   'coral',
+  'terracotta',
 ];
 
 function parseThemeColor(value: string | null): AppThemeColor {

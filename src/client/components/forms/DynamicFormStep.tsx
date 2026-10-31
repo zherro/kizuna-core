@@ -1,13 +1,6 @@
 'use client';
 
-import {
-  forwardRef,
-  useEffect,
-  useImperativeHandle,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { FormRenderer, validate, type FormSchema, type FormValues } from '../form-builder';
 import { useFormAnswers } from './use-form-answers';
 
@@ -34,10 +27,7 @@ type DynamicFormStepProps = {
  * step-level persist) that upserts through `fn_form_result_upsert`.
  */
 export const DynamicFormStep = forwardRef<DynamicFormStepHandle, DynamicFormStepProps>(
-  function DynamicFormStep(
-    { formKey, domain, referenceId, onValidChange, className },
-    ref
-  ) {
+  function DynamicFormStep({ formKey, domain, referenceId, onValidChange, className }, ref) {
     const { data, loading, error, submit } = useFormAnswers({ formKey, domain, referenceId });
     const [values, setValues] = useState<FormValues>({});
     const [hydrated, setHydrated] = useState(false);
@@ -73,9 +63,9 @@ export const DynamicFormStep = forwardRef<DynamicFormStepHandle, DynamicFormStep
           const response = await fetch(`/api/resources/forms?${query.toString()}`, {
             cache: 'no-store',
           });
-          const payload = (await response.json().catch(() => null)) as
-            | { items?: Array<{ schema?: FormSchema }> }
-            | null;
+          const payload = (await response.json().catch(() => null)) as {
+            items?: Array<{ schema?: FormSchema }>;
+          } | null;
           if (!active) return;
           const found = payload?.items?.[0]?.schema;
           if (found) setLiveSchema(found);
@@ -88,10 +78,7 @@ export const DynamicFormStep = forwardRef<DynamicFormStepHandle, DynamicFormStep
       };
     }, [loading, data, liveSchema, formKey]);
 
-    const errors = useMemo(
-      () => (schema ? validate(schema, values) : {}),
-      [schema, values]
-    );
+    const errors = useMemo(() => (schema ? validate(schema, values) : {}), [schema, values]);
     const valid = Object.keys(errors).length === 0;
 
     const lastValidRef = useRef<boolean | null>(null);
@@ -131,9 +118,7 @@ export const DynamicFormStep = forwardRef<DynamicFormStepHandle, DynamicFormStep
 
     return (
       <div className={className}>
-        {error ? (
-          <p className="mb-3 text-xs text-red-400">{error}</p>
-        ) : null}
+        {error ? <p className="mb-3 text-xs text-red-400">{error}</p> : null}
         <FormRenderer schema={schema} values={values} onChange={setValues} />
       </div>
     );

@@ -29,12 +29,15 @@ const rows = await res.json();
 // POST (insert, return the row)
 await pgrstTable(
   '/categories',
-  { method: 'POST', body: JSON.stringify({ name: 'Foo' }) },
+  { method: 'POST', body: JSON.stringify({ name: 'Foo' }) }
   // opts is only { auth?: string | null }; Prefer defaults to return=representation for POST/PUT
 );
 
 // PATCH
-await pgrstTable('/categories?id=eq.123', { method: 'PATCH', body: JSON.stringify({ name: 'Bar' }) });
+await pgrstTable('/categories?id=eq.123', {
+  method: 'PATCH',
+  body: JSON.stringify({ name: 'Bar' }),
+});
 
 // DELETE
 await pgrstTable('/categories?id=eq.123', { method: 'DELETE' });
@@ -62,15 +65,15 @@ pgrstRpc(name: string, body: unknown, opts?: { auth?: string | null; schema?: st
 
 ### Query syntax cheat-sheet (PostgREST)
 
-| Need | Path |
-|---|---|
-| Select columns / embed | `?select=id,name,category:categories(id,name)` |
-| Filter eq | `?status=eq.active` |
-| Filter in | `?id=in.(1,2,3)` |
-| Contains (array/jsonb) | `?tags=cs.{"a"}` |
-| Order | `?order=created_at.desc` |
-| Paginate | `Range: 0-19` header, or `?limit=20&offset=40` |
-| Exact count | `Prefer: count=exact` → `Content-Range` response header |
+| Need                   | Path                                                    |
+| ---------------------- | ------------------------------------------------------- |
+| Select columns / embed | `?select=id,name,category:categories(id,name)`          |
+| Filter eq              | `?status=eq.active`                                     |
+| Filter in              | `?id=in.(1,2,3)`                                        |
+| Contains (array/jsonb) | `?tags=cs.{"a"}`                                        |
+| Order                  | `?order=created_at.desc`                                |
+| Paginate               | `Range: 0-19` header, or `?limit=20&offset=40`          |
+| Exact count            | `Prefer: count=exact` → `Content-Range` response header |
 
 ---
 
@@ -92,7 +95,12 @@ Handlers live in `@kizuna/core/server` (`postgrest-crud.ts` — see `STATUS.md` 
 export list; a dup `crud-handlers.ts` is being reconciled). Route template:
 
 ```ts
-import { listResource, createResource, isRpcResource, executeRpcResource } from '@kizuna/core/server';
+import {
+  listResource,
+  createResource,
+  isRpcResource,
+  executeRpcResource,
+} from '@kizuna/core/server';
 
 export async function GET(req: NextRequest, { params }: { params: { resource: string } }) {
   return listResource(params.resource, req);
@@ -105,15 +113,15 @@ export async function POST(req: NextRequest, { params }: { params: { resource: s
 
 ### List query params
 
-| Param | Example | Effect |
-|---|---|---|
-| `page` | `page=2` | 1-based pagination |
-| `pageSize` | `pageSize=20` | default 20, capped at `config.maxPageSize ?? 100` |
-| `search` | `search=text` | `ilike *text*` OR across `config.searchableColumns` |
-| `orderBy` | `orderBy=created_at` | falls back to `config.defaultOrder` |
-| `orderDirection` | `orderDirection=desc` | `asc` (default) \| `desc` |
-| `filter.<col>` | `filter.active=true` | exact match (`eq.`) |
-| `filter_cs.<col>` | `filter_cs.tags=["a"]` | contains (`cs.`) |
+| Param             | Example                | Effect                                              |
+| ----------------- | ---------------------- | --------------------------------------------------- |
+| `page`            | `page=2`               | 1-based pagination                                  |
+| `pageSize`        | `pageSize=20`          | default 20, capped at `config.maxPageSize ?? 100`   |
+| `search`          | `search=text`          | `ilike *text*` OR across `config.searchableColumns` |
+| `orderBy`         | `orderBy=created_at`   | falls back to `config.defaultOrder`                 |
+| `orderDirection`  | `orderDirection=desc`  | `asc` (default) \| `desc`                           |
+| `filter.<col>`    | `filter.active=true`   | exact match (`eq.`)                                 |
+| `filter_cs.<col>` | `filter_cs.tags=["a"]` | contains (`cs.`)                                    |
 
 ### Response shapes
 
@@ -152,7 +160,11 @@ current step's fields. Pass `{ skipMapInput: true }` to PATCH the raw body as-is
 ### Direct server-side reads — `serverFetchResource`
 
 ```ts
-const rows = await serverFetchResource<Thing>('things', { active: 'true' }, { auth: null, limit: 50 });
+const rows = await serverFetchResource<Thing>(
+  'things',
+  { active: 'true' },
+  { auth: null, limit: 50 }
+);
 ```
 
 Applies the config's `select` + `mapOutput`, skips the HTTP layer. `auth` is explicit — `null`
@@ -168,19 +180,19 @@ and are spread in.
 
 ```ts
 type ResourceConfig = {
-  schema?: string;                 // default 'public'
-  table: string;                   // PostgREST table/view name
-  select: string;                  // required — SELECT columns / embeds
-  primaryKey: string;              // e.g. 'id'
-  defaultOrder?: string;           // 'name' | 'created_at.desc' (column[.dir], a plain string)
-  searchableColumns: string[];     // used by ?search=
-  listRequiresAuth?: boolean;      // default true — set false for public reads
+  schema?: string; // default 'public'
+  table: string; // PostgREST table/view name
+  select: string; // required — SELECT columns / embeds
+  primaryKey: string; // e.g. 'id'
+  defaultOrder?: string; // 'name' | 'created_at.desc' (column[.dir], a plain string)
+  searchableColumns: string[]; // used by ?search=
+  listRequiresAuth?: boolean; // default true — set false for public reads
   returnRepresentation?: boolean;
   returnCountPreferDisabled?: boolean; // deployment has count=exact disabled
-  maxPageSize?: number;            // overrides the 100-row cap (small reference tables / trees)
-  requiredFields?: string[];       // validated post-mapInput on create/update → 400 if blank
-  softDeleteField?: string;        // boolean col — DELETE becomes PATCH {field:true}; lists exclude true
-  mapInput?:  (input: Record<string, unknown>) => Record<string, unknown>;  // camelCase form → snake_case cols
+  maxPageSize?: number; // overrides the 100-row cap (small reference tables / trees)
+  requiredFields?: string[]; // validated post-mapInput on create/update → 400 if blank
+  softDeleteField?: string; // boolean col — DELETE becomes PATCH {field:true}; lists exclude true
+  mapInput?: (input: Record<string, unknown>) => Record<string, unknown>; // camelCase form → snake_case cols
   mapOutput?: (record: Record<string, unknown>) => Record<string, unknown>; // snake_case row → camelCase
 };
 
@@ -196,15 +208,15 @@ Worked `mapInput`/`mapOutput` examples: `SCHEMAS.md`.
 
 All call `/api/resources/:resource`. See `COMPONENTS.md` for the full list; the load-bearing ones:
 
-| Hook | Use |
-|---|---|
-| `useTable` | paginated + searchable list for an admin table |
-| `useForm` | Formik + `resourceSubmit` (POST if no `selectedId`, PUT if set) |
-| `useDelete` | delete-with-confirmation |
-| `useToggleActive` | flip a soft-delete / active flag |
-| `useResourceOptions` | one resource → combobox options, re-fetches on `filter` change |
-| `useResourceMap` | N independent resources in parallel, each slice resolves on its own |
-| `useTenantResource` | tenant-scoped rows where no id is known upfront (one-row-per-tenant, fixed multi-row, variable list) |
+| Hook                 | Use                                                                                                  |
+| -------------------- | ---------------------------------------------------------------------------------------------------- |
+| `useTable`           | paginated + searchable list for an admin table                                                       |
+| `useForm`            | Formik + `resourceSubmit` (POST if no `selectedId`, PUT if set)                                      |
+| `useDelete`          | delete-with-confirmation                                                                             |
+| `useToggleActive`    | flip a soft-delete / active flag                                                                     |
+| `useResourceOptions` | one resource → combobox options, re-fetches on `filter` change                                       |
+| `useResourceMap`     | N independent resources in parallel, each slice resolves on its own                                  |
+| `useTenantResource`  | tenant-scoped rows where no id is known upfront (one-row-per-tenant, fixed multi-row, variable list) |
 
 `useTable`, `useForm`, `useDelete`, `useResourceOptions`, `useResourceMap`, `useToggleActive` are
 in the `@kizuna/core/client` barrel; the rest (`useTenantResource`, `useToast`, `useUserLocation`,
@@ -216,7 +228,12 @@ const table = useTable<Thing>({ resource: 'things', pageSize: 20, filters: { act
 const { formik, submitting, error } = useForm<Values, Payload, Thing>({
   initialValues: { name: '' },
   validationSchema: Yup.object({ name: Yup.string().required() }),
-  resourceSubmit: { resource: 'things', selectedId: editId, toPayload: (v) => v, onSuccess: table.refresh },
+  resourceSubmit: {
+    resource: 'things',
+    selectedId: editId,
+    toPayload: (v) => v,
+    onSuccess: table.refresh,
+  },
 });
 
 const { remove } = useDelete({ resource: 'things', onSuccess: table.refresh });

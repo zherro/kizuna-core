@@ -96,9 +96,10 @@ export function useFormAnswers({
       const response = await fetch(`/api/resources/form_results?${query.toString()}`, {
         cache: 'no-store',
       });
-      const payload = (await response.json().catch(() => null)) as
-        | { items?: unknown[]; message?: string }
-        | null;
+      const payload = (await response.json().catch(() => null)) as {
+        items?: unknown[];
+        message?: string;
+      } | null;
       if (!activeRef.current) return;
       if (!response.ok) {
         setError(payload?.message || 'Nao foi possivel carregar as respostas do formulario.');
@@ -144,9 +145,10 @@ export function useFormAnswers({
             },
           }),
         });
-        const body = (await response.json().catch(() => null)) as
-          | { payload?: unknown; message?: string }
-          | null;
+        const body = (await response.json().catch(() => null)) as {
+          payload?: unknown;
+          message?: string;
+        } | null;
         if (!response.ok) {
           setError(body?.message || 'Nao foi possivel salvar as respostas.');
           return null;

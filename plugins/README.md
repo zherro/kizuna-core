@@ -21,7 +21,15 @@ follow-ups (`0002_*.sql`, …) for data seeds or later migrations; the installer
   never by the recipient (no INSERT grant to `auth_user`).
 - `agenda/` — a user's own calendar events (`agenda_events`) plus one view-preferences row per
   (user, tenant) (`agenda_settings`). Both strictly self-service, same shape as
-  `account_preferences`.
+  `account_preferences`. `0002_agenda_config.sql` (v1.1.0) adds the tenant's _schedule
+  configuration_: `agenda_schedule` (N named weekly schedules per tenant, `active` toggle +
+  `deleted` soft delete), `agenda_schedule_hours` (one row per weekday `0..6` + `9`=lunch
+  sentinel, per schedule), and two per-tenant singletons — `agenda_booking_preferences`
+  (booking window, who-picks, buffer, radius…) and `agenda_notification_preferences`
+  (what/when/how the tenant is notified). All tenant-scoped, self-service, no permission
+  registered. Resource configs ship from `screen-engine/resources/agenda-config`
+  (`resourceAgendaConfig`); the whole tenant UI ships from
+  `client/components/agenda-config` (`AgendaConfigPage`).
 - `taxonomy/` — generic hierarchical taxonomy mechanism, group -> category -> subcategory -> tag
   (`categories_group`, `categories_sub_tags`, plus columns added onto the consuming project's own
   `categories`/`categories_sub`: `category_group_id`, `icon`, `description`, `form_key`,
@@ -60,6 +68,21 @@ follow-ups (`0002_*.sql`, …) for data seeds or later migrations; the installer
   Writes gated by `pages.manage`. Ships `0002_pages_seed.sql` — project-neutral default pages
   (`sobre`, `quem-somos`, `termos-de-uso`, published) seeded under the first root user's tenant,
   a silent no-op on a DB with no root user yet. A project can layer its own content on top.
+- `reviews/` — generic ratings/reviews infrastructure, scoped by `domain` + `reference_id` (no
+  FK to the reviewed entity — same decoupling as `forms`). Tables: `reviews` (rating 1–5 +
+  comment + status `pending`/`published`/`hidden`/`rejected` + soft delete), `review_tags`
+  (admin-managed tag catalog, `slug`/`sort_order`/`selectable`/`active`), `review_tag_links`
+  (review↔tag with `tag_label_snapshot` so history survives a tag being deactivated),
+  `review_moderation_requests` (the reviewed entity's owner asks for re-moderation — one open per
+  review), `review_moderation_events` (append-only audit, backend-write only like
+  `notifications`), `review_stats` (trigger-maintained aggregate: `total_reviews`,
+  `average_rating`, `dist` — O(1) summary reads, only `published`+`active` count). Writes go
+  through RPCs: `fn_review_create` / `fn_review_moderation_request` (SECURITY INVOKER — RLS scopes
+  by identity; **cross-tenant**: `reviews.tenant_id` is the reviewed entity's tenant, set by the
+  RPC, not a JWT default) and `fn_review_moderate` (SECURITY DEFINER — writes the audit table).
+  Reads open to `anon` (published only). Permissions: `reviews.moderate`, `reviews.manage_tags`
+  (catalog only). No content seeded — a project seeds its own tags (e.g. foco-total's
+  `db/extras/reviews_tags_seed.sql`) and the `domain`s it supports (v1: `'service'`).
 - `system_config/` — generic key/value config bag (`auth.system_config`: `key` text PK, `value`
   jsonb). Mechanism only — which keys exist and the shape of their jsonb value is a consuming
   project's business decision, not this plugin's. Read-open to any session (a config flag isn't
@@ -67,6 +90,21 @@ follow-ups (`0002_*.sql`, …) for data seeds or later migrations; the installer
   gated by `system_config.manage`. No keys are seeded — a project inserts its own (e.g.
   foco-total's `db/extras/system_config_seed.sql` seeding `user_data.document_field`/
   `user_data.birth_date_field` for the `user_data` plugin's onboarding form).
+
+- `messaging/` — multi-channel conversation infra (`conversation`, `conversation_participant`,
+  `message`, `message_external_identity`). Access is **always by participation**
+  (`conversation_participant.user_id`, checked via `auth.fun_msg_is_participant(bigint)`), never by
+  tenant or phone — `conversation.tenant_id` exists but is informational only and never appears in
+  a policy, so conversations are cross-tenant. Only the `platform` channel is exercised today; the
+  `whatsapp`/`instagram`/`telegram`/`email` source enum values and `message_external_identity`
+  table are defined but unused until an external-ingestion worker exists. Writes go through
+  `SECURITY DEFINER` RPCs: `fn_msg_start_conversation` (idempotent per pair+context — reuses an
+  open conversation), `fn_msg_send_message` (dedups by `metadata->>'client_token'`),
+  `fn_msg_mark_read`, `fn_msg_list_conversations` (adds `unread_count` + the other participant,
+  LEFT JOIN on `user_data`). The `auth_user` INSERT policy on `message` forces
+  `sender_id = auth.fun_auth_user_id() AND direction = 'outbound' AND source = 'platform'`.
+  Depends on the `user_data` plugin (install `user_data,messaging` together). Permission
+  `messaging.manage` is catalog-only (moderator override in the SELECT policies) — never granted.
 
 ## Convention: registering with RBAC
 

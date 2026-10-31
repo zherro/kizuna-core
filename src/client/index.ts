@@ -10,6 +10,7 @@ export {
 export { LoginPageContent } from './components/login-page';
 export { RegisterPageContent } from './components/register-page';
 export { ProtectedRoute } from './components/protected-route';
+export { TurnstileWidget } from './components/captcha';
 
 // Hooks
 export {

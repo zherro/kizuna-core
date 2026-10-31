@@ -1,0 +1,8 @@
+{
+  "owner": "agenda",
+  "_deferred": "rotas que ainda dependem de @/lib/server/* e virão numa promoção de Fase A: src/app/api/agenda/events/route.ts + src/app/api/agenda/settings/route.ts (dependem de @/lib/server/agenda-store, e settings também de @/types/agenda)",
+  "files": {
+    "src/app/api/agenda/cities/route.ts": "managed",
+    "src/app/api/agenda/ufs/route.ts": "managed"
+  }
+}

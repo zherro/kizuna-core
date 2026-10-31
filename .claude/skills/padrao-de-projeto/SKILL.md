@@ -34,27 +34,27 @@ base; `nova-tela-screen-engine`, `novo-wizard`, `criar-recurso` e `criar-plugin`
 
 ## Mapa — onde cavar mais fundo
 
-| Preciso entender... | Vá para |
-| --- | --- |
-| Sessão, JWT, tenant, RBAC, delegação, proxy | `kizuna-core/docs/AUTH.md` |
-| PostgREST, CRUD genérico, `ResourceConfig`, hooks de client, erros | `kizuna-core/docs/API.md` |
-| Registrar um `ResourceConfig` novo | skill `criar-recurso` |
-| Motor de telas (`RenderScreen`, `ResourceScreen`, blocos) | `kizuna-core/docs/SCREEN-ENGINE.md` + skill `nova-tela-screen-engine` |
-| Wizard multi-step com persistência parcial | skill `novo-wizard` |
-| Componentes (`ui/`, `ui-better-soft/`, showcase) | `kizuna-core/docs/COMPONENTS.md` + skill `criar-componente-core` |
-| Plugins (o que existe, como ativar, criar um novo) | `kizuna-core/docs/PLUGINS.md` + skill `criar-plugin` |
-| Upload de arquivo / imagens | `kizuna-core/docs/STORAGE.md` |
-| Superfície pública exata do `@kizuna/core` (lista de exports) | `kizuna-core/STATUS.md` |
-| Setup de um projeto novo do zero | skill `setup-projeto-novo` |
+| Preciso entender...                                                | Vá para                                                               |
+| ------------------------------------------------------------------ | --------------------------------------------------------------------- |
+| Sessão, JWT, tenant, RBAC, delegação, proxy                        | `kizuna-core/docs/AUTH.md`                                            |
+| PostgREST, CRUD genérico, `ResourceConfig`, hooks de client, erros | `kizuna-core/docs/API.md`                                             |
+| Registrar um `ResourceConfig` novo                                 | skill `criar-recurso`                                                 |
+| Motor de telas (`RenderScreen`, `ResourceScreen`, blocos)          | `kizuna-core/docs/SCREEN-ENGINE.md` + skill `nova-tela-screen-engine` |
+| Wizard multi-step com persistência parcial                         | skill `novo-wizard`                                                   |
+| Componentes (`ui/`, `ui-better-soft/`, showcase)                   | `kizuna-core/docs/COMPONENTS.md` + skill `criar-componente-core`      |
+| Plugins (o que existe, como ativar, criar um novo)                 | `kizuna-core/docs/PLUGINS.md` + skill `criar-plugin`                  |
+| Upload de arquivo / imagens                                        | `kizuna-core/docs/STORAGE.md`                                         |
+| Superfície pública exata do `@kizuna/core` (lista de exports)      | `kizuna-core/STATUS.md`                                               |
+| Setup de um projeto novo do zero                                   | skill `setup-projeto-novo`                                            |
 
 ## Erros que já aconteceram (não repetir)
 
-| Sintoma | Causa |
-| --- | --- |
-| Erro de constraint `'valor' não é válido` num campo enum | `useState('')` mandado direto pro `mapInput` sem virar `null` antes do usuário responder aquele passo |
-| Campo salvo num passo "some" depois de salvar outro passo | Faltou o read-merge-write da regra 4 — o PATCH sobrescreveu com o default |
-| DELETE em loop volta 404 pra sempre no mesmo id | Estado local não atualizado após falha parcial — trate 404 como "já foi removido", não erro fatal |
-| Contadores sempre em 0, sem erro visível | Agregação do PostgREST (`count()`) desabilitada no deployment (`PGRST123`) — conte via `useTable({ pageSize: 1 })` + `total` |
+| Sintoma                                                   | Causa                                                                                                                        |
+| --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Erro de constraint `'valor' não é válido` num campo enum  | `useState('')` mandado direto pro `mapInput` sem virar `null` antes do usuário responder aquele passo                        |
+| Campo salvo num passo "some" depois de salvar outro passo | Faltou o read-merge-write da regra 4 — o PATCH sobrescreveu com o default                                                    |
+| DELETE em loop volta 404 pra sempre no mesmo id           | Estado local não atualizado após falha parcial — trate 404 como "já foi removido", não erro fatal                            |
+| Contadores sempre em 0, sem erro visível                  | Agregação do PostgREST (`count()`) desabilitada no deployment (`PGRST123`) — conte via `useTable({ pageSize: 1 })` + `total` |
 
 ## Disciplina de documentação
 

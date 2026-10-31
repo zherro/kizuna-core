@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
 import { Loader2, MapPin, Navigation, Search, X } from 'lucide-react';
 
@@ -86,6 +86,17 @@ type AddressFormProps = {
   disabled?: boolean;
 
   className?: string;
+
+  /**
+   * `'compact'` shows only the CEP field inline; once it resolves (or the user picks a result
+   * from search), the rest collapses into a one-line summary + "Editar" button that opens the
+   * full field set in an overlay. Cuts how much of the step the address takes up. Defaults to
+   * `'full'` (every field inline, current behaviour).
+   */
+  layout?: 'full' | 'compact';
+
+  /** Label for the search trigger. Defaults to "Pesquisar localização". */
+  searchLabel?: string;
 };
 
 // ============================================================
@@ -109,6 +120,8 @@ export function AddressForm({
   features: featureOverrides,
   disabled = false,
   className,
+  layout = 'full',
+  searchLabel = 'Pesquisar localização',
 }: AddressFormProps) {
   const features = useMemo(
     () => ({
@@ -337,157 +350,273 @@ export function AddressForm({
   // ============================================================
 
   const fieldDisabled = disabled || !addressUnlocked;
+  const resolved = Boolean(address.street.trim() || address.city.trim());
+
+  const cepField = (
+    <div>
+      <label className="mb-1.5 block text-xs font-medium text-muted-foreground">CEP</label>
+
+      <div className="relative">
+        <input
+          value={formatCep(address.postalCode)}
+          onChange={(event) => handleCepChange(event.target.value)}
+          disabled={disabled}
+          placeholder="00000-000"
+          inputMode="numeric"
+          className={cn(inputClass, 'pr-10')}
+        />
+
+        {cepLoading && (
+          <Loader2
+            className="
+              absolute right-3 top-1/2
+              h-4 w-4
+              -translate-y-1/2
+              animate-spin
+              text-muted-foreground
+            "
+          />
+        )}
+      </div>
+    </div>
+  );
+
+  const searchTrigger = features.search && (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={openSearch}
+      className="
+        inline-flex h-9
+        items-center gap-2
+        rounded-lg
+        border border-border
+        px-3
+        text-xs font-medium
+        text-foreground
+        transition-colors
+        hover:bg-muted
+        disabled:pointer-events-none
+        disabled:opacity-50
+      "
+    >
+      <Search className="h-4 w-4" />
+      {searchLabel}
+    </button>
+  );
+
+  const detailFields = (
+    <>
+      {/* STREET / NUMBER */}
+      <div className="grid gap-4 sm:grid-cols-[1fr_140px]">
+        <Field
+          label="Endereço"
+          value={address.street}
+          disabled={fieldDisabled}
+          onChange={(value) =>
+            updateAddress({
+              street: value,
+            })
+          }
+        />
+
+        <Field
+          label="Número"
+          value={address.number}
+          disabled={fieldDisabled}
+          onChange={(value) =>
+            updateAddress({
+              number: value,
+            })
+          }
+        />
+      </div>
+
+      {/* COMPLEMENT */}
+      <Field
+        label="Complemento"
+        value={address.complement}
+        disabled={fieldDisabled}
+        onChange={(value) =>
+          updateAddress({
+            complement: value,
+          })
+        }
+      />
+
+      {/* NEIGHBORHOOD */}
+      <Field
+        label="Bairro"
+        value={address.neighborhood}
+        disabled={fieldDisabled}
+        onChange={(value) =>
+          updateAddress({
+            neighborhood: value,
+          })
+        }
+      />
+
+      {/* CITY / STATE */}
+      <div className="grid grid-cols-[1fr_90px] gap-4">
+        <Field label="Cidade" value={address.city} disabled />
+
+        <Field label="UF" value={address.state} disabled />
+      </div>
+
+      {/* COORDINATES */}
+      {address.latitude !== null && address.longitude !== null && (
+        <div
+          className="
+            flex items-center gap-2
+            rounded-lg
+            bg-muted/50
+            px-3 py-2
+            text-xs
+            text-muted-foreground
+          "
+        >
+          <MapPin className="h-3.5 w-3.5 shrink-0" />
+
+          <span className="truncate">
+            {address.formattedAddress ?? `${address.latitude}, ${address.longitude}`}
+          </span>
+        </div>
+      )}
+
+      {/* MAP */}
+      {features.map && address.latitude !== null && address.longitude !== null && (
+        <MiniMap latitude={address.latitude} longitude={address.longitude} />
+      )}
+    </>
+  );
+
+  const searchDrawer = searchOpen && (
+    <SearchDrawer
+      value={searchValue}
+      loading={searchLoading}
+      results={results}
+      features={features}
+      onChange={setSearchValue}
+      onClose={closeSearch}
+      onSelect={handleSelectResult}
+    />
+  );
+
+  if (layout === 'compact') {
+    return (
+      <CompactAddressForm
+        className={className}
+        cepField={cepField}
+        searchTrigger={searchTrigger}
+        detailFields={detailFields}
+        searchDrawer={searchDrawer}
+        resolved={resolved}
+        summary={buildSearchValue(address) || 'Endereço incompleto'}
+      />
+    );
+  }
 
   return (
     <>
       <div className={cn('space-y-4', className)}>
-        {/* CEP */}
-        <div>
-          <label className="mb-1.5 block text-xs font-medium text-muted-foreground">CEP</label>
+        {cepField}
+        {searchTrigger}
+        {detailFields}
+      </div>
 
-          <div className="relative">
-            <input
-              value={formatCep(address.postalCode)}
-              onChange={(event) => handleCepChange(event.target.value)}
-              disabled={disabled}
-              placeholder="00000-000"
-              inputMode="numeric"
-              className={cn(inputClass, 'pr-10')}
-            />
+      {searchDrawer}
+    </>
+  );
+}
 
-            {cepLoading && (
-              <Loader2
-                className="
-                  absolute right-3 top-1/2
-                  h-4 w-4
-                  -translate-y-1/2
-                  animate-spin
-                  text-muted-foreground
-                "
-              />
-            )}
-          </div>
-        </div>
+// ============================================================
+// COMPACT LAYOUT
+// ============================================================
 
-        {/* SEARCH */}
-        {features.search && (
+/**
+ * `layout="compact"`: só o CEP fica visível por padrão. Depois de resolvido (ou editado), um
+ * resumo de uma linha substitui o formulário inteiro — "Editar" abre um modal central com o
+ * restante dos campos (que por sua vez pode abrir o `SearchDrawer` por cima). Poupa espaço de
+ * tela no step e evita a sensação de formulário longo.
+ */
+function CompactAddressForm({
+  className,
+  cepField,
+  searchTrigger,
+  detailFields,
+  searchDrawer,
+  resolved,
+  summary,
+}: {
+  className?: string;
+  cepField: ReactNode;
+  searchTrigger: ReactNode;
+  detailFields: ReactNode;
+  searchDrawer: ReactNode;
+  resolved: boolean;
+  summary: string;
+}) {
+  const [editOpen, setEditOpen] = useState(false);
+
+  return (
+    <>
+      <div className={cn('space-y-3', className)}>
+        {resolved ? (
           <button
             type="button"
-            disabled={disabled}
-            onClick={openSearch}
-            className="
-              inline-flex h-9
-              items-center gap-2
-              rounded-lg
-              border border-border
-              px-3
-              text-xs font-medium
-              text-foreground
-              transition-colors
-              hover:bg-muted
-              disabled:pointer-events-none
-              disabled:opacity-50
-            "
+            onClick={() => setEditOpen(true)}
+            className="flex w-full items-start gap-3 rounded-xl border border-border bg-background px-3.5 py-3 text-left transition-colors hover:bg-muted"
           >
-            <Search className="h-4 w-4" />
-            Pesquisar localização
-          </button>
-        )}
-
-        {/* STREET / NUMBER */}
-        <div className="grid gap-4 sm:grid-cols-[1fr_140px]">
-          <Field
-            label="Endereço"
-            value={address.street}
-            disabled={fieldDisabled}
-            onChange={(value) =>
-              updateAddress({
-                street: value,
-              })
-            }
-          />
-
-          <Field
-            label="Número"
-            value={address.number}
-            disabled={fieldDisabled}
-            onChange={(value) =>
-              updateAddress({
-                number: value,
-              })
-            }
-          />
-        </div>
-
-        {/* COMPLEMENT */}
-        <Field
-          label="Complemento"
-          value={address.complement}
-          disabled={fieldDisabled}
-          onChange={(value) =>
-            updateAddress({
-              complement: value,
-            })
-          }
-        />
-
-        {/* NEIGHBORHOOD */}
-        <Field
-          label="Bairro"
-          value={address.neighborhood}
-          disabled={fieldDisabled}
-          onChange={(value) =>
-            updateAddress({
-              neighborhood: value,
-            })
-          }
-        />
-
-        {/* CITY / STATE */}
-        <div className="grid grid-cols-[1fr_90px] gap-4">
-          <Field label="Cidade" value={address.city} disabled />
-
-          <Field label="UF" value={address.state} disabled />
-        </div>
-
-        {/* COORDINATES */}
-        {address.latitude !== null && address.longitude !== null && (
-          <div
-            className="
-              flex items-center gap-2
-              rounded-lg
-              bg-muted/50
-              px-3 py-2
-              text-xs
-              text-muted-foreground
-            "
-          >
-            <MapPin className="h-3.5 w-3.5 shrink-0" />
-
-            <span className="truncate">
-              {address.formattedAddress ?? `${address.latitude}, ${address.longitude}`}
+            <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+            <span className="min-w-0 flex-1">
+              <span className="block text-xs text-muted-foreground">Endereço de referência</span>
+              <span className="mt-0.5 block truncate text-sm font-medium text-foreground">
+                {summary}
+              </span>
             </span>
+            <span className="shrink-0 text-xs font-medium text-primary">Editar</span>
+          </button>
+        ) : (
+          <div className="space-y-3">
+            {cepField}
+            {searchTrigger}
           </div>
-        )}
-
-        {/* MAP */}
-        {features.map && address.latitude !== null && address.longitude !== null && (
-          <MiniMap latitude={address.latitude} longitude={address.longitude} />
         )}
       </div>
 
-      {/* DRAWER */}
-      {searchOpen && (
-        <SearchDrawer
-          value={searchValue}
-          loading={searchLoading}
-          results={results}
-          features={features}
-          onChange={setSearchValue}
-          onClose={closeSearch}
-          onSelect={handleSelectResult}
-        />
+      {editOpen && (
+        <div
+          className="fixed inset-0 z-[60] grid place-items-center bg-background/80 p-4 backdrop-blur-sm"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setEditOpen(false);
+          }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Editar endereço"
+            className="flex max-h-[min(40rem,90dvh)] w-full max-w-md flex-col overflow-hidden rounded-2xl border border-border bg-background shadow-xl"
+          >
+            <header className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
+              <p className="text-sm font-semibold text-foreground">Editar endereço</p>
+              <button
+                type="button"
+                onClick={() => setEditOpen(false)}
+                className="rounded-lg px-3 py-1.5 text-sm font-medium text-primary hover:bg-muted"
+              >
+                Concluir
+              </button>
+            </header>
+            <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
+              {cepField}
+              {searchTrigger}
+              {detailFields}
+            </div>
+          </div>
+        </div>
       )}
+
+      {searchDrawer}
     </>
   );
 }

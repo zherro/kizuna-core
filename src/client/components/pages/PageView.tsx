@@ -13,18 +13,21 @@ import type { PageRecord } from './page-types';
  * consuming app.
  */
 const mdComponents: Components = {
-  h1: (props) => <h1 className="mt-8 mb-4 text-2xl font-black tracking-tight first:mt-0" {...props} />,
+  h1: (props) => (
+    <h1 className="mt-8 mb-4 text-2xl font-black tracking-tight first:mt-0" {...props} />
+  ),
   h2: (props) => <h2 className="mt-8 mb-3 text-xl font-bold tracking-tight" {...props} />,
   h3: (props) => <h3 className="mt-6 mb-2 text-lg font-semibold" {...props} />,
   p: (props) => <p className="my-4 leading-7 text-foreground/90" {...props} />,
   ul: (props) => <ul className="my-4 list-disc space-y-1.5 pl-6" {...props} />,
   ol: (props) => <ol className="my-4 list-decimal space-y-1.5 pl-6" {...props} />,
   li: (props) => <li className="leading-7" {...props} />,
-  a: (props) => (
-    <a className="font-medium text-primary underline underline-offset-2" {...props} />
-  ),
+  a: (props) => <a className="font-medium text-primary underline underline-offset-2" {...props} />,
   blockquote: (props) => (
-    <blockquote className="my-4 border-l-4 border-border pl-4 italic text-muted-foreground" {...props} />
+    <blockquote
+      className="my-4 border-l-4 border-border pl-4 italic text-muted-foreground"
+      {...props}
+    />
   ),
   hr: (props) => <hr className="my-8 border-border" {...props} />,
   code: (props) => (
@@ -36,7 +39,9 @@ const mdComponents: Components = {
       <table className="w-full border-collapse text-sm" {...props} />
     </div>
   ),
-  th: (props) => <th className="border border-border px-3 py-2 text-left font-semibold" {...props} />,
+  th: (props) => (
+    <th className="border border-border px-3 py-2 text-left font-semibold" {...props} />
+  ),
   td: (props) => <td className="border border-border px-3 py-2" {...props} />,
 };
 

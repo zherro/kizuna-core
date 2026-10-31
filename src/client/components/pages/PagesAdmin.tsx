@@ -43,7 +43,7 @@ export function PagesAdmin({ reservedSlugs = [] }: { reservedSlugs?: string[] })
 
   const pages = useMemo(
     () => [...table.items].sort((a, b) => a.title.localeCompare(b.title, 'pt-BR')),
-    [table.items],
+    [table.items]
   );
 
   const [selectedId, setSelectedId] = useState<string | number | null>(null);
@@ -112,9 +112,7 @@ export function PagesAdmin({ reservedSlugs = [] }: { reservedSlugs?: string[] })
             <Plus className="mr-1 h-4 w-4" /> Nova
           </Button>
         </div>
-        {table.error ? (
-          <p className="p-3 text-sm text-destructive">{table.error}</p>
-        ) : null}
+        {table.error ? <p className="p-3 text-sm text-destructive">{table.error}</p> : null}
         <div className="max-h-[70vh] overflow-y-auto p-2">
           {pages.map((p) => (
             <button
@@ -125,7 +123,7 @@ export function PagesAdmin({ reservedSlugs = [] }: { reservedSlugs?: string[] })
                 'flex w-full flex-col items-start rounded-md px-3 py-2 text-left transition',
                 String(current?.id) === String(p.id)
                   ? 'bg-primary text-primary-foreground'
-                  : 'hover:bg-muted',
+                  : 'hover:bg-muted'
               )}
             >
               <span className="flex items-center gap-1.5 text-sm font-medium">
@@ -136,7 +134,7 @@ export function PagesAdmin({ reservedSlugs = [] }: { reservedSlugs?: string[] })
                   'text-xs',
                   String(current?.id) === String(p.id)
                     ? 'text-primary-foreground/80'
-                    : 'text-muted-foreground',
+                    : 'text-muted-foreground'
                 )}
               >
                 /{p.slug} · {p.status === 'published' ? 'publicada' : 'rascunho'}
@@ -266,8 +264,7 @@ function PageEditor({
 
   const effectiveSlug = slugLocked ? slugify(title) : slugify(slug);
   const slugReserved = effectiveSlug ? isReservedSlug(effectiveSlug, reservedSlugs) : true;
-  const slugCollides =
-    effectiveSlug !== page.slug && existingSlugs.includes(effectiveSlug);
+  const slugCollides = effectiveSlug !== page.slug && existingSlugs.includes(effectiveSlug);
 
   const dirty =
     title !== page.title ||
@@ -370,7 +367,7 @@ function PageEditor({
               <p
                 className={cn(
                   'text-xs',
-                  slugReserved || slugCollides ? 'text-destructive' : 'text-muted-foreground',
+                  slugReserved || slugCollides ? 'text-destructive' : 'text-muted-foreground'
                 )}
               >
                 Público em <code>/{effectiveSlug || '...'}</code>
