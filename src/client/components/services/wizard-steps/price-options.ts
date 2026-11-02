@@ -1,5 +1,6 @@
 import { PRICE_UNIT_LABEL } from '../service-labels';
 import { SERVICE_PRICE_UNIT_OPTIONS } from '../service-type';
+import { EVENT_EXPIRES_TIME_ZONE } from '../detail/evento-helpers';
 
 export type PriceOptionConfig = {
   /** O que vai pro banco (`price_unit`, enum — não muda). Um dos valores de `PRICE_UNIT_LABEL`. */
@@ -149,58 +150,106 @@ export function cleanPriceTable(rows: PriceTableRow[] | undefined): PriceTableRo
     .filter((row) => row.title.length > 0);
 }
 
-/** "YYYY-MM-DD" (input date) → fim desse dia no fuso local, em ISO UTC. Data inválida → `null`. */
-export function endOfLocalDayToIso(date: string): string | null {
+/**
+ * Fuso das datas do campo "válido até"/"Acontece em": o MESMO em que o card e o detalhe leem o
+ * `expires_at` (`EVENT_EXPIRES_TIME_ZONE`, Cuiabá). Nunca o fuso do navegador: quem preenche em
+ * Brasília (UTC-3) gravaria 22:00 como 21:00 de Cuiabá.
+ */
+export const EXPIRES_AT_TIME_ZONE = EVENT_EXPIRES_TIME_ZONE;
+
+type WallTime = { y: number; mo: number; d: number; h: number; mi: number; s: number; ms: number };
+
+/** Relógio de parede de um instante no fuso `timeZone`. */
+function wallTimeIn(ms: number, timeZone: string): WallTime {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(ms);
+  const get = (type: string) => Number(parts.find((p) => p.type === type)?.value);
+  return {
+    y: get('year'),
+    mo: get('month'),
+    d: get('day'),
+    h: get('hour'),
+    mi: get('minute'),
+    s: get('second'),
+    ms: ((ms % 1000) + 1000) % 1000,
+  };
+}
+
+/** Relógio de parede em `timeZone` → instante UTC (ms). Data que o calendário "corrige" (31/02) → null. */
+function zonedToUtc(w: WallTime, timeZone: string): number | null {
+  const asUtc = Date.UTC(w.y, w.mo - 1, w.d, w.h, w.mi, w.s, w.ms);
+  const check = new Date(asUtc);
+  if (check.getUTCFullYear() !== w.y || check.getUTCMonth() !== w.mo - 1 || check.getUTCDate() !== w.d) return null;
+  // duas passadas: o deslocamento do fuso pode mudar entre o palpite e o instante certo (horário de verão)
+  let t = asUtc;
+  for (let i = 0; i < 2; i += 1) {
+    const seen = wallTimeIn(t, timeZone);
+    const offset = Date.UTC(seen.y, seen.mo - 1, seen.d, seen.h, seen.mi, seen.s, seen.ms) - t;
+    t = asUtc - offset;
+  }
+  return t;
+}
+
+/** "YYYY-MM-DD" (input date) → fim desse dia no fuso do evento, em ISO UTC. Data inválida → `null`. */
+export function endOfLocalDayToIso(date: string, timeZone: string = EXPIRES_AT_TIME_ZONE): string | null {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
   if (!m) return null;
-  const [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3])];
-  const local = new Date(y, mo - 1, d, 23, 59, 59, 999);
-  // Rejeita datas que o Date "corrige" (ex.: 2026-02-31).
-  if (local.getFullYear() !== y || local.getMonth() !== mo - 1 || local.getDate() !== d) return null;
-  return local.toISOString();
+  const t = zonedToUtc(
+    { y: Number(m[1]), mo: Number(m[2]), d: Number(m[3]), h: 23, mi: 59, s: 59, ms: 999 },
+    timeZone
+  );
+  return t === null ? null : new Date(t).toISOString();
 }
 
 /**
- * "YYYY-MM-DD" + "HH:MM" (inputs date e time) → esse horário local (segundos e ms zerados) em ISO UTC.
- * Entrada inválida ou data que o Date "corrige" (ex.: 2026-02-31, 25:00) → `null`.
+ * "YYYY-MM-DD" + "HH:MM" (inputs date e time) → esse horário no fuso do evento (segundos e ms
+ * zerados) em ISO UTC. Entrada inválida ou data que o calendário "corrige" (ex.: 2026-02-31, 25:00) → `null`.
  */
-export function localDateTimeToIso(date: string, time: string): string | null {
+export function localDateTimeToIso(
+  date: string,
+  time: string,
+  timeZone: string = EXPIRES_AT_TIME_ZONE
+): string | null {
   const d = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
   const t = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(time);
   if (!d || !t) return null;
-  const [y, mo, day, h, mi] = [Number(d[1]), Number(d[2]), Number(d[3]), Number(t[1]), Number(t[2])];
-  const local = new Date(y, mo - 1, day, h, mi, 0, 0);
-  if (local.getFullYear() !== y || local.getMonth() !== mo - 1 || local.getDate() !== day) return null;
-  return local.toISOString();
+  const ms = zonedToUtc(
+    { y: Number(d[1]), mo: Number(d[2]), d: Number(d[3]), h: Number(t[1]), mi: Number(t[2]), s: 0, ms: 0 },
+    timeZone
+  );
+  return ms === null ? null : new Date(ms).toISOString();
 }
 
 /**
- * ISO → "HH:MM" no fuso local (o que o input time mostra). Vazio quando não há hora: valor vazio,
+ * ISO → "HH:MM" no fuso do evento (o que o input time mostra). Vazio quando não há hora: valor vazio,
  * inválido ou o fim do dia (23:59:59.999), que é o que se grava quando só a data foi escolhida.
  */
-export function isoToLocalTime(iso: string | null | undefined): string {
+export function isoToLocalTime(iso: string | null | undefined, timeZone: string = EXPIRES_AT_TIME_ZONE): string {
   if (!iso) return '';
-  const date = new Date(iso);
-  if (!Number.isFinite(date.getTime())) return '';
-  if (
-    date.getHours() === 23 &&
-    date.getMinutes() === 59 &&
-    date.getSeconds() === 59 &&
-    date.getMilliseconds() === 999
-  ) {
-    return '';
-  }
+  const ms = new Date(iso).getTime();
+  if (!Number.isFinite(ms)) return '';
+  const w = wallTimeIn(ms, timeZone);
+  if (w.h === 23 && w.mi === 59 && w.s === 59) return '';
   const pad = (n: number) => String(n).padStart(2, '0');
-  return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  return `${pad(w.h)}:${pad(w.mi)}`;
 }
 
-/** ISO → "YYYY-MM-DD" no fuso local (o que o input date mostra). Vazio/inválido → `''`. */
-export function isoToLocalDate(iso: string | null | undefined): string {
+/** ISO → "YYYY-MM-DD" no fuso do evento (o que o input date mostra). Vazio/inválido → `''`. */
+export function isoToLocalDate(iso: string | null | undefined, timeZone: string = EXPIRES_AT_TIME_ZONE): string {
   if (!iso) return '';
-  const date = new Date(iso);
-  if (!Number.isFinite(date.getTime())) return '';
+  const ms = new Date(iso).getTime();
+  if (!Number.isFinite(ms)) return '';
+  const w = wallTimeIn(ms, timeZone);
   const pad = (n: number) => String(n).padStart(2, '0');
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+  return `${w.y}-${pad(w.mo)}-${pad(w.d)}`;
 }
 
 /** Checa "data no passado" só ao criar ou depois de o usuário mexer na data (anúncio vencido não trava). */

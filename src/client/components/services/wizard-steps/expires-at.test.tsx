@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { eventTimeFromExpiresAt } from '../detail/evento-helpers';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { createDynamicFormStep, type DynamicFormProfile } from './step-dynamic-form';
 import {
@@ -91,12 +92,9 @@ describe('resolveExpiresAtMode / perfis', () => {
 });
 
 describe('helpers de data', () => {
-  it('endOfLocalDayToIso: fim do dia local; roundtrip com isoToLocalDate', () => {
+  it('endOfLocalDayToIso: fim do dia em Cuiabá (UTC-4); roundtrip com isoToLocalDate', () => {
     const iso = endOfLocalDayToIso('2030-06-15')!;
-    const d = new Date(iso);
-    expect([d.getFullYear(), d.getMonth(), d.getDate(), d.getHours(), d.getMinutes()]).toEqual([
-      2030, 5, 15, 23, 59,
-    ]);
+    expect(iso).toBe('2030-06-16T03:59:59.999Z');
     expect(isoToLocalDate(iso)).toBe('2030-06-15');
   });
   it('rejeita vazio e datas inexistentes', () => {
@@ -118,12 +116,17 @@ describe('helpers de data', () => {
 describe('hora de término (localDateTimeToIso / isoToLocalTime)', () => {
   it('roundtrip com segundos e ms zerados', () => {
     const iso = localDateTimeToIso('2030-06-15', '21:30')!;
-    const d = new Date(iso);
-    expect([d.getFullYear(), d.getMonth(), d.getDate(), d.getHours(), d.getMinutes(), d.getSeconds(), d.getMilliseconds()]).toEqual([
-      2030, 5, 15, 21, 30, 0, 0,
-    ]);
+    expect(iso).toBe('2030-06-16T01:30:00.000Z');
     expect(isoToLocalDate(iso)).toBe('2030-06-15');
     expect(isoToLocalTime(iso)).toBe('21:30');
+  });
+  it('usa o fuso do evento, não o do navegador: 22:00 continua 22:00 no card', () => {
+    // bug: navegador em Brasília (UTC-3) gravava 22:00 como 01:00Z, lido 21:00 em Cuiabá
+    const iso = localDateTimeToIso('2026-11-07', '22:00')!;
+    expect(iso).toBe('2026-11-08T02:00:00.000Z');
+    expect(eventTimeFromExpiresAt(iso)).toBe('22:00');
+    expect(eventTimeFromExpiresAt(endOfLocalDayToIso('2026-11-07'))).toBeNull();
+    expect(localDateTimeToIso('2026-11-07', '22:00', 'America/Sao_Paulo')).toBe('2026-11-08T01:00:00.000Z');
   });
   it('fim do dia (sem hora) lê como vazio', () => {
     expect(isoToLocalTime(endOfLocalDayToIso('2030-06-15'))).toBe('');
