@@ -6,7 +6,6 @@ import { goAfterLogin, goToLoginError, resolveReturnTo } from './oauth-client';
 const GSI_SRC = 'https://accounts.google.com/gsi/client';
 const ENDPOINT = '/api/auth/oauth/google/onetap';
 /** Sem interação, dispara o One Tap este tempo depois do `load` da página. */
-const ONE_TAP_MAX_DELAY_MS = 8000;
 const INTERACTION_EVENTS = ['pointerdown', 'keydown', 'scroll', 'touchstart'] as const;
 
 type GoogleIdApi = {
@@ -48,14 +47,13 @@ function loadGsi(): Promise<GoogleIdApi> {
  * já tem conta Google no navegador. O `AuthProvider` já monta este componente com
  * `active` = visitante anônimo; só aparece quando o servidor tem o Google configurado (e
  * `GOOGLE_ONE_TAP` ≠ `false`). Todo o fluxo (fetch, script do Google e prompt) é adiado até a
- * 1ª interação ou {@link ONE_TAP_MAX_DELAY_MS} após o `load`, para não pesar o carregamento.
+ * 1ª interação (clique, tecla, rolagem ou toque), para não pesar o carregamento.
  */
 export function GoogleOneTap({ active, returnTo }: { active: boolean; returnTo?: string }) {
   useEffect(() => {
     if (!active) return;
     let cancelled = false;
     let started = false;
-    let timer: ReturnType<typeof setTimeout> | undefined;
     let api: GoogleIdApi | null = null;
 
     const run = () => {
@@ -101,21 +99,14 @@ export function GoogleOneTap({ active, returnTo }: { active: boolean; returnTo?:
       removeTriggers();
       run();
     };
-    const onLoad = () => {
-      timer = setTimeout(start, ONE_TAP_MAX_DELAY_MS);
-    };
     const removeTriggers = () => {
       for (const ev of INTERACTION_EVENTS) window.removeEventListener(ev, start);
-      window.removeEventListener('load', onLoad);
     };
 
     for (const ev of INTERACTION_EVENTS) window.addEventListener(ev, start, { once: true, passive: true });
-    if (document.readyState === 'complete') onLoad();
-    else window.addEventListener('load', onLoad, { once: true });
 
     return () => {
       cancelled = true;
-      clearTimeout(timer);
       removeTriggers();
       api?.cancel();
     };

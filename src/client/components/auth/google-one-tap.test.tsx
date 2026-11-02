@@ -20,16 +20,12 @@ afterEach(() => {
 });
 
 describe('GoogleOneTap', () => {
-  it('sem interação, só busca depois de 8000 ms', async () => {
+  it('sem interação nunca busca (nem por timer)', async () => {
     render(<GoogleOneTap active />);
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(7999);
+      await vi.advanceTimersByTimeAsync(60000);
     });
     expect(fetchMock).not.toHaveBeenCalled();
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(2);
-    });
-    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it('a 1ª interação dispara na hora e a 2ª não duplica', async () => {
