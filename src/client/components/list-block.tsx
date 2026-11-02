@@ -15,8 +15,10 @@ import {
   Zap,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button, buttonVariants } from './ui/button';
 import { Input } from './ui/input';
+import { Switch } from './ui/switch';
 import { EmptyStateCard } from './ui-better-soft/lists/empty-state-card';
 import { GatedCreateLink } from './gated-create-link';
 import { useTable } from '../hooks';
@@ -115,6 +117,23 @@ export type ListBlockConfig = {
   };
   statusFilter?: {
     defaultValue?: string;
+  };
+  /**
+   * Switch liga/desliga por linha (ex.: "Ativo" em /painel/meus-servicos): PATCH só com
+   * `{ [column]: boolean }` em `/api/resources/<resource>/<id>`. A coluna precisa estar em
+   * `toggleFields` do `ResourceConfig`, senão a rota passa o corpo pelo `mapInput`.
+   * `field` = chave no item já mapeado (`mapOutput`); `column` = coluna no banco (padrão: `field`).
+   * Desligado, o card fica esmaecido. Dado puro (cruza Server → Client).
+   */
+  toggle?: {
+    field: string;
+    column?: string;
+    /** Texto ao lado do switch, ligado e desligado. */
+    onLabel: string;
+    offLabel: string;
+    /** Toast ao ligar/desligar. */
+    onMessage?: string;
+    offMessage?: string;
   };
   /**
    * When truthy, both `createAction` and `emptyState`'s create CTA are gated: clicking checks
@@ -291,6 +310,8 @@ export function ListBlock({ config }: { config: ListBlockConfig }) {
   const ActionIcon = config.action.icon && ICON_MAP[ACTION_ICON_MAP[config.action.icon]];
 
   const [statusFilter, setStatusFilter] = useState(config.statusFilter?.defaultValue ?? '');
+  // valor do switch por id depois de uma troca (o item da lista não é recarregado)
+  const [toggled, setToggled] = useState<Record<string, boolean>>({});
   const [selectValues, setSelectValues] = useState<Record<string, string>>({});
   const selectFilters = config.selectFilters ?? [];
   const setSelectValue = (field: string, value: string) =>
@@ -457,7 +478,12 @@ export function ListBlock({ config }: { config: ListBlockConfig }) {
             {(items as Record<string, unknown>[]).map((item) => (
               <li
                 key={String(item.id)}
-                className="group rounded-[var(--ui-radius-card-compact,0.75rem)] border-[length:var(--ui-border-w-card,1px)] border-border shadow-[shadow:var(--ui-shadow-card,0_1px_3px_0_#0000001a,_0_1px_2px_-1px_#0000001a)] bg-card p-4 transition-shadow duration-300 hover:border-brand/30 hover:shadow-[shadow:var(--ui-shadow-card-flat,0_1px_3px_0_#0000001a,_0_1px_2px_-1px_#0000001a)]"
+                data-off={
+                  config.toggle && !(toggled[String(item.id)] ?? Boolean(item[config.toggle.field]))
+                    ? ''
+                    : undefined
+                }
+                className="group data-[off]:opacity-70 rounded-[var(--ui-radius-card-compact,0.75rem)] border-[length:var(--ui-border-w-card,1px)] border-border shadow-[shadow:var(--ui-shadow-card,0_1px_3px_0_#0000001a,_0_1px_2px_-1px_#0000001a)] bg-card p-4 transition-shadow duration-300 hover:border-brand/30 hover:shadow-[shadow:var(--ui-shadow-card-flat,0_1px_3px_0_#0000001a,_0_1px_2px_-1px_#0000001a)]"
               >
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start sm:gap-3">
                   <div className="min-w-0">
@@ -520,6 +546,17 @@ export function ListBlock({ config }: { config: ListBlockConfig }) {
                 </div>
 
                 <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+                  {config.toggle ? (
+                    <RowToggle
+                      resource={config.resource}
+                      id={String(item.id)}
+                      toggle={config.toggle}
+                      checked={toggled[String(item.id)] ?? Boolean(item[config.toggle.field])}
+                      onChange={(value) =>
+                        setToggled((prev) => ({ ...prev, [String(item.id)]: value }))
+                      }
+                    />
+                  ) : null}
                   <Link
                     href={`${config.action.hrefBase}/${item.id}`}
                     className={cn(
@@ -563,6 +600,66 @@ export function ListBlock({ config }: { config: ListBlockConfig }) {
         </>
       )}
     </div>
+  );
+}
+
+/**
+ * Switch de uma linha: troca na hora (otimista), grava `{ [column]: valor }` e volta atrás se a
+ * rota recusar. Fica antes do botão de ação; no mobile ocupa a linha toda, como o botão.
+ */
+function RowToggle({
+  resource,
+  id,
+  toggle,
+  checked,
+  onChange,
+}: {
+  resource: string;
+  id: string;
+  toggle: NonNullable<ListBlockConfig['toggle']>;
+  checked: boolean;
+  onChange: (value: boolean) => void;
+}) {
+  const [saving, setSaving] = useState(false);
+  const switchId = `toggle-${resource}-${id}`;
+
+  async function change(value: boolean) {
+    onChange(value);
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/resources/${resource}/${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [toggle.column ?? toggle.field]: value }),
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { message?: string };
+        throw new Error(data.message || 'Não foi possível salvar.');
+      }
+      const message = value ? toggle.onMessage : toggle.offMessage;
+      if (message) toast.success(message);
+    } catch (err) {
+      onChange(!value);
+      toast.error(err instanceof Error ? err.message : 'Não foi possível salvar.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <label
+      htmlFor={switchId}
+      className="inline-flex min-h-8 cursor-pointer items-center justify-between gap-2 rounded-md px-1 text-xs font-medium text-muted-foreground sm:mr-auto sm:justify-start"
+    >
+      <Switch
+        id={switchId}
+        checked={checked}
+        disabled={saving}
+        onCheckedChange={(value) => void change(value)}
+        className="order-last sm:order-first"
+      />
+      <span>{checked ? toggle.onLabel : toggle.offLabel}</span>
+    </label>
   );
 }
 

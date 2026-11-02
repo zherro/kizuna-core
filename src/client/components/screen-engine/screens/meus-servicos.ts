@@ -46,6 +46,16 @@ const listConfig: ListBlockConfig = {
   pageSize: 8,
   action: { label: 'Editar', hrefBase: '/painel/meus-servicos', icon: 'edit' },
   statusFilter: {},
+  // Exclusão lógica pelo próprio dono: desligado = `active = false`, some do site e da busca, mas
+  // continua aqui para religar (policy `services_owner_read`, services 0018). Não mexe no `status`
+  // da moderação.
+  toggle: {
+    field: 'active',
+    onLabel: 'Ativo no site',
+    offLabel: 'Inativo',
+    onMessage: 'Reativado: volta a aparecer no site.',
+    offMessage: 'Inativado: não aparece mais no site.',
+  },
   fixedFilters: { tenant_id: '$session.tenantId' },
   // Grupo e categoria (a categoria se restringe ao grupo escolhido); mais recentes primeiro.
   selectFilters: [

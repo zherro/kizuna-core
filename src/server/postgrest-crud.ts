@@ -354,6 +354,18 @@ export async function getResourceById(resource: string, id: string) {
   return NextResponse.json({ item });
 }
 
+/**
+ * PATCH parcial de `toggleFields`: o corpo tem só essas chaves, todas booleanas → devolve o corpo
+ * como está (sem `mapInput`). Qualquer outra chave ou valor não booleano → null (fluxo normal).
+ */
+export function pickToggleInput(config: ResourceConfig, input: RecordValue): RecordValue | null {
+  const allowed = config.toggleFields;
+  const keys = Object.keys(input);
+  if (!allowed?.length || keys.length === 0) return null;
+  const ok = keys.every((k) => allowed.includes(k) && typeof input[k] === 'boolean');
+  return ok ? { ...input } : null;
+}
+
 export async function updateResource(
   resource: string,
   id: string,
@@ -373,9 +385,11 @@ export async function updateResource(
   }
 
   const input = ((await request.json().catch(() => null)) as RecordValue | null) ?? {};
-  const mappedInput = !options?.skipMapInput && config.mapInput ? config.mapInput(input) : input;
+  const toggle = pickToggleInput(config, input);
+  const mappedInput =
+    toggle ?? (!options?.skipMapInput && config.mapInput ? config.mapInput(input) : input);
 
-  if (config.requiredFields?.length) {
+  if (!toggle && config.requiredFields?.length) {
     for (const field of config.requiredFields) {
       const value = String(mappedInput[field] ?? '').trim();
       if (!value) {

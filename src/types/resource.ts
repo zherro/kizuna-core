@@ -45,6 +45,12 @@ export type ResourceConfig = {
   maxPageSize?: number;
   requiredFields?: string[];
   softDeleteField?: string;
+  /**
+   * Colunas booleanas que aceitam PATCH parcial: corpo SÓ com essas chaves vai direto ao PostgREST,
+   * sem `mapInput` nem `requiredFields` (que preencheriam o resto do registro com padrões). Ex.:
+   * `['active']` — o switch de ativar/inativar da listagem. RLS/triggers continuam valendo.
+   */
+  toggleFields?: string[];
   mapInput?: (input: RecordValue) => RecordValue;
   mapOutput?: (record: RecordValue) => RecordValue;
 };

@@ -26,6 +26,8 @@ export const resourceServices: Record<string, ResourceConfig> = {
     defaultOrder: 'created_at',
     searchableColumns: ['title', 'description'],
     requiredFields: ['title', 'category_id'],
+    // switch "Ativo" em /painel/meus-servicos: inativar é a exclusão lógica feita pelo próprio dono
+    toggleFields: ['active'],
     mapInput: (input) => {
       const title = String(input.title ?? '').trim();
       // categories_group.id/categories.id/categories_sub.id are bigserial (migrated from uuid
