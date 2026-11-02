@@ -253,6 +253,7 @@ export const resourceTaxonomy: Record<string, ResourceConfig> = {
     schema: 'public',
     table: 'categories',
     listRequiresAuth: false,
+    publicCacheSeconds: 300,
     // o filtro da /busca lê todas (ícone + grupos extras); o teto padrão (100) cortava a lista
     maxPageSize: 1000,
     select:
@@ -282,6 +283,7 @@ export const resourceTaxonomy: Record<string, ResourceConfig> = {
     schema: 'public',
     table: 'categories_sub',
     listRequiresAuth: false,
+    publicCacheSeconds: 300,
     select: 'id,name,slug,description,category_id,active,created_at,updated_at',
     primaryKey: 'id',
     defaultOrder: 'name',
