@@ -32,6 +32,9 @@ describe('Hoje: formatação', () => {
     expect(todaySectionSubtitle({ onlyToday: false, items: [{}] as never })).toBeUndefined();
     expect(todaySectionSubtitle({ onlyToday: true, items: [{}] as never })).toBe('1 começa hoje');
     expect(todaySectionSubtitle({ onlyToday: true, items: [{}, {}] as never })).toBe('2 começam hoje');
+    expect(todaySectionSubtitle({ onlyToday: true, items: [] })).toBeUndefined();
+    expect(todaySectionSubtitle({ onlyToday: false, when: 'week', items: [] })).toBe('Hoje e nos próximos 7 dias');
+    expect(todaySectionSubtitle({ onlyToday: false, when: 'upcoming', items: [] })).toBe('Nos próximos dias');
   });
 });
 

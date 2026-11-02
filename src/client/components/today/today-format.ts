@@ -22,9 +22,15 @@ export function todaySearchHref(
   return `/busca?${filter}${cityQuery}`;
 }
 
-/** Subtítulo da seção: só a seção "só hoje" tem contagem que faz sentido. */
-export function todaySectionSubtitle(section: Pick<TodaySection, 'onlyToday' | 'items'>): string | undefined {
-  if (!section.onlyToday) return undefined;
+/** Subtítulo da seção pela janela de datas: só a de hoje tem contagem que faz sentido. */
+export function todaySectionSubtitle(
+  section: Pick<TodaySection, 'onlyToday' | 'items'> & { when?: TodaySection['when'] }
+): string | undefined {
+  const when = section.when ?? (section.onlyToday ? 'today' : null);
+  if (when === 'week') return 'Hoje e nos próximos 7 dias';
+  if (when === 'upcoming') return 'Nos próximos dias';
+  if (when !== 'today') return undefined;
   const n = section.items.length;
+  if (n === 0) return undefined;
   return n === 1 ? '1 começa hoje' : `${n} começam hoje`;
 }

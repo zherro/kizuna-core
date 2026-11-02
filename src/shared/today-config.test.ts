@@ -10,7 +10,7 @@ describe('parseTodaySections', () => {
       ],
     });
     expect(out).toEqual([
-      { group: 'eventos', title: 'Eventos de hoje', limit: 12, onlyToday: true, scope: 'region' },
+      { group: 'eventos', title: 'Eventos de hoje', limit: 12, onlyToday: true, when: 'today', scope: 'region' },
       { slug: 'cinema', scope: 'city' },
     ]);
   });
@@ -20,5 +20,20 @@ describe('parseTodaySections', () => {
     expect(parseTodaySections(undefined)).toEqual([]);
     expect(parseTodaySections({ sections: 'x' })).toEqual([]);
     expect(parseTodaySections({ sections: [{ slug: 'a', limit: -3 }] })).toEqual([{ slug: 'a', scope: 'city' }]);
+  });
+
+  it('lê when, scope nearby e emptyText; when inválido é ignorado', () => {
+    const out = parseTodaySections({
+      sections: [
+        { group: 'eventos', when: 'week', scope: 'nearby' },
+        { group: 'eventos', when: 'upcoming', emptyText: '  Nada.  ' },
+        { group: 'eventos', when: 'ontem', emptyText: ' ' },
+      ],
+    });
+    expect(out).toEqual([
+      { group: 'eventos', when: 'week', scope: 'nearby' },
+      { group: 'eventos', when: 'upcoming', emptyText: 'Nada.', scope: 'city' },
+      { group: 'eventos', scope: 'city' },
+    ]);
   });
 });

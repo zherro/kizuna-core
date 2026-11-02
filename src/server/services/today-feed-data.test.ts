@@ -10,7 +10,7 @@ vi.mock('../postgrest-crud', () => ({ serverFetchResource }));
 vi.mock('../postrest/conn', () => ({ pgrstRpc }));
 vi.mock('../regions', () => ({ projectRegions: [], withProjectRegionCities: <T>(b: T) => b }));
 
-import { loadTodayFeed, localDayKey, startsOnDay } from './today-feed-data';
+import { addDays, eventDay, inWindow, loadTodayFeed, localDayKey, startsOnDay } from './today-feed-data';
 
 // 28/10/2026 10:00 em Cuiabá (UTC-4)
 const NOW = new Date('2026-10-28T14:00:00Z');
@@ -110,6 +110,8 @@ describe('loadTodayFeed', () => {
     const first = pgrstRpc.mock.calls[0][1];
     expect(first.p_city_ibge).toBe('5103403');
     expect(first.p_city_ibges).toEqual(['5103403', '5108402']);
+    // scope city: lista explícita só com a cidade, para a busca não juntar as irmãs
+    expect(pgrstRpc.mock.calls[1][1].p_city_ibges).toEqual(['5103403']);
     expect(pgrstRpc.mock.calls[1][1].p_seed).toBe(first.p_seed);
   });
 
@@ -129,5 +131,70 @@ describe('loadTodayFeed', () => {
     const feed = await loadTodayFeed([{ slug: 'bares' }, { slug: 'cinema' }], { now: NOW });
 
     expect(feed.map((s) => s.category.slug)).toEqual(['cinema']);
+  });
+
+  it('nearby busca só as irmãs, week pega hoje e os próximos 6 dias', async () => {
+    serverFetchResource.mockResolvedValueOnce(taxonomy('eventos', 3));
+    rpcReturns([
+      item('hoje', '2026-10-28T20:00'),
+      item('sabado', '2026-10-31T19:00'),
+      item('quarta-que-vem', '2026-11-04T19:00'),
+    ]);
+
+    const [perto] = await loadTodayFeed([{ group: 'eventos', when: 'week', scope: 'nearby' }], {
+      now: NOW,
+      cityIbge: '5103403',
+      cityIbges: ['5103403', '5108402', '5103007'],
+    });
+
+    expect(perto.items.map((i) => i.uid)).toEqual(['hoje', 'sabado']);
+    expect(perto.when).toBe('week');
+    const body = pgrstRpc.mock.calls[0][1];
+    expect(body.p_city_ibge).toBe('5108402');
+    expect(body.p_city_ibges).toEqual(['5108402', '5103007']);
+  });
+
+  it('nearby sem cidade irmã não busca nem aparece', async () => {
+    const feed = await loadTodayFeed([{ group: 'eventos', when: 'week', scope: 'nearby' }], {
+      now: NOW,
+      cityIbge: '5103403',
+      cityIbges: ['5103403'],
+    });
+    expect(feed).toEqual([]);
+    expect(pgrstRpc).not.toHaveBeenCalled();
+  });
+
+  it('upcoming começa amanhã; seção com emptyText aparece vazia', async () => {
+    serverFetchResource.mockResolvedValue(taxonomy('eventos', 3));
+    rpcReturns([item('hoje', '2026-10-28T20:00'), item('amanha', '2026-10-29T19:00')]);
+    rpcReturns([item('amanha', '2026-10-29T19:00')]);
+
+    const feed = await loadTodayFeed(
+      [
+        { group: 'eventos', when: 'upcoming', title: 'O que vem por aí' },
+        { group: 'eventos', when: 'today', title: 'Acontece hoje', emptyText: 'Nada hoje.' },
+      ],
+      { now: NOW, cityIbge: '5103403' }
+    );
+
+    expect(feed[0].items.map((i) => i.uid)).toEqual(['amanha']);
+    expect(feed[1].items).toEqual([]);
+    expect(feed[1].emptyText).toBe('Nada hoje.');
+  });
+});
+
+describe('janela de datas', () => {
+  it('eventDay cai no dia do expires_at (Cuiabá) quando não há event_start', () => {
+    expect(eventDay({ event_start: '2026-10-28T20:00', expires_at: null })).toBe('2026-10-28');
+    expect(eventDay({ event_start: null, expires_at: '2026-10-29T03:59:59Z' })).toBe('2026-10-28');
+    expect(eventDay({ event_start: null, expires_at: null })).toBeNull();
+  });
+
+  it('addDays e inWindow', () => {
+    expect(addDays('2026-10-28', 7)).toBe('2026-11-04');
+    expect(inWindow('2026-11-03', 'week', '2026-10-28')).toBe(true);
+    expect(inWindow('2026-11-04', 'week', '2026-10-28')).toBe(false);
+    expect(inWindow('2026-10-28', 'upcoming', '2026-10-28')).toBe(false);
+    expect(inWindow(null, 'today', '2026-10-28')).toBe(false);
   });
 });
