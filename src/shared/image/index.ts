@@ -4,7 +4,7 @@
  */
 
 /** Maior lado da miniatura (`/content?size=thumb`). */
-export const THUMB_MAX_SIDE = 640;
+export const THUMB_MAX_SIDE = 480;
 
 export type ImagePreset = 'avatar' | 'listing' | 'default' | 'thumb';
 
@@ -14,9 +14,10 @@ export const IMAGE_PRESETS: Record<ImagePreset, ImagePresetConfig> = {
   avatar: { width: 512, height: 512, fit: 'cover', quality: 80 },
   listing: { width: 1600, height: 1600, fit: 'inside', quality: 80 },
   default: { width: 2048, height: 2048, fit: 'inside', quality: 82 },
-  // Miniatura (cards, busca, carrosséis, galeria): 640 no maior lado cobre um card de 260px em
-  // tela 2x — foto horizontal (~520 de largura) e pôster em pé (~410 de altura) — sem cortar.
-  thumb: { width: THUMB_MAX_SIDE, height: THUMB_MAX_SIDE, fit: 'inside', quality: 75 },
+  // Miniatura (cards, busca, carrosséis, galeria): 480 no maior lado e qualidade 65 — o card mostra
+  // ~270 x 230 px, então isto cobre telas até ~1,75x sem cortar; o PageSpeed pesava as de 640/q75
+  // (~25-60 kB) e as sem miniatura (original de até 480 kB). Foto rica em detalhe: ~33 kB.
+  thumb: { width: THUMB_MAX_SIDE, height: THUMB_MAX_SIDE, fit: 'inside', quality: 65 },
 };
 
 /** `purpose` do upload → preset (avatar → avatar; foto de anúncio → listing; resto → default). */

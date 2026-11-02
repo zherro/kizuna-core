@@ -55,13 +55,13 @@ describe('reoptimizeStoredImage', () => {
       width: 1600,
       height: 1200,
       original_name: 'foto.webp',
-      thumb_width: 640,
-      thumb_height: 480,
+      thumb_width: 480,
+      thumb_height: 360,
     });
     expect(patch.optimized_at).toEqual(expect.any(String));
   });
 
-  it('pôster em pé: miniatura 427×640, sem cortar', async () => {
+  it('pôster em pé: miniatura 320×480, sem cortar', async () => {
     const original = await jpeg(1000, 1500);
     const { db, patches } = fakeDb({
       id: ID,
@@ -76,18 +76,18 @@ describe('reoptimizeStoredImage', () => {
 
     await reoptimizeStoredImage(ID, db);
 
-    expect(patches[0]).toMatchObject({ thumb_width: 427, thumb_height: 640 });
+    expect(patches[0]).toMatchObject({ thumb_width: 320, thumb_height: 480 });
   });
 
   it('imagem pequena: sem miniatura, marca como otimizada', async () => {
-    const original = await jpeg(500, 400);
+    const original = await jpeg(400, 300);
     const { db, patches } = fakeDb({
       id: ID,
       original_name: 'mini.jpg',
       purpose: 'service_image',
       mime_type: 'image/jpeg',
       size_bytes: original.length,
-      width: 500,
+      width: 400,
       height: 400,
       content: `\\x${original.toString('hex')}`,
     });
