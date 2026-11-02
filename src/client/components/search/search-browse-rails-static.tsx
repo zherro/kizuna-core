@@ -31,11 +31,12 @@ export function SearchBrowseRailsStatic({
   if (filled.length === 0) return null;
 
   return (
-    <>
-      <section
-        id="busca-ssr"
-        className="mx-auto w-full max-w-[1900px] px-4 py-6"
-      >
+    <div id="busca-ssr">
+      {/* Reserva o espaço do cabeçalho da busca (título, campo e categorias), que só aparece depois de
+          hidratar: sem isto as trilhas e o rodapé descem de uma vez (CLS). Alturas medidas na página
+          hidratada: ~412px no celular/tablet, ~357px em lg+. */}
+      <div className="h-[412px] border-b border-border bg-card lg:h-[357px]" aria-hidden />
+      <section className="mx-auto w-full max-w-[1900px] px-4 py-6">
         {/* Mesma grade do SearchPage: em lg+ a 1ª coluna é a dos filtros (aqui vazia). */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[260px_1fr]">
           <div className="hidden lg:block" aria-hidden />
@@ -61,6 +62,6 @@ export function SearchBrowseRailsStatic({
         </div>
       </section>
       <script dangerouslySetInnerHTML={{ __html: HIDE_WHEN_FILTERED }} />
-    </>
+    </div>
   );
 }
