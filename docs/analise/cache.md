@@ -26,6 +26,7 @@ Sem resposta para as quatro, a resposta do plano é "não cachear ainda" — e o
 | Resposta HTTP / CDN | `Cache-Control` com `s-maxage` e `stale-while-revalidate` (já usado em `postgrest-crud.ts`) | API pública de leitura, imagens servidas pelo app | nunca em resposta com sessão ou dado de usuário |
 | Navegador | `Cache-Control` longo + URL versionada | `/_next/static`, imagens com id/versão na URL | sem versão na URL, o usuário fica preso ao arquivo antigo |
 | Memória do processo | variável de módulo com TTL | tabelas minúsculas e estáveis (taxonomia) | cada instância tem a sua; some no deploy |
+| Vitrine da `/busca` (sem filtro) | ISR de 300 s na casca + `unstable_cache` (`loadBrowseRails`, tag `browse-rails`) para a cidade padrão; filtros seguem 100% no cliente | trilhas iguais para todos, defasagem de até 5 min aceitável | invalidação por `revalidateAdPages` (tags `services` e `browse-rails` + rota `/busca`); edição feita fora do app só aparece no TTL |
 | Banco | índice, view materializada, cache de plano do Postgres | agregações caras e estáveis | view materializada exige estratégia de refresh |
 
 ## Não cachear em camada compartilhada

@@ -23,6 +23,8 @@ type UseResourceOptionsOptions = {
   orderBy?: string;
   /** `false` não busca nada (options vazio, loading false). Default true. */
   enabled?: boolean;
+  /** Compartilha a mesma requisição entre hooks/componentes (taxonomia pública). Default false. */
+  dedupe?: boolean;
 };
 
 export function useResourceOptions<T extends ResourceOption>({
@@ -33,6 +35,7 @@ export function useResourceOptions<T extends ResourceOption>({
   search,
   orderBy,
   enabled = true,
+  dedupe,
 }: UseResourceOptionsOptions) {
   const [options, setOptions] = useState<T[]>([]);
   const [loading, setLoading] = useState(enabled);
@@ -65,6 +68,7 @@ export function useResourceOptions<T extends ResourceOption>({
           pageSize,
           search: debouncedSearch,
           orderBy,
+          dedupe,
         });
         // Ignora respostas de requests já superados (troca rápida de termo).
         if (requestId !== latestRequest.current) return;
@@ -80,7 +84,7 @@ export function useResourceOptions<T extends ResourceOption>({
 
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [resource, labelField, filterKey, pageSize, debouncedSearch, orderBy, enabled]);
+  }, [resource, labelField, filterKey, pageSize, debouncedSearch, orderBy, enabled, dedupe]);
 
   return {
     options,

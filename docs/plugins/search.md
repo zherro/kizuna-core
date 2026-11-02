@@ -86,6 +86,19 @@ Com `browseGroups`, deixe `defaultGroup` em `null`: um grupo padrão já marca o
 página e a vitrine nunca aparece.
 {% endhint %}
 
+### Vitrine renderizada no servidor (`initialRails`)
+
+A casca de `/busca` é ISR (`revalidate = 300`, sem `searchParams` no servidor). As trilhas do estado
+"sem filtro" são carregadas por `loadBrowseRails` (`@kizuna/core/server`, cache de 5 min, tag
+`browse-rails`) para a cidade padrão do projeto e passadas ao `SearchPage` em `initialRails`; a
+página também as renderiza com `SearchBrowseRailsStatic` como `fallback` do `<Suspense>` (é isso que
+vai no HTML estático, já que `useSearchParams` faz o resto cair em renderização no cliente). No
+cliente as trilhas hidratam sem refetch enquanto a cidade selecionada for a mesma (ou ainda
+desconhecida); outra cidade ou outra configuração de trilhas descarta o inicial e busca como antes.
+Com filtro na URL nada muda. Quem abre direto um link com filtro vê a vitrine por instantes (um script
+fixo a esconde antes do primeiro paint). Salvar anúncio pelo app invalida via `revalidateAdPages`; edição
+feita direto no banco aparece só no TTL.
+
 ## Filtro por local_ref (`p_local_refs`, migração 0009)
 
 `p_local_refs jsonb` (último parâmetro, default `NULL`): o anúncio entra se o `local_ref` dele (em

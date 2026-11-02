@@ -23,6 +23,7 @@ export function ServiceCarouselSection({
   impressionRule,
   source,
   adSlot,
+  priorityFirst,
 }: {
   /** Card patrocinado opcional dentro da trilha (ver `ServiceCarousel`). */
   adSlot?: ReactNode;
@@ -44,6 +45,8 @@ export function ServiceCarouselSection({
   impressionRule?: EventRule | null;
   /** Origem do clique (`?src=`). Default 'home'. */
   source?: AnalyticsSource;
+  /** Repassado ao `ServiceCarousel`: 1º card com imagem prioritária (LCP). */
+  priorityFirst?: boolean;
 }) {
   if (services.length === 0) return null;
 
@@ -60,6 +63,7 @@ export function ServiceCarouselSection({
         impressionRule={impressionRule}
         source={source}
         adSlot={adSlot}
+        priorityFirst={priorityFirst}
       />
     </section>
   );

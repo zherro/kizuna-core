@@ -33,6 +33,7 @@ export function ServiceCarousel({
   impressionRule = null,
   source = 'home',
   adSlot = null,
+  priorityFirst = false,
 }: {
   /** Card patrocinado opcional (ex.: `<AdSlot>`), inserido após o 2º item. Colapsa se vazio. */
   adSlot?: ReactNode;
@@ -46,6 +47,8 @@ export function ServiceCarousel({
   impressionRule?: EventRule | null;
   /** Origem propagada no link (`?src=`) e na impressão. Default 'home'. */
   source?: AnalyticsSource;
+  /** Primeiro card com imagem prioritária (eager + fetchpriority=high): use na trilha do LCP. */
+  priorityFirst?: boolean;
 }) {
   const [emblaRef, emblaApi] = useEmblaCarousel({ align: 'start', dragFree: true });
   const groupNameOf = useGroupNames();
@@ -89,6 +92,7 @@ export function ServiceCarousel({
               <ListingResultCard
                 key={service.uid}
                 variant="strip"
+                imagePriority={priorityFirst && index === 0}
                 href={withSource(serviceHref(service), source)}
                 title={service.title}
                 priceLabel={

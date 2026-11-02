@@ -10,7 +10,20 @@ export type FetchResourceListOptions = {
   search?: string;
   /** Coluna de ordenação (default: `config.defaultOrder` do recurso). */
   orderBy?: string;
+  /**
+   * Reaproveita a mesma requisição (mesma URL) por `ttlMs` (default 60 s) — para taxonomia pública
+   * lida por vários hooks na mesma página. Default OFF. Falha não fica em cache.
+   */
+  dedupe?: boolean | { ttlMs?: number };
 };
+
+const DEDUPE_TTL_MS = 60_000;
+const dedupeCache = new Map<string, { p: Promise<FetchResourceRow[]>; at: number }>();
+
+/** Limpa o cache de dedupe (testes). */
+export function __resetFetchResourceCache() {
+  dedupeCache.clear();
+}
 
 /**
  * Fetch genérico contra a rota `/api/resources/[resource]` (backed by `pgrstTable` no server).
@@ -37,15 +50,33 @@ export async function fetchResourceList(
     }
   }
 
-  const response = await fetch(`/api/resources/${resource}?${query}`, {
-    cache: 'no-store',
-  });
+  const url = `/api/resources/${resource}?${query}`;
 
-  const data = await response.json().catch(() => ({}));
+  async function load(): Promise<FetchResourceRow[]> {
+    const response = await fetch(url, {
+      cache: 'no-store',
+    });
 
-  if (!response.ok) {
-    throw new ResourceFetchError(data.message || defaultErrorMessage);
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new ResourceFetchError(data.message || defaultErrorMessage);
+    }
+
+    return Array.isArray(data.items) ? data.items : [];
   }
 
-  return Array.isArray(data.items) ? data.items : [];
+  if (!options?.dedupe) return load();
+
+  const ttl = (typeof options.dedupe === 'object' ? options.dedupe.ttlMs : undefined) ?? DEDUPE_TTL_MS;
+  const hit = dedupeCache.get(url);
+  if (hit && Date.now() - hit.at < ttl) return hit.p;
+
+  const p = load();
+  const entry = { p, at: Date.now() };
+  dedupeCache.set(url, entry);
+  p.catch(() => {
+    if (dedupeCache.get(url) === entry) dedupeCache.delete(url);
+  });
+  return p;
 }

@@ -11,13 +11,21 @@ import { useUserLocation } from '../../hooks/use-user-location';
  * (local salvo revalidado, ou IP → cidade padrão do projeto). Só mostra o seletor manual quando
  * ela termina sem local.
  */
-export function LocationGate({ children }: { children: React.ReactNode }) {
+export function LocationGate({
+  children,
+  pending,
+}: {
+  children: React.ReactNode;
+  /** Mostrado no lugar do spinner enquanto a localização inicializa (ex.: vitrine do servidor). */
+  pending?: React.ReactNode;
+}) {
   const { location, ready } = useUserLocation();
   const [checkTick, setCheckTick] = useState(0);
 
   if (location?.stateCode) return <>{children}</>;
 
   if (!ready) {
+    if (pending) return <>{pending}</>;
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3">
         <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />

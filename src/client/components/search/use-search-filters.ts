@@ -20,25 +20,9 @@ const PAGE_SIZE = 24;
  * sem ele, a URL vazia cairia de novo no grupo padrão e o usuário nunca veria tudo. */
 export const ALL_GROUPS_PARAM = 'todos';
 
-/** Ordenação da RPC (`fn_search_services.p_order`, search 0011): `'relevance'` ou
- * `'<campo>[:asc|desc]'` com campo de `ORDER_FIELDS` (colunas de `services`). */
-export type SearchOrder = string;
-export const ORDER_FIELDS = ['occurs_at', 'created_at', 'expires_at', 'price', 'title'] as const;
-const ORDER_ALIASES: Record<string, string> = {
-  event_start: 'expires_at:asc',
-  recent: 'created_at:desc',
-};
-
-/** Normaliza `'campo[:dir]'` (ou apelido) para `'campo:asc|desc'`; inválido = `'relevance'`. */
-export function normalizeOrder(raw: string | null | undefined): SearchOrder {
-  const value = (raw ?? '').trim().toLowerCase();
-  const spec = ORDER_ALIASES[value] ?? value;
-  const [field, dir = 'asc'] = spec.split(':');
-  if (!(ORDER_FIELDS as readonly string[]).includes(field) || (dir !== 'asc' && dir !== 'desc')) {
-    return 'relevance';
-  }
-  return `${field}:${dir}`;
-}
+// Ordenação mora em shared/search/browse-rails (pura, também usada no servidor); reexportada aqui.
+import { orderForGroup, normalizeOrder, ORDER_FIELDS, type SearchOrder } from '../../../shared/search/browse-rails';
+export { orderForGroup, normalizeOrder, ORDER_FIELDS, type SearchOrder };
 
 export type SearchDefaults = {
   /** `search.defaultGroup`: grupo já selecionado quando a busca abre sem grupo, categoria nem
@@ -53,15 +37,6 @@ export type SearchDefaults = {
    * vencido não aparece (comportamento de sempre). */
   expiredByGroup?: ExpiredByGroup;
 };
-
-/** Ordenação configurada para o grupo (`orderByGroup[slug]`, senão `default`, senão relevância). */
-export function orderForGroup(
-  orderByGroup: Record<string, string> | undefined,
-  groupSlug: string | null
-): SearchOrder {
-  const raw = (groupSlug && orderByGroup?.[groupSlug]) || orderByGroup?.default;
-  return normalizeOrder(raw);
-}
 
 function parseIntOrNull(value: string | null): number | null {
   if (!value) return null;

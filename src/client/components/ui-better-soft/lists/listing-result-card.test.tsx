@@ -146,3 +146,18 @@ describe('ListingResultCard cardStyle="lugar"', () => {
     expect(screen.getByText('Novo')).toBeTruthy();
   });
 });
+
+describe('ListingResultCard imagePriority', () => {
+  it.each(['grid', 'strip'] as const)('com imagePriority a capa é eager e fetchpriority=high (%s)', (variant) => {
+    const { container } = render(<ListingResultCard {...base} variant={variant} imageUrl="/c.jpg" imagePriority />);
+    const img = container.querySelector('img')!;
+    expect(img.getAttribute('loading')).toBe('eager');
+    expect(img.getAttribute('fetchpriority')).toBe('high');
+  });
+  it.each(['grid', 'strip'] as const)('sem a prop a capa continua lazy (%s)', (variant) => {
+    const { container } = render(<ListingResultCard {...base} variant={variant} imageUrl="/c.jpg" />);
+    const img = container.querySelector('img')!;
+    expect(img.getAttribute('loading')).toBe('lazy');
+    expect(img.getAttribute('fetchpriority')).toBeNull();
+  });
+});

@@ -40,16 +40,19 @@ export function useFilterTaxonomy({
     resource: 'category_stats',
     pageSize: 1000,
     enabled,
+    dedupe: true,
   });
   const groups = useResourceOptions<GroupRow>({
     resource: 'categories_group_public',
     pageSize: 100,
     enabled,
+    dedupe: true,
   });
   const categories = useResourceOptions<CategoryRow>({
     resource: 'categories_public',
     pageSize: 1000,
     enabled,
+    dedupe: true,
   });
 
   // Fonte opcional: se falhar, o filtro segue sem a contagem (não esvazia).
@@ -57,6 +60,7 @@ export function useFilterTaxonomy({
     resource: 'category_service_stats',
     pageSize: 1000,
     enabled: enabled && onlyWithListings,
+    dedupe: true,
   });
 
   // Facetas opcionais (subcategorias/grupos, migração 0013): falha não derruba a contagem.
@@ -64,6 +68,7 @@ export function useFilterTaxonomy({
     resource: 'category_service_facets',
     pageSize: 1000,
     enabled: enabled && onlyWithListings,
+    dedupe: true,
   });
 
   const keepKey = keepCategoryIds.join(',');

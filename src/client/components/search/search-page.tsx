@@ -9,6 +9,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import dynamic from 'next/dynamic';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Filter, X } from 'lucide-react';
 import {
@@ -19,15 +20,16 @@ import {
   SheetTrigger,
 } from '../ui/sheet';
 import { useUserLocation } from '../../hooks/use-user-location';
-import { LocationModal } from '../location-modal';
+import { useMediaQuery } from '../../hooks/use-media-query';
 import { cn } from '../../../lib/utils';
 import { AssistantIcon } from './assistant-icon';
 import { SearchBar } from './search-bar';
 import { LocationGate } from './location-gate';
-import { SearchChat } from './search-chat';
 import { SearchFiltersPanel } from './search-filters-panel';
 import { SearchResultsView, type RelaxedFrom, type ResultsScope } from './search-results-view';
 import { SearchBrowseRails, normalizeBrowseRails, type BrowseRailConfig } from './search-browse-rails';
+import { SearchBrowseRailsStatic } from './search-browse-rails-static';
+import type { BrowseRailsData } from '../../../shared/search/browse-rails';
 import { regionGroupsFor, type RegionConfig, type RegionGroup } from '../../../shared/regions';
 import type { ServiceDetailConfig } from '../services/detail/category-style';
 import type { EventRule } from '../../../shared/analytics';
@@ -54,6 +56,12 @@ import {
   type SearchAdsBody,
   type SearchChatResponse,
 } from './search-types';
+
+// Chat e modal de localização saem do bundle inicial (o chat só abre com search.ai; o modal, sob clique).
+const SearchChat = dynamic(() => import('./search-chat').then((m) => m.SearchChat), { ssr: false });
+const LocationModal = dynamic(() => import('../location-modal').then((m) => m.LocationModal), {
+  ssr: false,
+});
 
 export type SearchPageProps = {
   /** Rota em que a página está montada (os filtros vivem na URL). Padrão `/busca`. */
@@ -105,16 +113,30 @@ export type SearchPageProps = {
    * (vitrine) em vez da lista misturada; qualquer filtro ou texto volta à lista. Vazio = sempre a lista.
    */
   browseGroups?: BrowseRailConfig[];
+  /** Trilhas da vitrine já carregadas no servidor (`loadBrowseRails`, cidade padrão): hidratam sem
+   * refetch enquanto a cidade em vigor for a mesma. Só vale sem filtro; com filtro é ignorado. */
+  initialRails?: BrowseRailsData;
 };
 
 const REGION_PAGE_SIZE = 12;
 
 export function SearchPage(props: SearchPageProps) {
+  // Enquanto a localização carrega, mantém a vitrine do servidor (sem filtro na URL) em vez do spinner.
+  const hasFilter = useSearchParams().toString() !== '';
+  const pending =
+    props.initialRails && !hasFilter ? (
+      <SearchBrowseRailsStatic
+        data={props.initialRails}
+        basePath={props.basePath}
+        detailConfig={props.serviceDetailConfig}
+        impressionRule={props.impressionRule}
+      />
+    ) : undefined;
   return (
     <Suspense
       fallback={<div className="p-10 text-center text-sm text-muted-foreground">Carregando…</div>}
     >
-      <LocationGate>
+      <LocationGate pending={pending}>
         <SearchPageInner {...props} />
       </LocationGate>
     </Suspense>
@@ -142,6 +164,7 @@ function SearchPageInner({
   regions = [],
   defaults,
   browseGroups = [],
+  initialRails,
 }: SearchPageProps) {
   // A cidade do topo (seletor do header): reage na hora quando o usuário troca.
   const { location: stored } = useUserLocation();
@@ -240,6 +263,11 @@ function SearchPageInner({
   }, []);
   const [heroInput, setHeroInput] = useState(filters.query ?? '');
   const [isLocationOpen, setLocationOpen] = useState(false);
+  // Monta o modal só depois da 1ª abertura (chunk sob demanda) e o mantém montado p/ a animação de saída.
+  const [locationEverOpened, setLocationEverOpened] = useState(false);
+  if (isLocationOpen && !locationEverOpened) setLocationEverOpened(true);
+  // Painel de filtros do desktop só em lg+ (no mobile ele ficava montado, escondido, buscando taxonomia).
+  const isDesktop = useMediaQuery('(min-width: 1024px)');
   const [chatCollapsed, setChatCollapsed] = useState(true);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [desktopChatOpen, setDesktopChatOpen] = useState(false);
@@ -566,7 +594,7 @@ function SearchPageInner({
     id: string | number;
     categoryId: string | number;
     categoryName?: string;
-  }>({ resource: 'category_stats' });
+  }>({ resource: 'category_stats', dedupe: true });
   // Categorias marcadas, na ordem em que foram escolhidas, com o nome (o chip do hero tira uma).
   const activeCategories = useMemo(
     () =>
@@ -863,6 +891,7 @@ function SearchPageInner({
           {/* Filtros (desktop) — coluna fixa em lg+; some em xl+ quando o chat abre (o painel do
               chat some com o espaço), vira botão flutuante (ver abaixo) pra não empurrar/disputar
               layout com o chat. */}
+          {isDesktop && (
           <aside className={`hidden lg:block ${desktopChatOpen ? 'xl:hidden' : ''}`}>
             <div className="sticky top-[calc(var(--kz-header-h,4.5rem)+1rem)] max-h-[calc(100dvh-var(--kz-header-h,4.5rem)-2rem)] overflow-y-auto overscroll-contain [scrollbar-gutter:stable] rounded-[var(--ui-radius-card,1rem)] border-[length:var(--ui-border-w-card,1px)] border-border shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] bg-card p-4">
               <SearchFiltersPanel
@@ -876,6 +905,7 @@ function SearchPageInner({
               />
             </div>
           </aside>
+          )}
 
           {/* Resultados: a cidade selecionada primeiro; depois a região (vizinhas e sugestões). */}
           <div
@@ -900,6 +930,7 @@ function SearchPageInner({
                 impressionRule={impressionRule}
                 source="search"
                 emptyLabel={`Nada publicado em ${locationLabel} ainda.`}
+                initial={initialRails}
               />
             ) : cityEmptyWithRegion ? (
               <p className="rounded-[var(--ui-radius-card-sm,0.5rem)] border-[length:var(--ui-border-w-card,1px)] border-dashed border-border bg-card px-4 py-3 text-sm text-muted-foreground">
@@ -1107,10 +1138,12 @@ function SearchPageInner({
         </>
       )}
 
-      <LocationModal
-        open={isLocationOpen}
-        onClose={() => setLocationOpen(false)}
-      />
+      {locationEverOpened && (
+        <LocationModal
+          open={isLocationOpen}
+          onClose={() => setLocationOpen(false)}
+        />
+      )}
     </main>
   );
 }

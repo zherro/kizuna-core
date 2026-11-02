@@ -7,39 +7,27 @@ import { resolveCategoryHue, type ServiceDetailConfig } from '../services/detail
 import { RESULT_CARD_WIDTH } from '../ui-better-soft/lists/listing-result-card';
 import { cn } from '../../../lib/utils';
 import type { AnalyticsSource, EventRule } from '../../../shared/analytics';
+import {
+  RAIL_LIMIT,
+  buildRail,
+  interleave,
+  normalizeBrowseRails,
+  isInitialRailsUsable,
+  type BrowseRail,
+  type BrowseRailConfig,
+  type BrowseRailsData,
+} from '../../../shared/search/browse-rails';
 
-const RAIL_LIMIT = 12;
-
-/** Item de `search.browseGroups`: um grupo, ou vários grupos juntos numa trilha só. */
-export type BrowseRailConfig = string | { groups: string[]; title?: string };
-export type BrowseRail = { groups: string[]; title?: string };
-
-/** Normaliza `search.browseGroups` (strings e/ou `{ groups, title }`); itens vazios saem. */
-export function normalizeBrowseRails(raw: readonly BrowseRailConfig[] | null | undefined): BrowseRail[] {
-  return (raw ?? [])
-    .map((item) =>
-      typeof item === 'string'
-        ? { groups: [item.trim()].filter(Boolean) }
-        : { groups: (item.groups ?? []).map((g) => g.trim()).filter(Boolean), title: item.title?.trim() || undefined }
-    )
-    .filter((rail) => rail.groups.length > 0);
-}
-
-/** Junta as listas de vários grupos alternando entre elas (sem repetir), até `limit`. */
-export function interleave(lists: ServiceResult[][], limit: number): ServiceResult[] {
-  const out: ServiceResult[] = [];
-  const seen = new Set<string>();
-  for (let i = 0; out.length < limit && lists.some((l) => i < l.length); i += 1) {
-    for (const list of lists) {
-      const item = list[i];
-      if (item && !seen.has(item.uid) && out.length < limit) {
-        seen.add(item.uid);
-        out.push(item);
-      }
-    }
-  }
-  return out;
-}
+// Regras puras moram em shared/search/browse-rails (o servidor também usa); reexportadas aqui.
+export {
+  RAIL_LIMIT,
+  interleave,
+  normalizeBrowseRails,
+  isInitialRailsUsable,
+  type BrowseRail,
+  type BrowseRailConfig,
+  type BrowseRailsData,
+};
 
 type Loaded = { rail: BrowseRail; items: ServiceResult[]; hasMore: boolean };
 
@@ -61,6 +49,7 @@ export function SearchBrowseRails({
   impressionRule,
   source,
   emptyLabel,
+  initial,
 }: {
   /** Trilhas na ordem (`normalizeBrowseRails(search.browseGroups)`). */
   rails: BrowseRail[];
@@ -77,8 +66,12 @@ export function SearchBrowseRails({
   source?: AnalyticsSource;
   /** Texto quando nenhum grupo tem anúncio na cidade. */
   emptyLabel?: string;
+  /** Trilhas já renderizadas no servidor (cidade padrão): valem enquanto a cidade em vigor for a mesma
+   * (ou ainda desconhecida) — nesse caso não há fetch. Outra cidade descarta e busca como sempre. */
+  initial?: BrowseRailsData;
 }) {
-  const [rails, setRails] = useState<Loaded[] | null>(null);
+  const initialUsable = isInitialRailsUsable(initial, railConfig, baseBody.p_city_ibge);
+  const [rails, setRails] = useState<Loaded[] | null>(initialUsable && initial ? initial.rails : null);
   // Só a localização dispara nova carga (o seed muda a cada render de quem chama).
   const locationKey = JSON.stringify([
     baseBody.p_state,
@@ -89,6 +82,11 @@ export function SearchBrowseRails({
   ]);
 
   useEffect(() => {
+    // Inicial do servidor ainda vale (ou a cidade só não chegou): mostra e NÃO busca.
+    if (initialUsable && initial) {
+      setRails(initial.rails);
+      return;
+    }
     const controller = new AbortController();
     setRails(null);
     const fetchGroup = async (slug: string): Promise<ServiceResult[]> => {
@@ -111,12 +109,7 @@ export function SearchBrowseRails({
       return runSearch(body, controller.signal).catch(() => [] as ServiceResult[]);
     };
     Promise.all(
-      railConfig.map(async (rail): Promise<Loaded> => {
-        const lists = await Promise.all(rail.groups.map(fetchGroup));
-        const items = interleave(lists, RAIL_LIMIT);
-        const total = lists.reduce((n, l) => n + l.length, 0);
-        return { rail, items, hasMore: total > items.length || lists.some((l) => l.length >= RAIL_LIMIT) };
-      })
+      railConfig.map(async (rail): Promise<Loaded> => buildRail(rail, await Promise.all(rail.groups.map(fetchGroup))))
     ).then((loaded) => {
       if (!controller.signal.aborted) setRails(loaded);
     });
@@ -127,13 +120,18 @@ export function SearchBrowseRails({
 
   if (rails === null) {
     return (
-      <div className="space-y-10" aria-busy="true" aria-label="Carregando">
-        {railConfig.slice(0, 3).map((rail) => (
-          <div key={rail.groups.join('+')} className="space-y-4">
-            <div className="h-7 w-48 animate-pulse rounded-md bg-muted" />
+      <div className="space-y-12" aria-busy="true" aria-label="Carregando">
+        {/* Mesma geometria do conteúdo real (SectionHeading h-7/sm:h-8 + mb-6; strip = tile 16/7.65 + corpo),
+            pra o rodapé não ser empurrado quando os trilhos chegam. Levemente menor de propósito. */}
+        {railConfig.map((rail) => (
+          <div key={rail.groups.join('+')}>
+            <div className="mb-6 h-7 w-48 animate-pulse rounded-md bg-muted sm:h-8" />
             <div className="flex gap-4 overflow-hidden">
               {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className={cn(RESULT_CARD_WIDTH, 'h-72 shrink-0 animate-pulse rounded-xl bg-muted')} />
+                <div key={i} className={cn(RESULT_CARD_WIDTH, 'shrink-0 animate-pulse overflow-hidden rounded-xl bg-muted')}>
+                  <div className="aspect-[16/7.65]" />
+                  <div className="h-[112px]" />
+                </div>
               ))}
             </div>
           </div>
@@ -153,10 +151,10 @@ export function SearchBrowseRails({
 
   return (
     <div className="space-y-12">
-      {filled.map(({ rail, items, hasMore }) => (
+      {filled.map(({ rail, items, hasMore }, i) => (
         <ServiceCarouselSection
           key={rail.groups.join('+')}
-          title={rail.title ?? rail.groups.map((g) => groupNameOf(g) ?? g).join(' e ')}
+          title={rail.title ?? rail.groups.map((g) => groupNameOf(g) ?? initial?.groupNames[g] ?? g).join(' e ')}
           services={items}
           hue={resolveCategoryHue({ groupSlug: rail.groups[0] }, detailConfig)}
           detailConfig={detailConfig}
@@ -165,6 +163,7 @@ export function SearchBrowseRails({
           showCity
           impressionRule={impressionRule}
           source={source}
+          priorityFirst={i === 0}
         />
       ))}
     </div>

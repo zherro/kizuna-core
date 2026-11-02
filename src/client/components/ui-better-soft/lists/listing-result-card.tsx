@@ -63,6 +63,8 @@ export type ListingResultCardProps = {
   /** Texto do botão de ação. Default "Ver". */
   ctaLabel?: string;
   variant?: 'grid' | 'strip';
+  /** Capa carregada com prioridade (eager + fetchpriority=high): só pro candidato a LCP da página. */
+  imagePriority?: boolean;
   className?: string;
   /** Anúncio que já venceu (ex.: evento "Já aconteceu"): texto do selo sobre a capa. Preenchido, o
    * card fica fosco (capa em cinza, corpo mais claro) mas segue clicável e legível; o selo de
@@ -241,6 +243,7 @@ export function ListingResultCard({
   reviewCount = 0,
   ctaLabel = 'Ver',
   variant = 'grid',
+  imagePriority = false,
   className,
   expiredLabel,
 }: Readonly<ListingResultCardProps>) {
@@ -312,7 +315,9 @@ export function ListingResultCard({
             <img
               src={imageUrl}
               alt={title}
-              loading="lazy"
+              loading={imagePriority ? 'eager' : 'lazy'}
+              decoding="async"
+              fetchPriority={imagePriority ? 'high' : undefined}
               className={cn(
                 'h-full w-full transition duration-500',
                 // pôster: zoom leve que corta um pouco do topo e do rodapé da arte (igual à grade)
@@ -381,6 +386,7 @@ export function ListingResultCard({
       href={href}
       image={imageUrl}
       imageAlt={title}
+      imagePriority={imagePriority}
       imageAspect={resolvedImageAspect}
       titleLines={2}
       title={title}

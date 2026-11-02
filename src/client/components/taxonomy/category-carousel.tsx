@@ -120,15 +120,17 @@ export function CategoryCarousel({
   listingsResource = "category_service_stats",
   className,
 }: CategoryCarouselProps) {
-  const { options, loading: loadingTaxonomy } = useResourceOptions<StatRow>({ resource });
+  const { options, loading: loadingTaxonomy } = useResourceOptions<StatRow>({ resource, dedupe: true });
   const { options: listingRows, loading: loadingListings } = useResourceOptions<ListingRow>({
     resource: listingsResource,
     enabled: onlyWithListings,
+    dedupe: true,
   });
   const byGroup = groupBy === "group";
   const { options: groupRows, loading: loadingGroups } = useResourceOptions<GroupRow>({
     resource: "categories_group_public",
     enabled: byGroup,
+    dedupe: true,
   });
   const {
     options: facetRows,
@@ -137,6 +139,7 @@ export function CategoryCarousel({
   } = useResourceOptions<FacetRow>({
     resource: "category_service_facets",
     enabled: byGroup && onlyWithListings,
+    dedupe: true,
   });
   const loading =
     loadingTaxonomy ||

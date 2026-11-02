@@ -58,6 +58,11 @@ export type WeatherWidgetProps = {
    * `weather.forecastModal`). Default: `true`.
    */
   forecastModal?: boolean;
+  /**
+   * Largura mínima da viewport (px) para buscar/mostrar o clima. Abaixo disso não faz request
+   * (ex.: o header esconde o widget no mobile). Sem a prop, sempre busca.
+   */
+  minWidth?: number;
 };
 
 /**
@@ -71,6 +76,7 @@ export type WeatherWidgetProps = {
 export function WeatherWidget({
   endpoint = '/api/weather',
   forecastModal = true,
+  minWidth,
 }: WeatherWidgetProps = {}) {
   const [data, setData] = useState<WeatherResponse | null>(null);
   const { location } = useUserLocation();
@@ -79,11 +85,50 @@ export function WeatherWidget({
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
-    fetch(endpoint)
-      .then((res) => (res.ok ? res.json() : null))
-      .then(setData)
-      .catch(() => setData(null));
-  }, [endpoint]);
+    let alive = true;
+    let cancelIdle: (() => void) | null = null;
+
+    const load = () => {
+      cancelIdle?.();
+      // Adia para o ocioso: o clima não é crítico e não deve competir com o carregamento da página.
+      const run = () => {
+        fetch(endpoint)
+          .then((res) => (res.ok ? res.json() : null))
+          .then((json) => alive && setData(json))
+          .catch(() => alive && setData(null));
+      };
+      if (typeof window.requestIdleCallback === 'function') {
+        const id = window.requestIdleCallback(run, { timeout: 3000 });
+        cancelIdle = () => window.cancelIdleCallback(id);
+      } else {
+        const id = setTimeout(run, 1500);
+        cancelIdle = () => clearTimeout(id);
+      }
+    };
+
+    if (minWidth === undefined || typeof window.matchMedia !== 'function') {
+      load();
+      return () => {
+        alive = false;
+        cancelIdle?.();
+      };
+    }
+
+    const mql = window.matchMedia(`(min-width:${minWidth}px)`);
+    let fetched = false;
+    const check = () => {
+      if (fetched || !mql.matches) return;
+      fetched = true;
+      load();
+    };
+    check();
+    mql.addEventListener('change', check);
+    return () => {
+      alive = false;
+      cancelIdle?.();
+      mql.removeEventListener('change', check);
+    };
+  }, [endpoint, minWidth]);
 
   if (!data || data.cities.length === 0) return null;
 

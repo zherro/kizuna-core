@@ -149,6 +149,11 @@ export {
   type CategoryRailTarget,
 } from './services/category-rail-data';
 export {
+  loadBrowseRails,
+  BROWSE_RAILS_TAG,
+  type LoadBrowseRailsOptions,
+} from './services/browse-rails-data';
+export {
   loadTodayFeed,
   localDayKey,
   startsOnDay,

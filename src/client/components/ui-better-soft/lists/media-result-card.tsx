@@ -6,6 +6,8 @@ type MediaResultCardProps = {
   /** Cover image URL. `null`/`undefined` shows the plain gradient background instead. */
   image?: string | null;
   imageAlt: string;
+  /** Capa com prioridade (eager + fetchpriority=high), pro candidato a LCP. */
+  imagePriority?: boolean;
   /** e.g. a "sponsored"/"featured" badge. */
   badgeTopLeft?: ReactNode;
   /** e.g. a category badge. */
@@ -40,6 +42,7 @@ type MediaResultCardProps = {
 export function MediaResultCard({
   image,
   imageAlt,
+  imagePriority = false,
   badgeTopLeft,
   badgeTopRight,
   badgeBottomLeft,
@@ -68,7 +71,9 @@ export function MediaResultCard({
           <img
             src={image}
             alt={imageAlt}
-            loading="lazy"
+            loading={imagePriority ? 'eager' : 'lazy'}
+            decoding="async"
+            fetchPriority={imagePriority ? 'high' : undefined}
             className={cn(
               'h-full w-full transition duration-500',
               // pôster: zoom leve que corta um pouco do topo e do rodapé da arte, sem virar recorte
