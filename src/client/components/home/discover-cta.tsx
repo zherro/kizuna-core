@@ -21,7 +21,7 @@ export type DiscoverCtaProps = {
  */
 export function DiscoverCta({
   href = '/descobrir',
-  title = 'Descobrir no swipe',
+  title = 'Descobrir',
   subtitle = 'Arraste: esse não, esse sim. Monte sua agenda em segundos.',
   icon = <Flame className="h-6 w-6" />,
   contained = true,
@@ -37,7 +37,7 @@ export function DiscoverCta({
         </span>
         <span className="min-w-0">
           <span className="block font-serif text-lg font-bold leading-tight text-background">
-            Descobrir no swipe
+            Descobrir
           </span>
           <span className="hidden text-sm text-background/90 sm:block">
             Arraste: esse não, esse sim. Monte sua agenda em segundos.

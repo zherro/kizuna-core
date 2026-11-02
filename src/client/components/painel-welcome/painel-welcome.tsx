@@ -138,7 +138,7 @@ function Hero({
               href={discoverHref}
               className={`inline-flex min-h-11 items-center gap-2 rounded-full bg-background px-5 text-sm font-semibold text-foreground transition-colors hover:bg-background/90 ${FOCUS_RING_ON_HERO}`}
             >
-              Descobrir no swipe
+              Descobrir
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Link>
             <Link
