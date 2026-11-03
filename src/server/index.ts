@@ -87,6 +87,7 @@ export {
   serverFetchResource,
   isRpcResource,
   executeRpcResource,
+  PUBLIC_LISTS_TAG,
 } from './postgrest-crud';
 
 export { pgrstTable, pgrstRpc } from './postrest/conn';

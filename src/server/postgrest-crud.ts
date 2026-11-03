@@ -1,3 +1,4 @@
+import { revalidateTag, unstable_cache } from 'next/cache';
 import { NextResponse } from 'next/server';
 import { getAuthHeaderFromCookies, getSession } from './auth';
 import { rpcAuthMode } from './rpc-auth';
@@ -115,6 +116,73 @@ async function ensureAuthenticated() {
   return { error: null, authHeader };
 }
 
+/**
+ * Cache no SERVIDOR das listagens públicas (`publicCacheSeconds` + `listRequiresAuth: false`: taxonomia,
+ * estatísticas do carrossel de categorias...). O `Cache-Control` sozinho só vale para quem tem CDN na
+ * frente; sem CDN cada visitante novo fazia o Next ir ao PostgREST/banco. Com isto o Next guarda o
+ * resultado pelo TTL do recurso e só consulta o banco quando expira ou quando alguém grava (create,
+ * update e delete chamam `bustPublicLists`). A chave inclui o recurso e a consulta inteira (filtros,
+ * busca, página, ordem). Erro NUNCA é cacheado: a função lança e o `unstable_cache` não guarda.
+ */
+export const PUBLIC_LISTS_TAG = 'public-lists';
+
+class PublicListError extends Error {
+  constructor(
+    readonly status: number,
+    readonly body: unknown
+  ) {
+    super('public list failed');
+  }
+}
+
+const publicListCaches = new Map<number, ReturnType<typeof makePublicListCache>>();
+
+function makePublicListCache(ttl: number) {
+  return unstable_cache(
+    async (resource: string, queryString: string) => {
+      const cfg = getResourceConfig(resource);
+      if (!cfg) throw new PublicListError(404, null);
+      const response = await pgrstTable(
+        `/${cfg.table}?${queryString}`,
+        {
+          method: 'GET',
+          headers: {
+            ...(cfg.returnCountPreferDisabled ? {} : { Prefer: 'count=exact' }),
+            ...getSchemaHeaders(cfg, 'GET'),
+          },
+        },
+        { auth: null }
+      );
+      const payload = (await response.json().catch(() => null)) as unknown;
+      if (!response.ok) throw new PublicListError(response.status, payload);
+      return {
+        items: mapRows(cfg, payload),
+        total: parseTotalFromContentRange(response.headers.get('content-range')),
+      };
+    },
+    ['public-list:v1'],
+    { revalidate: ttl, tags: [PUBLIC_LISTS_TAG] }
+  );
+}
+
+function getPublicListCache(ttl: number) {
+  let cache = publicListCaches.get(ttl);
+  if (!cache) {
+    cache = makePublicListCache(ttl);
+    publicListCaches.set(ttl, cache);
+  }
+  return cache;
+}
+
+/** Depois de gravar: descarta as listagens públicas em cache (a próxima leitura vai ao banco). */
+function bustPublicLists() {
+  try {
+    revalidateTag(PUBLIC_LISTS_TAG, { expire: 0 });
+  } catch {
+    // fora de um contexto de requisição do Next (testes/scripts): nada a invalidar
+  }
+}
+
 export async function listResource(resource: string, request: Request) {
   const config = getResourceConfig(resource);
   if (!config) {
@@ -188,31 +256,54 @@ export async function listResource(resource: string, request: Request) {
     query.set(field, `eq.${parseFilterValue(filterValue)}`);
   }
 
-  const response = await pgrstTable(
-    `/${config.table}?${query.toString()}`,
-    {
-      method: 'GET',
-      headers: {
-        ...(config?.returnCountPreferDisabled ? {} : { Prefer: 'count=exact' }),
-        ...getSchemaHeaders(config, 'GET'),
+  let items: ReturnType<typeof mapRows>;
+  let total: number;
+  let tPgrst: number;
+
+  const cacheTtl =
+    config.publicCacheSeconds && config.listRequiresAuth === false ? config.publicCacheSeconds : 0;
+  if (cacheTtl) {
+    // Listagem pública: servida do cache do servidor (ver `getPublicListCache`).
+    try {
+      ({ items, total } = await getPublicListCache(cacheTtl)(resource, query.toString()));
+    } catch (error) {
+      if (error instanceof PublicListError) {
+        const err = parsePgError(error.body);
+        return NextResponse.json(
+          { message: err.message, details: err.details },
+          { status: error.status }
+        );
+      }
+      throw error;
+    }
+    tPgrst = performance.now();
+  } else {
+    const response = await pgrstTable(
+      `/${config.table}?${query.toString()}`,
+      {
+        method: 'GET',
+        headers: {
+          ...(config?.returnCountPreferDisabled ? {} : { Prefer: 'count=exact' }),
+          ...getSchemaHeaders(config, 'GET'),
+        },
       },
-    },
-    { auth: authHeader }
-  );
-  const tPgrst = performance.now();
-
-  const payload = (await response.json().catch(() => null)) as unknown;
-
-  if (!response.ok) {
-    const err = parsePgError(payload);
-    return NextResponse.json(
-      { message: err.message, details: err.details },
-      { status: response.status }
+      { auth: authHeader }
     );
-  }
+    tPgrst = performance.now();
 
-  const items = mapRows(config, payload);
-  const total = parseTotalFromContentRange(response.headers.get('content-range'));
+    const payload = (await response.json().catch(() => null)) as unknown;
+
+    if (!response.ok) {
+      const err = parsePgError(payload);
+      return NextResponse.json(
+        { message: err.message, details: err.details },
+        { status: response.status }
+      );
+    }
+
+    items = mapRows(config, payload);
+    total = parseTotalFromContentRange(response.headers.get('content-range'));
+  }
   const totalPages = total > 0 ? Math.ceil(total / pageSize) : 0;
 
   const result = NextResponse.json({
@@ -300,6 +391,7 @@ export async function createResource(resource: string, request: Request) {
   }
 
   const [created] = mapRows(config, payload);
+  bustPublicLists();
   return NextResponse.json(
     { message: 'Registro criado com sucesso.', item: created },
     { status: 201 }
@@ -434,6 +526,7 @@ export async function updateResource(
     return NextResponse.json({ message: 'Registro nao encontrado.' }, { status: 404 });
   }
 
+  bustPublicLists();
   return NextResponse.json({ message: 'Registro atualizado com sucesso.', item: updated });
 }
 
@@ -487,6 +580,7 @@ export async function deleteResource(resource: string, id: string) {
     return NextResponse.json({ message: 'Registro nao encontrado.' }, { status: 404 });
   }
 
+  bustPublicLists();
   return NextResponse.json({ message: 'Registro removido com sucesso.' });
 }
 
