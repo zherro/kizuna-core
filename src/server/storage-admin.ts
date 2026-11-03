@@ -1,6 +1,7 @@
 import { getSession } from './auth';
 import { isOptimizableImage, optimizeImageWithThumbnail, presetForPurpose } from './image';
 import { projectThumbPreset } from './image/config';
+import { isThumbMarkMissing, thumbMark, withoutThumbMark } from './image/mark';
 import { readImageDimensions } from './image-dimensions';
 import { serviceDb, ServiceUnavailableError, type ServiceDb } from './service-db';
 
@@ -166,6 +167,7 @@ export async function reoptimizeStoredImage(
     thumb_size_bytes: optimized.thumb?.buffer.length ?? null,
     thumb_width: optimized.thumb?.width ?? null,
     thumb_height: optimized.thumb?.height ?? null,
+    ...thumbMark(!!optimized.thumb, projectThumbPreset),
     optimized_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };
@@ -182,11 +184,17 @@ export async function reoptimizeStoredImage(
     Object.assign(patch, { width: originalDims.width, height: originalDims.height });
   }
 
-  const update = await db.table(`/files?id=eq.${id}`, {
-    method: 'PATCH',
-    headers: { Prefer: 'return=minimal' },
-    body: JSON.stringify(patch),
-  });
+  const patchFile = (body: Record<string, unknown>) =>
+    db.table(`/files?id=eq.${id}`, {
+      method: 'PATCH',
+      headers: { Prefer: 'return=minimal' },
+      body: JSON.stringify(body),
+    });
+  let update = await patchFile(patch);
+  // Banco sem a migration storage/0007 (`thumb_spec`/`thumb_at`): grava sem a marca.
+  if (!update.ok && isThumbMarkMissing(await update.clone().json().catch(() => null))) {
+    update = await patchFile(withoutThumbMark(patch));
+  }
   if (!update.ok) return fail('Não foi possível salvar a imagem otimizada.', beforeBytes);
 
   return {

@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { optimizeImageWithThumbnail, presetForPurpose } from './image';
 import { projectThumbPreset } from './image/config';
+import { isThumbMarkMissing, thumbMark, withoutThumbMark } from './image/mark';
 import { readImageDimensions } from './image-dimensions';
 import { pgrstTable } from './postrest/conn';
 
@@ -328,26 +329,35 @@ async function uploadSingleFilePostgres(args: {
     thumb_size_bytes: thumb ? thumb.buffer.length : null,
     thumb_width: thumb?.width ?? null,
     thumb_height: thumb?.height ?? null,
+    ...thumbMark(!!thumb, projectThumbPreset),
     optimized_at: optimizedAt,
     purpose,
     active: true,
   };
 
-  const response = await pgrstTable(
-    '/files?select=id,uid,original_name,storage_path,public_url,mime_type,size_bytes,width,height,thumb_width,purpose,active,created_at,updated_at',
-    {
-      method: 'POST',
-      headers: {
-        'Accept-Profile': 'public',
-        'Content-Profile': 'public',
-        Prefer: 'return=representation',
+  const postFile = (body: Record<string, unknown>) =>
+    pgrstTable(
+      '/files?select=id,uid,original_name,storage_path,public_url,mime_type,size_bytes,width,height,thumb_width,purpose,active,created_at,updated_at',
+      {
+        method: 'POST',
+        headers: {
+          'Accept-Profile': 'public',
+          'Content-Profile': 'public',
+          Prefer: 'return=representation',
+        },
+        body: JSON.stringify(body),
       },
-      body: JSON.stringify(payload),
-    },
-    { auth: args.authHeader }
-  );
+      { auth: args.authHeader }
+    );
 
-  const responsePayload = (await response.json().catch(() => null)) as unknown;
+  let response = await postFile(payload);
+  let responsePayload = (await response.json().catch(() => null)) as unknown;
+  // Banco sem a migration storage/0007 (colunas `thumb_spec`/`thumb_at`): grava sem a marca em vez de
+  // derrubar o upload — o script de regeração trata "sem marca" como a medida desconhecida.
+  if (!response.ok && isThumbMarkMissing(responsePayload)) {
+    response = await postFile(withoutThumbMark(payload));
+    responsePayload = (await response.json().catch(() => null)) as unknown;
+  }
   const rows = (Array.isArray(responsePayload) ? responsePayload : []) as Array<
     Record<string, unknown>
   >;

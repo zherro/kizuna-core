@@ -26,6 +26,15 @@ export function resolveThumbPreset(name?: unknown): ThumbPresetConfig {
   return { name: key, side, quality };
 }
 
+/**
+ * Marca da medida de uma miniatura (`files.thumb_spec`, storage 0007): `<lado>q<qualidade>`, ex.
+ * `360q60`. Guardar isto por imagem deixa saber o que já está na medida configurada e o que ficou
+ * desatualizado depois de trocar o preset. Mesmo formato dos scripts (`scripts/lib/thumb-preset.mjs`).
+ */
+export function thumbSpec(preset: Pick<ThumbPresetConfig, 'side' | 'quality'>): string {
+  return `${preset.side}q${preset.quality}`;
+}
+
 /** Maior lado da miniatura do preset padrão (o do projeto vem de `resolveThumbPreset`). */
 export const THUMB_MAX_SIDE = resolveThumbPreset().side;
 

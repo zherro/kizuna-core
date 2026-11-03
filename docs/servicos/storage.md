@@ -106,8 +106,8 @@ Pick the preset in `kizuna.config.json` → `images.thumbPreset` (omitted or unk
 Smaller = faster cards (the thumbnail is what search, home and carousels download), softer on
 high-density screens. The values live in `src/shared/image/thumb-presets.json` — one source read by
 the core (`resolveThumbPreset`) **and** by the import scripts (`scripts/lib/thumb-preset.mjs`).
-Changing the preset applies to **new** uploads; regenerate the stored ones with
-`node scripts/regerar-miniaturas.mjs --todas` (simulation by default, `--aplicar` writes) or from the
+Changing the preset applies to **new** uploads; regenerate the stored ones with the script described
+in [Thumbnail mark and regenerating stored images](#thumbnail-mark-and-regenerating-stored-images) or from the
 root storage screen below.
 
 **Every upload obeys the preset:** `uploadSingleFilePostgres` always runs the image through sharp and
@@ -137,6 +137,78 @@ answers with the optimized WebP bytes (`X-Image-Width`/`X-Image-Height` headers)
 
 Import from `@kizuna/core/server/image` (not `@kizuna/core/server`) so projects that don't handle
 images never load sharp.
+
+### Thumbnail mark and regenerating stored images
+
+Every thumbnail is **marked with the measure that made it** (migration `storage/0007`, two nullable
+columns on `files`):
+
+| Column | Content |
+| ------ | ------- |
+| `thumb_spec` | `<side>q<quality>` of the preset used, e.g. `360q60` (`thumbSpec()` in `src/shared/image`, same format in `scripts/lib/thumb-preset.mjs`). `NULL` = unknown ("no mark": made before 0007). |
+| `thumb_at`   | When the thumbnail was generated. |
+
+Uploads, the root re-optimization screen, the importers and the script below all write the mark.
+Comparing it with the configured preset tells what is **in the measure**, what is **outdated** (the
+preset changed) and what has **no mark** — so nothing is reprocessed twice.
+
+**Apply the migration first.** It only adds two nullable columns (instant, idempotent, reversible with
+`DROP COLUMN`). Plain SQL for production: `db/extras/atualizar-storage-0007.sql` in the project (run
+it in your database client). Until it is applied, the app upload and the root screen keep working
+(they retry without the mark), but the script and the importers refuse to run / fail.
+
+`scripts/regerar-miniaturas.mjs` (in the project, not in the core) creates the missing thumbnails and
+redoes the outdated or unmarked ones with the project's `images.thumbPreset`. It is safe to **run
+repeatedly** (for example after a crawler inserted images): whatever is already in the configured
+measure is skipped, and with nothing to do it exits right away without reading any image.
+
+It only touches the `thumb_*` columns (including the mark) and never the original `content`, unless
+`--otimizar-original` is given. **It is a simulation by default** and writes nothing without
+`--aplicar`. It connects through `DATABASE_URL` and runs from the project root (it uses the files on
+your disk, not the deployed app).
+
+| Option | Effect |
+| ------ | ------ |
+| *(none)* | Simulation. Candidates: active images **without** a thumbnail that are worth having one (not WebP, heavier than `--minimo-kb`, or a side above the preset) and images **with** a thumbnail whose mark differs from the preset (or is missing). Largest first. Already-in-measure images are skipped. |
+| `--aplicar` | Writes the thumbnails and the mark (one transaction per image). |
+| `--conferir` | Report only (no sharp, nothing written): counts by situation and the 20 largest pending, then how many the default run would process. |
+| `--forcar` | Ignores the mark and redoes every image that has, or is worth having, a thumbnail. (`--todas` still works as an alias, with a deprecation notice.) |
+| `--limite N` | Only the N largest candidates. For testing; omit it to process all. |
+| `--preset xl\|lg\|md\|sm\|xs` | Preset to use. Default: `images.thumbPreset` of `kizuna.config.json`. |
+| `--lado PX`, `--qualidade Q` | Override the preset's longest side (200–1600) and WebP quality (30–95). The mark records the measure actually used. |
+| `--minimo-kb N` | Weight (kB) above which a WebP without thumbnail is worth one. Default 60. |
+| `--otimizar-original` | Optional: also re-encodes the original as WebP (1600px, q80) **when it gets at least 10% smaller**. Changes `content`; use with care. |
+
+Every run (simulation, `--aplicar` and `--conferir`) ends with a **Resumo** block over the active
+images: total, in the measure, outdated, no mark, without thumbnail (worth having / not needed), how many
+this run processed, and the line `Total de imagens otimizadas: N de M` (optimized = in the measure
+plus the small, light WebP images that don't need a thumbnail). Exit code 0 on success, 1 if any
+image failed.
+
+Recommended order — check first, simulate, test on a few, then apply:
+
+```powershell
+# PowerShell (Windows), from the project root
+cd X:\workspace\kizuna-starter
+$env:DATABASE_URL = "postgres://USER:PASSWORD@HOST:5432/DATABASE"
+
+node scripts/regerar-miniaturas.mjs --conferir                     # 1. where things stand
+node scripts/regerar-miniaturas.mjs                                # 2. simulation of what would run
+node scripts/regerar-miniaturas.mjs --aplicar --limite 5           # 3. write only the 5 largest, check /busca
+node scripts/regerar-miniaturas.mjs --aplicar                      # 4. write the rest (run again anytime)
+```
+
+```bash
+# bash / Git Bash
+DATABASE_URL="postgres://USER:PASSWORD@HOST:5432/DATABASE" node scripts/regerar-miniaturas.mjs --conferir
+DATABASE_URL="postgres://USER:PASSWORD@HOST:5432/DATABASE" node scripts/regerar-miniaturas.mjs --aplicar
+```
+
+After changing `images.thumbPreset` (e.g. `md` to `xl`, or any change of side or quality) the same
+command redoes only what is no longer in the new measure. Take a backup (or snapshot) before the first
+full `--aplicar`, and keep the password out of the shell history (set the variable on its own line and
+clear the history afterwards). A database without the migration makes the script stop with the path of
+the SQL to apply.
 
 ## Root: storage screen (`/painel/root/storage`)
 
