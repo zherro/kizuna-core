@@ -1,0 +1,11 @@
+{
+  "_comment": "Presets da miniatura (capa dos cards: busca, home, carrosséis). Fonte única: lida pelo core (TypeScript) e pelos scripts de importação (.mjs). `side` = maior lado em px (a proporção é mantida, sem corte); `quality` = qualidade do WebP. O projeto escolhe um no kizuna.config.json → images.thumbPreset; sem a chave vale `default`.",
+  "default": "md",
+  "presets": {
+    "xl": { "side": 480, "quality": 65 },
+    "lg": { "side": 400, "quality": 60 },
+    "md": { "side": 360, "quality": 60 },
+    "sm": { "side": 320, "quality": 60 },
+    "xs": { "side": 280, "quality": 60 }
+  }
+}

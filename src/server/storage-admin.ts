@@ -1,5 +1,6 @@
 import { getSession } from './auth';
 import { isOptimizableImage, optimizeImageWithThumbnail, presetForPurpose } from './image';
+import { projectThumbPreset } from './image/config';
 import { readImageDimensions } from './image-dimensions';
 import { serviceDb, ServiceUnavailableError, type ServiceDb } from './service-db';
 
@@ -146,7 +147,8 @@ export async function reoptimizeStoredImage(
   const optimized = await optimizeImageWithThumbnail(
     original,
     mimeType,
-    presetForPurpose(String(row.purpose ?? ''))
+    presetForPurpose(String(row.purpose ?? '')),
+    projectThumbPreset
   );
   if (!optimized.image.optimized) return fail('Não foi possível otimizar a imagem.', beforeBytes);
 

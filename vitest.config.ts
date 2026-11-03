@@ -10,6 +10,10 @@ export default defineConfig({
       // (e.g. taxonomy-icon). The parent project's vitest config maps this; mirror it here so
       // tests run from inside the submodule resolve the same way.
       '@kizuna/core': fileURLToPath(new URL('./src', import.meta.url)),
+      // Server code reads the consumer project's config via `@/../kizuna.config.json` (regions,
+      // images.thumbPreset). Inside the submodule there is no project, so point it at the config
+      // the core ships for new projects (`starter/kizuna.config.json`).
+      '@/../kizuna.config.json': fileURLToPath(new URL('./starter/kizuna.config.json', import.meta.url)),
     },
   },
   test: {

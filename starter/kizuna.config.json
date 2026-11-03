@@ -29,6 +29,10 @@
     "_comment_browseGroups": "\"browseGroups\": trilhas na ordem — slug de grupo (categories_group.slug) ou { \"groups\": [slugs], \"title\": \"...\" } para juntar grupos numa trilha. Sem filtro além da cidade, a /busca mostra um carrossel por trilha (vitrine) em vez da lista misturada; buscar texto ou marcar qualquer filtro volta à lista. Vazio = sempre a lista. Com browseGroups, deixe defaultGroup null. Ver docs/plugins/search.md.",
     "browseGroups": []
   },
+  "images": {
+    "_comment": "Imagens. \"thumbPreset\": tamanho da MINIATURA dos cards (busca, home, carrosséis), gerada em todo upload: xl = 480 px/q65 · lg = 400/q60 · md = 360/q60 (padrão) · sm = 320/q60 · xs = 280/q60 (maior lado em px, proporção mantida; q = qualidade do WebP). Vale para uploads novos; para as já gravadas rode node scripts/regerar-miniaturas.mjs --todas. Ver docs/servicos/storage.md.",
+    "thumbPreset": "md"
+  },
   "header": {
     "_comment": "\"variant\": classic (padrão) | compact — layout do cabeçalho do site.",
     "variant": "classic"

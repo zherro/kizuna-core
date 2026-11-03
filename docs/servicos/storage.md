@@ -90,22 +90,44 @@ Unsupported format or a sharp failure returns the original untouched (`optimized
 
 ### Thumbnails (`files.thumb_content`, migration `storage/0005`)
 
-Each image row also keeps a small version: WebP, up to **640px on the longest side**, aspect ratio
-kept (preset `thumb`, q75) — enough for a 260px card on a 2x screen, landscape photo or portrait
-movie poster alike. Same `id`, so no reference changes:
+Each image row also keeps a small version: WebP, aspect ratio kept (never cropped, never
+upscaled), sized by the project's **thumbnail preset**. Same `id`, so no reference changes.
+
+Pick the preset in `kizuna.config.json` → `images.thumbPreset` (omitted or unknown = `md`):
+
+| Preset | Longest side | WebP quality | Typical weight (rich photo) | Fits screens up to (card ≈ 274px wide) |
+| ------ | ------------ | ------------ | --------------------------- | -------------------------------------- |
+| `xl`   | 480 px       | 65           | ~33 kB                      | ~1.75x                                 |
+| `lg`   | 400 px       | 60           | ~22 kB                      | ~1.45x                                 |
+| `md` (default) | 360 px | 60         | ~18 kB                      | ~1.3x                                  |
+| `sm`   | 320 px       | 60           | ~14 kB                      | ~1.15x                                 |
+| `xs`   | 280 px       | 60           | ~11 kB                      | 1x                                     |
+
+Smaller = faster cards (the thumbnail is what search, home and carousels download), softer on
+high-density screens. The values live in `src/shared/image/thumb-presets.json` — one source read by
+the core (`resolveThumbPreset`) **and** by the import scripts (`scripts/lib/thumb-preset.mjs`).
+Changing the preset applies to **new** uploads; regenerate the stored ones with
+`node scripts/regerar-miniaturas.mjs --todas` (simulation by default, `--aplicar` writes) or from the
+root storage screen below.
+
+**Every upload obeys the preset:** `uploadSingleFilePostgres` always runs the image through sharp and
+makes the thumbnail with the project preset (`server/image/config.ts` reads the config), whatever the
+client sent in `optimizeImages` — only animated GIFs are left alone. The importers
+(`importar-noticias.mjs`, `lugares-para-servicos.mjs`) apply the same preset.
 
 ```
 /api/public/storage/files/<id>/content             → full image (detail, lightbox, swipe)
 /api/public/storage/files/<id>/content?size=thumb  → thumbnail (cards, search, carousels, gallery)
 ```
 
-No thumbnail stored (image already ≤ 640px, not an image, or uploaded before `0005`) → the route
+No thumbnail stored (image already ≤ the preset's side, not an image, or uploaded before `0005`) → the route
 returns the full image. The upload creates both via `optimizeImageWithThumbnail` (the thumbnail is
 made from the already-optimized image). Client helpers: `fileUrl(id, 'thumb')` / `thumbUrl(id)`
 (`client/components/services/service-helpers.ts`); `StorageFileRecord.hasThumb` says whether one exists.
 
 Rules shared with the browser (no sharp) live in `src/shared/image`: `IMAGE_PRESETS`,
-`presetForPurpose`, `THUMB_MAX_SIDE`, `needsThumbnail`, `LOW_RESOLUTION_MIN_SIDE` (600) and
+`presetForPurpose`, `resolveThumbPreset` / `THUMB_PRESET_NAMES`, `THUMB_MAX_SIDE` (default preset),
+`needsThumbnail`, `LOW_RESOLUTION_MIN_SIDE` (600) and
 `isLowResolution` — `ImageGalleryManager` warns after uploading a photo whose shorter side is
 below 600px (accepted, just flagged: upscaling would only add bytes, not detail).
 

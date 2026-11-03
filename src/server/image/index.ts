@@ -1,6 +1,13 @@
 import sharp from 'sharp';
 import { getSession } from '../auth';
-import { IMAGE_PRESETS, needsThumbnail, type ImagePreset } from '../../shared/image';
+import {
+  IMAGE_PRESETS,
+  needsThumbnail,
+  resolveThumbPreset,
+  type ImagePreset,
+  type ImagePresetConfig,
+  type ThumbPresetConfig,
+} from '../../shared/image';
 
 export {
   IMAGE_PRESETS,
@@ -9,8 +16,13 @@ export {
   needsThumbnail,
   presetForPurpose,
   THUMB_MAX_SIDE,
+  THUMB_PRESET_NAMES,
+  isThumbPresetName,
+  resolveThumbPreset,
   type ImagePreset,
   type ImagePresetConfig,
+  type ThumbPresetConfig,
+  type ThumbPresetName,
 } from '../../shared/image';
 
 /**
@@ -37,7 +49,7 @@ export function isOptimizableImage(mimeType?: string | null): boolean {
 export async function optimizeImage(
   input: Buffer,
   mimeType: string | null,
-  preset: ImagePreset = 'default'
+  preset: ImagePreset | ImagePresetConfig = 'default'
 ): Promise<OptimizedImage> {
   const original: OptimizedImage = {
     buffer: input,
@@ -48,7 +60,7 @@ export async function optimizeImage(
   };
   if (!isOptimizableImage(mimeType)) return original;
 
-  const cfg = IMAGE_PRESETS[preset];
+  const cfg = typeof preset === 'string' ? IMAGE_PRESETS[preset] : preset;
   try {
     const { data, info } = await sharp(input, { animated: false })
       .rotate()
@@ -69,17 +81,25 @@ export type OptimizedImageWithThumbnail = {
   thumb: OptimizedImage | null;
 };
 
-/** Versão grande (pelo `preset`) + miniatura (preset `thumb`), as duas em WebP. A miniatura sai
- * da versão grande já otimizada (menos trabalho que reprocessar o original) e só é gerada se a
- * imagem for maior que ela. */
+/** Versão grande (pelo `preset`) + miniatura (pelo `thumbPreset`, o do projeto em
+ * `images.thumbPreset`), as duas em WebP. A miniatura sai da versão grande já otimizada (menos
+ * trabalho que reprocessar o original) e só é gerada se a imagem for maior que ela. */
 export async function optimizeImageWithThumbnail(
   input: Buffer,
   mimeType: string | null,
-  preset: ImagePreset = 'default'
+  preset: ImagePreset = 'default',
+  thumbPreset: ThumbPresetConfig = resolveThumbPreset()
 ): Promise<OptimizedImageWithThumbnail> {
   const image = await optimizeImage(input, mimeType, preset);
-  if (!image.optimized || !needsThumbnail(image.width, image.height)) return { image, thumb: null };
-  const thumb = await optimizeImage(image.buffer, image.mimeType, 'thumb');
+  if (!image.optimized || !needsThumbnail(image.width, image.height, thumbPreset.side)) {
+    return { image, thumb: null };
+  }
+  const thumb = await optimizeImage(image.buffer, image.mimeType, {
+    width: thumbPreset.side,
+    height: thumbPreset.side,
+    fit: 'inside',
+    quality: thumbPreset.quality,
+  });
   return { image, thumb: thumb.optimized ? thumb : null };
 }
 

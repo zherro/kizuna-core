@@ -7,6 +7,9 @@ import { getSession } from './auth';
 import { createStorageAdminHandlers, reoptimizeStoredImage } from './storage-admin';
 import type { ServiceDb } from './service-db';
 
+// `image/config` lê o kizuna.config.json do projeto (alias `@/`), que não existe nos testes do core.
+vi.mock('./image/config', () => ({ projectThumbPreset: { name: 'xl', side: 480, quality: 65 } }));
+
 const ID = '11111111-2222-3333-4444-555555555555';
 
 async function jpeg(width: number, height: number) {

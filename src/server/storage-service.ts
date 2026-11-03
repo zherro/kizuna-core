@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { optimizeImageWithThumbnail, presetForPurpose } from './image';
+import { projectThumbPreset } from './image/config';
 import { readImageDimensions } from './image-dimensions';
 import { pgrstTable } from './postrest/conn';
 
@@ -279,11 +280,15 @@ async function uploadSingleFilePostgres(args: {
   let optimizedAt: string | null = null;
 
   // Imagem: sharp no próprio servidor (redimensiona por `purpose`, converte para WebP) + miniatura.
-  if (args.input.optimizeImages && mimeType && mimeType.startsWith(IMAGE_MIME_PREFIX)) {
+  // `optimizeImages` vem do formulário (o cliente pode mandar `false`): só o GIF (animado, o sharp
+  // acharia só o 1º quadro) fica de fora. Toda outra imagem passa SEMPRE pelo sharp e ganha a
+  // miniatura do preset do projeto (`images.thumbPreset`) — é o que mantém os cards leves.
+  if (mimeType && mimeType.startsWith(IMAGE_MIME_PREFIX) && (args.input.optimizeImages || mimeType !== 'image/gif')) {
     const optimized = await optimizeImageWithThumbnail(
       originalBuffer,
       mimeType,
-      presetForPurpose(purpose)
+      presetForPurpose(purpose),
+      projectThumbPreset
     );
     if (optimized.image.optimized) {
       finalBuffer = optimized.image.buffer;
