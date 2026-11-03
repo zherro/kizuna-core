@@ -454,7 +454,7 @@ function Tile({
         drawn ? 'ring-4 ring-[var(--place-solid)] ring-offset-2 ring-offset-background' : ''
       } ${className ?? ''}`}
     >
-      <TileImage item={item} tone={tone} large={size === 'lg'} />
+      <TileImage src={item.thumb ?? item.image} tone={tone} large={size === 'lg'} />
       <div
         aria-hidden="true"
         className="absolute inset-0"
@@ -494,12 +494,12 @@ function Tile({
   );
 }
 
-function TileImage({ item, tone, large }: { item: PlaceHighlightItem; tone: PlaceTone; large?: boolean }) {
-  if (item.image) {
+function TileImage({ src, tone, large }: { src?: string | null; tone: PlaceTone; large?: boolean }) {
+  if (src) {
     return (
       // eslint-disable-next-line @next/next/no-img-element -- fotos estáticas do conteúdo, tamanhos variados
       <img
-        src={item.image}
+        src={src}
         alt=""
         loading="lazy"
         decoding="async"

@@ -6,8 +6,7 @@ import { fileUrl } from '../services/service-helpers';
 /**
  * Anúncios da busca (`fn_search_services`, ex. o pool de `loadCategoryRail` por grupo ou categoria)
  * → itens do `PlaceMosaic`. Chapéu = subcategoria, senão categoria (é o que os chips filtram);
- * linha de apoio = cidade do endereço principal; foto = capa em tamanho cheio (o mosaico tem peças
- * grandes). Sem título ou repetido (mesmo `uid`) fica de fora; a ordem de entrada é mantida.
+ * linha de apoio = cidade do endereço principal; foto = miniatura (`thumb`, usada pelo mosaico) e capa cheia (`image`). Sem título ou repetido (mesmo `uid`) fica de fora; a ordem de entrada é mantida.
  */
 export function placeItemsFromServices(
   results: ServiceResult[],
@@ -26,6 +25,7 @@ export function placeItemsFromServices(
       title,
       kicker: r.subcategory?.trim() || r.category?.trim() || fallbackKicker,
       image: r.cover_file_id ? fileUrl(r.cover_file_id, 'full') : null,
+      ...(r.cover_file_id ? { thumb: fileUrl(r.cover_file_id, 'thumb') } : {}),
       ...(meta ? { meta } : {}),
     });
   }

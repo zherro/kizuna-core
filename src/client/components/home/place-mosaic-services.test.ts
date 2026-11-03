@@ -28,6 +28,7 @@ describe('placeItemsFromServices', () => {
         title: 'Shopping das Palmeiras',
         kicker: 'Shoppings',
         image: '/api/public/storage/files/f1/content',
+        thumb: '/api/public/storage/files/f1/content?size=thumb',
         meta: 'Cuiabá',
       },
     ]);

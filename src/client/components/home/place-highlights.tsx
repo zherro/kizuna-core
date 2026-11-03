@@ -11,6 +11,8 @@ export type PlaceHighlightItem = {
   summary?: string;
   /** URL da foto; sem ela o card mostra o gradiente da cor do grupo. */
   image?: string | null;
+  /** Miniatura da mesma foto, para peças pequenas (cai em `image` se faltar). */
+  thumb?: string | null;
   /** Linha curta de apoio (ex.: endereço, bairro). */
   meta?: string;
 };
