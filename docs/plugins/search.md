@@ -91,8 +91,12 @@ página e a vitrine nunca aparece.
 A casca de `/busca` é ISR (`revalidate = 300`, sem `searchParams` no servidor). As trilhas do estado
 "sem filtro" são carregadas por `loadBrowseRails` (`@kizuna/core/server`, cache de 5 min, tag
 `browse-rails`) para a cidade padrão do projeto e passadas ao `SearchPage` em `initialRails`; a
-página também as renderiza com `SearchBrowseRailsStatic` como `fallback` do `<Suspense>` (é isso que
-vai no HTML estático, já que `useSearchParams` faz o resto cair em renderização no cliente). No
+página também as renderiza com `SearchBrowseRailsStatic`, **fora de qualquer `<Suspense>`** e antes do
+`SearchPage` (passa `staticId="busca-ssr"` a ele, que a esconde quando a localização fica pronta). Isso
+é obrigatório: um `<Suspense>` dentro de componente de cliente, com a vitrine no `fallback` ou no
+conteúdo, faz o servidor adiar o trecho e o HTML estático sai só com "Carregando…" (verificado com
+`next build` e inspeção de `.next/server/app/busca.html`). O `SearchPage` não tem `<Suspense>` próprio;
+o da página (componente de servidor) é o limite que o `useSearchParams` exige. No
 cliente as trilhas hidratam sem refetch enquanto a cidade selecionada for a mesma (ou ainda
 desconhecida); outra cidade ou outra configuração de trilhas descarta o inicial e busca como antes.
 Com filtro na URL nada muda. Quem abre direto um link com filtro vê a vitrine por instantes (um script

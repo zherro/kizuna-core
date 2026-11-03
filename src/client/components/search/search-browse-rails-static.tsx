@@ -6,13 +6,14 @@ import type { AnalyticsSource, EventRule } from '../../../shared/analytics';
 // Quem chega já com filtro na URL (`/busca?q=x`) vê a vitrine por instantes até a página hidratar:
 // este script (string fixa) esconde o bloco antes do primeiro paint.
 const HIDE_WHEN_FILTERED =
-  "if(location.search){var e=document.getElementById('busca-ssr');if(e)e.hidden=true}";
+  "if(location.search){var e=document.getElementById('busca-ssr');if(e)e.hidden=true;var l=document.getElementById('busca-ssr-loading');if(l)l.hidden=false}";
 
 /**
  * Vitrine "sem filtro" da /busca renderizada no servidor (sem 'use client', sem estado): mesmas
- * trilhas do `SearchBrowseRails`, a partir de `loadBrowseRails`. Serve de `fallback` do `<Suspense>`
- * da página — como `useSearchParams` faz a rota estática cair em CSR até esse limite, é isto que vai
- * no HTML estático e pinta o LCP. Mesmo contêiner/largura do conteúdo do `SearchPage`.
+ * trilhas do `SearchBrowseRails`, a partir de `loadBrowseRails`. A PÁGINA a renderiza FORA de qualquer
+ * `<Suspense>` (dentro dele o servidor adia o trecho e o HTML estático sai sem as trilhas) e passa o
+ * `id` dela (`busca-ssr`) ao `SearchPage` (`staticId`), que a esconde quando a localização fica pronta.
+ * É isto que vai no HTML estático e pinta o LCP. Mesmo contêiner/largura do conteúdo do `SearchPage`.
  */
 export function SearchBrowseRailsStatic({
   data,

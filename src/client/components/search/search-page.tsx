@@ -1,17 +1,9 @@
 'use client';
 
-import {
-  Suspense,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type ReactNode,
-} from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type ReactNode, useLayoutEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Filter, X } from 'lucide-react';
+import { Filter, Loader2, X } from 'lucide-react';
 import {
   Sheet,
   SheetContent,
@@ -28,7 +20,6 @@ import { LocationGate } from './location-gate';
 import { SearchFiltersPanel } from './search-filters-panel';
 import { SearchResultsView, type RelaxedFrom, type ResultsScope } from './search-results-view';
 import { SearchBrowseRails, normalizeBrowseRails, type BrowseRailConfig } from './search-browse-rails';
-import { SearchBrowseRailsStatic } from './search-browse-rails-static';
 import type { BrowseRailsData } from '../../../shared/search/browse-rails';
 import { regionGroupsFor, type RegionConfig, type RegionGroup } from '../../../shared/regions';
 import type { ServiceDetailConfig } from '../services/detail/category-style';
@@ -116,31 +107,43 @@ export type SearchPageProps = {
   /** Trilhas da vitrine já carregadas no servidor (`loadBrowseRails`, cidade padrão): hidratam sem
    * refetch enquanto a cidade em vigor for a mesma. Só vale sem filtro; com filtro é ignorado. */
   initialRails?: BrowseRailsData;
+  /** `id` da vitrine do servidor (`SearchBrowseRailsStatic`) que a PÁGINA renderiza fora deste
+   * componente, visível enquanto a localização carrega. Este componente a esconde quando a página
+   * real assume. Dentro de um `<Suspense>` o servidor adia a vitrine e o HTML sai sem ela. */
+  staticId?: string;
 };
 
 const REGION_PAGE_SIZE = 12;
 
 export function SearchPage(props: SearchPageProps) {
-  // Enquanto a localização carrega, mantém a vitrine do servidor (sem filtro na URL) em vez do spinner.
-  const hasFilter = useSearchParams().toString() !== '';
-  const pending =
-    props.initialRails && !hasFilter ? (
-      <SearchBrowseRailsStatic
-        data={props.initialRails}
-        basePath={props.basePath}
-        detailConfig={props.serviceDetailConfig}
-        impressionRule={props.impressionRule}
-      />
-    ) : undefined;
+  const { staticId } = props;
+  // Com vitrine do servidor, ela fica visível enquanto a localização carrega e aqui não há nada a
+  // mostrar; o spinner só aparece (o script da vitrine o revela) quando a URL tem filtro.
+  const waiting = staticId ? (
+    <div id={`${staticId}-loading`} hidden>
+      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        <p className="text-sm text-muted-foreground">Detectando sua região…</p>
+      </div>
+    </div>
+  ) : undefined;
+  // Sem `<Suspense>` próprio: dentro de um componente de cliente o servidor adia o trecho e o HTML
+  // estático sai sem conteúdo. O limite que o `useSearchParams` do `SearchPageInner` exige é o da PÁGINA
+  // (componente de servidor), que envolve este componente em `<Suspense>`.
   return (
-    <Suspense
-      fallback={<div className="p-10 text-center text-sm text-muted-foreground">Carregando…</div>}
-    >
-      <LocationGate pending={pending}>
-        <SearchPageInner {...props} />
-      </LocationGate>
-    </Suspense>
+    <LocationGate pending={waiting}>
+      <HideStatic id={staticId} />
+      <SearchPageInner {...props} />
+    </LocationGate>
   );
+}
+
+/** Esconde a vitrine do servidor no mesmo commit em que a página real aparece (sem quadro duplo). */
+function HideStatic({ id }: { id?: string }) {
+  useLayoutEffect(() => {
+    if (id) document.getElementById(id)?.setAttribute('hidden', '');
+  }, [id]);
+  return null;
 }
 
 function priceOf(r: ServiceResult): number | null {
