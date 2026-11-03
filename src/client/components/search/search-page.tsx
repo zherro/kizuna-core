@@ -3,7 +3,7 @@
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type ReactNode, useLayoutEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Filter, Loader2, X } from 'lucide-react';
+import { Filter, X } from 'lucide-react';
 import {
   Sheet,
   SheetContent,
@@ -117,16 +117,9 @@ const REGION_PAGE_SIZE = 12;
 
 export function SearchPage(props: SearchPageProps) {
   const { staticId } = props;
-  // Com vitrine do servidor, ela fica visível enquanto a localização carrega e aqui não há nada a
-  // mostrar; o spinner só aparece (o script da vitrine o revela) quando a URL tem filtro.
-  const waiting = staticId ? (
-    <div id={`${staticId}-loading`} hidden>
-      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3">
-        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-        <p className="text-sm text-muted-foreground">Detectando sua região…</p>
-      </div>
-    </div>
-  ) : undefined;
+  // Com vitrine do servidor (renderizada pela PÁGINA, junto do bloco `busca-ssr-loading` que o script
+  // revela em URL com filtro), este componente não mostra nada enquanto a localização carrega.
+  const waiting = staticId ? <></> : undefined;
   // Sem `<Suspense>` próprio: dentro de um componente de cliente o servidor adia o trecho e o HTML
   // estático sai sem conteúdo. O limite que o `useSearchParams` do `SearchPageInner` exige é o da PÁGINA
   // (componente de servidor), que envolve este componente em `<Suspense>`.
@@ -141,7 +134,9 @@ export function SearchPage(props: SearchPageProps) {
 /** Esconde a vitrine do servidor no mesmo commit em que a página real aparece (sem quadro duplo). */
 function HideStatic({ id }: { id?: string }) {
   useLayoutEffect(() => {
-    if (id) document.getElementById(id)?.setAttribute('hidden', '');
+    if (!id) return;
+    document.getElementById(id)?.setAttribute('hidden', '');
+    document.getElementById(`${id}-loading`)?.setAttribute('hidden', '');
   }, [id]);
   return null;
 }

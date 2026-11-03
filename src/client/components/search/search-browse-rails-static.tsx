@@ -1,3 +1,4 @@
+import { Loader2 } from 'lucide-react';
 import { ServiceCarouselSection } from '../services/detail/service-carousel-section';
 import { resolveCategoryHue, type ServiceDetailConfig } from '../services/detail/category-style';
 import type { BrowseRailsData } from '../../../shared/search/browse-rails';
@@ -32,6 +33,7 @@ export function SearchBrowseRailsStatic({
   if (filled.length === 0) return null;
 
   return (
+    <>
     <div id="busca-ssr">
       {/* Reserva o espaço do cabeçalho da busca (título, campo e categorias), que só aparece depois de
           hidratar: sem isto as trilhas e o rodapé descem de uma vez (CLS). Alturas medidas na página
@@ -62,7 +64,17 @@ export function SearchBrowseRailsStatic({
           </div>
         </div>
       </section>
-      <script dangerouslySetInnerHTML={{ __html: HIDE_WHEN_FILTERED }} />
     </div>
+    {/* URL com filtro (`/busca?group=...`): a vitrine acima se esconde e este bloco aparece no lugar. Ele
+        tem altura de sobra (mais que a tela) para o rodapé nascer fora da área visível: sem isso a página
+        ficava vazia, o rodapé subia e despencava quando os resultados chegavam (CLS acima de 1). */}
+    <div id="busca-ssr-loading" hidden>
+      <div className="flex min-h-[120vh] flex-col items-center gap-3 pt-40">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" aria-hidden />
+        <p className="text-sm text-muted-foreground">Carregando resultados…</p>
+      </div>
+    </div>
+    <script dangerouslySetInnerHTML={{ __html: HIDE_WHEN_FILTERED }} />
+    </>
   );
 }
