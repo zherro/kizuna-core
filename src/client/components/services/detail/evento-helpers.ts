@@ -144,7 +144,10 @@ export function parseNames(raw: unknown): string[] {
 /** Ponto de venda cru: `nome` (código do lugar ou texto livre) e `link` http(s) de compra, se houver. */
 export type EventSalePoint = { nome: string; link: string | null };
 
-/** `pontos_de_venda`: itens `{ nome, link? }` ou strings puras (formato antigo); sem nome, o item sai. */
+/**
+ * `pontos_de_venda`: itens `{ nome, link? }` ou strings puras (formato antigo). Sem nome, o item só
+ * fica se tiver link válido (lugar não cadastrado: `nome` vazio, só o link de compra).
+ */
 export function parseSalePoints(raw: unknown): EventSalePoint[] {
   if (!Array.isArray(raw)) return [];
   return raw
@@ -156,11 +159,44 @@ export function parseSalePoints(raw: unknown): EventSalePoint[] {
       if (item && typeof item === 'object') {
         const o = item as Record<string, unknown>;
         const nome = str(o.nome);
-        return nome ? { nome, link: safeHttpUrl(o.link) } : null;
+        const link = safeHttpUrl(o.link);
+        return nome || link ? { nome: nome ?? '', link } : null;
       }
       return null;
     })
     .filter((p): p is EventSalePoint => p != null);
+}
+
+/** Ponto de venda como a página recebe (`ServiceSalePoint`): `venue` = lugar cadastrado achado. */
+type SalePointLike = { label: string; venue: unknown; link?: string };
+
+/** Link de compra que vai abaixo dos ingressos: `label` = nome do ponto (vazio quando não há). */
+export type EventBuyLink = { label: string; href: string };
+
+/**
+ * Separa os pontos de venda: lugar achado (`venue`) ou só com nome → "Onde comprar"; sem lugar mas
+ * com link http(s) → link de compra abaixo dos ingressos (o ponto não está cadastrado, mas o link
+ * ainda leva à compra). Links repetidos (inclusive o `link_ingresso` geral, `exclude`) saem.
+ */
+export function splitSalePoints<T extends SalePointLike>(
+  points: T[],
+  exclude?: string | null
+): { places: T[]; buyLinks: EventBuyLink[] } {
+  const places: T[] = [];
+  const buyLinks: EventBuyLink[] = [];
+  const excluded = safeHttpUrl(exclude);
+  const seen = new Set(excluded ? [excluded] : []);
+  for (const p of points) {
+    const href = p.venue ? null : safeHttpUrl(p.link);
+    if (!href) {
+      if (p.venue || p.label.trim()) places.push(p);
+      continue;
+    }
+    if (seen.has(href)) continue;
+    seen.add(href);
+    buyLinks.push({ label: p.label.trim(), href });
+  }
+  return { places, buyLinks };
 }
 
 export type TicketDisplay = {

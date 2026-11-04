@@ -502,6 +502,12 @@ describe('fetchSalePoints: link de compra', () => {
     expect(points[0].venue).toMatchObject({ uid: 'casa1' });
     expect('link' in points[1]).toBe(false);
   });
+
+  it('item só com link (lugar não cadastrado) vira ponto sem rótulo nem venue, sem consulta', async () => {
+    const svc = base({ extras: { pontos_de_venda: [{ link: 'https://compra.test/x' }, { nome: '', link: '' }] } } as Partial<ServiceRecord>);
+    expect(await fetchSalePoints(svc, null)).toEqual([{ label: '', venue: null, link: 'https://compra.test/x' }]);
+    expect(serverFetchResource).not.toHaveBeenCalled();
+  });
 });
 
 describe('fetchLinkedRefs', () => {

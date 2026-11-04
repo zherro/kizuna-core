@@ -41,6 +41,7 @@ import {
   mapsSearchUrl,
   parseNames,
   parseSalePoints,
+  splitSalePoints,
   parseSessionDays,
   parseTickets,
   ticketDisplay,
@@ -64,6 +65,14 @@ function EndedBadge() {
     <span className="inline-flex items-center rounded-full border border-border px-2.5 py-0.5 text-[11px] font-semibold text-muted-foreground">
       Encerrado
     </span>
+  );
+}
+
+/** Pontos de venda resolvidos pelo servidor quando houver; senão o cru do formulário. */
+function eventSalePoints(salePoints: ServiceSalePoint[] | null | undefined, answers: Record<string, unknown>): ServiceSalePoint[] {
+  return (
+    salePoints ??
+    parseSalePoints(answers.pontos_de_venda).map((p) => ({ label: p.nome, venue: null, ...(p.link ? { link: p.link } : {}) }))
   );
 }
 
@@ -156,7 +165,7 @@ function TicketCard({ ticket }: { ticket: EventTicket }) {
  * "a partir de" (+ link de compra). Só lg+ (`hidden lg:block`, aplicado por quem chama); no mobile o
  * conteúdo principal já mostra tudo.
  */
-export const ServiceDetailEventoSidebar: ServiceDetailVariantComponent = ({ service, extraFields, venue, location }) => {
+export const ServiceDetailEventoSidebar: ServiceDetailVariantComponent = ({ service, extraFields, venue, location, salePoints }) => {
   const answers = extraFields?.answers ?? {};
   const date = eventDateParts(eventDayFromExpiresAt(service.expiresAt) ?? answers.data_inicio);
   const place = resolveEventPlace(venue, location, answers.endereco);
@@ -167,7 +176,9 @@ export const ServiceDetailEventoSidebar: ServiceDetailVariantComponent = ({ serv
     priceUnit: service.priceUnit,
     tickets,
   });
-  const buyUrl = safeHttpUrl(answers.link_ingresso);
+  // Link geral do evento; sem ele, o primeiro ponto de venda sem lugar cadastrado que tem link.
+  const buyUrl =
+    safeHttpUrl(answers.link_ingresso) ?? splitSalePoints(eventSalePoints(salePoints, answers)).buyLinks[0]?.href ?? null;
   const over = isEventOver(answers, service.expiresAt);
 
   return (
@@ -248,11 +259,11 @@ export const ServiceDetailEvento: ServiceDetailVariantComponent = ({ service, ex
     resolvedArtists ?? parseNames(answers.artistas).map((label) => ({ label, venue: null }));
   const sessionDays = parseSessionDays(answers.sessoes, answers.data_inicio);
   // Resolvidos pelo servidor quando houver; senão o texto cru do formulário.
-  const salePointItems: ServiceSalePoint[] =
-    salePoints ?? parseSalePoints(answers.pontos_de_venda).map((p) => ({ label: p.nome, venue: null, ...(p.link ? { link: p.link } : {}) }));
+  // Lugar achado → "Onde comprar"; sem lugar mas com link → botão de compra abaixo dos ingressos.
+  const buyUrl = safeHttpUrl(answers.link_ingresso);
+  const { places: salePointItems, buyLinks } = splitSalePoints(eventSalePoints(salePoints, answers), buyUrl);
   const endereco = textField(answers.endereco);
   const place = resolveEventPlace(null, location, endereco);
-  const buyUrl = safeHttpUrl(answers.link_ingresso);
   // A cidade fica visível junto do "Onde acontece": cityName do local; sem ele, a do endereço do evento.
   const venueWithCity =
     venue && !venue.cityName
@@ -371,7 +382,7 @@ export const ServiceDetailEvento: ServiceDetailVariantComponent = ({ service, ex
         </Section>
       )}
 
-      {(tickets.length > 0 || buyUrl) && (
+      {(tickets.length > 0 || buyUrl || buyLinks.length > 0) && (
         <Section title="Ingressos" hue={hue}>
           {tickets.length > 0 && (
             <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -389,6 +400,15 @@ export const ServiceDetailEvento: ServiceDetailVariantComponent = ({ service, ex
             >
               <Ticket className="h-4 w-4" /> Comprar ingresso
             </TrackedContactLink>
+          )}
+          {buyLinks.length > 0 && (
+            <div className={`${tickets.length > 0 || buyUrl ? 'mt-4 ' : ''}flex flex-wrap gap-2`}>
+              {buyLinks.map((l) => (
+                <TrackedContactLink key={l.href} href={l.href} target="_blank" rel="noopener noreferrer" className={BUY_LINK_CLASS}>
+                  <Ticket className="h-4 w-4" /> {l.label ? `Comprar em ${l.label}` : 'Comprar ingresso'}
+                </TrackedContactLink>
+              ))}
+            </div>
           )}
         </Section>
       )}

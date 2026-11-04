@@ -345,6 +345,7 @@ export function ServiceDetailPage({
                     labels={labels}
                     venue={data.venue ?? null}
                     location={location ?? null}
+                    salePoints={data.salePoints ?? null}
                   />
                 </div>
               ) : (

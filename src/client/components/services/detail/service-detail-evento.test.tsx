@@ -156,8 +156,38 @@ describe('ServiceDetailEvento onde comprar: botão de compra', () => {
       answers: { ...extraFields.answers, pontos_de_venda: [{ nome: 'Disk ingresso', link: 'https://disk.test/e' }, 'Bilheteria'] },
     } as never;
     renderEvento(null, { extraFields: raw });
-    expect(screen.getByRole('link', { name: /Bora comprar ingresso/ }).getAttribute('href')).toBe('https://disk.test/e');
+    // "Disk ingresso" não é lugar cadastrado: o link vai para baixo dos ingressos
+    expect(screen.getByRole('link', { name: /Comprar em Disk ingresso/ }).getAttribute('href')).toBe('https://disk.test/e');
+    expect(screen.queryByText(/Bora comprar ingresso/)).toBeNull();
     expect(screen.getByText('Bilheteria')).toBeTruthy();
+  });
+
+  it('lugar não achado com link: sem card em "Onde comprar", link de compra abaixo dos ingressos', () => {
+    const raw = {
+      ...extraFields,
+      answers: { ...extraFields.answers, ingressos: [{ setor: 'PISTA', valor: 50 }] },
+    } as never;
+    renderEvento(null, {
+      extraFields: raw,
+      salePoints: [
+        { label: 'Casa de Festas', venue: { ...venue, title: 'Casa de Festas' } },
+        { label: '', venue: null, link: 'https://compra.test/x' },
+      ],
+    });
+    const buy = screen.getByRole('link', { name: 'Comprar ingresso' });
+    expect(buy.getAttribute('href')).toBe('https://compra.test/x');
+    expect(buy.getAttribute('target')).toBe('_blank');
+    // fica na seção Ingressos (depois do card do ingresso), não em "Onde comprar"
+    const ingressos = screen.getByText('PISTA').closest('section');
+    expect(ingressos?.contains(buy)).toBe(true);
+    expect(screen.getByText('Onde comprar')).toBeTruthy();
+  });
+
+  it('só ponto sem lugar com link: "Onde comprar" some e a seção Ingressos aparece com o link', () => {
+    renderEvento(null, { salePoints: [{ label: '', venue: null, link: 'https://compra.test/x' }] });
+    expect(screen.queryByText('Onde comprar')).toBeNull();
+    expect(screen.getByText('Ingressos')).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Comprar ingresso' }).getAttribute('href')).toBe('https://compra.test/x');
   });
 });
 

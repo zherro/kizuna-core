@@ -520,16 +520,18 @@ function listNames(raw: unknown): string[] {
     .filter(Boolean);
 }
 
-/** `link` de cada item de uma lista de `extras`, na mesma ordem de `listNames` (itens sem nome saem). */
-function listLinks(raw: unknown): (string | undefined)[] {
+/**
+ * Pontos de venda de `extras` (`[{ nome, link? }]` ou strings), na ordem: fica o item com `nome` ou
+ * com `link` (ponto não cadastrado, só o link de compra — gravado pelo wizard como `{ link }`).
+ */
+function salePointEntries(raw: unknown): { nome: string; link: string }[] {
   return (Array.isArray(raw) ? raw : [])
     .map((item) =>
       item && typeof item === 'object'
         ? { nome: clean((item as { nome?: unknown }).nome), link: clean((item as { link?: unknown }).link) }
         : { nome: clean(item), link: '' }
     )
-    .filter((i) => i.nome)
-    .map((i) => i.link || undefined);
+    .filter((i) => i.nome || i.link);
 }
 
 /**
@@ -537,7 +539,8 @@ function listLinks(raw: unknown): (string | undefined)[] {
  * consulta por codigo + no máximo uma por uid):
  * - `venue`: `extras.local_ref` (uid ou código); senão a primeira tag que é `extras.codigo` de outro.
  * - `salePoints`: `extras.pontos_de_venda[].nome` como código; achado → título do anúncio, senão
- *   `humanizeSlug(nome)`; `.link` (URL de compra do ponto) segue em `link`.
+ *   `humanizeSlug(nome)`; `.link` (URL de compra do ponto) segue em `link`. Item só com `link` (lugar
+ *   não cadastrado) vem com `label` vazio e `venue: null`.
  * - `artists`: `extras.artistas[].nome` → `slugify(nome)` como código; senão o nome original.
  * Listas na ordem do formulário. Erro de rede → sem venues (rótulos continuam).
  * Cada campo vem de `extras`; vazio ou ausente → das respostas do formulário (`extraFields`, já
@@ -552,8 +555,8 @@ export async function fetchLinkedRefs(
   const ref = clean(extras.local_ref);
   const localRef = ref && ref !== service.uid ? ref : '';
   const tags = codigoCandidates(serviceTagsOf(service), MAX_ORGANIZER_TAGS);
-  const saleNames = listNames(extras.pontos_de_venda);
-  const saleLinks = listLinks(extras.pontos_de_venda);
+  const sales = salePointEntries(extras.pontos_de_venda);
+  const saleNames = sales.map((p) => p.nome).filter(Boolean);
   const artistNames = listNames(extras.artistas);
   const artistCodes = artistNames.map((n) => slugify(n));
 
@@ -567,10 +570,9 @@ export async function fetchLinkedRefs(
 
   return {
     venue: (localRef ? found.get(localRef) : undefined) ?? tags.map((t) => found.get(t)).find(Boolean) ?? null,
-    salePoints: saleNames.map((name, i) => {
-      const venue = found.get(name) ?? null;
-      const link = saleLinks[i];
-      return { label: venue?.title ?? humanizeSlug(name), venue, ...(link ? { link } : {}) };
+    salePoints: sales.map(({ nome, link }) => {
+      const venue = (nome && found.get(nome)) || null;
+      return { label: venue?.title ?? (nome ? humanizeSlug(nome) : ''), venue, ...(link ? { link } : {}) };
     }),
     artists: artistNames.map((name, i) => {
       const venue = (artistCodes[i] && found.get(artistCodes[i])) || null;

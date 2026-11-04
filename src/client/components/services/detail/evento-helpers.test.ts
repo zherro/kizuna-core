@@ -19,6 +19,7 @@ import {
   parseLocalDate,
   parseNames,
   parseSalePoints,
+  splitSalePoints,
   eventCityFromAddress,
   parseSessionDays,
   parseTickets,
@@ -198,8 +199,31 @@ describe('tags e links', () => {
       { nome: 'casa-x', link: null },
       { nome: 'Sem link', link: null },
       { nome: 'Bilheteria', link: null },
+      { nome: '', link: 'https://x.test/' },
     ]);
+    expect(parseSalePoints([{ link: 'javascript:alert(1)' }])).toEqual([]);
     expect(parseSalePoints(undefined)).toEqual([]);
+  });
+
+  it('splitSalePoints: lugar achado fica; sem lugar com link vira link de compra (sem repetir)', () => {
+    const venue = { uid: 'v1' };
+    const { places, buyLinks } = splitSalePoints(
+      [
+        { label: 'Casa X', venue, link: 'https://a.test' },
+        { label: 'Disk ingresso', venue: null },
+        { label: '', venue: null, link: 'https://compra.test/1' },
+        { label: 'Loja Y', venue: null, link: 'https://compra.test/2' },
+        { label: '', venue: null, link: 'https://compra.test/1' },
+        { label: '', venue: null, link: 'https://geral.test' },
+        { label: '', venue: null },
+      ],
+      'https://geral.test'
+    );
+    expect(places.map((p) => p.label)).toEqual(['Casa X', 'Disk ingresso']);
+    expect(buyLinks).toEqual([
+      { label: '', href: 'https://compra.test/1' },
+      { label: 'Loja Y', href: 'https://compra.test/2' },
+    ]);
   });
 
   it('eventCityFromAddress: trecho final "Cidade/UF"', () => {

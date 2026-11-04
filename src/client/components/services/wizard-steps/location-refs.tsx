@@ -11,7 +11,8 @@ import { Button } from '../../ui/button';
  * venda de ingresso). Busca só nos grupos de `groups` e grava em `services.extras[key]`, no mesmo
  * formato que a tela de detalhe já lê (`resolveServiceRefs`):
  * - um só (`multiple` falso): `extras[key] = "<uid>"` (ex.: `local_ref`);
- * - vários: `extras[key] = [{ nome: "<uid>", link? }]` (ex.: `pontos_de_venda`).
+ * - vários: `extras[key] = [{ nome: "<uid>", link? }]` (ex.: `pontos_de_venda`); com `withLink`, item
+ *   sem lugar vira `{ link }` (lugar não cadastrado).
  * Valores antigos com código (`extras.codigo`, de importadores) continuam válidos.
  */
 export type LocationRefConfig = {
@@ -83,12 +84,19 @@ export function refItems(raw: unknown): LocationRefItem[] {
   return out;
 }
 
-/** O que vai para `extras[key]`: vazios saem; um só vazio vira `null` (apaga). */
+/**
+ * O que vai para `extras[key]`: vazios saem; um só vazio vira `null` (apaga). Com `withLink`, item sem
+ * lugar escolhido mas com link é gravado só com o link (`{ link }`): o ponto de venda não está
+ * cadastrado, mas a página do evento ainda leva à compra.
+ */
 export function refPersistValue(ref: LocationRefConfig, raw: unknown): unknown {
   if (!ref.multiple) return refSingleValue(raw) || null;
   return refItems(raw)
-    .filter((i) => i.nome)
-    .map((i) => (ref.withLink && i.link ? { nome: i.nome, link: i.link } : { nome: i.nome }));
+    .filter((i) => i.nome || (ref.withLink && i.link))
+    .map((i) => {
+      const link = ref.withLink && i.link ? { link: i.link } : {};
+      return i.nome ? { nome: i.nome, ...link } : link;
+    });
 }
 
 export function LocationRefsEditor({

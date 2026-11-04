@@ -17,6 +17,11 @@ describe('location refs', () => {
     expect(refPersistValue({ ...pontos, withLink: false }, [{ nome: 'b', link: 'https://x' }])).toEqual([{ nome: 'b' }]);
   });
 
+  it('lista com link: sem lugar escolhido, o link sozinho é gravado', () => {
+    expect(refPersistValue(pontos, [{ nome: '', link: ' https://compra.example ' }])).toEqual([{ link: 'https://compra.example' }]);
+    expect(refPersistValue({ ...pontos, withLink: false }, [{ nome: '', link: 'https://x' }])).toEqual([]);
+  });
+
   it('valida a config', () => {
     expect(() => validateLocationRefs([local, pontos])).not.toThrow();
     expect(() => validateLocationRefs([{ ...local, groups: [] }])).toThrow(/groups/);
