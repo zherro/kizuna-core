@@ -55,7 +55,7 @@ export function missingAddressFields(
   const zipOptional = rules?.requireZipCode === false;
   return [
     !zipOptional && !a.zipCode?.trim() ? 'CEP' : null,
-    !a.street?.trim() ? 'endereço' : null,
+    !a.street?.trim() ? 'rua' : null,
     !a.number?.trim() ? 'número' : null,
     zipOptional && !(a.city?.trim() && a.state?.trim()) ? 'cidade' : null,
   ].filter((f): f is string => f !== null);

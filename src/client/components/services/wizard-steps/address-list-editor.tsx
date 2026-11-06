@@ -53,8 +53,9 @@ const DEFAULT_LABELS: Required<AddressListLabels> = {
 const FORM_FEATURES = { search: true, modalSearch: true, locationSelection: false, map: false };
 
 /**
- * Lista editável de endereços do serviço (padrão do `PriceTableEditor`): cada linha é um
- * `AddressForm` — que só lê `value` na montagem, por isso a `key` é o `clientId` estável da linha.
+ * Lista editável de endereços do serviço (padrão do `PriceTableEditor`): cada linha é um card com
+ * apelido, principal e o resumo do endereço (`AddressForm` compacto — a edição é no painel). O
+ * `AddressForm` só lê `value` na montagem, por isso a `key` é o `clientId` estável da linha.
  * Exatamente 1 principal: a 1ª adicionada já nasce principal; remover a principal promove a próxima.
  * Estado controlado (`addresses`/`onChange`); a gravação é do `persist` do passo.
  */
@@ -74,6 +75,26 @@ export function AddressListEditor({
 }) {
   const l = { ...DEFAULT_LABELS, ...labels };
   const canAdd = addresses.length < maxAddresses;
+  // Um endereço só (ex.: eventos): não há principal a escolher nem o que remover — fica só o resumo.
+  const single = maxAddresses <= 1;
+  // Linha criada pelo botão "Adicionar" → já abre o painel de edição dela.
+  const [justAdded, setJustAdded] = useState<string | null>(null);
+
+  const renderForm = (address: ServiceAddress, bare: boolean) => (
+    <AddressForm
+      value={toAddressValue(address)}
+      onChange={(next) =>
+        onChange(updateAddress(addresses, address.clientId, fromAddressValue(address, next)))
+      }
+      features={FORM_FEATURES}
+      layout="compact"
+      bare={bare}
+      autoOpen={address.clientId === justAdded}
+      emphasizeCep={requireZipCode}
+      requirePostalCode={requireZipCode}
+      searchLabel={requireZipCode ? l.search : l.searchNoZip}
+    />
+  );
 
   return (
     <div className="space-y-3" data-testid="address-list-editor">
@@ -82,9 +103,13 @@ export function AddressListEditor({
         <p className="text-sm text-muted-foreground">{l.hint}</p>
       </div>
 
-      {addresses.length === 0 ? <p className="text-sm text-muted-foreground">{l.empty}</p> : null}
+      {single && addresses[0] ? (
+        <div key={addresses[0].clientId}>{renderForm(addresses[0], false)}</div>
+      ) : null}
 
-      <ul className="space-y-3">
+      {!single && addresses.length === 0 ? <p className="text-sm text-muted-foreground">{l.empty}</p> : null}
+
+      {single ? null : <ul className="space-y-3">
         {addresses.map((address, index) => (
           <li
             key={address.clientId}
@@ -104,49 +129,47 @@ export function AddressListEditor({
                   onChange(updateAddress(addresses, address.clientId, { label }))
                 }
               />
-              <Button
-                type="button"
-                variant={address.isPrimary ? 'default' : 'outline'}
-                size="sm"
-                className="ml-auto h-8 shrink-0 px-2.5 text-xs"
-                aria-pressed={address.isPrimary}
-                onClick={() => onChange(setPrimaryAddress(addresses, address.clientId))}
-              >
-                <Star className="mr-1 h-3.5 w-3.5" />
-                {address.isPrimary ? l.primary : l.makePrimary}
-              </Button>
+              {address.isPrimary ? (
+                <span className="ml-auto inline-flex h-7 shrink-0 items-center gap-1 rounded-full bg-primary/10 px-2.5 text-xs font-semibold text-primary">
+                  <Star aria-hidden className="h-3.5 w-3.5 fill-current" />
+                  {l.primary}
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  className="ml-auto inline-flex h-8 shrink-0 items-center gap-1 rounded-[var(--ui-radius-control,0.5rem)] px-2 text-xs font-medium text-primary transition-colors hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  onClick={() => onChange(setPrimaryAddress(addresses, address.clientId))}
+                >
+                  <Star aria-hidden className="h-3.5 w-3.5" />
+                  {l.makePrimary}
+                </button>
+              )}
               <Button
                 type="button"
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 shrink-0"
+                className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive"
                 aria-label={l.remove}
                 onClick={() => onChange(removeAddress(addresses, address.clientId))}
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
             </div>
-            <AddressForm
-              value={toAddressValue(address)}
-              onChange={(next) =>
-                onChange(updateAddress(addresses, address.clientId, fromAddressValue(address, next)))
-              }
-              features={FORM_FEATURES}
-              layout="compact"
-              emphasizeCep={requireZipCode}
-              requirePostalCode={requireZipCode}
-              searchLabel={requireZipCode ? l.search : l.searchNoZip}
-            />
+            {renderForm(address, true)}
           </li>
         ))}
-      </ul>
+      </ul>}
 
-      {canAdd ? (
+      {single ? null : canAdd ? (
         <Button
           type="button"
           variant="outline"
           size="sm"
-          onClick={() => onChange(addAddress(addresses, maxAddresses))}
+          onClick={() => {
+            const next = addAddress(addresses, maxAddresses);
+            setJustAdded(next[next.length - 1]?.clientId ?? null);
+            onChange(next);
+          }}
         >
           <Plus className="mr-1 h-4 w-4" />
           {l.add}

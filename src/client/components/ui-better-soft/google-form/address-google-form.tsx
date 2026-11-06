@@ -3,7 +3,7 @@
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 
-import { Crosshair, Loader2, MapPin, Navigation, Search, X } from 'lucide-react';
+import { Crosshair, Loader2, MapPin, Navigation, Plus, Search, X } from 'lucide-react';
 
 import { cn } from '../../../../lib/utils';
 import { SearchableSelect, type SelectOption } from '../../ui/searchable-select';
@@ -92,12 +92,20 @@ type AddressFormProps = {
   className?: string;
 
   /**
-   * `'compact'` shows only the CEP field inline; once it resolves (or the user picks a result
-   * from search), the rest collapses into a one-line summary + "Editar" button that opens the
-   * full field set in an overlay. Cuts how much of the step the address takes up. Defaults to
-   * `'full'` (every field inline, current behaviour).
+   * `'compact'`: na tela fica só o resumo do endereço (ou um card "Adicionar endereço", vazio);
+   * CEP, busca, coordenadas e os campos ficam no painel de edição — lateral no desktop, tela
+   * cheia com rodapé fixo no mobile. `'full'` (padrão): todos os campos na tela.
    */
   layout?: 'full' | 'compact';
+
+  /**
+   * Compacto dentro de um card que já tem borda (ex.: lista de endereços): o resumo sai sem a
+   * própria borda/sombra. Default `false`.
+   */
+  bare?: boolean;
+
+  /** Compacto: abre o painel de edição ao montar (ex.: linha recém-adicionada numa lista). */
+  autoOpen?: boolean;
 
   /** Label for the search trigger. Defaults to "Pesquisar localização". */
   searchLabel?: string;
@@ -145,6 +153,8 @@ export function AddressForm({
   searchLabel = 'Pesquisar localização',
   emphasizeCep = false,
   requirePostalCode = true,
+  bare = false,
+  autoOpen = false,
 }: AddressFormProps) {
   const cepId = useId();
   const features = useMemo(
@@ -191,7 +201,7 @@ export function AddressForm({
   const manualCity = cepFailed;
 
   // Layout compacto: painel lateral onde o endereço é completado (abre sozinho após CEP/coordenadas).
-  const [editOpen, setEditOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(layout === 'compact' && autoOpen);
   // Lista de cidades fora do ar: a cidade vira texto livre, e basta estar preenchida.
   const [cityListFailed, setCityListFailed] = useState(false);
 
@@ -226,23 +236,26 @@ export function AddressForm({
   // UPDATE
   // ============================================================
 
+  // Último valor, fora do ciclo de render: duas atualizações seguidas (CEP e depois os dados dele)
+  // se somam, e o `onChange` do pai roda fora do updater do setState (chamar lá dentro fazia o React
+  // reclamar de "update a component while rendering a different component").
+  const latestRef = useRef(address);
+
   function updateAddress(changes: Partial<AddressValue>) {
-    setAddress((current) => {
-      // Cidade/UF mudaram sem código novo: o IBGE antigo deixa de valer (o salvar descobre de novo).
-      const cityChanged =
-        !('cityIbge' in changes) &&
-        ((changes.city !== undefined && changes.city !== current.city) ||
-          (changes.state !== undefined && changes.state !== current.state));
-      const next = {
-        ...current,
-        ...changes,
-        ...(cityChanged ? { cityIbge: null } : {}),
-      };
-
-      onChange?.(next);
-
-      return next;
-    });
+    const current = latestRef.current;
+    // Cidade/UF mudaram sem código novo: o IBGE antigo deixa de valer (o salvar descobre de novo).
+    const cityChanged =
+      !('cityIbge' in changes) &&
+      ((changes.city !== undefined && changes.city !== current.city) ||
+        (changes.state !== undefined && changes.state !== current.state));
+    const next = {
+      ...current,
+      ...changes,
+      ...(cityChanged ? { cityIbge: null } : {}),
+    };
+    latestRef.current = next;
+    setAddress(next);
+    onChange?.(next);
   }
 
   // ============================================================
@@ -559,7 +572,7 @@ export function AddressForm({
         disabled={disabled}
         aria-expanded={coordsOpen}
         onClick={() => setCoordsOpen((open) => !open)}
-        className="inline-flex items-center gap-1.5 text-xs font-medium text-primary underline-offset-2 hover:underline disabled:pointer-events-none disabled:opacity-50"
+        className="inline-flex min-h-9 items-center gap-1.5 text-xs font-medium text-primary underline-offset-2 hover:underline disabled:pointer-events-none disabled:opacity-50"
       >
         <Crosshair className="h-3.5 w-3.5" />
         {coordsOpen ? 'Fechar latitude e longitude' : 'Sem CEP? Informar latitude e longitude'}
@@ -684,7 +697,7 @@ export function AddressForm({
           cityIbge={address.cityIbge ?? null}
           // CEP achado: cidade e UF são as dele.
           disabled={disabled || (cepStatus === 'found' && Boolean(address.cityIbge))}
-          missing={editOpen && !cityOk}
+          missing={editOpen && resolved && !cityOk}
           onListFailedChange={setCityListFailed}
           onChange={(changes) => updateAddress(changes)}
         />
@@ -737,27 +750,47 @@ export function AddressForm({
   );
 
   if (layout === 'compact') {
-    const notice = cepError ?? coordsError;
+    // CEP achado já vem com o erro dele no próprio campo (role=alert); aqui só o das coordenadas.
+    const notice = coordsError;
+    const hasAddress = resolved || cepFailed || Boolean(address.postalCode);
+    // O card diz o que falta (o Concluir do painel exige a cidade; o passo exige rua e número).
+    const missing = [
+      requirePostalCode && address.postalCode.replace(/\D/g, '').length !== 8 ? 'CEP' : null,
+      !address.street.trim() ? 'rua' : null,
+      !address.number.trim() ? 'número' : null,
+      !cityOk ? 'cidade' : null,
+    ].filter((m): m is string => m !== null);
+    const summaryWarning = missing.length
+      ? `Falta ${missing.length > 1 ? `${missing.slice(0, -1).join(', ')} e ${missing.at(-1)}` : missing[0]}`
+      : null;
     return (
       <>
-        <div className={cn('space-y-3', className)}>
-          {(resolved || cepFailed) && (
+        <div className={className}>
+          {hasAddress ? (
             <AddressSummary
-              summary={buildSearchValue(address) || 'Endereço incompleto'}
-              warning={!cityOk ? 'Cidade não definida — toque para escolher' : null}
+              address={address}
+              warning={summaryWarning}
               disabled={disabled}
+              bare={bare}
               onEdit={() => setEditOpen(true)}
             />
+          ) : (
+            <AddAddressCard
+              hint={requirePostalCode ? 'Pelo CEP ou pesquisando o local' : 'Pesquise o local ou informe o CEP'}
+              disabled={disabled}
+              bare={bare}
+              onAdd={() => setEditOpen(true)}
+            />
           )}
-          {cepField}
-          {searchTrigger(searchLabel)}
-          {coordsField}
         </div>
 
         {editOpen && (
           <BodyPortal>
             <EditAddressDrawer
+              title={hasAddress ? 'Editar endereço' : 'Adicionar endereço'}
+              subtitle={requirePostalCode ? 'Digite o CEP ou pesquise o local' : 'Pesquise o local ou digite o CEP'}
               canFinish={cityOk}
+              showBlocker={resolved}
               onClose={() => setEditOpen(false)}
               notice={
                 notice ? (
@@ -770,8 +803,11 @@ export function AddressForm({
                 ) : null
               }
             >
-              {searchTrigger('Pesquisar endereço ou local')}
-              {detailFields}
+              {/* CEP opcional (ex.: eventos): o caminho mais comum é pesquisar o local, então a busca vem antes. */}
+              {requirePostalCode ? cepField : searchTrigger(searchLabel)}
+              {requirePostalCode ? searchTrigger(searchLabel) : cepField}
+              {coordsField}
+              <div className="space-y-4 border-t border-border pt-4">{detailFields}</div>
             </EditAddressDrawer>
           </BodyPortal>
         )}
@@ -799,39 +835,104 @@ export function AddressForm({
 // COMPACT LAYOUT
 // ============================================================
 
+/** Linhas do resumo, no formato de etiqueta: rua e número / complemento e bairro / CEP e cidade. */
+export function addressSummaryLines(address: Partial<AddressValue>): [string, string, string] {
+  const street = address.street?.trim() ?? '';
+  const number = address.number?.trim() ?? '';
+  const city = address.city?.trim() ?? '';
+  const uf = address.state?.trim() ?? '';
+  const cep = (address.postalCode ?? '').replace(/\D/g, '');
+  const line1 = street ? (number ? `${street}, ${number}` : street) : address.formattedAddress?.trim() || '';
+  const line2 = [address.complement?.trim(), address.neighborhood?.trim()].filter(Boolean).join(', ');
+  const cityUf = [city, uf].filter(Boolean).join(' - ');
+  const line3 = [cep.length === 8 ? `CEP ${formatCep(cep)}` : '', cityUf].filter(Boolean).join(', ');
+  return [line1, line2, line3];
+}
+
 /**
- * `layout="compact"`: na tela ficam só o resumo do endereço, o CEP e o link de latitude/longitude.
- * Digitar o CEP (ou aplicar as coordenadas) abre o painel lateral para completar o resto; o resumo
- * reabre o painel.
+ * `layout="compact"`: na tela fica só este resumo (estilo etiqueta de entrega). Ele inteiro é o
+ * botão que abre o painel de edição.
  */
 function AddressSummary({
-  summary,
+  address,
   warning,
   disabled,
+  bare,
   onEdit,
 }: {
-  summary: string;
+  address: AddressValue;
   warning: string | null;
   disabled?: boolean;
+  bare?: boolean;
   onEdit: () => void;
 }) {
+  const [line1, line2, line3] = addressSummaryLines(address);
   return (
     <button
       type="button"
       disabled={disabled}
       onClick={onEdit}
       className={cn(
-        'flex w-full items-start gap-3 rounded-[var(--ui-radius-card-compact,0.75rem)] border-[length:var(--ui-border-w-card,1px)] bg-[color:var(--ui-card-bg,var(--background))] shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] px-3.5 py-3 text-left transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-50',
-        warning ? 'border-destructive/50' : 'border-border'
+        'group flex w-full items-start gap-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 disabled:pointer-events-none disabled:opacity-50',
+        bare
+          ? 'rounded-[var(--ui-radius-control,0.5rem)]'
+          : 'rounded-[var(--ui-radius-card-compact,0.75rem)] border-[length:var(--ui-border-w-card,1px)] bg-[color:var(--ui-card-bg,var(--background))] px-3.5 py-3 shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] hover:bg-muted/60',
+        !bare && (warning ? 'border-warning' : 'border-border')
       )}
     >
-      <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-      <span className="min-w-0 flex-1">
-        <span className="block text-xs text-muted-foreground">Endereço</span>
-        <span className="mt-0.5 block truncate text-sm font-medium text-foreground">{summary}</span>
-        {warning && <span className="mt-1 block text-xs font-medium text-destructive">{warning}</span>}
+      <span className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/10 text-primary">
+        <MapPin className="h-4 w-4" />
       </span>
-      <span className="shrink-0 text-xs font-medium text-primary">Editar</span>
+      <span className="min-w-0 flex-1 space-y-0.5">
+        <span className="block text-sm font-semibold leading-snug text-foreground [overflow-wrap:anywhere]">
+          {line1 || 'Endereço sem rua'}
+        </span>
+        {line2 && <span className="block text-sm leading-snug text-muted-foreground [overflow-wrap:anywhere]">{line2}</span>}
+        {line3 && <span className="block text-sm leading-snug text-muted-foreground [overflow-wrap:anywhere]">{line3}</span>}
+        {warning && (
+          <span className="mt-1.5 inline-flex rounded-full bg-warning/20 px-2 py-0.5 text-xs font-medium text-foreground">
+            {warning}
+          </span>
+        )}
+      </span>
+      <span className="shrink-0 pt-0.5 text-sm font-medium text-primary group-hover:underline underline-offset-2">
+        Editar
+      </span>
+    </button>
+  );
+}
+
+/** Compacto sem endereço: um card só, que abre o painel. */
+function AddAddressCard({
+  hint,
+  disabled,
+  bare,
+  onAdd,
+}: {
+  hint: string;
+  disabled?: boolean;
+  bare?: boolean;
+  onAdd: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onAdd}
+      className={cn(
+        'flex w-full items-center gap-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 disabled:pointer-events-none disabled:opacity-50',
+        bare
+          ? 'rounded-[var(--ui-radius-control,0.5rem)]'
+          : 'rounded-[var(--ui-radius-card-compact,0.75rem)] border border-dashed border-border px-3.5 py-3 hover:border-primary/60 hover:bg-muted/60'
+      )}
+    >
+      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/10 text-primary">
+        <Plus className="h-4 w-4" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-sm font-semibold text-foreground">Informar endereço</span>
+        <span className="block text-sm text-muted-foreground">{hint}</span>
+      </span>
     </button>
   );
 }
@@ -850,12 +951,19 @@ function BodyPortal({ children }: { children: ReactNode }) {
  * formato do `SearchDrawer`). Rodapé fixo com "Concluir" ao alcance do polegar; ESC e o fundo fecham.
  */
 function EditAddressDrawer({
+  title: initialTitle,
+  subtitle,
   onClose,
   canFinish,
+  showBlocker,
   notice,
   children,
 }: {
+  title: string;
+  subtitle: string;
   onClose: () => void;
+  /** Mostra por que "Concluir" está bloqueado — só depois que há endereço (vazio não é erro). */
+  showBlocker: boolean;
   /** `false`: "Concluir" bloqueado — falta escolher a cidade. */
   canFinish: boolean;
   /** Aviso no topo (CEP não encontrado, consulta fora do ar…). */
@@ -863,6 +971,8 @@ function EditAddressDrawer({
   children: ReactNode;
 }) {
   const [entered, setEntered] = useState(false);
+  // Título de quando abriu: digitar o CEP não troca "Adicionar" por "Editar" no meio da edição.
+  const [title] = useState(initialTitle);
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
 
@@ -895,7 +1005,7 @@ function EditAddressDrawer({
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="Editar endereço"
+        aria-label={title}
         className={cn(
           'absolute inset-y-0 right-0 flex w-full flex-col bg-background shadow-2xl transition-transform duration-300 ease-out motion-reduce:transition-none sm:w-[480px]',
           entered ? 'translate-x-0' : 'translate-x-full'
@@ -903,8 +1013,8 @@ function EditAddressDrawer({
       >
         <header className="flex h-16 shrink-0 items-center justify-between gap-3 border-b border-border px-5">
           <div>
-            <h2 className="text-sm font-semibold text-foreground">Completar endereço</h2>
-            <p className="text-xs text-muted-foreground">Confira os dados e informe o que faltar</p>
+            <h2 className="text-base font-semibold text-foreground">{title}</h2>
+            <p className="text-xs text-muted-foreground">{subtitle}</p>
           </div>
           <button
             type="button"
@@ -915,12 +1025,23 @@ function EditAddressDrawer({
             <X className="h-4 w-4" />
           </button>
         </header>
-        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-5 py-5">
+        <div
+          // Campo focado perto do rodapé (cidade/UF abrem a lista para baixo; no celular o teclado sobe):
+          // traz para o meio da área rolável, senão a lista some atrás do rodapé fixo.
+          onFocus={(event) => {
+            const box = event.currentTarget.getBoundingClientRect();
+            const field = (event.target as HTMLElement).getBoundingClientRect();
+            if (field.bottom > box.top + box.height * 0.55) {
+              event.target.scrollIntoView?.({ block: 'center', behavior: 'smooth' });
+            }
+          }}
+          className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-5 pb-40 pt-5"
+        >
           {notice}
           {children}
         </div>
         <footer className="shrink-0 space-y-2 border-t border-border px-5 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-          {!canFinish && (
+          {!canFinish && showBlocker && (
             <p className="text-center text-xs font-medium text-destructive">Escolha a cidade para concluir.</p>
           )}
           <button
@@ -1114,9 +1235,12 @@ function Field({
   disabled?: boolean;
   onChange?: (value: string) => void;
 }) {
+  // Rótulo ligado ao campo: leitor de tela anuncia "Número", e tocar no rótulo foca o input.
+  const id = useId();
   return (
     <div>
       <label
+        htmlFor={id}
         className="
         mb-1.5 block
         text-xs font-medium
@@ -1127,6 +1251,7 @@ function Field({
       </label>
 
       <input
+        id={id}
         value={value}
         disabled={disabled}
         onChange={(event) => onChange?.(event.target.value)}

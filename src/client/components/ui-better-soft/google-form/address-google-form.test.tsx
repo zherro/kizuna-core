@@ -25,27 +25,46 @@ function stubFetch(routes: { cep?: { status: number; body?: unknown }; cities?: 
   );
 }
 
-describe('AddressForm — compacto: só CEP e resumo na tela', () => {
-  it('vazio: CEP, "Não sei meu CEP" e o link de latitude/longitude — nenhum outro campo', () => {
+describe('AddressForm — compacto: só o resumo na tela', () => {
+  it('vazio: só o card "Informar endereço"; CEP, busca e coordenadas ficam no painel', () => {
     render(<AddressForm layout="compact" searchLabel="Não sei meu CEP" />);
+    expect(screen.queryByText('CEP', { selector: 'label' })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Não sei meu CEP/ })).toBeNull();
+    expect(screen.queryByRole('dialog')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /Informar endereço/ }));
+    expect(screen.getByRole('dialog', { name: 'Adicionar endereço' })).toBeTruthy();
     expect(screen.getByText('CEP', { selector: 'label' })).toBeTruthy();
     expect(screen.getByRole('button', { name: /Não sei meu CEP/ })).toBeTruthy();
     expect(screen.getByRole('button', { name: /latitude e longitude/ })).toBeTruthy();
-    expect(screen.queryByText('Endereço', { selector: 'label' })).toBeNull();
-    expect(screen.queryByRole('dialog')).toBeNull();
+    // vazio não é erro: sem aviso de cidade ainda
+    expect(screen.queryByText('Escolha a cidade para concluir.')).toBeNull();
   });
 
-  it('CEP opcional: mesmo layout compacto, rótulo "CEP (opcional)"', () => {
-    render(<AddressForm layout="compact" requirePostalCode={false} />);
+  it('campos do painel têm nome acessível (rótulo ligado ao input)', () => {
+    render(<AddressForm layout="compact" autoOpen />);
+    for (const name of ['Endereço', 'Número', 'Complemento', 'Bairro']) {
+      expect(screen.getByRole('textbox', { name })).toBeTruthy();
+    }
+  });
+
+  it('CEP opcional: no painel o rótulo é "CEP (opcional)"', () => {
+    render(<AddressForm layout="compact" requirePostalCode={false} autoOpen />);
     expect(screen.getByText('CEP (opcional)', { selector: 'label' })).toBeTruthy();
-    expect(screen.queryByText('Endereço', { selector: 'label' })).toBeNull();
   });
 
-  it('com endereço: mostra o resumo, e ele abre o painel', async () => {
+  it('com endereço: resumo em linhas de etiqueta, e ele abre o painel', async () => {
     stubFetch({ cities: { status: 200, body: CITIES } });
-    render(<AddressForm layout="compact" value={{ street: 'Rua A', city: 'Cuiabá', state: 'MT', cityIbge: '5103403' }} />);
+    render(
+      <AddressForm
+        layout="compact"
+        value={{ street: 'Rua A', number: '10', neighborhood: 'Centro', postalCode: '78048000', city: 'Cuiabá', state: 'MT', cityIbge: '5103403' }}
+      />
+    );
+    expect(screen.getByText('Rua A, 10')).toBeTruthy();
+    expect(screen.getByText('CEP 78048-000, Cuiabá - MT')).toBeTruthy();
+    expect(screen.queryByText('CEP', { selector: 'label' })).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: /Rua A/ }));
-    expect(screen.getByRole('dialog')).toBeTruthy();
+    expect(screen.getByRole('dialog', { name: 'Editar endereço' })).toBeTruthy();
   });
 });
 
@@ -56,7 +75,7 @@ describe('AddressForm — CEP abre o painel lateral', () => {
       cities: { status: 200, body: CITIES },
     });
     const onChange = vi.fn();
-    render(<AddressForm layout="compact" onChange={onChange} />);
+    render(<AddressForm layout="compact" onChange={onChange} autoOpen />);
     fireEvent.change(input('CEP'), { target: { value: '78048-000' } });
     await screen.findByRole('dialog');
     expect(onChange).toHaveBeenLastCalledWith(
@@ -68,7 +87,7 @@ describe('AddressForm — CEP abre o painel lateral', () => {
 
   it('CEP não encontrado: diz isso, abre o painel e exige a cidade', async () => {
     stubFetch({ cep: { status: 404 }, cities: { status: 200, body: CITIES } });
-    render(<AddressForm layout="compact" />);
+    render(<AddressForm layout="compact" autoOpen />);
     fireEvent.change(input('CEP'), { target: { value: '78048000' } });
     expect((await screen.findByRole('alert')).textContent).toMatch(/78048-000 não foi encontrado/);
     expect(screen.getByRole('dialog')).toBeTruthy();
@@ -78,7 +97,7 @@ describe('AddressForm — CEP abre o painel lateral', () => {
 
   it('consulta fora do ar: diz que o serviço não respondeu (não que o CEP não existe)', async () => {
     stubFetch({ cep: { status: 502 } });
-    render(<AddressForm layout="compact" />);
+    render(<AddressForm layout="compact" autoOpen />);
     fireEvent.change(input('CEP'), { target: { value: '78048000' } });
     expect((await screen.findByRole('alert')).textContent).toMatch(/não foi possível consultar/i);
     expect(screen.getByRole('dialog')).toBeTruthy();
@@ -89,7 +108,7 @@ describe('AddressForm — cidade obrigatória na lista', () => {
   it('UF + cidade pesquisável: a cidade escolhida leva o código IBGE e libera o Concluir', async () => {
     stubFetch({ cep: { status: 404 }, cities: { status: 200, body: CITIES } });
     const onChange = vi.fn();
-    render(<AddressForm layout="compact" onChange={onChange} />);
+    render(<AddressForm layout="compact" onChange={onChange} autoOpen />);
     fireEvent.change(input('CEP'), { target: { value: '78048000' } });
     await screen.findByRole('dialog');
     fireEvent.click(screen.getByRole('combobox', { name: 'UF' }));
@@ -113,7 +132,7 @@ describe('AddressForm — cidade obrigatória na lista', () => {
   it('lista de cidades fora do ar: a cidade vira campo de texto (não trava o cadastro)', async () => {
     stubFetch({ cep: { status: 404 }, cities: { status: 502 } });
     const onChange = vi.fn();
-    render(<AddressForm layout="compact" value={{ state: 'MT' }} onChange={onChange} />);
+    render(<AddressForm layout="compact" value={{ state: 'MT' }} onChange={onChange} autoOpen />);
     fireEvent.change(input('CEP'), { target: { value: '78048000' } });
     await screen.findByRole('dialog');
     await waitFor(() => expect(screen.queryByRole('combobox', { name: 'Cidade' })).toBeNull());

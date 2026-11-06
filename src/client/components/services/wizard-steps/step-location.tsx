@@ -194,8 +194,17 @@ export function createStepLocation(profiles?: StepProfiles<LocationProfile>) {
     // Presencial com lista: diz o que falta no endereço principal (senão o botão de avançar
     // fica desabilitado sem nenhuma explicação — ex.: endereço importado sem CEP).
     const primaryAddress = addresses.find((a) => a.isPrimary) ?? addresses[0];
+    // Endereço ainda intocado não é erro: o card "Informar endereço" já convida a preencher.
+    const primaryStarted = Boolean(
+      primaryAddress &&
+        [primaryAddress.zipCode, primaryAddress.street, primaryAddress.number, primaryAddress.city].some((v) => v?.trim())
+    );
+    // Endereço único: o próprio card já diz o que falta — o aviso aqui só repetiria.
+    const singleAddress = resolveMaxAddresses(selected) <= 1;
     const missingAddressFields =
-      isAddresses && primaryAddress && !refFilled ? listMissingFields(primaryAddress, rules) : [];
+      isAddresses && primaryAddress && primaryStarted && !refFilled && !singleAddress
+        ? listMissingFields(primaryAddress, rules)
+        : [];
 
     const handleRefChange = (key: string, v: unknown) => {
       patch({ serviceRefs: { ...(state.serviceRefs ?? {}), [key]: v } });
@@ -309,7 +318,11 @@ export function createStepLocation(profiles?: StepProfiles<LocationProfile>) {
 
         {missingAddressFields.length > 0 ? (
           <StepHint tone="warning">
-            Para continuar, preencha o {missingAddressFields.join(', ')} do endereço principal.
+            Para continuar, complete o endereço: falta{' '}
+            {missingAddressFields.length > 1
+              ? `${missingAddressFields.slice(0, -1).join(', ')} e ${missingAddressFields.at(-1)}`
+              : missingAddressFields[0]}
+            .
           </StepHint>
         ) : null}
 

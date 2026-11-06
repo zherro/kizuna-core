@@ -91,6 +91,17 @@ describe('AddressListEditor', () => {
   });
 });
 
+describe('AddressListEditor — endereço único (maxAddresses 1)', () => {
+  it('só o resumo: sem apelido, principal, remover nem aviso de limite', () => {
+    render(<AddressListEditor addresses={[full({ isPrimary: true })]} onChange={() => {}} maxAddresses={1} />);
+    expect(screen.getAllByTestId('address-form')).toHaveLength(1);
+    expect(screen.queryByText('Principal')).toBeNull();
+    expect(screen.queryByLabelText('Remover endereço')).toBeNull();
+    expect(screen.queryByLabelText('Editar apelido do endereço')).toBeNull();
+    expect(screen.queryByText('Limite de endereços atingido.')).toBeNull();
+  });
+});
+
 describe('AddressListEditor — apelido em tag', () => {
   function Harness({ initial }: { initial: ServiceAddress[] }) {
     const [list, setList] = useState<ServiceAddress[]>(initial);
