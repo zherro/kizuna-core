@@ -40,6 +40,9 @@ export function parseTopupAmount(body: unknown): number | null {
  * Cria a intenção `pending` COM O JWT DO USUÁRIO (a RLS impõe tenant e status) e pede o checkout ao
  * provedor. Não credita nada: só o webhook (service_role) ou o admin lançam saldo.
  */
+// O PostgREST resolve o schema padrão pela 1ª entrada de PGRST_DB_SCHEMAS (em alguns ambientes é `auth`).
+const PUBLIC_PROFILE = { 'Accept-Profile': 'public', 'Content-Profile': 'public' };
+
 export function createCheckoutHandler() {
   return async function POST(request: Request) {
     const session = await getSession();
@@ -63,7 +66,7 @@ export function createCheckoutHandler() {
     // Freio simples contra pedidos em massa: poucos pendentes por vez.
     const pending = await pgrstTable(
       '/payment_intents?status=eq.pending&select=id&limit=' + (MAX_PENDING + 1),
-      { method: 'GET' },
+      { method: 'GET', headers: PUBLIC_PROFILE },
       { auth },
     );
     if (pending.ok && ((await pending.json()) as unknown[]).length >= MAX_PENDING) {
@@ -77,7 +80,7 @@ export function createCheckoutHandler() {
       '/payment_intents?select=id,tenant_id,amount_cents,provider,external_id,status',
       {
         method: 'POST',
-        headers: { Prefer: 'return=representation' },
+        headers: { ...PUBLIC_PROFILE, Prefer: 'return=representation' },
         body: JSON.stringify({ amount_cents: amountCents, provider: provider.id }),
       },
       { auth },
