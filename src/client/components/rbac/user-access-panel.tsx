@@ -1,8 +1,12 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { Wallet } from 'lucide-react';
 import { useToast } from '../../hooks/use-toast';
 import { useAuth } from '../../providers/auth-provider';
+import { fetchAll } from '../marketing/admin/admin-api';
+import { CreditSheet } from '../marketing/admin/credit-sheet';
+import { shortId } from '../marketing/admin/admin-math';
 import { callRbacRpc } from './rbac-rpc';
 import type {
   PermissionRow,
@@ -21,9 +25,30 @@ type Props = {
   groups: PermissionGroup[];
   roleGrants: RoleGrantRow[];
   initialOverrides: UserOverrideRow[];
+  /**
+   * Conta (tenant) que recebe o saldo lançado por esta tela. Só vem preenchido para quem gere o
+   * marketing; sem ele a ação "Adicionar saldo" não aparece.
+   */
+  walletTenantId?: string;
 };
 
-export function UserAccessPanel({ users, roles, groups, roleGrants, initialOverrides }: Props) {
+/** Saldo atual da conta (`vw_wallet_balance`), lido ao abrir o diálogo. null = sem lançamentos. */
+function useWalletBalance(tenantId: string | undefined, enabled: boolean, refresh: number) {
+  const [balance, setBalance] = useState<number | null>(null);
+  useEffect(() => {
+    if (!tenantId || !enabled) return;
+    let cancelled = false;
+    fetchAll<{ balanceCents: number }>('vw_wallet_balance', { filters: { tenant_id: tenantId }, pageSize: 1, maxPages: 1 })
+      .then((rows) => !cancelled && setBalance(rows[0]?.balanceCents ?? null))
+      .catch(() => !cancelled && setBalance(null));
+    return () => {
+      cancelled = true;
+    };
+  }, [tenantId, enabled, refresh]);
+  return balance;
+}
+
+export function UserAccessPanel({ users, roles, groups, roleGrants, initialOverrides, walletTenantId }: Props) {
   const { user: me } = useAuth();
   const { success, error } = useToast();
   const isRoot = me?.is_root === true;
@@ -38,6 +63,9 @@ export function UserAccessPanel({ users, roles, groups, roleGrants, initialOverr
     return map;
   });
   const [busy, setBusy] = useState(false);
+  const [creditOpen, setCreditOpen] = useState(false);
+  const [creditRefresh, setCreditRefresh] = useState(0);
+  const walletBalance = useWalletBalance(walletTenantId, creditOpen, creditRefresh);
 
   const selected = users.find((u) => u.user_id === selectedId) ?? null;
 
@@ -194,6 +222,19 @@ export function UserAccessPanel({ users, roles, groups, roleGrants, initialOverr
                   ))}
               </select>
             </label>
+
+            {walletTenantId ? (
+              <div className="flex flex-col gap-1 text-sm">
+                <span className="font-medium">Saldo de marketing</span>
+                <button
+                  type="button"
+                  onClick={() => setCreditOpen(true)}
+                  className="inline-flex h-9 items-center gap-1.5 rounded-[var(--ui-radius-field,0.375rem)] border border-border bg-background px-3 text-sm transition hover:bg-accent"
+                >
+                  <Wallet className="h-4 w-4" aria-hidden="true" /> Adicionar saldo
+                </button>
+              </div>
+            ) : null}
           </div>
 
           <div className="space-y-5">
@@ -251,6 +292,17 @@ export function UserAccessPanel({ users, roles, groups, roleGrants, initialOverr
             ))}
           </div>
         </section>
+      ) : null}
+
+      {walletTenantId && selected ? (
+        <CreditSheet
+          open={creditOpen}
+          onOpenChange={setCreditOpen}
+          tenantId={walletTenantId}
+          accountLabel={`${selected.display_name || selected.full_name || selected.email || selected.user_id.slice(0, 8)} · conta ${shortId(walletTenantId)} (o saldo é da conta, compartilhado pelos membros)`}
+          balanceCents={walletBalance}
+          onDone={() => setCreditRefresh((n) => n + 1)}
+        />
       ) : null}
     </div>
   );

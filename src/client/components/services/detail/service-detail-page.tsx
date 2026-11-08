@@ -27,6 +27,7 @@ import { ServiceCarouselSection } from './service-carousel-section';
 import { AdTrackingProvider, SourcedTrackView } from '../../../analytics/ad-tracking';
 import type { EventRule } from '../../../../shared/analytics';
 import { DEFAULT_LINKED_TITLE } from '../../../../shared/service-tags';
+import { BoraIndicaBadge } from '../../../marketing/bora-indica-badge';
 
 const BUILT_IN_VARIANTS: Record<string, ServiceDetailVariantComponent> = {
   service: ServiceDetailDefault,
@@ -271,11 +272,16 @@ export function ServiceDetailPage({
             </div>
 
             <div className="mt-6">
-              {service.categoryGroup?.name && (
-                <div className="text-sm font-semibold text-muted-foreground">
-                  {service.categoryGroup.name}
-                </div>
-              )}
+              {/* Selo BORA INDICA: lido no navegador (sem cache). Sem impulsionamento vigente não renderiza nada. */}
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                {service.categoryGroup?.name && (
+                  <div className="text-sm font-semibold text-muted-foreground">
+                    {service.categoryGroup.name}
+                  </div>
+                )}
+                <BoraIndicaBadge serviceUid={service.uid} variant="detail" className="-my-0.5" />
+              </div>
+
               <Typography.H1 className="mt-1" size={{ base: '2xl', sm: '2xl', lg: '3xl' }}>
                 {service.title}
               </Typography.H1>

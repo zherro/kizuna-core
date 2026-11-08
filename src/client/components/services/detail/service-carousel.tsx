@@ -107,6 +107,7 @@ export function ServiceCarousel({
                 subtitleLabel={service.subcategory}
                 imageUrl={service.cover_file_id ? thumbUrl(service.cover_file_id) : null}
                 locationLabel={extra?.locationLabel ?? (showCity ? formatLocationLabel(service) : null)}
+                serviceUid={service.uid}
                 highlighted={service.sponsored}
                 highlightLabel="Patrocinado"
               />

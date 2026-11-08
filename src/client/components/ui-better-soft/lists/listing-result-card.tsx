@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { CalendarDays, MapPin, Sparkles, Star } from 'lucide-react';
 import { cn } from '../../../../lib/utils';
 import { MediaResultCard } from './media-result-card';
+import { BoraIndicaBadge } from '../../../marketing/bora-indica-badge';
 
 /**
  * Cartão de resultado de listagem de marketplace, genérico, em duas densidades:
@@ -70,6 +71,9 @@ export type ListingResultCardProps = {
    * card fica fosco (capa em cinza, corpo mais claro) mas segue clicável e legível; o selo de
    * destaque (`highlighted`) some. Vazio/ausente = card normal. */
   expiredLabel?: string | null;
+  /** uid do anúncio. Com ele o card mostra o selo BORA INDICA enquanto houver impulsionamento vigente
+   * (lido no navegador, sem cache — o HTML do servidor/ISR nunca leva o selo). Sem uid, sem selo. */
+  serviceUid?: string | null;
 };
 
 /** Selo "já venceu" sobre a capa: contraste forte, fora do apagado do resto do card. */
@@ -246,6 +250,7 @@ export function ListingResultCard({
   imagePriority = false,
   className,
   expiredLabel,
+  serviceUid,
 }: Readonly<ListingResultCardProps>) {
   const expired = expiredLabel?.trim() || null;
   // vencido: o destaque (patrocinado) não faz sentido
@@ -265,6 +270,8 @@ export function ListingResultCard({
   const footerTopLine = isEvento ? whenLabel : subtitleLabel;
   const tileAspect = isLugar && !imageAspect ? 'poster' : resolvedImageAspect;
   const containImage = tileAspect === 'poster' && !isLugar;
+  // Vencido não é "indicado": sem selo. O selo some sozinho quando o impulsionamento acaba.
+  const boraBadge = serviceUid && !expired ? <BoraIndicaBadge serviceUid={serviceUid} variant="card" /> : null;
   const typeBadge = tagLabel || groupLabel ? <TypeBadge group={groupLabel} category={tagLabel} /> : null;
   const footerInfo = (
     <div className="flex min-h-8 min-w-0 flex-col justify-end">
@@ -326,10 +333,15 @@ export function ListingResultCard({
               )}
             />
           )}
-          {showHighlight && (
-            <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-semibold text-white">
-              <Sparkles className="h-3 w-3" /> {highlightLabel}
-            </span>
+          {(showHighlight || boraBadge) && (
+            <div className="absolute left-2 top-2 flex max-w-[55%] flex-col items-start gap-1">
+              {boraBadge}
+              {showHighlight && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-semibold text-white">
+                  <Sparkles className="h-3 w-3" /> {highlightLabel}
+                </span>
+              )}
+            </div>
           )}
           {typeBadge && <div className="absolute right-2 top-2">{typeBadge}</div>}
           {isEvento && dateLabel && (
@@ -394,10 +406,15 @@ export function ListingResultCard({
       badgeTopLeft={
         expired ? (
           <ExpiredBadge label={expired} />
-        ) : highlighted ? (
-          <span className="inline-flex items-center gap-1 rounded-full bg-amber-500 px-2 py-0.5 text-[11px] font-semibold text-white">
-            <Sparkles className="h-3 w-3" /> {highlightLabel}
-          </span>
+        ) : highlighted || boraBadge ? (
+          <div className="flex max-w-full flex-col items-start gap-1">
+            {boraBadge}
+            {highlighted && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-500 px-2 py-0.5 text-[11px] font-semibold text-white">
+                <Sparkles className="h-3 w-3" /> {highlightLabel}
+              </span>
+            )}
+          </div>
         ) : undefined
       }
       badgeTopRight={typeBadge ?? undefined}

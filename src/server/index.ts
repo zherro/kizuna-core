@@ -193,3 +193,5 @@ export {
   EMAIL_VERIFY_PURPOSE,
 } from './email-verification';
 export type { EmailCodeRequestOptions, EmailVerificationEmailInput } from './email-verification';
+
+export * from './marketing';

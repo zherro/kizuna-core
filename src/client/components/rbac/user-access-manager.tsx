@@ -1,3 +1,4 @@
+import { getSession } from '../../../server';
 import { PageHeader } from '../ui-better-soft/headers/page-header';
 import {
   getPermissionsCatalog,
@@ -29,6 +30,11 @@ export async function UserAccessManagerScreen() {
     getRoleGrants(),
   ]);
 
+  // "Adicionar saldo": só quem pode gerir marketing (root passa sempre). A conta que recebe o
+  // crédito é o tenant desta tela; o lançamento é INSERT direto em `wallet_ledger` (RLS decide).
+  const session = await getSession();
+  const canCredit = session?.is_root === true || session?.perms?.marketing?.manage === true;
+
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8 md:px-6">
       <PageHeader
@@ -43,6 +49,7 @@ export async function UserAccessManagerScreen() {
         groups={groupPermissions(permissions)}
         roleGrants={roleGrants}
         initialOverrides={overrides}
+        walletTenantId={canCredit ? session?.tenant_id : undefined}
       />
     </div>
   );

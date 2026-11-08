@@ -1,6 +1,7 @@
 import type { ComponentType } from 'react';
 import { RolesManagerScreen } from '../rbac/roles-manager';
 import { AdsScreen } from './ads-screen';
+import { MarketingAdminScreen } from '../marketing/admin/marketing-admin-screen';
 import { PluginsScreen } from './plugins-screen';
 import { RootAccessLogScreen } from './root-access-log-screen';
 import { StorageScreen } from './storage-screen';
@@ -36,6 +37,8 @@ export const ROOT_SCREEN_REGISTRY: Record<string, RootScreenEntry> = {
   ia: { title: 'Inteligência artificial', group: 'root', component: null },
   storage: { title: 'Storage e imagens', group: 'root', component: StorageScreen },
   ads: { title: 'Publicidade', group: 'root', component: AdsScreen },
+  // Plugin `marketing`: saldo dos anunciantes, impulsionamentos, banners e métricas (só RLS + consulta direta).
+  marketing: { title: 'Marketing', group: 'root', component: MarketingAdminScreen },
   'root-access-log': {
     title: 'Log de acesso root',
     group: 'security',

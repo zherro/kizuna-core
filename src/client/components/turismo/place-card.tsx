@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Bed, Camera, MapPin, UtensilsCrossed, type LucideIcon } from 'lucide-react';
 import { faixaLabel } from './turismo-labels';
 import { FOCUS_RING, TurismoMedia } from './turismo-media';
+import { BoraIndicaBadge } from '../../marketing/bora-indica-badge';
 
 export type TurismoPlaceItem = {
   href: string;
@@ -17,6 +18,8 @@ export type TurismoPlaceItem = {
   regiao?: string | null;
   address?: string | null;
   photo?: string | null;
+  /** uid do anúncio (quando o lugar vem de um anúncio): habilita o selo BORA INDICA do impulsionamento vigente. */
+  serviceUid?: string | null;
 };
 
 const TIPO_ICON: Record<string, LucideIcon> = { dormir: Bed, comer: UtensilsCrossed, atracao: Camera };
@@ -34,6 +37,11 @@ export function PlaceCard({ item }: { item: TurismoPlaceItem }) {
           <span className="absolute left-3 top-3 inline-flex max-w-[80%] items-center rounded-full bg-foreground/85 px-2.5 py-1 text-xs font-bold leading-none text-background">
             <span className="truncate">{item.kicker}</span>
           </span>
+        ) : null}
+        {item.serviceUid ? (
+          <div className="absolute bottom-3 left-3">
+            <BoraIndicaBadge serviceUid={item.serviceUid} variant="card" />
+          </div>
         ) : null}
         {item.faixaPreco ? (
           <span

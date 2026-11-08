@@ -167,11 +167,13 @@ export async function ensureServiceTaxonomy(service: ServiceRecord): Promise<Ser
 }
 
 async function fetchService(uid: string): Promise<ServiceRecord | null> {
+  // Sem `.catch`: falha do PostgREST precisa propagar. O `unstable_cache` de `loadAd` não guarda
+  // exceção, mas guardaria um `null` (404) por 5 min se engolíssemos o erro aqui.
   const services = await serverFetchResource<ServiceRecord>(
     'services',
     { uid, active: 'true', status: 'active' },
     { auth: null, limit: 1 }
-  ).catch(() => []);
+  );
   return services[0] ?? null;
 }
 

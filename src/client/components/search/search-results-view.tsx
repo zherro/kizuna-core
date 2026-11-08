@@ -14,6 +14,13 @@ import type { ServiceResult } from './search-types';
 import { expiredLabelFor, type ExpiredByGroup } from './expired';
 import { formatLocationLabel } from './format-location-label';
 import { serviceHref } from '../../../shared/city-routing/city-slug';
+import { SponsoredStrip, interleaveSponsored, usePromotedBoosted } from '../../marketing/sponsored-strip';
+
+/** Quantos impulsionados a faixa "Indicados pelo Bora" mostra de uma vez. */
+const SPONSORED_MAX = 3;
+/** Na trilha horizontal (celular): 1 impulsionado a cada 3 cards. */
+const SPONSORED_EVERY_STRIP = 3;
+const uidOfResult = (r: ServiceResult) => r.uid;
 
 // Colunas com a largura do card do carrossel (`RESULT_CARD_WIDTH`, ~6 por tela): o card da busca tem
 // a mesma proporção do da home e do detalhe. No celular, 1 coluna cheia.
@@ -83,6 +90,7 @@ function toCardProps(r: ServiceResult, detailConfig?: ServiceDetailConfig | null
     subtitleLabel: r.subcategory,
     imageUrl: r.cover_file_id ? `/api/public/storage/files/${r.cover_file_id}/content?size=thumb` : null,
     locationLabel: formatLocationLabel(r),
+    serviceUid: r.uid,
     highlighted: r.sponsored,
     highlightLabel: 'Patrocinado',
     providerName: r.provider_name,
@@ -136,6 +144,10 @@ export function SearchResultsView({
   source = 'search',
   sponsoredSlot = null,
 }: Props) {
+  // Impulsionados (consulta direta, sem cache, só no navegador) entre os resultados JÁ carregados:
+  // sorteados uma vez por montagem e promovidos. Antes da consulta voltar, `promoted` é vazio e a
+  // lista é a de sempre — o primeiro render bate com o do servidor.
+  const { promoted, rest } = usePromotedBoosted(results, uidOfResult, SPONSORED_MAX);
   const card = (r: ServiceResult, variant: 'strip' | 'grid') => {
     const item = <ListingResultCard key={r.uid} {...toCardProps(r, serviceDetailConfig)} expiredLabel={expiredLabelFor(expiredByGroup, r.category_group_slug, r.expires_at)} groupLabel={groupNameOf?.(r.category_group_slug) ?? null} href={withSource(serviceHref(r), source)} variant={variant} />;
     if (!impressionRule) return item;
@@ -251,7 +263,7 @@ export function SearchResultsView({
       <div aria-busy={refreshing} className={busy}>
         {notice}
         <div className="flex gap-3 overflow-x-auto pb-2">
-          {results.map((r) => card(r, 'strip'))}
+          {interleaveSponsored(rest, promoted, SPONSORED_EVERY_STRIP, uidOfResult).map((r) => card(r, 'strip'))}
         </div>
       </div>
     );
@@ -268,10 +280,16 @@ export function SearchResultsView({
           {refreshing ? 'Atualizando…' : `${results.length} resultado(s)`}
         </span>
       </div>
+      <SponsoredStrip
+        items={promoted}
+        keyOf={uidOfResult}
+        renderItem={(r) => card(r, 'grid')}
+        listClassName={GRID_CLASS}
+      />
       <div className={GRID_CLASS}>
-        {results.slice(0, 3).map((r) => card(r, 'grid'))}
+        {rest.slice(0, 3).map((r) => card(r, 'grid'))}
         {sponsoredSlot ? <div className="empty:hidden">{sponsoredSlot}</div> : null}
-        {results.slice(3).map((r) => card(r, 'grid'))}
+        {rest.slice(3).map((r) => card(r, 'grid'))}
       </div>
       {hasMore && onLoadMore && (
         <div className="mt-6 flex justify-center">

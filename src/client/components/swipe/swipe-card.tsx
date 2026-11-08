@@ -6,6 +6,7 @@ import type { ServiceResult } from '../search/search-types';
 import { formatLocationLabel } from '../search/format-location-label';
 import { cardPriceParts } from '../services/service-helpers';
 import { coverUrl } from './swipe-cover';
+import { BoraIndicaBadge } from '../../marketing/bora-indica-badge';
 
 export { coverUrl };
 
@@ -70,11 +71,15 @@ export const SwipeCard = forwardRef<HTMLElement, Props>(function SwipeCard(
       </span>
 
       <div className="pointer-events-none absolute bottom-0 left-0 right-0 p-5">
-        {item.category ? (
-          <span className="rounded-full bg-background/90 px-2.5 py-1 text-xs font-semibold text-foreground">
-            {item.category}
-          </span>
-        ) : null}
+        {/* O selo fica junto da categoria (embaixo): o topo é dos carimbos "Curtir"/"Passar" do arraste. */}
+        <div className="flex flex-wrap items-center gap-2">
+          <BoraIndicaBadge serviceUid={item.uid} variant="card" />
+          {item.category ? (
+            <span className="rounded-full bg-background/90 px-2.5 py-1 text-xs font-semibold text-foreground">
+              {item.category}
+            </span>
+          ) : null}
+        </div>
         <h2 className="mt-3 font-serif text-2xl font-bold text-background">{item.title}</h2>
         <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-background/90">
           <span className="font-semibold">{priceLabel(item)}</span>
