@@ -361,3 +361,12 @@ const extra = variantCardProps(variantId, { startingPrice, priceUnit, free, star
 ```
 
 See the "Listing Result Card" entry in the showcase.
+
+## Blocos de captação (`client/components/landing`)
+
+Blocos para páginas de apresentação que levam o visitante ao WhatsApp (ex.: `/anuncie` do Bora):
+`LandingHero` (único h1), `LandingPoints` (problema/benefícios/pilares, `highlightLast` destaca a
+resposta), `LandingSteps`, `LandingPoster`, `LandingLinkCards`, `LandingCta`, `WhatsAppButton` e
+`LandingStickyCta` (botão fixo só no celular, some quando o botão do hero ou o bloco final aparece).
+`whatsappLink(numero, mensagem)` monta o `wa.me` e, sem número, não gera link quebrado. Só texto e
+props: o conteúdo e a rota ficam no projeto. Cores vêm dos tokens do tema (`primary`, `accent`).
