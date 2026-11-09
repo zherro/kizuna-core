@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { MessageCircle } from 'lucide-react';
+import { MessageCircle, type LucideIcon } from 'lucide-react';
 
 export const FOCUS_RING =
   'outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background';
@@ -35,17 +35,20 @@ export function LandingSection({
   );
 }
 
-/** Botão do WhatsApp (link `wa.me`). Cor do tema com o texto de contraste; alvo de toque ≥ 48px. */
+/** Botão de contato (WhatsApp por padrão, link `wa.me`; serve também para `mailto:`). Cor do tema com o texto de contraste; alvo de toque ≥ 48px. */
 export function WhatsAppButton({
   href,
   label = 'Falar no WhatsApp',
   variant = 'solid',
+  icon: Icon = MessageCircle,
   className = '',
   ...rest
 }: {
   href: string;
   label?: string;
   variant?: 'solid' | 'soft';
+  /** Ícone do botão (padrão: balão do WhatsApp). */
+  icon?: LucideIcon;
   className?: string;
 } & Omit<React.AnchorHTMLAttributes<HTMLAnchorElement>, 'href' | 'className' | 'children'>) {
   const tone =
@@ -60,7 +63,7 @@ export function WhatsAppButton({
       className={`inline-flex min-h-12 items-center justify-center gap-2 rounded-full px-6 text-base font-bold motion-safe:transition ${tone} ${FOCUS_RING} ${className}`}
       {...rest}
     >
-      <MessageCircle aria-hidden="true" className="h-5 w-5 shrink-0" />
+      <Icon aria-hidden="true" className="h-5 w-5 shrink-0" />
       {label}
     </a>
   );
