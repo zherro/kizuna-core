@@ -94,9 +94,12 @@ describe('callback em popup', () => {
     const script = /<script>([\s\S]*)<\/script>/.exec(await res.text())?.[1] ?? '';
     const replace = vi.fn();
     const close = vi.fn(); // o Chrome recusa: a janela continua aberta
-    const nodes: Record<string, { textContent: string; hidden: boolean; onclick?: () => void }> = {
-      'k-msg': { textContent: 'Entrando…', hidden: false },
-      'k-close': { textContent: '', hidden: true },
+    type Node = { textContent: string; href?: string; style: { display: string }; onclick?: () => void };
+    const nodes: Record<string, Node> = {
+      'k-msg': { textContent: 'Entrando…', style: { display: '' } },
+      'k-actions': { textContent: '', style: { display: 'none' } },
+      'k-close': { textContent: '', style: { display: '' } },
+      'k-go': { textContent: '', href: '/', style: { display: '' } },
     };
     class FakeChannel {
       onmessage: ((e: { data: unknown }) => void) | null = null;
@@ -123,12 +126,16 @@ describe('callback em popup', () => {
     expect(close).toHaveBeenCalled();
     expect(replace).not.toHaveBeenCalled();
     expect(nodes['k-msg'].textContent).toBe('Pronto, você entrou. Pode fechar esta janela.');
-    expect(nodes['k-close'].hidden).toBe(false);
+    expect(nodes['k-actions'].style.display).toBe('flex');
+    expect(nodes['k-go'].style.display).toBe('none');
   });
 
-  it('ninguém confirmou (sem aba de origem): a própria janela segue para o destino', async () => {
-    const { replace } = await runPopupScript(false);
-    expect(replace).toHaveBeenCalledWith('/descobrir');
+  it('ninguém confirmou (aviso não chegou ou sem aba de origem): não abre o site sozinha, oferece "Continuar no site"', async () => {
+    const { replace, nodes } = await runPopupScript(false);
+    expect(replace).not.toHaveBeenCalled();
+    expect(nodes['k-msg'].textContent).toBe('Pronto, você entrou. Pode fechar esta janela.');
+    expect(nodes['k-go'].style.display).toBe('');
+    expect(nodes['k-go'].href).toBe('/descobrir');
   });
 
   it('cancelado: avisa erro e o fallback é a própria página', async () => {
@@ -138,7 +145,7 @@ describe('callback em popup', () => {
     );
     const html = await res.text();
     expect(html).toContain('"ok":false,"error":"cancelado"');
-    expect(html).toContain('location.replace("/descobrir")');
+    expect(html).toContain('go.href = "/descobrir"');
   });
 
   it('sem popup continua sendo redirect', async () => {

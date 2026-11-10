@@ -8,6 +8,8 @@ const POPUP_MESSAGE = 'kizuna:oauth';
 const POPUP_ACK = 'kizuna:oauth:ack';
 /** Até quando esta aba fica esperando o login na janela (depois, para de olhar). */
 const WAIT_MS = 10 * 60 * 1000;
+/** De quanto em quanto tempo pergunta ao servidor se o login na janela já terminou. */
+const POLL_MS = 2000;
 const AUTH_PAGES = new Set(['/login', '/registre-se']);
 
 type PopupMessage = { type: typeof POPUP_MESSAGE; ok: boolean; error?: string };
@@ -81,6 +83,7 @@ export function startOAuthLogin(providerId: string, returnTo?: string): void {
     window.clearInterval(watch);
     window.removeEventListener('message', onWindowMessage);
     window.removeEventListener('focus', checkSession);
+    document.removeEventListener('visibilitychange', checkSession);
     if (msg.ok) goAfterLogin(target);
     // Cancelou: a pessoa continua onde estava.
     else if (msg.error && msg.error !== 'cancelado') goToLoginError(msg.error, target);
@@ -89,8 +92,9 @@ export function startOAuthLogin(providerId: string, returnTo?: string): void {
     Boolean(data) && (data as PopupMessage).type === POPUP_MESSAGE;
 
   // Plano B, sem depender de mensagem: o Chrome isola a janela ao passar pelas páginas do Google
-  // (COOP) e aí `window.opener` some e, às vezes, o aviso não chega. A sessão é do site inteiro,
-  // então, quando a janela fecha ou a pessoa volta para esta aba, basta perguntar se já entrou.
+  // (COOP) e aí `window.opener` some, `popup.closed` vira true e o aviso pode não chegar. A sessão é
+  // do site inteiro, então esta aba pergunta ao servidor se já entrou: a cada POLL_MS depois que
+  // perde a janela de vista, e quando a pessoa volta para esta aba.
   let checking = false;
   async function checkSession() {
     if (done || checking) return;
@@ -100,7 +104,7 @@ export function startOAuthLogin(providerId: string, returnTo?: string): void {
       const data = (await res.json().catch(() => null)) as { user?: unknown } | null;
       if (data?.user) finish({ type: POPUP_MESSAGE, ok: true });
     } catch {
-      // rede: tenta de novo no próximo foco
+      // rede: tenta de novo na próxima rodada
     } finally {
       checking = false;
     }
@@ -111,17 +115,19 @@ export function startOAuthLogin(providerId: string, returnTo?: string): void {
   }
   window.addEventListener('message', onWindowMessage);
   window.addEventListener('focus', checkSession);
-  let popupClosed = false;
+  document.addEventListener('visibilitychange', checkSession);
+  let lastPoll = 0;
   const watch = window.setInterval(() => {
     if (done) return;
     if (Date.now() > stopAt) {
       window.clearInterval(watch);
       window.removeEventListener('focus', checkSession);
+      document.removeEventListener('visibilitychange', checkSession);
       return;
     }
-    // `closed` também vira true quando o Chrome isola a janela — por isso só consulta, sem desistir.
-    if (!popupClosed && popup.closed) {
-      popupClosed = true;
+    // `closed` também vira true quando o Chrome isola a janela — por isso consulta, sem desistir.
+    if (popup.closed && Date.now() - lastPoll >= POLL_MS) {
+      lastPoll = Date.now();
       void checkSession();
     }
   }, 500);

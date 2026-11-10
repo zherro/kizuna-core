@@ -82,9 +82,10 @@ function inlineJson(value: unknown): string {
 }
 
 /**
- * Página que a janela popup mostra no fim: avisa a aba de origem e fecha. Se não conseguir fechar
- * (ou não houver aba de origem), segue para `fallback` — a pessoa nunca fica numa tela em branco.
- * BroadcastChannel porque a página do Google (COOP) pode cortar o `window.opener`.
+ * Página que a janela popup mostra no fim: avisa a aba de origem e tenta fechar. Nunca abre o site
+ * aqui dentro sozinha — se não fechar, mostra "Pode fechar esta janela" e um link "Continuar no site"
+ * (para quem não tem aba de origem, ex.: celular). A aba de origem não depende deste aviso: ela
+ * também consulta a sessão (oauth-client.ts). BroadcastChannel porque o Google (COOP) corta o opener.
  */
 function popupResultPage(
   message: { ok: true } | { ok: false; error: string },
@@ -95,7 +96,10 @@ function popupResultPage(
 <body style="font-family:system-ui,sans-serif;display:grid;place-items:center;min-height:90vh;color:#555">
 <div style="text-align:center;max-width:22rem;padding:1rem">
 <p id="k-msg" style="font-size:1rem;margin:0 0 1rem">Entrando…</p>
-<button id="k-close" type="button" hidden style="font:inherit;padding:.6rem 1.2rem;border-radius:.5rem;border:1px solid #ccc;background:#fff;cursor:pointer">Fechar esta janela</button>
+<div id="k-actions" style="display:none;flex-direction:column;gap:.6rem;align-items:center">
+<button id="k-close" type="button" style="font:inherit;padding:.6rem 1.2rem;border-radius:.5rem;border:1px solid #ccc;background:#fff;cursor:pointer">Fechar esta janela</button>
+<a id="k-go" href="/" style="color:#555;font-size:.9rem">Continuar no site</a>
+</div>
 </div>
 <script>
 (function () {
@@ -103,10 +107,10 @@ function popupResultPage(
   var ackType = ${inlineJson(POPUP_ACK)};
   var acked = false;
   var bc = null;
-  // A aba de origem confirma o recebimento (ack). Sem ack, não há quem continue o login: a própria
-  // janela segue para o destino. Com ack, ela fecha — e, se o navegador não deixar (o Chrome isola a
-  // janela ao passar pelas páginas do Google e aí recusa o window.close), diz que já pode fechar, em
-  // vez de abrir o painel aqui dentro.
+  // A aba de origem confirma o recebimento (ack). Com ou sem ack, a janela tenta fechar; se o
+  // navegador não deixar (o Chrome isola a janela ao passar pelas páginas do Google e aí recusa o
+  // window.close), mostra o resultado e os botões — nunca abre o painel aqui dentro, porque a aba
+  // de origem segue sozinha ao ver a sessão. Sem ack, oferece "Continuar no site" (ex.: celular).
   try {
     bc = new BroadcastChannel(msg.type);
     bc.onmessage = function (e) { if (e.data && e.data.type === ackType) acked = true; };
@@ -116,13 +120,14 @@ function popupResultPage(
   setTimeout(function () { window.close(); }, 100);
   setTimeout(function () {
     if (bc) { try { bc.close(); } catch (e) {} }
-    if (!acked) { location.replace(${inlineJson(fallback)}); return; }
     document.getElementById('k-msg').textContent = ${inlineJson(
       message.ok ? 'Pronto, você entrou. Pode fechar esta janela.' : 'Não foi possível entrar. Pode fechar esta janela.'
     )};
-    var b = document.getElementById('k-close');
-    b.hidden = false;
-    b.onclick = function () { window.close(); };
+    document.getElementById('k-close').onclick = function () { window.close(); };
+    var go = document.getElementById('k-go');
+    go.href = ${inlineJson(fallback)};
+    go.style.display = acked ? 'none' : '';
+    document.getElementById('k-actions').style.display = 'flex';
   }, 1500);
 })();
 </script></body></html>`;

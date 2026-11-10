@@ -57,6 +57,18 @@ describe('startOAuthLogin — popup', () => {
     expect(assign).toHaveBeenCalledWith('/painel');
   });
 
+  it('janela isolada logo no Google e o login termina depois: a aba segue sozinha, sem foco', async () => {
+    startOAuthLogin('google', '/painel');
+    popup.closed = true; // COOP: a aba perde a janela de vista antes do login
+    vi.advanceTimersByTime(600);
+    await flush();
+    expect(assign).not.toHaveBeenCalled();
+    me = { user: { id: 'u1' } }; // a pessoa termina o login na janela
+    vi.advanceTimersByTime(2500);
+    await flush();
+    expect(assign).toHaveBeenCalledWith('/painel');
+  });
+
   it('volta o foco para a aba com a sessão ativa: segue para o destino', async () => {
     startOAuthLogin('google', '/painel');
     me = { user: { id: 'u1' } };
