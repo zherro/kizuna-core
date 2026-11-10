@@ -4,6 +4,10 @@ import { sanitizeReturnTo } from '../../../server/app-url';
 
 /** Mesmo canal/tipo que o callback do servidor usa (oauth-handlers.ts → POPUP_MESSAGE). */
 const POPUP_MESSAGE = 'kizuna:oauth';
+/** Resposta desta aba à janela: "recebi" (oauth-handlers.ts → POPUP_ACK). */
+const POPUP_ACK = 'kizuna:oauth:ack';
+/** Até quando esta aba fica esperando o login na janela (depois, para de olhar). */
+const WAIT_MS = 10 * 60 * 1000;
 const AUTH_PAGES = new Set(['/login', '/registre-se']);
 
 type PopupMessage = { type: typeof POPUP_MESSAGE; ok: boolean; error?: string };
@@ -63,11 +67,20 @@ export function startOAuthLogin(providerId: string, returnTo?: string): void {
 
   let done = false;
   let channel: BroadcastChannel | null = null;
+  const stopAt = Date.now() + WAIT_MS;
   const finish = (msg: PopupMessage) => {
     if (done) return;
     done = true;
+    // Ack antes de fechar o canal: a janela só fecha/avisa "pode fechar" se souber que alguém recebeu.
+    try {
+      channel?.postMessage({ type: POPUP_ACK });
+    } catch {
+      // canal já fechado
+    }
     channel?.close();
+    window.clearInterval(watch);
     window.removeEventListener('message', onWindowMessage);
+    window.removeEventListener('focus', checkSession);
     if (msg.ok) goAfterLogin(target);
     // Cancelou: a pessoa continua onde estava.
     else if (msg.error && msg.error !== 'cancelado') goToLoginError(msg.error, target);
@@ -75,10 +88,43 @@ export function startOAuthLogin(providerId: string, returnTo?: string): void {
   const isPopupMessage = (data: unknown): data is PopupMessage =>
     Boolean(data) && (data as PopupMessage).type === POPUP_MESSAGE;
 
+  // Plano B, sem depender de mensagem: o Chrome isola a janela ao passar pelas páginas do Google
+  // (COOP) e aí `window.opener` some e, às vezes, o aviso não chega. A sessão é do site inteiro,
+  // então, quando a janela fecha ou a pessoa volta para esta aba, basta perguntar se já entrou.
+  let checking = false;
+  async function checkSession() {
+    if (done || checking) return;
+    checking = true;
+    try {
+      const res = await fetch('/api/auth/me', { credentials: 'same-origin', cache: 'no-store' });
+      const data = (await res.json().catch(() => null)) as { user?: unknown } | null;
+      if (data?.user) finish({ type: POPUP_MESSAGE, ok: true });
+    } catch {
+      // rede: tenta de novo no próximo foco
+    } finally {
+      checking = false;
+    }
+  }
+
   function onWindowMessage(event: MessageEvent) {
     if (event.origin === window.location.origin && isPopupMessage(event.data)) finish(event.data);
   }
   window.addEventListener('message', onWindowMessage);
+  window.addEventListener('focus', checkSession);
+  let popupClosed = false;
+  const watch = window.setInterval(() => {
+    if (done) return;
+    if (Date.now() > stopAt) {
+      window.clearInterval(watch);
+      window.removeEventListener('focus', checkSession);
+      return;
+    }
+    // `closed` também vira true quando o Chrome isola a janela — por isso só consulta, sem desistir.
+    if (!popupClosed && popup.closed) {
+      popupClosed = true;
+      void checkSession();
+    }
+  }, 500);
   try {
     channel = new BroadcastChannel(POPUP_MESSAGE);
     channel.onmessage = (event) => {

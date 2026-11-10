@@ -37,6 +37,8 @@ const FLOW_TTL_SEC = 600;
 const LOGIN_PATH = '/login';
 /** Canal/tipo da mensagem que a janela popup manda para a aba que abriu o login. */
 const POPUP_MESSAGE = 'kizuna:oauth';
+/** Resposta da aba de origem no mesmo canal: "recebi, pode fechar" (oauth-client.ts → POPUP_ACK). */
+const POPUP_ACK = 'kizuna:oauth:ack';
 
 function jwtSecret(): string {
   const secret = process.env.PGRST_JWT_SECRET || process.env.JWT_SECRET;
@@ -91,14 +93,37 @@ function popupResultPage(
   const html = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1"><title>Entrando…</title></head>
 <body style="font-family:system-ui,sans-serif;display:grid;place-items:center;min-height:90vh;color:#555">
-<p>Entrando…</p>
+<div style="text-align:center;max-width:22rem;padding:1rem">
+<p id="k-msg" style="font-size:1rem;margin:0 0 1rem">Entrando…</p>
+<button id="k-close" type="button" hidden style="font:inherit;padding:.6rem 1.2rem;border-radius:.5rem;border:1px solid #ccc;background:#fff;cursor:pointer">Fechar esta janela</button>
+</div>
 <script>
 (function () {
   var msg = ${inlineJson({ type: POPUP_MESSAGE, ...message })};
-  try { var bc = new BroadcastChannel(msg.type); bc.postMessage(msg); bc.close(); } catch (e) {}
+  var ackType = ${inlineJson(POPUP_ACK)};
+  var acked = false;
+  var bc = null;
+  // A aba de origem confirma o recebimento (ack). Sem ack, não há quem continue o login: a própria
+  // janela segue para o destino. Com ack, ela fecha — e, se o navegador não deixar (o Chrome isola a
+  // janela ao passar pelas páginas do Google e aí recusa o window.close), diz que já pode fechar, em
+  // vez de abrir o painel aqui dentro.
+  try {
+    bc = new BroadcastChannel(msg.type);
+    bc.onmessage = function (e) { if (e.data && e.data.type === ackType) acked = true; };
+    bc.postMessage(msg);
+  } catch (e) {}
   try { if (window.opener && window.opener !== window) window.opener.postMessage(msg, location.origin); } catch (e) {}
   setTimeout(function () { window.close(); }, 100);
-  setTimeout(function () { location.replace(${inlineJson(fallback)}); }, 1500);
+  setTimeout(function () {
+    if (bc) { try { bc.close(); } catch (e) {} }
+    if (!acked) { location.replace(${inlineJson(fallback)}); return; }
+    document.getElementById('k-msg').textContent = ${inlineJson(
+      message.ok ? 'Pronto, você entrou. Pode fechar esta janela.' : 'Não foi possível entrar. Pode fechar esta janela.'
+    )};
+    var b = document.getElementById('k-close');
+    b.hidden = false;
+    b.onclick = function () { window.close(); };
+  }, 1500);
 })();
 </script></body></html>`;
   return new NextResponse(html, {

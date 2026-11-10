@@ -85,6 +85,52 @@ describe('callback em popup', () => {
     expect(() => new Function(script)).not.toThrow();
   });
 
+  /** Roda o script da página com navegador falso: `ack` = a aba de origem respondeu. */
+  async function runPopupScript(ack: boolean) {
+    const res = await createOAuthCallbackHandler(okRpc)(
+      callback('state=st&code=c', flowCookie({ m: 'popup' })),
+      ctx
+    );
+    const script = /<script>([\s\S]*)<\/script>/.exec(await res.text())?.[1] ?? '';
+    const replace = vi.fn();
+    const close = vi.fn(); // o Chrome recusa: a janela continua aberta
+    const nodes: Record<string, { textContent: string; hidden: boolean; onclick?: () => void }> = {
+      'k-msg': { textContent: 'Entrando…', hidden: false },
+      'k-close': { textContent: '', hidden: true },
+    };
+    class FakeChannel {
+      onmessage: ((e: { data: unknown }) => void) | null = null;
+      postMessage() {
+        if (ack) queueMicrotask(() => this.onmessage?.({ data: { type: 'kizuna:oauth:ack' } }));
+      }
+      close() {}
+    }
+    const timers: Array<() => void> = [];
+    new Function('BroadcastChannel', 'window', 'location', 'document', 'setTimeout', script)(
+      FakeChannel,
+      { opener: null, close },
+      { origin: 'http://localhost:3000', replace },
+      { getElementById: (id: string) => nodes[id] },
+      (fn: () => void) => timers.push(fn)
+    );
+    await Promise.resolve();
+    timers.forEach((fn) => fn());
+    return { replace, close, nodes };
+  }
+
+  it('aba de origem confirmou (ack) e a janela não fechou: diz que pode fechar, sem abrir o site aqui dentro', async () => {
+    const { replace, close, nodes } = await runPopupScript(true);
+    expect(close).toHaveBeenCalled();
+    expect(replace).not.toHaveBeenCalled();
+    expect(nodes['k-msg'].textContent).toBe('Pronto, você entrou. Pode fechar esta janela.');
+    expect(nodes['k-close'].hidden).toBe(false);
+  });
+
+  it('ninguém confirmou (sem aba de origem): a própria janela segue para o destino', async () => {
+    const { replace } = await runPopupScript(false);
+    expect(replace).toHaveBeenCalledWith('/descobrir');
+  });
+
   it('cancelado: avisa erro e o fallback é a própria página', async () => {
     const res = await createOAuthCallbackHandler(okRpc)(
       callback('state=st&error=access_denied', flowCookie({ m: 'popup' })),
