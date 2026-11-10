@@ -2,86 +2,35 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { startOAuthLogin } from './oauth-client';
 
-type FakePopup = { closed: boolean };
-
-let popup: FakePopup;
 let assign: ReturnType<typeof vi.fn>;
-let me: { user: unknown };
+let open: ReturnType<typeof vi.spyOn>;
 
 beforeEach(() => {
-  vi.useFakeTimers();
-  popup = { closed: false };
-  me = { user: null };
-  vi.spyOn(window, 'open').mockImplementation(() => popup as unknown as Window);
+  open = vi.spyOn(window, 'open');
   assign = vi.fn();
   Object.defineProperty(window, 'location', {
     configurable: true,
-    value: { ...window.location, pathname: '/', search: '', origin: 'http://localhost', assign, reload: vi.fn() },
+    value: { ...window.location, pathname: '/eventos', search: '?x=1', origin: 'http://localhost', assign },
   });
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async () => ({ ok: true, json: async () => me }))
-  );
 });
 
 afterEach(() => {
-  vi.useRealTimers();
   vi.restoreAllMocks();
-  vi.unstubAllGlobals();
 });
 
-const flush = async () => {
-  for (let i = 0; i < 5; i += 1) await Promise.resolve();
-};
-
-describe('startOAuthLogin — popup', () => {
-  it('aviso da janela pelo BroadcastChannel: responde ack e segue para o destino', async () => {
-    const popupSide = new BroadcastChannel('kizuna:oauth');
-    const acks: unknown[] = [];
-    popupSide.onmessage = (e) => acks.push(e.data);
-
-    startOAuthLogin('google', '/painel');
-    popupSide.postMessage({ type: 'kizuna:oauth', ok: true });
-    await vi.waitFor(() => expect(assign).toHaveBeenCalledWith('/painel'), { timeout: 1000 });
-    await vi.waitFor(() => expect(acks).toContainEqual({ type: 'kizuna:oauth:ack' }), { timeout: 1000 });
-    popupSide.close();
+describe('startOAuthLogin', () => {
+  it('vai ao provedor na própria aba (sem popup), voltando para a página atual', () => {
+    startOAuthLogin('google');
+    expect(open).not.toHaveBeenCalled();
+    expect(assign).toHaveBeenCalledWith(
+      '/api/auth/oauth/google/start?returnTo=%2Feventos%3Fx%3D1'
+    );
   });
 
-  it('nenhum aviso chega (janela isolada), mas a janela fechou e a sessão existe: segue para o destino', async () => {
+  it('returnTo explícito vence; endereço de fora vira /painel', () => {
     startOAuthLogin('google', '/painel');
-    me = { user: { id: 'u1' } };
-    popup.closed = true;
-    vi.advanceTimersByTime(600);
-    await flush();
-    expect(fetch).toHaveBeenCalledWith('/api/auth/me', expect.anything());
-    expect(assign).toHaveBeenCalledWith('/painel');
-  });
-
-  it('janela isolada logo no Google e o login termina depois: a aba segue sozinha, sem foco', async () => {
-    startOAuthLogin('google', '/painel');
-    popup.closed = true; // COOP: a aba perde a janela de vista antes do login
-    vi.advanceTimersByTime(600);
-    await flush();
-    expect(assign).not.toHaveBeenCalled();
-    me = { user: { id: 'u1' } }; // a pessoa termina o login na janela
-    vi.advanceTimersByTime(2500);
-    await flush();
-    expect(assign).toHaveBeenCalledWith('/painel');
-  });
-
-  it('volta o foco para a aba com a sessão ativa: segue para o destino', async () => {
-    startOAuthLogin('google', '/painel');
-    me = { user: { id: 'u1' } };
-    window.dispatchEvent(new Event('focus'));
-    await flush();
-    expect(assign).toHaveBeenCalledWith('/painel');
-  });
-
-  it('janela fechada sem login: continua onde estava', async () => {
-    startOAuthLogin('google', '/painel');
-    popup.closed = true;
-    vi.advanceTimersByTime(600);
-    await flush();
-    expect(assign).not.toHaveBeenCalled();
+    expect(assign).toHaveBeenLastCalledWith('/api/auth/oauth/google/start?returnTo=%2Fpainel');
+    startOAuthLogin('google', 'https://mal.com');
+    expect(assign).toHaveBeenLastCalledWith('/api/auth/oauth/google/start?returnTo=%2Fpainel');
   });
 });
