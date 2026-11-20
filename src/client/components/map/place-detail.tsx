@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { AtSign, Banknote, Calendar, Clock, Globe, MapPin, MessageCircle, Phone, type LucideIcon } from 'lucide-react';
 import { serviceHref } from '../../../shared/city-routing/city-slug';
+import type { AnalyticsChannel } from '../../../shared/analytics/channel';
+import { trackEvent } from '../../analytics/analytics-api';
 import { htmlToText } from '../ai-review/api';
 import { FactSheet } from '../content/fact-sheet';
 import { fileUrl, thumbUrl } from '../services/service-helpers';
@@ -18,6 +20,14 @@ const FACT_ICONS: Record<DetailFact['key'], LucideIcon> = {
   site: Globe,
   horario: Clock,
   preco: Banknote,
+};
+
+/** Linhas da ficha que são contato: o clique conta como contact_click do anúncio (origem 'map'). */
+const FACT_CHANNELS: Partial<Record<DetailFact['key'], AnalyticsChannel>> = {
+  telefone: 'phone',
+  whatsapp: 'whatsapp',
+  instagram: 'instagram',
+  site: 'site',
 };
 
 function photosOf(d: MapPlaceDetail): string[] {
@@ -109,7 +119,21 @@ export function PlaceDetailPanel({
         rows={[
           { icon: Calendar, label: 'Quando', value: when },
           { icon: MapPin, label: 'Onde', value: where },
-          ...detailFacts(d).map((f) => ({ icon: FACT_ICONS[f.key], label: f.label, value: f.value, href: f.href })),
+          ...detailFacts(d).map((f) => {
+            const channel = FACT_CHANNELS[f.key];
+            return {
+              icon: FACT_ICONS[f.key],
+              label: f.label,
+              value: f.value,
+              href: f.href,
+              ...(channel && f.href
+                ? {
+                    onClick: () =>
+                      trackEvent({ entityType: 'service', entityId: d.uid, event: 'contact_click', source: 'map', channel }),
+                  }
+                : {}),
+            };
+          }),
         ]}
       />
       {description ? <p className="whitespace-pre-line text-base leading-7 text-foreground">{description}</p> : null}

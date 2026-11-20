@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, type AnchorHTMLAttributes, type ReactNode } from 'react';
 import type { AnalyticsPlacement, AnalyticsSource, EventRule } from '../../shared/analytics';
+import { contactChannelFromHref, isAnalyticsChannel, type AnalyticsChannel } from '../../shared/analytics/channel';
 import { trackEvent } from './analytics-api';
 import { resolveAdPlacement, resolveAdSource } from './source';
 import { TrackView } from './track-view';
@@ -33,10 +34,14 @@ export function useAdPlacement(): AnalyticsPlacement | null {
   return useContext(AdTrackingContext)?.placement ?? null;
 }
 
-/** Retorna `() => void` que registra `contact_click` do anúncio corrente (no-op fora do provider). */
-export function useTrackContact(): () => void {
+/**
+ * Retorna `(channel?) => void` que registra `contact_click` do anúncio corrente (no-op fora do
+ * provider). `channel` = canal do botão (whatsapp, phone, purchase...); o do hook vale se a chamada
+ * não passar um.
+ */
+export function useTrackContact(defaultChannel?: AnalyticsChannel): (channel?: AnalyticsChannel) => void {
   const ctx = useContext(AdTrackingContext);
-  return () => {
+  return (channel?: AnalyticsChannel) => {
     if (!ctx) return;
     trackEvent({
       entityType: 'service',
@@ -44,22 +49,29 @@ export function useTrackContact(): () => void {
       event: 'contact_click',
       source: ctx.source ?? resolveAdSource(ctx.uid),
       placement: ctx.placement ?? resolveAdPlacement(ctx.uid),
+      // `isAnalyticsChannel`: usado direto como onClick, o 1º argumento é o evento do clique.
+      channel: isAnalyticsChannel(channel) ? channel : defaultChannel ?? null,
     });
   };
 }
 
-/** `<a>` que conta `contact_click` ao clicar (telefone, WhatsApp, e-mail, site, ingresso). */
+/**
+ * `<a>` que conta `contact_click` ao clicar (telefone, WhatsApp, e-mail, site, ingresso). O canal
+ * sai do href (tel:, mailto:, wa.me, instagram.com, http → site); link de compra passa
+ * `channel="purchase"`.
+ */
 export function TrackedContactLink({
   onClick,
   children,
+  channel,
   ...rest
-}: AnchorHTMLAttributes<HTMLAnchorElement>) {
+}: AnchorHTMLAttributes<HTMLAnchorElement> & { channel?: AnalyticsChannel }) {
   const track = useTrackContact();
   return (
     <a
       {...rest}
       onClick={(e) => {
-        track();
+        track(channel ?? contactChannelFromHref(rest.href));
         onClick?.(e);
       }}
     >

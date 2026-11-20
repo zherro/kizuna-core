@@ -91,4 +91,6 @@ export const resourceAds: Record<string, ResourceConfig> = {
 
 export const rpcAds: Record<string, RpcConfig> = {
   fn_ad_track: { schema: 'public', requiresAuth: false, optionalAuth: true },
+  // Mesma regra + dedup por visitante do dia (plugin ads 0002). É a que o AdSlot chama.
+  fn_ad_track_v2: { schema: 'public', requiresAuth: false, optionalAuth: true },
 };

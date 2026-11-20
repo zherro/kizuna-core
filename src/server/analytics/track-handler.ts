@@ -13,6 +13,8 @@ import {
 } from '../../shared/analytics/config';
 import { ANALYTICS_DEVICES, type AnalyticsDevice } from '../../shared/analytics/device';
 import { isPublicIp, maskIp, normalizeIp } from '../../shared/analytics/ip';
+import { isAnalyticsChannel, type AnalyticsChannel } from '../../shared/analytics/channel';
+import { normalizeUtm, type Utm } from '../../shared/analytics/utm';
 import { lookupIpRegion } from './ip-geo';
 
 /**
@@ -21,6 +23,9 @@ import { lookupIpRegion } from './ip-geo';
  * `sendBeacon`, que pode chegar como `text/plain`), até 4 KB:
  * `{ p_entity_type, p_entity_id, p_event_type, p_visitor_hash, p_source?, p_visible_ms?, p_device?, p_placement? }`.
  * `p_placement: 'sponsored'` = exibição numa vaga patrocinada (analytics 0004); outro valor é ignorado.
+ * `p_utm_source`/`p_utm_medium`/`p_utm_campaign` (origem de campanha da sessão) e `p_channel` (canal do
+ * contact_click) exigem a analytics 0005: são renormalizados aqui, inválido vira ausente. Se o banco
+ * ainda não tem a 0005 (RPC 404 com esses argumentos), repete a chamada sem eles e para de mandá-los.
  * User-Agent de robô (mesma regra do cliente) → 204 sem gravar.
  * Campos desconhecidos são ignorados (o cliente não manda IP, região nem viewer).
  *
@@ -70,24 +75,26 @@ type TrackInput = {
   visibleMs: number;
   device: AnalyticsDevice | null;
   placement: 'sponsored' | null;
+  utm: Utm | null;
+  channel: AnalyticsChannel | null;
 };
 
-class BodyTooLarge extends Error {}
+export class BodyTooLarge extends Error {}
 
 function json(body: unknown, status: number) {
   return NextResponse.json(body, { status });
 }
 
-function isJsonContentType(raw: string | null): boolean {
+export function isJsonContentType(raw: string | null): boolean {
   if (!raw) return true; // Blob sem type
   const type = raw.split(';')[0]!.trim().toLowerCase();
   return type === 'application/json' || type === 'text/plain';
 }
 
 /** Lê o corpo sem passar de `MAX_BODY_BYTES` (não confia só no Content-Length). */
-async function readBoundedText(request: Request): Promise<string> {
+export async function readBoundedText(request: Request, maxBytes = MAX_BODY_BYTES): Promise<string> {
   const declared = Number(request.headers.get('content-length'));
-  if (Number.isFinite(declared) && declared > MAX_BODY_BYTES) throw new BodyTooLarge();
+  if (Number.isFinite(declared) && declared > maxBytes) throw new BodyTooLarge();
   if (!request.body) return '';
   const reader = request.body.getReader();
   const chunks: Uint8Array[] = [];
@@ -96,7 +103,7 @@ async function readBoundedText(request: Request): Promise<string> {
     const { done, value } = await reader.read();
     if (done) break;
     total += value.byteLength;
-    if (total > MAX_BODY_BYTES) {
+    if (total > maxBytes) {
       await reader.cancel().catch(() => {});
       throw new BodyTooLarge();
     }
@@ -113,6 +120,7 @@ async function readBoundedText(request: Request): Promise<string> {
 
 function parseInput(body: Record<string, unknown>, collectDevice: boolean): TrackInput | null {
   const { p_entity_type, p_entity_id, p_event_type, p_visitor_hash, p_source, p_visible_ms, p_device, p_placement } = body;
+  const { p_utm_source, p_utm_medium, p_utm_campaign, p_channel } = body;
   if (typeof p_entity_type !== 'string' || !ENTITY_TYPE.test(p_entity_type)) return null;
   if (typeof p_entity_id !== 'string' || !UUID.test(p_entity_id)) return null;
   if (typeof p_event_type !== 'string' || !(ANALYTICS_EVENTS as readonly string[]).includes(p_event_type)) {
@@ -156,7 +164,20 @@ function parseInput(body: Record<string, unknown>, collectDevice: boolean): Trac
     device,
     // desconhecido não derruba o evento: vira orgânico
     placement: p_placement === 'sponsored' ? 'sponsored' : null,
+    // utm/canal inválidos não derrubam o evento: viram ausentes
+    utm: normalizeUtm({ source: p_utm_source, medium: p_utm_medium, campaign: p_utm_campaign }),
+    channel: event === 'contact_click' && isAnalyticsChannel(p_channel) ? p_channel : null,
   };
+}
+
+/** Argumentos da analytics 0005 (só os presentes). */
+function extendedArgs(input: TrackInput): Record<string, string> {
+  const out: Record<string, string> = {};
+  if (input.utm?.source) out.p_utm_source = input.utm.source;
+  if (input.utm?.medium) out.p_utm_medium = input.utm.medium;
+  if (input.utm?.campaign) out.p_utm_campaign = input.utm.campaign;
+  if (input.channel) out.p_channel = input.channel;
+  return out;
 }
 
 /** Tira porta de `1.2.3.4:5678` e colchetes de `[v6]:port` (alguns proxies mandam assim). */
@@ -181,7 +202,7 @@ function trustedProxyHops(): number {
  * entrada só (Vercel/Cloudflare sobrescrevem) → essa entrada. Sem `x-forwarded-for` → `x-real-ip`.
  * Normalizado, mas pode ser privado; `null` se o salto escolhido não é um IP válido (não procura outro).
  */
-function clientIp(headers: Headers): string | null {
+export function clientIp(headers: Headers): string | null {
   const forwarded = headers.get('x-forwarded-for');
   let raw: string;
   if (forwarded && forwarded.trim()) {
@@ -205,7 +226,11 @@ export function __resetAnalyticsTrackState(): void {
   warnedKeyUnavailable = false;
   warnedNoServiceToken = false;
   warnedNoFunction = false;
+  extendedUnsupported = false;
 }
+
+/** O banco respondeu 404 à chamada com utm/canal (sem analytics 0005): não manda mais neste processo. */
+let extendedUnsupported = false;
 
 let warnedNoServiceToken = false;
 let warnedNoFunction = false;
@@ -312,8 +337,15 @@ export function createAnalyticsTrackHandler(opts: AnalyticsTrackHandlerOptions =
       ...(input.placement ? { p_placement: input.placement } : {}),
     };
 
+    const extra = extendedUnsupported ? {} : extendedArgs(input);
     try {
-      const res = await serviceRpc(RPC_NAME, args);
+      let res = await serviceRpc(RPC_NAME, { ...args, ...extra });
+      if (!res.ok && res.status === 404 && Object.keys(extra).length > 0) {
+        // Banco sem analytics 0005: grava sem utm/canal em vez de perder o evento.
+        extendedUnsupported = true;
+        console.warn('[analytics] fn_analytics_track_ctx sem utm/canal: aplique a migração 0005 do plugin analytics.');
+        res = await serviceRpc(RPC_NAME, args);
+      }
       if (!res.ok) {
         // Só o status: o corpo do erro pode citar valores da linha.
         if (res.status === 404) {

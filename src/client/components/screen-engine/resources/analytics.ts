@@ -14,8 +14,9 @@ export const resourceAnalytics: Record<string, ResourceConfig> = {
     schema: 'public',
     table: 'analytics_events',
     // Lista explícita: auth_user NÃO tem SELECT em `ip` (bruto) — `select=*` daria permission denied.
+    // `channel` exige a analytics 0005.
     select:
-      'entity_id,visitor_hash,day,event_type,source,device,region_city,region_uf,ip_masked,ip_key',
+      'entity_id,visitor_hash,day,event_type,source,device,region_city,region_uf,ip_masked,ip_key,channel',
     primaryKey: 'id',
     defaultOrder: 'id',
     searchableColumns: [],
@@ -26,4 +27,7 @@ export const resourceAnalytics: Record<string, ResourceConfig> = {
 
 export const rpcAnalytics: Record<string, RpcConfig> = {
   fn_analytics_track: { schema: 'public', requiresAuth: false, optionalAuth: true },
+  // Visitas do site agregadas (analytics 0005). Login obrigatório; a RLS só deixa ver quem tem
+  // `analytics/site` (root sempre). Body: { p_from: 'YYYY-MM-DD', p_to: 'YYYY-MM-DD' }.
+  fn_analytics_page_view_summary: { schema: 'public' },
 };

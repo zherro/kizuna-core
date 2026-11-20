@@ -453,3 +453,52 @@ describe('robôs, placement e origens novas', () => {
     expect('p_placement' in rpcArgs()).toBe(false);
   });
 });
+
+describe('utm e canal (analytics 0005)', () => {
+  it('repassa utm renormalizado e p_channel do contact_click; aceita a origem map', async () => {
+    const handler = createAnalyticsTrackHandler({ config: cfg() });
+    const res = await handler(
+      req({
+        ...baseBody,
+        p_event_type: 'contact_click',
+        p_visible_ms: 0,
+        p_source: 'map',
+        p_channel: 'whatsapp',
+        p_utm_source: 'Zap',
+        p_utm_campaign: 'Agenda Quinta',
+      })
+    );
+    expect(res.status).toBe(200);
+    const a = rpcArgs();
+    expect(a).toMatchObject({ p_source: 'map', p_channel: 'whatsapp', p_utm_source: 'whatsapp', p_utm_campaign: 'agenda_quinta' });
+    expect('p_utm_medium' in a).toBe(false);
+  });
+
+  it('canal fora da lista ou em evento que não é contato some; sem utm/canal o RPC é o de antes', async () => {
+    const handler = createAnalyticsTrackHandler({ config: cfg() });
+    await handler(req({ ...baseBody, p_channel: 'whatsapp', p_utm_source: '!!!' }));
+    const a = rpcArgs();
+    expect(Object.keys(a).some((k) => k.startsWith('p_utm_') || k === 'p_channel')).toBe(false);
+  });
+
+  it('banco sem a 0005 (404 com os argumentos novos): repete sem eles e não manda mais', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      rpc
+        .mockResolvedValueOnce(new Response('{}', { status: 404 }))
+        .mockResolvedValue(new Response('true', { status: 200 }));
+      const handler = createAnalyticsTrackHandler({ config: cfg() });
+      const res = await handler(req({ ...baseBody, p_utm_source: 'ig' }));
+      expect(await res.json()).toEqual({ tracked: true });
+      expect(rpc).toHaveBeenCalledTimes(2);
+      expect((rpc.mock.calls[0]![1] as Record<string, unknown>).p_utm_source).toBe('instagram');
+      expect('p_utm_source' in (rpc.mock.calls[1]![1] as Record<string, unknown>)).toBe(false);
+
+      await handler(req({ ...baseBody, p_utm_source: 'ig' }));
+      expect(rpc).toHaveBeenCalledTimes(3);
+      expect('p_utm_source' in (rpc.mock.calls[2]![1] as Record<string, unknown>)).toBe(false);
+    } finally {
+      warn.mockRestore();
+    }
+  });
+});

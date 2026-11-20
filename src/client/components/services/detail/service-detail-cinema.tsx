@@ -209,6 +209,7 @@ function CinemaCard({ cinema, until }: { cinema: CinemaItem; until: Date | null 
         <div className="mt-auto flex flex-wrap items-center gap-x-4 gap-y-2 pt-1 text-sm">
           {cinema.link_ingresso && (
             <TrackedContactLink
+              channel="purchase"
               href={cinema.link_ingresso}
               target="_blank"
               rel="noopener noreferrer"

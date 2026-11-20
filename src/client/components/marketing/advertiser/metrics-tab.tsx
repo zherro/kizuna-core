@@ -226,8 +226,8 @@ function CampaignMetrics() {
       {stats && data.data ? (
         <>
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <Stat label="Entregas (impressões)" value={formatInt(stats.impressions)} hint="Vezes em que o banner foi visto" />
-            <Stat label="Cliques" value={formatInt(stats.clicks)} />
+            <Stat label="Entregas (impressões)" value={formatInt(stats.impressions)} hint="Pessoas que viram o banner, contadas uma vez por dia" />
+            <Stat label="Cliques" value={formatInt(stats.clicks)} hint="Uma vez por pessoa por dia" />
             <Stat label="Taxa de clique" value={rate === null ? '—' : `${rate.toLocaleString('pt-BR')}%`} />
             <Stat
               label="Custo por clique"

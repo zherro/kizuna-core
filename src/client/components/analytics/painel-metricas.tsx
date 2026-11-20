@@ -14,9 +14,11 @@ import {
   type MetricGroup,
   type PeriodDays,
 } from '../../../shared/analytics/metrics';
+import { ChannelBreakdown } from './channel-breakdown';
 import { DeviceBreakdown } from './device-breakdown';
 import { IpBreakdown } from './ip-breakdown';
 import { RegionBreakdown } from './region-breakdown';
+import { SiteVisitorsSection } from './site-visitors';
 
 const CHART_W = 640;
 const CHART_H = 120;
@@ -139,7 +141,11 @@ function BreakdownTable({ title, hint, rows, firstCol }: { title: string; hint?:
   );
 }
 
-export function PainelMetricas({ tenantId }: { tenantId: string }) {
+/**
+ * `showSiteVisitors`: mostra o bloco "Visitas do site" (page_view por origem/cidade/aparelho, plugin
+ * analytics 0005). Só para root ou `analytics/site`; omitido = a tela fica como antes.
+ */
+export function PainelMetricas({ tenantId, showSiteVisitors = false }: { tenantId: string; showSiteVisitors?: boolean }) {
   const [days, setDays] = useState<PeriodDays>(30);
   const { stats, loading, error } = useOwnerStats(days, { tenantId });
   const values = stats?.metrics ?? {};
@@ -192,6 +198,8 @@ export function PainelMetricas({ tenantId }: { tenantId: string }) {
           ))}
         </div>
       </header>
+
+      {showSiteVisitors ? <SiteVisitorsSection days={days} /> : null}
 
       {stats?.truncated ? (
         <div role="alert" className="flex items-start gap-2 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm">
@@ -281,6 +289,9 @@ export function PainelMetricas({ tenantId }: { tenantId: string }) {
             <DeviceBreakdown items={stats.byDevice ?? []} />
             <RegionBreakdown items={stats.byRegion ?? []} />
           </div>
+          {(stats.byChannel ?? []).some((c) => c.channel !== 'unknown') ? (
+            <ChannelBreakdown items={stats.byChannel} />
+          ) : null}
           <IpBreakdown items={stats.byIp ?? []} />
           <BreakdownTable title="Por categoria" firstCol="Categoria" rows={categoryRows} />
 

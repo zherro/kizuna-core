@@ -166,7 +166,11 @@ export async function ensureServiceTaxonomy(service: ServiceRecord): Promise<Ser
   return service;
 }
 
+/** `services.uid` é uuid: qualquer outra coisa não existe — 404, sem levar o erro de tipo do Postgres a 500. */
+const SERVICE_UID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 async function fetchService(uid: string): Promise<ServiceRecord | null> {
+  if (!SERVICE_UID_RE.test(uid)) return null;
   // Sem `.catch`: falha do PostgREST precisa propagar. O `unstable_cache` de `loadAd` não guarda
   // exceção, mas guardaria um `null` (404) por 5 min se engolíssemos o erro aqui.
   const services = await serverFetchResource<ServiceRecord>(

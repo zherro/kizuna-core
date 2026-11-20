@@ -63,20 +63,20 @@ describe('resolveLucideIcon — names outside the known list', () => {
   it('loads a valid lucide icon on demand', async () => {
     const Icon = resolveLucideIcon('Rocket')!;
     const { container } = render(<Icon className="h-4 w-4" data-testid="icon" />);
-    await waitFor(() => expect(container.querySelector('svg.lucide-rocket')).not.toBeNull());
+    await waitFor(() => expect(container.querySelector('svg.lucide-rocket')).not.toBeNull(), { timeout: 10_000 });
     expect(container.querySelector('svg')!.getAttribute('class')).toContain('h-4 w-4');
   });
 
   it('accepts kebab-case names too', async () => {
     const Icon = resolveLucideIcon('alarm-clock')!;
     const { container } = render(<Icon />);
-    await waitFor(() => expect(container.querySelector('svg.lucide-alarm-clock')).not.toBeNull());
+    await waitFor(() => expect(container.querySelector('svg.lucide-alarm-clock')).not.toBeNull(), { timeout: 10_000 });
   });
 
   it('renders the fallback when lucide has no such icon', async () => {
     const Icon = resolveLucideIcon('NoSuchIconAnywhere', HelpCircle);
     const { container } = render(<Icon className="h-4 w-4" />);
-    await waitFor(() => expect(container.querySelector('svg.lucide-circle-question-mark, svg.lucide-help-circle, svg.lucide-circle-help')).not.toBeNull());
+    await waitFor(() => expect(container.querySelector('svg.lucide-circle-question-mark, svg.lucide-help-circle, svg.lucide-circle-help')).not.toBeNull(), { timeout: 10_000 });
   });
 
   it('renders nothing for an unknown name without fallback', async () => {

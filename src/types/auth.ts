@@ -8,6 +8,8 @@ export type PermissionActions = {
   review?: boolean;
   /** `services.link`: definir código e vínculos (`extras.codigo/tags/vinculosTitulo`) do anúncio. */
   link?: boolean;
+  /** `analytics.site`: ver as visitas do site inteiro (page_view/UTM, analytics 0005). */
+  site?: boolean;
 };
 export type PermissionMap = Record<string, PermissionActions>;
 

@@ -37,7 +37,16 @@ export type ShareItem = { key: string; label: string; views: number; share: numb
  * Lista de participação: rótulo, views e percentual em texto; a barra é só reforço visual.
  * O percentual vem arredondado do agregador e é mostrado como veio (a soma pode não dar 100).
  */
-export function ShareList({ items, label }: { items: ShareItem[]; label: string }) {
+export function ShareList({
+  items,
+  label,
+  unit = ['view', 'views'],
+}: {
+  items: ShareItem[];
+  label: string;
+  /** Unidade do número (singular, plural). Padrão: view/views. */
+  unit?: readonly [string, string];
+}) {
   return (
     <ul role="list" aria-label={label} className="flex flex-col gap-3 px-4 pb-4 md:px-6 md:pb-6">
       {items.map((it) => (
@@ -46,7 +55,7 @@ export function ShareList({ items, label }: { items: ShareItem[]; label: string 
             <span title={it.label} className="min-w-0 truncate font-medium">{it.label}</span>
             <span className="shrink-0 tabular-nums">
               <span className="text-muted-foreground">
-                {int(it.views)} {it.views === 1 ? 'view' : 'views'}
+                {int(it.views)} {it.views === 1 ? unit[0] : unit[1]}
               </span>
               <span className="ml-2 inline-block min-w-[3ch] text-right font-semibold">{formatMetric('percent', it.share)}</span>
             </span>

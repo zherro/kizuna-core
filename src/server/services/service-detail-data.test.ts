@@ -13,6 +13,7 @@ vi.mock('../marketing/boost-config', () => ({ projectBoostPlacement: { enabled: 
 
 import {
   ensureServiceTaxonomy,
+  loadServiceDetail,
   fetchOrganizer,
   fetchTagRails,
   fetchLinkedRefs,
@@ -546,5 +547,19 @@ describe('fetchLinkedRefs', () => {
       artists: [],
     });
     expect(serverFetchResource).not.toHaveBeenCalled();
+  });
+});
+
+describe("loadServiceDetail — uid inválido", () => {
+  it("uid que não é UUID devolve null (404) sem consultar o banco", async () => {
+    await expect(loadServiceDetail("abc")).resolves.toBeNull();
+    await expect(loadServiceDetail("1 or 1=1")).resolves.toBeNull();
+    expect(serverFetchResource).not.toHaveBeenCalled();
+  });
+
+  it("UUID válido segue consultando", async () => {
+    serverFetchResource.mockResolvedValueOnce([]);
+    await expect(loadServiceDetail("5fc686bb-7f17-44ed-ab95-4d27e6dd32dc")).resolves.toBeNull();
+    expect(serverFetchResource).toHaveBeenCalledTimes(1);
   });
 });

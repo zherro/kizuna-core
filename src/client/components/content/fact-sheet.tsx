@@ -8,6 +8,8 @@ export type FactRow = {
   value?: string | string[] | null;
   /** Renderizado como veio: DEVE ser validado/sanitizado por quem chama (ex.: só http/https, tel:, mailto:). */
   href?: string;
+  /** Chamado no clique do link (ex.: registrar o contato). Só vale com `href`. */
+  onClick?: () => void;
 };
 
 const isExternal = (href: string) => /^https?:\/\//i.test(href);
@@ -53,6 +55,7 @@ export function FactSheet({
                   {row.href ? (
                     <a
                       href={row.href}
+                      onClick={row.onClick}
                       className="inline-block min-h-11 rounded-sm py-2 font-medium underline underline-offset-4 hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                       {...(isExternal(row.href)
                         ? { target: '_blank', rel: 'noopener noreferrer' }

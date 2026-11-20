@@ -7,6 +7,8 @@ import {
   type EntityMeta,
   type EntityRating,
   periodBounds,
+  isAnalyticsChannel,
+  type AnalyticsChannel,
   type AnalyticsEvent,
   type AnalyticsPlacement,
   type AnalyticsRow,
@@ -14,6 +16,8 @@ import {
   type OwnerStats,
   type PeriodDays,
 } from '../../shared/analytics';
+import { postBeacon } from './beacon';
+import { getSessionUtm, utmBodyFields } from './utm-session';
 import { getVisitorId, isAutomated } from './visitor';
 
 export type TrackPayload = {
@@ -24,6 +28,8 @@ export type TrackPayload = {
   source?: AnalyticsSource;
   /** 'sponsored' = card numa vaga patrocinada (ou detalhe aberto a partir de uma). Omitido = orgânico. */
   placement?: AnalyticsPlacement | null;
+  /** Canal do `contact_click` (whatsapp, phone, purchase...). Ignorado nos outros eventos. */
+  channel?: AnalyticsChannel | null;
 };
 
 const TRACK_URL = '/api/analytics/track';
@@ -36,7 +42,10 @@ const REVIEW_DOMAIN = 'service';
 const PAGE_SIZE = 1000;
 const MAX_PAGES = 20;
 
-/** Best-effort: sendBeacon (sobrevive a navegação) com fallback para fetch keepalive. */
+/**
+ * Envia um evento. Leva junto a origem de campanha da sessão (utm_*, se houver) e, no
+ * `contact_click`, o canal. Robô/automação não envia.
+ */
 export function sendTrack(p: TrackPayload): void {
   if (typeof window === 'undefined' || isAutomated()) return;
   const body = JSON.stringify({
@@ -48,23 +57,10 @@ export function sendTrack(p: TrackPayload): void {
     p_visible_ms: Math.round(p.visibleMs ?? 0),
     p_device: classifyDevice(navigator.userAgent, window.innerWidth),
     ...(p.placement === 'sponsored' ? { p_placement: 'sponsored' } : {}),
+    ...(p.event === 'contact_click' && isAnalyticsChannel(p.channel) ? { p_channel: p.channel } : {}),
+    ...utmBodyFields(getSessionUtm()),
   });
-  try {
-    if (
-      typeof navigator.sendBeacon === 'function' &&
-      navigator.sendBeacon(TRACK_URL, new Blob([body], { type: 'application/json' }))
-    ) {
-      return;
-    }
-  } catch {
-    /* cai no fetch */
-  }
-  void fetch(TRACK_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body,
-    keepalive: true,
-  }).catch(() => {});
+  postBeacon(TRACK_URL, body);
 }
 
 /** Ação explícita (clique em contato, favorito, compartilhar): conta na hora, sem limiar. */

@@ -91,4 +91,20 @@ export const SOURCE_LABELS: Record<string, string> = {
   direct: 'Link direto',
   share: 'Compartilhamento',
   other: 'Outros',
+  today: 'Página Hoje',
+  swipe: 'Descobrir',
+  related: 'Também pode te interessar',
+  map: 'Mapa',
+};
+
+/** Canal do clique no contato (analytics 0005). `unknown` = clique anterior ao registro do canal. */
+export const CHANNEL_LABELS: Record<string, string> = {
+  whatsapp: 'WhatsApp',
+  phone: 'Telefone',
+  purchase: 'Compra de ingresso',
+  site: 'Site',
+  email: 'E-mail',
+  instagram: 'Instagram',
+  other: 'Outros',
+  unknown: 'Não registrado',
 };

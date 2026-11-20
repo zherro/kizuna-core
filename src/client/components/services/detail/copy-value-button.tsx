@@ -3,14 +3,24 @@
 import { useEffect, useRef, useState } from 'react';
 import { Check, Copy } from 'lucide-react';
 import { useTrackContact } from '../../../analytics/ad-tracking';
+import type { AnalyticsChannel } from '../../../../shared/analytics/channel';
 
 /**
  * Botão compacto "copiar" para um valor de contato (telefone, WhatsApp, e-mail, site). Só ícone,
  * com alvo de toque de 36px; confirma por 2 s e anuncia o resultado para leitores de tela.
+ * `channel`: canal registrado no contact_click (copiar o telefone conta como `phone`).
  */
-export function CopyValueButton({ value, label }: { value: string; label: string }) {
+export function CopyValueButton({
+  value,
+  label,
+  channel,
+}: {
+  value: string;
+  label: string;
+  channel?: AnalyticsChannel;
+}) {
   const [copied, setCopied] = useState(false);
-  const trackContact = useTrackContact();
+  const trackContact = useTrackContact(channel);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => () => {

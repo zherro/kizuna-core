@@ -115,6 +115,7 @@ function SalePointCard({ point }: { point: ServiceSalePoint }) {
       )}
       {buy && (
         <TrackedContactLink
+          channel="purchase"
           href={buy}
           target="_blank"
           rel="noopener noreferrer"
@@ -225,7 +226,7 @@ export const ServiceDetailEventoSidebar: ServiceDetailVariantComponent = ({ serv
       </div>
 
       {buyUrl && !over && (
-        <TrackedContactLink href={buyUrl} target="_blank" rel="noopener noreferrer" className={`mt-4 ${BUY_LINK_CLASS}`}>
+        <TrackedContactLink channel="purchase" href={buyUrl} target="_blank" rel="noopener noreferrer" className={`mt-4 ${BUY_LINK_CLASS}`}>
           <Ticket className="h-4 w-4" /> Comprar ingresso
         </TrackedContactLink>
       )}
@@ -393,6 +394,7 @@ export const ServiceDetailEvento: ServiceDetailVariantComponent = ({ service, ex
           )}
           {buyUrl && (
             <TrackedContactLink
+              channel="purchase"
               href={buyUrl}
               target="_blank"
               rel="noopener noreferrer"
@@ -404,7 +406,7 @@ export const ServiceDetailEvento: ServiceDetailVariantComponent = ({ service, ex
           {buyLinks.length > 0 && (
             <div className={`${tickets.length > 0 || buyUrl ? 'mt-4 ' : ''}flex flex-wrap gap-2`}>
               {buyLinks.map((l) => (
-                <TrackedContactLink key={l.href} href={l.href} target="_blank" rel="noopener noreferrer" className={BUY_LINK_CLASS}>
+                <TrackedContactLink key={l.href} channel="purchase" href={l.href} target="_blank" rel="noopener noreferrer" className={BUY_LINK_CLASS}>
                   <Ticket className="h-4 w-4" /> {l.label ? `Comprar em ${l.label}` : 'Comprar ingresso'}
                 </TrackedContactLink>
               ))}
@@ -435,7 +437,7 @@ export const ServiceDetailEvento: ServiceDetailVariantComponent = ({ service, ex
                 <TrackedContactLink href={telHref(telefone)} className="inline-flex min-w-0 items-center gap-1.5 py-1.5 font-semibold hover:text-brand">
                   <Phone className="h-4 w-4 shrink-0" /> <span className="truncate">{telefone}</span>
                 </TrackedContactLink>
-                <CopyValueButton value={telefone} label="telefone" />
+                <CopyValueButton value={telefone} label="telefone" channel="phone" />
               </li>
             )}
             {whatsapp && (
@@ -448,7 +450,7 @@ export const ServiceDetailEvento: ServiceDetailVariantComponent = ({ service, ex
                 >
                   <MessageCircle className="h-4 w-4 shrink-0" /> <span className="truncate">WhatsApp {whatsapp}</span>
                 </TrackedContactLink>
-                <CopyValueButton value={whatsapp} label="WhatsApp" />
+                <CopyValueButton value={whatsapp} label="WhatsApp" channel="whatsapp" />
               </li>
             )}
             {email && (
@@ -456,7 +458,7 @@ export const ServiceDetailEvento: ServiceDetailVariantComponent = ({ service, ex
                 <TrackedContactLink href={`mailto:${email}`} className="inline-flex min-w-0 items-center gap-1.5 py-1.5 font-semibold hover:text-brand">
                   <Mail className="h-4 w-4 shrink-0" /> <span className="truncate" title={email}>{email}</span>
                 </TrackedContactLink>
-                <CopyValueButton value={email} label="e-mail" />
+                <CopyValueButton value={email} label="e-mail" channel="email" />
               </li>
             )}
             {siteUrl && (
@@ -469,7 +471,7 @@ export const ServiceDetailEvento: ServiceDetailVariantComponent = ({ service, ex
                 >
                   <ExternalLink className="h-4 w-4 shrink-0" /> <span className="truncate">Site do evento</span>
                 </TrackedContactLink>
-                <CopyValueButton value={siteUrl} label="link do site" />
+                <CopyValueButton value={siteUrl} label="link do site" channel="site" />
               </li>
             )}
           </ul>

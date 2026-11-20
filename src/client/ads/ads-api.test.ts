@@ -1,11 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { GOOGLE_CREATIVE_ID } from '../../shared/ads';
 import { isAutomated } from '../analytics/visitor';
-import { __resetAdPool, loadAdPool, loadLiveCampaigns, trackAd } from './ads-api';
+import { __resetAdPool, __resetAdTrackSeen, loadAdPool, loadLiveCampaigns, trackAd } from './ads-api';
 
-vi.mock('../analytics/visitor', () => ({ isAutomated: vi.fn(() => false) }));
+const VID = 'ab'.repeat(16);
+vi.mock('../analytics/visitor', () => ({ isAutomated: vi.fn(() => false), getVisitorId: vi.fn(() => 'ab'.repeat(16)) }));
 
-afterEach(() => { __resetAdPool(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
+afterEach(() => { __resetAdPool(); __resetAdTrackSeen(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
 describe('loadAdPool', () => {
   it('busca uma vez e memoiza', async () => {
@@ -54,7 +55,18 @@ describe('trackAd', () => {
     sent.length = 0;
     vi.mocked(isAutomated).mockReturnValue(false);
     vi.stubGlobal('window', {});
+    vi.stubGlobal('sessionStorage', memoryStorage());
   });
+
+  function memoryStorage() {
+    const m = new Map<string, string>();
+    return {
+      getItem: (k: string) => m.get(k) ?? null,
+      setItem: (k: string, v: string) => void m.set(k, String(v)),
+      removeItem: (k: string) => void m.delete(k),
+      clear: () => m.clear(),
+    };
+  }
 
   function stubBeacon(result: boolean | undefined) {
     const beacon = vi.fn((url: string, data: Blob) => {
@@ -70,15 +82,15 @@ describe('trackAd', () => {
     trackAd({ ...payload, creativeId: GOOGLE_CREATIVE_ID });
     await vi.waitFor(() => expect(sent).toHaveLength(1));
     expect(beacon).toHaveBeenCalledOnce();
-    expect(sent[0].body).toEqual({ p_slot: 'home-topo', p_creative_id: null, p_page: '/', p_event: 'impression' });
+    expect(sent[0].body).toEqual({ p_slot: 'home-topo', p_creative_id: null, p_page: '/', p_event: 'impression', p_visitor_hash: VID });
   });
 
   it('criativo real é preservado no body', async () => {
     stubBeacon(true);
     trackAd({ ...payload, event: 'click' });
     await vi.waitFor(() => expect(sent).toHaveLength(1));
-    expect(sent[0].url).toBe('/api/resources/fn_ad_track');
-    expect(sent[0].body).toEqual({ p_slot: 'home-topo', p_creative_id: 'cre-1', p_page: '/', p_event: 'click' });
+    expect(sent[0].url).toBe('/api/resources/fn_ad_track_v2');
+    expect(sent[0].body).toEqual({ p_slot: 'home-topo', p_creative_id: 'cre-1', p_page: '/', p_event: 'click', p_visitor_hash: VID });
   });
 
   it('no-op quando isAutomated() é true', () => {
@@ -98,10 +110,10 @@ describe('trackAd', () => {
     trackAd(payload);
     expect(f).toHaveBeenCalledOnce();
     const [url, init] = f.mock.calls[0] as unknown as [string, RequestInit];
-    expect(url).toBe('/api/resources/fn_ad_track');
+    expect(url).toBe('/api/resources/fn_ad_track_v2');
     expect(init.keepalive).toBe(true);
     expect(init.method).toBe('POST');
-    expect(JSON.parse(String(init.body))).toEqual({ p_slot: 'home-topo', p_creative_id: 'cre-1', p_page: '/', p_event: 'impression' });
+    expect(JSON.parse(String(init.body))).toEqual({ p_slot: 'home-topo', p_creative_id: 'cre-1', p_page: '/', p_event: 'impression', p_visitor_hash: VID });
   });
 
   it('cai no fetch keepalive quando sendBeacon retorna false', () => {
@@ -111,6 +123,56 @@ describe('trackAd', () => {
     trackAd(payload);
     expect(f).toHaveBeenCalledOnce();
     expect((f.mock.calls[0] as unknown as [string, RequestInit])[1].keepalive).toBe(true);
+  });
+
+  it('mesma impressão (espaço + criativo) só sai uma vez na sessão do dia', () => {
+    const beacon = stubBeacon(true);
+    trackAd(payload);
+    trackAd({ ...payload, page: '/outra' });
+    expect(beacon).toHaveBeenCalledOnce();
+  });
+
+  it('recarregar a página (memória zerada, sessionStorage mantido) não reenvia', () => {
+    const beacon = stubBeacon(true);
+    trackAd(payload);
+    __resetAdTrackSeen();
+    trackAd(payload);
+    expect(beacon).toHaveBeenCalledOnce();
+  });
+
+  it('outro espaço, outro criativo ou outro evento contam separado', () => {
+    const beacon = stubBeacon(true);
+    trackAd(payload);
+    trackAd({ ...payload, slot: 'home-meio' });
+    trackAd({ ...payload, creativeId: 'cre-2' });
+    trackAd({ ...payload, event: 'click' });
+    expect(beacon).toHaveBeenCalledTimes(4);
+  });
+
+  it('duplo clique rápido envia um clique só', () => {
+    const beacon = stubBeacon(true);
+    trackAd({ ...payload, event: 'click' });
+    trackAd({ ...payload, event: 'click' });
+    expect(beacon).toHaveBeenCalledOnce();
+  });
+
+  it('sem sessionStorage (modo privado) deduplica em memória', () => {
+    vi.stubGlobal('sessionStorage', {
+      getItem: () => { throw new Error('x'); },
+      setItem: () => { throw new Error('x'); },
+    });
+    const beacon = stubBeacon(true);
+    trackAd(payload);
+    trackAd(payload);
+    expect(beacon).toHaveBeenCalledOnce();
+  });
+
+  it('robô não marca como visto (não consome a vaga)', () => {
+    vi.mocked(isAutomated).mockReturnValueOnce(true);
+    const beacon = stubBeacon(true);
+    trackAd(payload);
+    trackAd(payload);
+    expect(beacon).toHaveBeenCalledOnce();
   });
 });
 

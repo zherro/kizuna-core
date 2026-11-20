@@ -1,9 +1,11 @@
 import { GOOGLE_CREATIVE_ID, type AdCreative, type AdLiveCampaign, type AdSlotConfig } from '../../shared/ads';
-import { isAutomated } from '../analytics/visitor';
+import { getVisitorId, isAutomated } from '../analytics/visitor';
 
 export type AdPool = { slots: AdSlotConfig[]; creatives: AdCreative[] };
 
-const TRACK_URL = '/api/resources/fn_ad_track';
+// v2 = mesma regra da fn_ad_track + dedup no servidor por visitante do dia (plugin ads 0002).
+const TRACK_URL = '/api/resources/fn_ad_track_v2';
+const SEEN_PREFIX = 'kz-ad-seen:';
 let pool: Promise<AdPool> | null = null;
 
 async function getItems<T>(resource: string, pageSize: number, init: RequestInit = {}): Promise<T[]> {
@@ -53,13 +55,42 @@ export function loadLiveCampaigns(): Promise<AdLiveCampaign[]> {
   return campaigns;
 }
 
+const memSeen = new Set<string>();
+
+/**
+ * true na 1ª vez do dia (UTC, o mesmo dia do id de visitante) para (evento, espaço, criativo) nesta
+ * sessão do navegador; marca na hora, antes do envio — recarregar a página, a rotação voltar ao
+ * mesmo criativo ou um duplo clique não disparam de novo. Sem sessionStorage, vale a memória.
+ */
+function firstTimeToday(event: string, slot: string, creativeId: string | null): boolean {
+  const key = `${SEEN_PREFIX}${new Date().toISOString().slice(0, 10)}:${event}:${slot}:${creativeId ?? 'google'}`;
+  if (memSeen.has(key)) return false;
+  memSeen.add(key);
+  try {
+    if (sessionStorage.getItem(key)) return false;
+    sessionStorage.setItem(key, '1');
+  } catch { /* só memória */ }
+  return true;
+}
+
+export function __resetAdTrackSeen() {
+  memSeen.clear();
+}
+
+/**
+ * Registra impressão/clique (best-effort). Conta uma vez por dia por visitante, espaço e criativo:
+ * aqui por sessão (evita a requisição) e no servidor pelo id anônimo diário (`fn_ad_track_v2`).
+ */
 export function trackAd(p: { slot: string; creativeId: string | null; page: string; event: 'impression' | 'click' }): void {
   if (typeof window === 'undefined' || isAutomated()) return;
+  const creativeId = p.creativeId && p.creativeId !== GOOGLE_CREATIVE_ID ? p.creativeId : null;
+  if (!firstTimeToday(p.event, p.slot, creativeId)) return;
   const body = JSON.stringify({
     p_slot: p.slot,
-    p_creative_id: p.creativeId && p.creativeId !== GOOGLE_CREATIVE_ID ? p.creativeId : null,
+    p_creative_id: creativeId,
     p_page: p.page,
     p_event: p.event,
+    p_visitor_hash: getVisitorId(),
   });
   try {
     if (navigator.sendBeacon?.(TRACK_URL, new Blob([body], { type: 'application/json' }))) return;

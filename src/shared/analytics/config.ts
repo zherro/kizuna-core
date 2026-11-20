@@ -28,8 +28,9 @@ export const ANALYTICS_EVENTS = [
 export type AnalyticsEvent = (typeof ANALYTICS_EVENTS)[number];
 
 /** Origem do evento. 'today' (página Hoje), 'swipe' (Descobrir) e 'related' ("Também pode te
- * interessar") exigem a migração analytics 0004 (CHECK `analytics_events_source_chk`). */
-export const ANALYTICS_SOURCES = ['search', 'home', 'category', 'direct', 'share', 'other', 'today', 'swipe', 'related'] as const;
+ * interessar") exigem a migração analytics 0004 (CHECK `analytics_events_source_chk`); 'map'
+ * (painel do mapa) exige a 0005. */
+export const ANALYTICS_SOURCES = ['search', 'home', 'category', 'direct', 'share', 'other', 'today', 'swipe', 'related', 'map'] as const;
 export type AnalyticsSource = (typeof ANALYTICS_SOURCES)[number];
 
 /**

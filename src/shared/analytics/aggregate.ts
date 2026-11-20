@@ -40,6 +40,8 @@ export type AnalyticsRow = {
   region_uf?: string | null;
   ip_masked?: string | null;
   ip_key?: string | null;
+  /** Canal do contact_click (migração 0005: whatsapp, phone, purchase...). Nulo em linhas antigas. */
+  channel?: string | null;
 };
 /** Metadados de um anúncio vindos do resource `services` (título e categoria). */
 export type EntityMeta = { title: string; categoryKey: string; categoryLabel: string };
@@ -92,6 +94,8 @@ export type OwnerStats = {
     views: number;
     share: number;
   }[];
+  /** Cliques no contato do período por canal (`unknown` = linha sem canal, anterior à 0005), maior primeiro. */
+  byChannel: { channel: string; contacts: number; share: number }[];
   /** Até 50 IPs (mascarados) com mais views; `visitorDays` = visitor_hash distintos. Sem IP bruto. */
   byIp: { ipKey: string; ipMasked: string; views: number; visitorDays: number }[];
   /** Total de avaliações publicadas dos anúncios do tenant (base de `metrics.rating`). */
@@ -283,6 +287,16 @@ export function buildOwnerStats(input: {
     }))
     .sort((a, b) => b.views - a.views || cmp(a.label, b.label));
 
+  const chMap = new Map<string, number>();
+  const currentContacts = current.filter((r) => r.event_type === 'contact_click');
+  for (const r of currentContacts) {
+    const channel = r.channel || 'unknown';
+    chMap.set(channel, (chMap.get(channel) ?? 0) + 1);
+  }
+  const byChannel: OwnerStats['byChannel'] = [...chMap.entries()]
+    .map(([channel, contacts]) => ({ channel, contacts, share: pct(contacts, currentContacts.length) }))
+    .sort((a, b) => b.contacts - a.contacts || cmp(a.channel, b.channel));
+
   const ipMap = new Map<string, { ipMasked: string; views: number; visitors: Set<string> }>();
   for (const r of currentViews) {
     if (!r.ip_key) continue;
@@ -317,6 +331,7 @@ export function buildOwnerStats(input: {
     entities,
     byDevice,
     byRegion,
+    byChannel,
     byIp,
     ratingCount,
     truncated,

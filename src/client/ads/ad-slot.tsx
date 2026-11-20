@@ -123,6 +123,8 @@ export function AdSlot({
   const cand = picked?.cand ?? null;
   const creativeId = cand ? (cand.type === 'own' ? cand.creative.id : GOOGLE_CREATIVE_ID) : null;
 
+  // Impressão = 50% visível por 1s. Cada troca (rotação) rearma o cronômetro, mas `trackAd` só envia
+  // a 1ª do dia por espaço+criativo nesta sessão e o servidor deduplica por visitante do dia.
   useVisibleFor(
     boxRef,
     { ratio: 0.5, ms: 1000 },

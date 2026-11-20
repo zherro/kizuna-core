@@ -14,7 +14,11 @@ describe('analytics resources', () => {
     expect(cfg.maxPageSize).toBe(1000);
     expect(cfg.returnCountPreferDisabled).toBe(true);
     expect(cfg.select).toBe(
-      'entity_id,visitor_hash,day,event_type,source,device,region_city,region_uf,ip_masked,ip_key'
+      'entity_id,visitor_hash,day,event_type,source,device,region_city,region_uf,ip_masked,ip_key,channel'
     );
+  });
+
+  it('o resumo de visitas do site exige login (a RLS decide quem vê)', () => {
+    expect(rpcAuthMode(rpcAnalytics.fn_analytics_page_view_summary)).toBe('required');
   });
 });

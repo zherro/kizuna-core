@@ -1,6 +1,7 @@
 import { ExternalLink } from 'lucide-react';
 import { CopyValueButton } from './copy-value-button';
 import { TrackedContactLink } from '../../../analytics/ad-tracking';
+import { contactChannelFromHref } from '../../../../shared/analytics/channel';
 import type { FormSchema, FormValues } from '../../form-builder';
 import {
   buildExtraFieldBlocks,
@@ -34,7 +35,7 @@ function Value({ value, label }: { value: FormattedValue; label?: string }) {
   return (
     <span className="inline-flex max-w-full items-center gap-2">
       {link}
-      <CopyValueButton value={value.text} label={label ?? 'contato'} />
+      <CopyValueButton value={value.text} label={label ?? 'contato'} channel={contactChannelFromHref(value.href)} />
     </span>
   );
 }

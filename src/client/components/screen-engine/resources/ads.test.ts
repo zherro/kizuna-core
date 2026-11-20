@@ -29,4 +29,8 @@ describe('resourceAds', () => {
   it('fn_ad_track é pública', () => {
     expect(rpcAds.fn_ad_track.requiresAuth).toBe(false);
   });
+  it('fn_ad_track_v2 (dedup por visitante) é pública', () => {
+    expect(rpcAds.fn_ad_track_v2.requiresAuth).toBe(false);
+    expect(rpcAds.fn_ad_track_v2.optionalAuth).toBe(true);
+  });
 });

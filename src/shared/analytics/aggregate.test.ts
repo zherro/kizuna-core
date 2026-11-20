@@ -267,3 +267,39 @@ describe('buildOwnerStats: aparelho, região e IP mascarado', () => {
     expect(s.byIp).toEqual([]);
   });
 });
+
+describe('byChannel', () => {
+  const bounds = { from: '2026-09-27', to: '2026-09-29', prevFrom: '2026-09-24', prevTo: '2026-09-26' };
+  const click = (day: string, channel: string | null, v: string): AnalyticsRow => ({
+    entity_id: 'a',
+    visitor_hash: v,
+    day,
+    event_type: 'contact_click',
+    source: 'direct',
+    channel,
+  });
+
+  it('conta cliques no contato do período por canal; sem canal = unknown; ignora outros eventos e o período anterior', () => {
+    const stats = buildOwnerStats({
+      days: 3,
+      bounds,
+      rows: [
+        click('2026-09-28', 'whatsapp', 'v1'),
+        click('2026-09-28', 'whatsapp', 'v2'),
+        click('2026-09-29', 'phone', 'v3'),
+        click('2026-09-29', null, 'v4'),
+        click('2026-09-25', 'email', 'v5'),
+        { entity_id: 'a', visitor_hash: 'v6', day: '2026-09-29', event_type: 'view', source: 'direct', channel: 'site' },
+      ],
+    });
+    expect(stats.byChannel).toEqual([
+      { channel: 'whatsapp', contacts: 2, share: 50 },
+      { channel: 'phone', contacts: 1, share: 25 },
+      { channel: 'unknown', contacts: 1, share: 25 },
+    ]);
+  });
+
+  it('sem cliques = lista vazia', () => {
+    expect(buildOwnerStats({ days: 3, bounds, rows: [] }).byChannel).toEqual([]);
+  });
+});

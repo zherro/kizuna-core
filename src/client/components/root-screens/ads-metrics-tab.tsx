@@ -209,6 +209,10 @@ export function AdsMetricsTab() {
           {loading ? 'Carregando…' : `${view.total.impressions} impressões · ${view.total.clicks} cliques · CTR (criativos próprios) ${formatCtr(view.own.ctr)}`}
         </span>
       </div>
+      <p className="-mt-2 text-xs text-muted-foreground">
+        Impressões e cliques são únicos por dia: cada visitante conta uma vez por espaço e criativo no dia
+        (recarregar a página ou clicar de novo não soma). Banner de anunciante só conta com campanha no ar.
+      </p>
 
       {error && (
         <div className="flex items-start gap-2 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/70 dark:bg-red-950/40 dark:text-red-300">

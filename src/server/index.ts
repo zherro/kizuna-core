@@ -173,6 +173,8 @@ export {
 } from './services/tag-rail-data';
 export { createContactHandler } from './tickets/contact-handler';
 export {
+  createAnalyticsPageViewHandler,
+  type AnalyticsPageViewHandlerOptions,
   createAnalyticsTrackHandler,
   lookupIpRegion,
   revealAnalyticsIp,
