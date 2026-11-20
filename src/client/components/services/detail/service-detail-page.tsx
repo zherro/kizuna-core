@@ -2,7 +2,9 @@ import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { ArrowRight, ChevronRight, Sparkles, Tag, User, Zap } from 'lucide-react';
 import { Typography } from '../../ui/typography';
-import { ReviewSummary } from '../../reviews';
+// Direto do arquivo, não do barrel `reviews` (que arrastaria modal, lista e tabela de moderação
+// — componentes cliente que a página de detalhe não usa).
+import { ReviewSummary } from '../../reviews/review-summary';
 import { photosFor, formatServicePrice } from '../service-helpers';
 import { PRICE_UNIT_LABEL } from '../service-labels';
 import type { ServiceDetailData } from '../../../../server/services/service-detail-data';

@@ -79,8 +79,8 @@ function Inner({ serviceUid, likeCount, config, trackUid }: Props) {
   const favorite = config?.favorite;
   if (!like && !favorite) return null;
 
-  const LikeIcon = resolveLucideIcon(like?.icon) ?? ThumbsUp;
-  const FavIcon = resolveLucideIcon(favorite?.icon) ?? Heart;
+  const LikeIcon = resolveLucideIcon(like?.icon, ThumbsUp);
+  const FavIcon = resolveLucideIcon(favorite?.icon, Heart);
 
   return (
     <div className="flex gap-2">

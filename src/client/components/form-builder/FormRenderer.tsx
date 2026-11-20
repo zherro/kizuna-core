@@ -14,7 +14,8 @@ import { Button } from '../ui/button';
 import { Tooltip } from '../ui/tooltip';
 import { ChoiceChips } from './choice-chips';
 import { ServiceRefPicker } from './service-ref-field';
-import { cn, resolveLucideIcon } from '../../../lib/utils';
+import { cn } from '../../../lib/utils';
+import { resolveLucideIcon } from '../../../lib/lucide-icon';
 import { formatCurrencyMask, parseCurrencyMask } from '../../../lib/shared/currency-mask';
 import { useResourceOptions } from '../../hooks/use-resource-options';
 import {

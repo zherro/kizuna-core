@@ -85,6 +85,7 @@ export {
   updateResource,
   deleteResource,
   serverFetchResource,
+  loadPublicResourceSeed,
   isRpcResource,
   executeRpcResource,
   PUBLIC_LISTS_TAG,

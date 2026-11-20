@@ -8,8 +8,23 @@ Small, dependency-light helpers shipped by the core. Entry points:
 | ------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
 | `cn`                | `cn(...inputs: ClassValue[]): string`           | `clsx` + `tailwind-merge`                                                                                    |
 | `submitResource`    | see [`api.md`](api.md) §4                                 | POST/PUT against `/api/resources/:resource`; used by `useForm`'s `resourceSubmit`                            |
-| `resolveLucideIcon` | `(name?: string \| null) => LucideIcon \| null` | resolves a DB-stored `lucide-react` export name (e.g. `"Wrench"`) to the component; `null` for unknown/empty |
 | `isShowcaseEnabled` | `() => boolean`                                 | reads `SHOWCASE_ENABLED` / `NEXT_PUBLIC_SHOWCASE_ENABLED` (`1`/`true`/`on`/`yes`)                            |
+
+## `@kizuna/core/lib/lucide-icon`
+
+```ts
+resolveLucideIcon(name: string | null | undefined): LucideIcon | null
+resolveLucideIcon(name: string | null | undefined, fallback: LucideIcon): LucideIcon
+```
+
+Resolves a DB-stored `lucide-react` export name (e.g. `"Wrench"`) to the component. Names in
+`KNOWN_ICONS` (every icon in the Bora/Alô databases and seeds) resolve synchronously, also on the
+server; any other plausible name returns a component that loads the icon on demand via
+`lucide-react/dynamic` and renders `fallback` (or nothing) if lucide has no such icon. Empty or
+malformed names return `fallback` / `null`. It never imports the whole lucide package, and it is
+deliberately **not** re-exported from `lib/utils` (that barrel is imported everywhere). When a new
+icon becomes common in the database, add it to `KNOWN_ICONS` — it must exist in the oldest
+lucide-react among the consumer projects.
 
 ## `@kizuna/core/lib/api-error-message`
 

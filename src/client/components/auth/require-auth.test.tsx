@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach, beforeAll } from 'vitest';
 import { render, screen, fireEvent, act, cleanup, waitFor } from '@testing-library/react';
 
 let mockUser: unknown = null;
@@ -20,7 +20,21 @@ function Btn({ fn }: { fn: () => void }) {
 
 afterEach(() => { cleanup(); mockUser = null; sessionStorage.clear(); });
 
+// O AuthModal é carregado sob demanda (lazy): aquece o módulo para o 1º teste não depender do
+// tempo de transformação sob carga.
+beforeAll(async () => {
+  await import('./auth-modal');
+});
+
 describe('RequireAuth', () => {
+  it('não monta o modal antes da primeira tentativa anônima (carregado sob demanda)', async () => {
+    render(<RequireAuthProvider><Btn fn={vi.fn()} /></RequireAuthProvider>);
+    expect(screen.queryByText('fake-login')).toBeNull();
+    expect(screen.queryByLabelText('Fechar')).toBeNull();
+    fireEvent.click(screen.getByText('curtir'));
+    expect(await screen.findByText('fake-login')).toBeTruthy();
+  });
+
   it('logado executa direto', () => {
     mockUser = { uid: 'u1' };
     const fn = vi.fn();
@@ -36,7 +50,7 @@ describe('RequireAuth', () => {
     fireEvent.click(screen.getByText('curtir'));
     expect(fn).not.toHaveBeenCalled();
     expect(sessionStorage.getItem('kizuna.auth.pending')).toBe('like:u9');
-    fireEvent.click(screen.getByText('fake-login'));
+    fireEvent.click(await screen.findByText('fake-login'));
     // a ação roda depois do popstate da entrada do modal (history.back assíncrono)
     await waitFor(() => expect(fn).toHaveBeenCalledOnce());
     expect(sessionStorage.getItem('kizuna.auth.pending')).toBeNull();
@@ -47,25 +61,26 @@ describe('RequireAuth', () => {
     const fn = vi.fn();
     render(<RequireAuthProvider><Btn fn={fn} /></RequireAuthProvider>);
     fireEvent.click(screen.getByText('curtir'));
-    fireEvent.click(screen.getByText('fake-login'));
+    fireEvent.click(await screen.findByText('fake-login'));
     // quem observa a transição de login (ex.: efeito da página) não pode reaplicar a pendência
     expect(sessionStorage.getItem('kizuna.auth.pending')).toBeNull();
     expect(fn).not.toHaveBeenCalled();
     await waitFor(() => expect(fn).toHaveBeenCalledOnce());
   });
 
-  it('X fecha sem executar', () => {
+  it('X fecha sem executar', async () => {
     const fn = vi.fn();
     render(<RequireAuthProvider><Btn fn={fn} /></RequireAuthProvider>);
     fireEvent.click(screen.getByText('curtir'));
-    fireEvent.click(screen.getByLabelText('Fechar'));
+    fireEvent.click(await screen.findByLabelText('Fechar'));
     expect(fn).not.toHaveBeenCalled();
     expect(screen.queryByText('fake-login')).toBeNull();
   });
 
-  it('voltar do celular (popstate) fecha', () => {
+  it('voltar do celular (popstate) fecha', async () => {
     render(<RequireAuthProvider><Btn fn={vi.fn()} /></RequireAuthProvider>);
     fireEvent.click(screen.getByText('curtir'));
+    await screen.findByText('fake-login');
     act(() => { window.dispatchEvent(new PopStateEvent('popstate')); });
     expect(screen.queryByText('fake-login')).toBeNull();
   });

@@ -109,6 +109,7 @@ export function TopbarCompact({
             <Link
               key={item.href}
               href={item.href}
+              prefetch={item.prefetch}
               className={cn(
                 'text-sm font-medium transition-colors',
                 pathname === item.href
@@ -226,6 +227,7 @@ export function TopbarCompact({
               <Link
                 key={item.href}
                 href={item.href}
+                prefetch={item.prefetch}
                 onClick={() => setMenuOpen(false)}
                 className="flex items-center gap-3 rounded-[var(--ui-radius-pill,0.375rem)] px-3 py-2 text-base font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground"
               >

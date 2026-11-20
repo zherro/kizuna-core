@@ -8,6 +8,11 @@ export { useForm } from './use-form';
 export { useDelete } from './use-delete';
 export { useResourceOptions, type ResourceOption } from './use-resource-options';
 export {
+  ResourceSeedProvider,
+  pickResourceSeed,
+  type ResourceSeed,
+} from './resource-seed';
+export {
   useResourceMap,
   type ResourceMapEntry,
   type UseResourceMapResult,

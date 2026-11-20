@@ -11,7 +11,7 @@ import { ModalPanel } from '@kizuna/core/client/components/ui-better-soft/overla
 import { FormField } from '@kizuna/core/client/components/ui-better-soft/forms/form-field';
 import { useForm } from '@kizuna/core/client';
 import { useToast } from '@kizuna/core/client/hooks/use-toast';
-import { resolveLucideIcon } from '@kizuna/core/lib/utils';
+import { resolveLucideIcon } from '@kizuna/core/lib/lucide-icon';
 import {
   TAXONOMY_LEVEL_LABEL,
   TAXONOMY_RESOURCE_BY_LEVEL,

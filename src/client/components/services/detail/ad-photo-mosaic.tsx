@@ -1,9 +1,14 @@
 'use client';
 
 import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import { ImageIcon } from 'lucide-react';
 import { cn } from '../../../../lib/utils';
-import { PhotoLightbox } from './photo-lightbox';
+
+// O visualizador só existe depois do clique: fora do bundle inicial da página (vira um chunk à parte).
+const PhotoLightbox = dynamic(() => import('./photo-lightbox').then((m) => m.PhotoLightbox), {
+  ssr: false,
+});
 
 /**
  * Mosaico de fotos estilo OLX/iFood: 1 foto em containers estreitos, 2 lado a lado quando o
@@ -11,6 +16,10 @@ import { PhotoLightbox } from './photo-lightbox';
  * componente funciona tanto na coluna larga da página de detalhe quanto num drawer estreito.
  * Qualquer tile abre o `PhotoLightbox` cheio; o 2º tile carrega um badge "+N" (não um overlay
  * escuro inteiro) pras fotos que não aparecem aqui.
+ *
+ * Performance: a 1ª foto costuma ser o LCP da página — sai com `fetchPriority="high"` e sem
+ * `loading="lazy"`. A 2ª é `lazy`: no celular o tile fica `hidden` (display:none) e, lazy, o
+ * navegador nem baixa a imagem; no container largo ela aparece e carrega normalmente.
  */
 export function AdPhotoMosaic({ photos, alt }: { photos: string[]; alt: string }) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
@@ -34,7 +43,7 @@ export function AdPhotoMosaic({ photos, alt }: { photos: string[]; alt: string }
         {/* Sempre 2 colunas no container largo: com 1 foto ela fica do tamanho de um tile, não
             ocupa a largura inteira (o que a deixava com o dobro da altura). */}
         <div className="grid grid-cols-1 gap-1.5 @[480px]:grid-cols-2">
-          <Tile src={photos[0]} alt={alt} onClick={() => setLightboxIndex(0)} />
+          <Tile src={photos[0]} alt={alt} priority onClick={() => setLightboxIndex(0)} />
           {photos.length > 1 && (
             <Tile
               src={photos[1]}
@@ -63,12 +72,15 @@ function Tile({
   src,
   alt,
   overlayCount,
+  priority = false,
   onClick,
   className,
 }: {
   src: string;
   alt: string;
   overlayCount?: number;
+  /** Foto do LCP: busca com prioridade alta e nunca lazy. As demais: lazy + decodificação assíncrona. */
+  priority?: boolean;
   onClick: () => void;
   className?: string;
 }) {
@@ -85,6 +97,9 @@ function Tile({
       <img
         src={src}
         alt={alt}
+        {...(priority
+          ? { fetchPriority: 'high' as const }
+          : { loading: 'lazy' as const, decoding: 'async' as const })}
         className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
       />
       {!!overlayCount && (

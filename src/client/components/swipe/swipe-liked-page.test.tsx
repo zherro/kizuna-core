@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
+import { describe, it, expect, vi, afterEach, beforeEach, beforeAll } from 'vitest';
 import { render, screen, fireEvent, waitFor, cleanup, within } from '@testing-library/react';
 
 const createMockItems = (count: number, startIdx: number = 0) =>
@@ -58,6 +58,12 @@ afterEach(() => {
   cleanup();
   vi.clearAllMocks();
   vi.unstubAllGlobals();
+});
+
+// O AuthModal é carregado sob demanda (lazy): aquece o módulo para o 1º teste não depender do
+// tempo de transformação sob carga.
+beforeAll(async () => {
+  await import('../auth/auth-modal');
 });
 
 describe('SwipeLikedPage', () => {
@@ -167,7 +173,7 @@ describe('SwipeLikedPage', () => {
     expect(await screen.findByText(/Entre para ver seus curtidos/)).toBeTruthy();
     expect(api.fetchLiked).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: 'Entrar' }));
-    fireEvent.click(screen.getByText('fake-login'));
+    fireEvent.click(await screen.findByText('fake-login'));
     expect(await screen.findByText('Item 0')).toBeTruthy();
     expect(screen.queryByText(/Entre para ver seus curtidos/)).toBeNull();
     await waitFor(() => expect(screen.queryByText('fake-login')).toBeNull());

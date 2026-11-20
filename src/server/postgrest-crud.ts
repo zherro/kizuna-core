@@ -4,6 +4,7 @@ import { getAuthHeaderFromCookies, getSession } from './auth';
 import { rpcAuthMode } from './rpc-auth';
 import { pgrstRpc, pgrstTable } from './postrest/conn';
 import { postgrestResources, postgrestRpcs, type ResourceConfig } from '@/lib/server/resources';
+import type { ResourceSeed } from '../client/hooks/resource-seed';
 
 type RecordValue = Record<string, unknown>;
 
@@ -582,6 +583,43 @@ export async function deleteResource(resource: string, id: string) {
 
   bustPublicLists();
   return NextResponse.json({ message: 'Registro removido com sucesso.' });
+}
+
+/**
+ * Semente de listagem pública para a página entregar ao cliente (`ResourceSeedProvider`): o MESMO
+ * resultado de `GET /api/resources/{resource}?pageSize={pageSize}` (passa por `listResource`, com o
+ * cache de servidor das listagens públicas e o mapeamento do recurso), sem o navegador ter de buscar
+ * depois de montar. Só recurso público (`listRequiresAuth: false`, não lê cookies — serve em página
+ * estática/ISR). Qualquer falha → `null` (o cliente busca como antes).
+ */
+export async function loadPublicResourceSeed(
+  resource: string,
+  pageSize = 1000
+): Promise<ResourceSeed | null> {
+  const config = getResourceConfig(resource);
+  if (!config || config.listRequiresAuth !== false) return null;
+  try {
+    const response = await listResource(
+      resource,
+      new Request(`http://internal/api/resources/${resource}?pageSize=${pageSize}`)
+    );
+    if (!response.ok) return null;
+    const data = (await response.json().catch(() => null)) as {
+      items?: ResourceSeed['items'];
+      total?: number;
+    } | null;
+    if (!data || !Array.isArray(data.items)) return null;
+    const items = data.items;
+    return {
+      resource,
+      items,
+      pageSize,
+      // total 0 = sem contagem (Content-Range ausente): não dá para garantir que veio tudo.
+      complete: typeof data.total === 'number' && data.total > 0 && items.length >= data.total,
+    };
+  } catch {
+    return null;
+  }
 }
 
 /**

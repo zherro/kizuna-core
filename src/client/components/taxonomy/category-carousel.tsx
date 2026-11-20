@@ -10,51 +10,22 @@ import {
   type ReactNode,
 } from "react";
 import Link from "next/link";
+import { useCardPrefetch } from "../link-prefetch";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useResourceOptions } from "../../hooks";
 import { resolveLucideIcon } from "../../../lib/lucide-icon";
 import { SectionHeading, SectionHeadingLink } from "../ui-better-soft/headers/section-heading";
+import {
+  buildCategoryItems,
+  buildGroupItems,
+  type CategoryCarouselFacetRow as FacetRow,
+  type CategoryCarouselGroupRow as GroupRow,
+  type CategoryCarouselItem,
+  type CategoryCarouselListingRow as ListingRow,
+  type CategoryCarouselStatRow as StatRow,
+} from "./category-carousel-items";
 
-type StatRow = {
-  id: string | number;
-  categoryId: string | number;
-  categoryName?: string;
-  categoryIcon?: string;
-  categoryGroupId?: string | number | null;
-  name?: string;
-  qtd?: number;
-};
-
-type ListingRow = {
-  id: string | number;
-  categoryId: string | number;
-  servicesCount?: number;
-};
-
-type GroupRow = {
-  id: string | number;
-  name?: string;
-  slug?: string;
-  icon?: string | null;
-  sortOrder?: number;
-  active?: boolean;
-};
-
-type FacetRow = {
-  id: string | number;
-  categoryId: string | number;
-  groupIds?: Array<string | number>;
-};
-
-export type CategoryCarouselItem = {
-  id: number;
-  name: string;
-  /** slug do grupo (só em `groupBy="group"`) */
-  slug?: string;
-  icon?: string | null;
-  /** nº de subcategorias da categoria — ou, em `groupBy="group"`, nº de categorias do grupo */
-  count: number;
-};
+export type { CategoryCarouselItem } from "./category-carousel-items";
 
 export type CategoryCarouselProps = {
   variant?: "classic" | "compact";
@@ -86,6 +57,12 @@ export type CategoryCarouselProps = {
   onlyWithListings?: boolean;
   /** Recurso com a contagem de anúncios por categoria (default 'category_service_stats'). */
   listingsResource?: string;
+  /**
+   * Cards já montados no servidor (ex.: `buildCategoryItems`/`buildGroupItems` num Server Component):
+   * com eles o carrossel não busca nada no navegador e já sai completo no HTML. Ausente = busca
+   * no cliente, como sempre.
+   */
+  items?: CategoryCarouselItem[];
   className?: string;
 };
 
@@ -118,18 +95,26 @@ export function CategoryCarousel({
   hideWhenEmpty = false,
   onlyWithListings = false,
   listingsResource = "category_service_stats",
+  items: prefetchedItems,
   className,
 }: CategoryCarouselProps) {
-  const { options, loading: loadingTaxonomy } = useResourceOptions<StatRow>({ resource, dedupe: true });
+  // Cards seguem a política de prefetch das listas (`LinkPrefetchProvider`); sem ela, padrão do Next.
+  const prefetch = useCardPrefetch();
+  const fetchOnClient = prefetchedItems === undefined;
+  const { options, loading: loadingTaxonomy } = useResourceOptions<StatRow>({
+    resource,
+    enabled: fetchOnClient,
+    dedupe: true,
+  });
   const { options: listingRows, loading: loadingListings } = useResourceOptions<ListingRow>({
     resource: listingsResource,
-    enabled: onlyWithListings,
+    enabled: fetchOnClient && onlyWithListings,
     dedupe: true,
   });
   const byGroup = groupBy === "group";
   const { options: groupRows, loading: loadingGroups } = useResourceOptions<GroupRow>({
     resource: "categories_group_public",
-    enabled: byGroup,
+    enabled: fetchOnClient && byGroup,
     dedupe: true,
   });
   const {
@@ -138,7 +123,7 @@ export function CategoryCarousel({
     error: facetsError,
   } = useResourceOptions<FacetRow>({
     resource: "category_service_facets",
-    enabled: byGroup && onlyWithListings,
+    enabled: fetchOnClient && byGroup && onlyWithListings,
     dedupe: true,
   });
   const loading =
@@ -159,74 +144,28 @@ export function CategoryCarousel({
         ? `${n} ${n === 1 ? "categoria" : "categorias"}`
         : `${n} ${n === 1 ? "subcategoria" : "subcategorias"}`);
 
-  const categoryItems = useMemo<CategoryCarouselItem[]>(() => {
-    const withListings = onlyWithListings
-      ? new Set(
-          (listingRows ?? [])
-            .filter((r) => Number(r.servicesCount ?? 0) > 0)
-            .map((r) => Number(r.categoryId)),
-        )
-      : null;
-    const map = new Map<number, CategoryCarouselItem>();
-    for (const row of options ?? []) {
-      const cid = Number(row.categoryId);
-      if (!Number.isFinite(cid) || cid <= 0) continue;
-      if (withListings && !withListings.has(cid)) continue;
-      const name = String(row.categoryName ?? row.name ?? `Categoria ${cid}`);
-      const icon = row.categoryIcon;
-      const entry = map.get(cid) ?? { id: cid, name, icon, count: 0 };
-      entry.count += 1;
-      map.set(cid, entry);
-    }
-    return [...map.values()].sort((a, b) =>
-      a.name.localeCompare(b.name, "pt-BR"),
-    );
-  }, [options, listingRows, onlyWithListings]);
+  const categoryItems = useMemo<CategoryCarouselItem[]>(
+    () => buildCategoryItems(options, listingRows, onlyWithListings),
+    [options, listingRows, onlyWithListings],
+  );
 
-  // Por grupo: conta as categorias de cada grupo ativo. Com `onlyWithListings`, usa as facetas
-  // (grupo primário + vínculos extras das categorias com anúncio); senão, o grupo primário
-  // das categorias com subcategoria ativa. Grupos sem categoria somem. Sem as facetas (banco sem a
-  // migração search 0013), cai no grupo primário das categorias com anúncio em vez de esvaziar.
-  const groupItems = useMemo<CategoryCarouselItem[]>(() => {
-    if (!byGroup) return [];
-    const counts = new Map<number, Set<number>>();
-    const add = (gid: unknown, cid: number) => {
-      const g = Number(gid);
-      if (!Number.isFinite(g) || g <= 0) return;
-      const set = counts.get(g) ?? new Set<number>();
-      set.add(cid);
-      counts.set(g, set);
-    };
-    if (onlyWithListings && !facetsError) {
-      for (const f of facetRows ?? []) {
-        for (const gid of f.groupIds ?? []) add(gid, Number(f.categoryId));
-      }
-    } else if (onlyWithListings) {
-      const withListings = new Set(categoryItems.map((c) => c.id));
-      for (const row of options ?? []) {
-        const cid = Number(row.categoryId);
-        if (withListings.has(cid)) add(row.categoryGroupId, cid);
-      }
-    } else {
-      for (const row of options ?? []) add(row.categoryGroupId, Number(row.categoryId));
-    }
-    return (groupRows ?? [])
-      .filter((g) => g.active !== false && counts.has(Number(g.id)))
-      .sort(
-        (a, b) =>
-          Number(a.sortOrder ?? 0) - Number(b.sortOrder ?? 0) ||
-          String(a.name ?? "").localeCompare(String(b.name ?? ""), "pt-BR"),
-      )
-      .map((g) => ({
-        id: Number(g.id),
-        name: String(g.name ?? `Grupo ${g.id}`),
-        slug: g.slug ?? undefined,
-        icon: g.icon ?? null,
-        count: counts.get(Number(g.id))!.size,
-      }));
-  }, [byGroup, onlyWithListings, facetsError, facetRows, categoryItems, options, groupRows]);
+  // Por grupo: ver `buildGroupItems` (facetas, ou grupo primário quando a view não tem as facetas).
+  const groupItems = useMemo<CategoryCarouselItem[]>(
+    () =>
+      byGroup
+        ? buildGroupItems({
+            stats: options,
+            groups: groupRows,
+            facets: facetRows,
+            facetsError: Boolean(facetsError),
+            onlyWithListings,
+            categoryItems,
+          })
+        : [],
+    [byGroup, onlyWithListings, facetsError, facetRows, categoryItems, options, groupRows],
+  );
 
-  const items = byGroup ? groupItems : categoryItems;
+  const items = prefetchedItems ?? (byGroup ? groupItems : categoryItems);
 
   const empty = !loading && items.length === 0;
   if (empty && hideWhenEmpty) return null;
@@ -267,6 +206,7 @@ export function CategoryCarousel({
                   <Link
                     key={c.id}
                     href={href(c)}
+                    prefetch={prefetch}
                     className="flex aspect-square w-24 shrink-0 flex-col items-center justify-center gap-1 rounded-[var(--ui-radius-card,1rem)] border-[length:var(--ui-border-w-card,1px)] border-border shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] bg-card p-1.5 text-center transition-transform active:scale-95"
                   >
                     <span className="flex h-12 w-12 items-center justify-center rounded-full bg-secondary text-primary [&_svg]:size-6">
@@ -305,6 +245,7 @@ export function CategoryCarousel({
                 <Link
                   key={c.id}
                   href={href(c)}
+                  prefetch={prefetch}
                   className="group flex min-w-[200px] snap-start flex-col gap-4 rounded-[var(--ui-radius-card,1rem)] border-[length:var(--ui-border-w-card,1px)] border-border/70 shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] bg-muted/50 p-5 transition-colors hover:border-primary/40 hover:bg-primary/5"
                 >
                   <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">

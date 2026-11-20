@@ -16,7 +16,7 @@ vi.mock('./auth', () => ({
 }));
 vi.mock('./postrest/conn', () => ({ pgrstRpc: vi.fn(), pgrstTable }));
 
-import { PUBLIC_LISTS_TAG, createResource, listResource } from './postgrest-crud';
+import { PUBLIC_LISTS_TAG, createResource, listResource, loadPublicResourceSeed } from './postgrest-crud';
 
 const base = { table: 'categories', select: 'id,name', primaryKey: 'id', searchableColumns: [], defaultOrder: 'name' };
 
@@ -90,5 +90,44 @@ describe('cache no servidor das listagens públicas', () => {
     );
     expect(res.status).toBe(201);
     expect(revalidateTag).toHaveBeenCalledWith(PUBLIC_LISTS_TAG, { expire: 0 });
+  });
+});
+
+describe('loadPublicResourceSeed (semente da página para o cliente)', () => {
+  it('lista pública inteira: mesmos itens da rota, marcada como completa', async () => {
+    resources.cats = { ...base, listRequiresAuth: false, publicCacheSeconds: 300, maxPageSize: 1000 };
+    pgrstTable.mockResolvedValue(pgOk([{ id: 1, name: 'Cinema' }, { id: 2, name: 'Teatro' }]));
+    const seed = await loadPublicResourceSeed('cats');
+    expect(seed).toEqual({
+      resource: 'cats',
+      items: [{ id: 1, name: 'Cinema' }, { id: 2, name: 'Teatro' }],
+      pageSize: 1000,
+      complete: true,
+    });
+    expect(pgrstTable.mock.calls[0][2]).toEqual({ auth: null });
+  });
+
+  it('total maior que o que veio: semente parcial', async () => {
+    resources.cats = { ...base, listRequiresAuth: false, maxPageSize: 1000 };
+    pgrstTable.mockResolvedValue(pgOk([{ id: 1, name: 'Cinema' }], 5));
+    expect((await loadPublicResourceSeed('cats'))?.complete).toBe(false);
+  });
+
+  it('recurso autenticado ou desconhecido: null, sem consultar', async () => {
+    resources.priv = { ...base, listRequiresAuth: true };
+    expect(await loadPublicResourceSeed('priv')).toBeNull();
+    expect(await loadPublicResourceSeed('nada')).toBeNull();
+    expect(pgrstTable).not.toHaveBeenCalled();
+  });
+
+  it('erro do PostgREST: null (o cliente busca como antes)', async () => {
+    resources.cats = { ...base, listRequiresAuth: false, publicCacheSeconds: 300 };
+    pgrstTable.mockResolvedValue({
+      ok: false,
+      status: 503,
+      headers: new Headers(),
+      json: async () => ({ message: 'indisponível' }),
+    });
+    expect(await loadPublicResourceSeed('cats')).toBeNull();
   });
 });

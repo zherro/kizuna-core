@@ -1,4 +1,6 @@
-import { DirectionsCard, LocationMap } from '../../content';
+// Direto dos arquivos, não do barrel `content` (RouteBar, ArticleFigure etc. não são usados aqui).
+import { DirectionsCard } from '../../content/directions-card';
+import { LocationMap } from '../../content/location-map';
 import type { ServiceLocation } from '../../../../server/services/service-detail-data';
 import { hueGradient } from './category-style';
 

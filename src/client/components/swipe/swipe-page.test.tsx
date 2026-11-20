@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach, beforeAll } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 
 const decide = vi.fn();
@@ -54,6 +54,12 @@ afterEach(() => {
   mockTopics = ['servicos']; saveTopics.mockReset(); deckOpts = null;
 });
 
+// O AuthModal é carregado sob demanda (lazy): aquece o módulo para o 1º teste não depender do
+// tempo de transformação sob carga.
+beforeAll(async () => {
+  await import('../auth/auth-modal');
+});
+
 describe('SwipePage', () => {
   it('mostra o card', async () => {
     render(<SwipePage />);
@@ -63,7 +69,7 @@ describe('SwipePage', () => {
     render(<SwipePage />);
     fireEvent.click(await screen.findByLabelText('Curtir'));
     expect(decide).not.toHaveBeenCalled();
-    expect(screen.getByText('fake-login')).toBeTruthy();
+    expect(await screen.findByText('fake-login')).toBeTruthy();
   });
   it('anônimo: passar decide direto', async () => {
     render(<SwipePage />);

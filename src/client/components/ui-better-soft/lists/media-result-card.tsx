@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import Link from 'next/link';
+import { CardLink } from '../../link-prefetch';
 import { cn } from '../../../../lib/utils';
 
 type MediaResultCardProps = {
@@ -114,9 +114,9 @@ export function MediaResultCard({
 
   if (href) {
     return (
-      <Link href={href} className={cardClassName}>
+      <CardLink href={href} className={cardClassName}>
         {content}
-      </Link>
+      </CardLink>
     );
   }
 

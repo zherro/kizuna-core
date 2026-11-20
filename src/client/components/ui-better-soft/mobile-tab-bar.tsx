@@ -26,6 +26,11 @@ export type MobileTabItem = {
   onlyOn?: string[];
   /** Prefixos de rota onde o item some. Ex.: "Meu painel" fora do painel. */
   exceptOn?: string[];
+  /**
+   * Repassado ao `prefetch` do `<Link>`. Omitido = padrão do Next (pré-carrega quando aparece na
+   * tela). `false` para destinos que não compensam pré-carregar no 4G (painel, login).
+   */
+  prefetch?: boolean;
 };
 
 export interface MobileTabBarProps {
@@ -111,6 +116,7 @@ export function MobileTabBar({ items, guestItems, hideOn = [], className }: Mobi
             <li key={item.href} className="min-w-0">
               <Link
                 href={href}
+                prefetch={item.prefetch}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
                   'flex h-full flex-col items-center justify-center gap-0.5 px-0.5 text-[10px] font-medium leading-tight',

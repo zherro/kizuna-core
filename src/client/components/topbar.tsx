@@ -17,7 +17,13 @@ import { LocationModal, LocationTrigger } from './location-modal';
 
 // `icon` takes a rendered element (e.g. `<Search />`), not a component reference — that's what
 // keeps it safe to pass from a Server Component consumer (RootLayout) across the client boundary.
-export type TopbarNavLink = { href: string; label: string; icon?: ReactNode };
+export type TopbarNavLink = {
+  href: string;
+  label: string;
+  icon?: ReactNode;
+  /** Repassado ao `prefetch` do `<Link>`. Omitido = padrão do Next. */
+  prefetch?: boolean;
+};
 
 const softNavIconClass = 'shrink-0 text-muted-foreground/70 [&>svg]:h-[18px] [&>svg]:w-[18px]';
 const softNavIconClassSm = 'shrink-0 text-muted-foreground/70 [&>svg]:h-4 [&>svg]:w-4';
@@ -115,7 +121,7 @@ export function Topbar({
 
             <nav className="hidden items-center gap-1 lg:flex">
               {allNavLinks.map((link) => (
-                <Link key={link.href} className={navLinkClass} href={link.href}>
+                <Link key={link.href} className={navLinkClass} href={link.href} prefetch={link.prefetch}>
                   {link.icon && <span className={softNavIconClassSm}>{link.icon}</span>}
                   {link.label}
                 </Link>
@@ -214,6 +220,7 @@ export function Topbar({
                 key={link.href}
                 className={mobileNavLinkClass}
                 href={link.href}
+                prefetch={link.prefetch}
                 onClick={() => setMenuOpen(false)}
               >
                 {link.icon && <span className={softNavIconClass}>{link.icon}</span>}

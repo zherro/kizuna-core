@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { ipDetectionTarget, type IpLookupResult } from '../../shared/location/ip-detect';
 
 export interface UserLocation {
   stateCode: string;
@@ -78,50 +79,11 @@ export async function resolveLocation(
   return undefined;
 }
 
-/** Países da América Latina e Caribe (ISO 3166-1 alpha-2) — IP fora daqui não é usado. */
-const LATIN_AMERICA_COUNTRY_CODES = new Set([
-  'AR',
-  'BO',
-  'BR',
-  'CL',
-  'CO',
-  'CR',
-  'CU',
-  'DO',
-  'EC',
-  'SV',
-  'GT',
-  'HN',
-  'MX',
-  'NI',
-  'PA',
-  'PY',
-  'PE',
-  'PR',
-  'UY',
-  'VE', // América Latina "central"
-  'BZ',
-  'GY',
-  'SR',
-  'GF', // vizinhos geográficos da região (Belize, Guianas)
-  'HT',
-  'JM',
-  'TT',
-  'BS',
-  'BB', // Caribe
-]);
-
-/**
- * IP fora da América Latina (VPN, acesso de fora): a região do provedor não faz sentido pra um
- * marketplace brasileiro — detecta como São Paulo, que o `resolve` troca pela cidade padrão
- * (ou por nada, com `outsideList: "prompt"`) se não estiver na lista.
- */
-const FOREIGN_IP_FALLBACK = { stateCode: 'SP', cityName: 'São Paulo' };
-
 /**
  * Geolocalização por IP — sem prompt de permissão (diferente de `navigator.geolocation`).
  * Aproximada (cidade/UF do provedor), via `/api/location/ip` (proxy server-side do ip-api.com;
- * o IP do visitante é lido no servidor). Depois passa pelo `resolve`, SEMPRE — inclusive quando
+ * o IP do visitante é lido no servidor). Se a rota já devolver a cidade resolvida (`location`), para
+ * aí; senão passa pelo `resolve`, SEMPRE — inclusive quando
  * o IP não dá nada (dev, ip-api fora do ar): aí vai sem UF e o `resolve` devolve a cidade padrão
  * do projeto, se houver. `null` = nenhum local (o usuário escolhe no seletor).
  */
@@ -130,16 +92,13 @@ async function detectByIP(): Promise<UserLocation | null> {
   try {
     const res = await fetch('/api/location/ip', { signal: AbortSignal.timeout(4000) });
     if (res.ok) {
-      const data = (await res.json()) as {
-        stateCode?: string;
-        cityName?: string;
-        countryCode?: string;
-      };
-      if (!data.countryCode || !LATIN_AMERICA_COUNTRY_CODES.has(data.countryCode)) {
-        detected = FOREIGN_IP_FALLBACK;
-      } else if (data.stateCode) {
-        detected = { stateCode: data.stateCode, cityName: data.cityName ?? '' };
+      const data = (await res.json()) as IpLookupResult & { location?: ResolvedLocation | null };
+      // Rota que já resolve no servidor (devolve `location`): uma ida só, sem o `resolve` em série
+      // depois. Rota antiga (sem o campo) segue o fluxo de duas etapas abaixo.
+      if (data && data.location !== undefined) {
+        return data.location ? { ...data.location, source: 'ip' } : null;
       }
+      detected = ipDetectionTarget(data);
     }
   } catch {
     // IP indisponível — segue para o resolve sem UF

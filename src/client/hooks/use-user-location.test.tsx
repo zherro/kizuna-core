@@ -38,6 +38,55 @@ afterEach(() => {
 });
 
 describe('useUserLocation — inicialização (igual em toda tela)', () => {
+  it('rota de IP que já resolve (campo `location`) → uma ida só, sem chamar o resolve', async () => {
+    const fn = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.startsWith('/api/location/ip')) {
+        return json({ stateCode: 'MT', cityName: 'Cuiabá', countryCode: 'BR', location: CUIABA });
+      }
+      return json({ location: null });
+    });
+    vi.stubGlobal('fetch', fn);
+    render(<Probe />);
+    expect(await screen.findByText('Cuiabá')).toBeTruthy();
+    expect(fn.mock.calls.map((c) => String(c[0]))).toEqual(['/api/location/ip']);
+    expect(JSON.parse(localStorage.getItem('user_location') ?? '{}')).toMatchObject({
+      cityId: 5103403,
+      source: 'ip',
+    });
+  });
+
+  it('rota de IP que já resolve com `location: null` → sem local, sem chamar o resolve', async () => {
+    const fn = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.startsWith('/api/location/ip')) return json({ countryCode: 'BR', location: null });
+      return json({ location: CUIABA });
+    });
+    vi.stubGlobal('fetch', fn);
+    render(<Probe />);
+    expect(await screen.findByText('sem local')).toBeTruthy();
+    expect(fn.mock.calls.map((c) => String(c[0]))).toEqual(['/api/location/ip']);
+  });
+
+  it('rota de IP antiga (sem `location`) → segue para o resolve com a UF detectada', async () => {
+    const fn = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.startsWith('/api/location/ip')) {
+        return json({ stateCode: 'MT', cityName: 'Cuiabá', countryCode: 'BR' });
+      }
+      if (url.startsWith('/api/location/resolve')) return json({ location: CUIABA });
+      return json({}, 404);
+    });
+    vi.stubGlobal('fetch', fn);
+    render(<Probe />);
+    expect(await screen.findByText('Cuiabá')).toBeTruthy();
+    const resolveUrl = fn.mock.calls.map((c) => String(c[0])).find((u) => u.startsWith('/api/location/resolve'));
+    expect(resolveUrl).toBeDefined();
+    const qs = new URL(resolveUrl!, 'http://x').searchParams;
+    expect(qs.get('uf')).toBe('MT');
+    expect(qs.get('city')).toBe('Cuiabá');
+  });
+
   it('sem local salvo e IP indisponível → aplica a cidade padrão', async () => {
     stubIpDown(CUIABA);
     render(<Probe />);

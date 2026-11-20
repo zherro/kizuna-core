@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { fetchResourceList, ResourceFetchError } from './shared/fetch-resource';
+import { pickResourceSeed, useResourceSeeds } from './resource-seed';
 
 export type ResourceOption = { id: string | number; name?: string; [key: string]: any };
 
@@ -37,8 +38,14 @@ export function useResourceOptions<T extends ResourceOption>({
   enabled = true,
   dedupe,
 }: UseResourceOptionsOptions) {
-  const [options, setOptions] = useState<T[]>([]);
-  const [loading, setLoading] = useState(enabled);
+  // Listagem já entregue pelo servidor (`ResourceSeedProvider`): nasce pronta, sem fetch. Só para
+  // consultas compartilháveis (`dedupe`) sem filtro/busca/ordenação — ver `pickResourceSeed`.
+  const seeds = useResourceSeeds();
+  const seeded = dedupe
+    ? (pickResourceSeed(seeds, { resource, filter, search, orderBy, pageSize }) as T[] | null)
+    : null;
+  const [options, setOptions] = useState<T[]>(() => (enabled && seeded ? seeded : []));
+  const [loading, setLoading] = useState(enabled && !seeded);
   const [error, setError] = useState('');
 
   // Debounce só do termo de busca — resource/filter/pageSize aplicam na hora.
@@ -57,6 +64,12 @@ export function useResourceOptions<T extends ResourceOption>({
     const requestId = ++latestRequest.current;
     if (!enabled) {
       setOptions([]);
+      setLoading(false);
+      return;
+    }
+    if (seeded) {
+      setOptions(seeded);
+      setError('');
       setLoading(false);
       return;
     }
@@ -84,7 +97,7 @@ export function useResourceOptions<T extends ResourceOption>({
 
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [resource, labelField, filterKey, pageSize, debouncedSearch, orderBy, enabled, dedupe]);
+  }, [resource, labelField, filterKey, pageSize, debouncedSearch, orderBy, enabled, dedupe, seeded]);
 
   return {
     options,

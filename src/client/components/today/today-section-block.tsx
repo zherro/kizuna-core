@@ -3,12 +3,13 @@ import Link from 'next/link';
 import { CalendarX } from 'lucide-react';
 import { SectionHeading } from '../ui-better-soft/headers/section-heading';
 import type { TodaySection } from '../../../server/services/today-feed-data';
+// Imports diretos, não o barrel `services/detail` (que arrastaria componentes cliente não usados).
+import { ServiceCarouselSection } from '../services/detail/service-carousel-section';
 import {
-  ServiceCarouselSection,
   hueGradient,
   resolveCategoryHue,
   type ServiceDetailConfig,
-} from '../services/detail';
+} from '../services/detail/category-style';
 import type { AnalyticsSource, EventRule } from '../../../shared/analytics';
 import { todaySearchHref, todaySectionSubtitle, type TodayCity } from './today-format';
 

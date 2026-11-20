@@ -1,8 +1,11 @@
 'use client';
 
-import { createContext, useCallback, useContext, useRef, useState } from 'react';
+import { createContext, lazy, Suspense, useCallback, useContext, useRef, useState } from 'react';
 import { useAuth } from '../../providers/auth-provider';
-import { AuthModal } from './auth-modal';
+
+// O modal (formulários, captcha, OAuth) só é baixado na primeira vez que alguém anônimo tenta uma
+// ação protegida: fica fora do JS inicial das páginas que só oferecem curtir/favoritar.
+const AuthModal = lazy(() => import('./auth-modal').then((m) => ({ default: m.AuthModal })));
 
 const PENDING_KEY = 'kizuna.auth.pending';
 
@@ -30,6 +33,8 @@ function clearPending() {
 export function RequireAuthProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
+  // Monta o modal (e dispara o download) só depois da primeira abertura; depois fica montado.
+  const [requested, setRequested] = useState(false);
   const pendingRef = useRef<(() => void) | null>(null);
 
   const requireAuth = useCallback<RequireAuth>(
@@ -46,6 +51,7 @@ export function RequireAuthProvider({ children }: { children: React.ReactNode })
           /* ignore */
         }
       }
+      setRequested(true);
       setOpen(true);
     },
     [user]
@@ -54,23 +60,27 @@ export function RequireAuthProvider({ children }: { children: React.ReactNode })
   return (
     <Ctx.Provider value={requireAuth}>
       {children}
-      <AuthModal
-        open={open}
-        onClose={() => {
-          pendingRef.current = null;
-          clearPending();
-          setOpen(false);
-        }}
-        // A pendência persistida (reload) sai já no login: o efeito de "acabou de logar" da página
-        // roda antes do onSuccess (que espera o popstate do modal) e não pode reaplicá-la.
-        onAuthenticated={clearPending}
-        onSuccess={() => {
-          const action = pendingRef.current;
-          pendingRef.current = null;
-          setOpen(false);
-          action?.();
-        }}
-      />
+      {requested && (
+        <Suspense fallback={null}>
+          <AuthModal
+            open={open}
+            onClose={() => {
+              pendingRef.current = null;
+              clearPending();
+              setOpen(false);
+            }}
+            // A pendência persistida (reload) sai já no login: o efeito de "acabou de logar" da página
+            // roda antes do onSuccess (que espera o popstate do modal) e não pode reaplicá-la.
+            onAuthenticated={clearPending}
+            onSuccess={() => {
+              const action = pendingRef.current;
+              pendingRef.current = null;
+              setOpen(false);
+              action?.();
+            }}
+          />
+        </Suspense>
+      )}
     </Ctx.Provider>
   );
 }

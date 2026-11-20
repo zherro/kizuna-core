@@ -245,7 +245,7 @@ export function createStepLocation(profiles?: StepProfiles<LocationProfile>) {
           >
             {options.map((option) => {
               const active = value === option.value;
-              const Icon = resolveLucideIcon(option.icon) ?? DEFAULT_ICON[option.value];
+              const Icon = resolveLucideIcon(option.icon, DEFAULT_ICON[option.value]);
               const custom = optionMessages[option.textKey ?? option.value];
               return (
                 <button

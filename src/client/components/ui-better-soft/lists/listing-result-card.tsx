@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import { CardLink } from '../../link-prefetch';
 import { CalendarDays, MapPin, Sparkles, Star } from 'lucide-react';
 import { cn } from '../../../../lib/utils';
 import { MediaResultCard } from './media-result-card';
@@ -307,7 +307,7 @@ export function ListingResultCard({
   // — sem CTA, o card inteiro é o link; data e local ficam inteiros, sem disputar espaço com botão.
   if (variant === 'strip' || compactFooter) {
     return (
-      <Link
+      <CardLink
         href={href}
         className={cn(
           'group flex flex-col overflow-hidden rounded-[var(--ui-radius-card-compact,0.75rem)] border-[length:var(--ui-border-w-card,1px)] border-border bg-card shadow-[shadow:var(--ui-shadow-item,0_0_#0000)] transition hover:-translate-y-0.5 hover:shadow-md',
@@ -387,7 +387,7 @@ export function ListingResultCard({
             </>
           )}
         </div>
-      </Link>
+      </CardLink>
     );
   }
 

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 // Fluxos ponta a ponta da página com o hook real (useSwipeDeck), o AuthProvider real,
 // RequireAuthProvider + AuthModal reais e só a API/rede mockadas.
-import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
+import { describe, it, expect, vi, afterEach, beforeEach, beforeAll } from 'vitest';
 import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
 
 const api = vi.hoisted(() => ({
@@ -59,13 +59,19 @@ beforeEach(() => {
 });
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); sessionStorage.clear(); localStorage.clear(); });
 
+// O AuthModal é carregado sob demanda (lazy): aquece o módulo para o 1º teste não depender do
+// tempo de transformação sob carga.
+beforeAll(async () => {
+  await import('../auth/auth-modal');
+});
+
 describe('SwipePage (fluxos com auth)', () => {
   it('anônimo curte, loga pelo modal e a curtida é gravada (C1)', async () => {
     stubMe(null);
     render(<AuthProvider initialUser={null}><SwipePage /></AuthProvider>);
     expect(await screen.findByText('Item 1')).toBeTruthy();
     fireEvent.click(screen.getByLabelText('Curtir'));
-    fireEvent.click(screen.getByText('fake-login'));
+    fireEvent.click(await screen.findByText('fake-login'));
     await waitFor(() => expect(api.recordSwipe).toHaveBeenCalledWith(['u1'], 'like'));
     // espera o modal fechar (popstate processado, ação pendente executada) antes de contar
     await waitFor(() => expect(screen.queryByText('fake-login')).toBeNull());
@@ -83,7 +89,7 @@ describe('SwipePage (fluxos com auth)', () => {
     fireEvent.click(screen.getByLabelText('Curtir'));
     // entrada do modal fora do topo: o AuthModal chama onSuccess no mesmo tick do setUser
     window.history.replaceState(null, '');
-    fireEvent.click(screen.getByText('fake-login'));
+    fireEvent.click(await screen.findByText('fake-login'));
     expect(api.recordSwipe).toHaveBeenCalledWith(['u1'], 'like');
   });
 
@@ -114,7 +120,7 @@ describe('SwipePage (fluxos com auth)', () => {
     render(<AuthProvider initialUser={null}><SwipePage /></AuthProvider>);
     await screen.findByText('Item 1');
     fireEvent.click(screen.getByRole('button', { name: 'Curtidos' }));
-    fireEvent.click(screen.getByText('fake-login'));
+    fireEvent.click(await screen.findByText('fake-login'));
     await waitFor(() => expect(router.push).toHaveBeenCalledWith('/curtidos'));
   });
 });
