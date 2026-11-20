@@ -113,7 +113,7 @@ export function Topbar({
               )}
             </Link>
 
-            <nav className="hidden items-center gap-1 md:flex">
+            <nav className="hidden items-center gap-1 lg:flex">
               {allNavLinks.map((link) => (
                 <Link key={link.href} className={navLinkClass} href={link.href}>
                   {link.icon && <span className={softNavIconClassSm}>{link.icon}</span>}
@@ -136,7 +136,7 @@ export function Topbar({
               {/* Seletor de cidade visível também no mobile (antes só no desktop/menu). */}
               <LocationTrigger onClick={() => setLocationOpen(true)} />
 
-              <div className="hidden items-center gap-2 md:flex">
+              <div className="hidden items-center gap-2 lg:flex">
 
                 {showThemeToggle && (
                   <Button
@@ -184,7 +184,7 @@ export function Topbar({
               </div>
 
               <MobileMenuButton
-                className="md:hidden"
+                className="lg:hidden"
                 aria-label={messages.nav.openMenu}
                 onClick={() => setMenuOpen(true)}
               />

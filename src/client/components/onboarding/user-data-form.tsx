@@ -84,7 +84,7 @@ function buildInitialValues(config: UserDataFieldsConfig): AccountFormValues {
   };
 }
 
-function buildValidationSchema(config: UserDataFieldsConfig) {
+export function buildValidationSchema(config: UserDataFieldsConfig, addressOptionalOnSave = false) {
   const { documentField, birthDateField } = config;
   const docTypes = allowedDocumentTypes(documentField.mask);
 
@@ -162,8 +162,14 @@ function buildValidationSchema(config: UserDataFieldsConfig) {
         : Yup.string().notRequired(),
     email: Yup.string().trim().email('E-mail inválido.'),
     phone: Yup.string().max(30, 'Telefone muito longo.'),
-    state: Yup.string().trim().required('Informe o estado.'),
-    city: Yup.string().trim().required('Informe a cidade.'),
+    // `addressOptionalOnSave`: salvar só o nome (ou a foto) sem exigir endereço. O endereço segue
+    // obrigatório para concluir o passo de perfil (isStepComplete) e o nível "perfil completo".
+    state: addressOptionalOnSave
+      ? Yup.string().trim()
+      : Yup.string().trim().required('Informe o estado.'),
+    city: addressOptionalOnSave
+      ? Yup.string().trim()
+      : Yup.string().trim().required('Informe a cidade.'),
     // `bio` is QuillEditor HTML — length must be checked on the visible text (stripHtml), not the
     // raw markup, same convention as StepDescriptionForm's MIN_LENGTH check.
     bio: Yup.string().test(
@@ -223,7 +229,26 @@ type AccountFormProps = {
    * (`step_order: 1`, seeded before `profile-setup`'s `step_order: 2`) — so finishing this form was
    * silently marking the *email verification* step complete instead of its own. */
   stepSlug?: string;
+  /** `true` deixa salvar a conta sem estado/cidade (ex.: só trocar o nome). Padrão `false`: o
+   * endereço continua obrigatório para salvar, como sempre foi. Nos dois casos o passo de perfil e
+   * o nível "perfil completo" só fecham com endereço. */
+  addressOptionalOnSave?: boolean;
 };
+
+/** Ordem dos campos na tela — o primeiro com erro recebe a rolagem e o foco ao tentar salvar. */
+const FIELD_ORDER: Array<keyof AccountFormValues> = [
+  'displayName',
+  'bio',
+  'fullName',
+  'documentType',
+  'documentNumber',
+  'birthDate',
+  'email',
+  'phone',
+  'zipCode',
+  'state',
+  'city',
+];
 
 /**
  * `/painel/minha-conta`'s form, registered as the screen-engine `account-form` block (see
@@ -247,6 +272,7 @@ export function AccountForm({
   role = 'advertiser',
   fieldsConfig = DEFAULT_USER_DATA_FIELDS_CONFIG,
   stepSlug = 'profile-setup',
+  addressOptionalOnSave = false,
 }: AccountFormProps) {
   const { user } = useAuth();
   const { documentField, birthDateField } = fieldsConfig;
@@ -415,7 +441,7 @@ export function AccountForm({
 
   const form = useForm<AccountFormValues, Record<string, unknown>, Record<string, unknown>>({
     initialValues: buildInitialValues(fieldsConfig),
-    validationSchema: buildValidationSchema(fieldsConfig),
+    validationSchema: buildValidationSchema(fieldsConfig, addressOptionalOnSave),
     resourceSubmit: {
       resource: 'user_data',
       selectedId: existingId,
@@ -438,6 +464,19 @@ export function AccountForm({
 
   const { formik, error, success, submitting } = form;
   const loaded = existingId !== undefined;
+
+  // Tentou salvar com erro: leva a pessoa ao primeiro campo destacado em vez de deixá-la só com
+  // o aviso genérico da barra de salvar (que pode estar longe do campo).
+  useEffect(() => {
+    if (formik.submitCount === 0 || formik.isSubmitting) return;
+    const first = FIELD_ORDER.find((key) => formik.errors[key]);
+    if (!first) return;
+    const el = document.getElementById(first);
+    if (!el) return;
+    el.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
+    el.focus({ preventScroll: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formik.submitCount, formik.isSubmitting]);
 
   // `@kizuna/core`'s useForm dropped the pre-migration hook's resource hydration entirely — it
   // only submits (create/update), never fetches+prefills by `resourceSubmit.selectedId`, and

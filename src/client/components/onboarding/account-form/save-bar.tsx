@@ -15,7 +15,7 @@ export function SaveBar({ dirty, saving, invalid, onDiscard }: Props) {
   if (!dirty && !invalid) return null;
 
   return (
-    <div className="sticky bottom-4 z-20 animate-in fade-in slide-in-from-bottom-2 duration-200">
+    <div className="sticky bottom-[calc(var(--mobile-tab-h,0px)+1rem)] md:bottom-4 z-20 animate-in fade-in slide-in-from-bottom-2 duration-200">
       <div className="flex items-center gap-3 rounded-[var(--ui-radius-card-lg,1.5rem)] border border-border/60 bg-card/95 px-4 py-3 shadow-lg backdrop-blur">
         <p className={invalid ? 'flex-1 text-sm text-destructive' : 'flex-1 text-sm text-muted-foreground'}>
           {invalid ? 'Revise os campos destacados.' : 'Alterações não salvas'}
