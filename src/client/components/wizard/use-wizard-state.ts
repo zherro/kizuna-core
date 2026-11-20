@@ -182,12 +182,14 @@ export function useWizardState<S extends Record<string, unknown>>(
       if (target < 0 || target >= steps.length) return;
       if (target > furthestIndex && !opts?.force) return;
       if (target > clampedIndex) {
+        // Avançar pelo trilho obedece a mesma regra do Continuar; `force` (atalho de dev) pula sem validar.
+        if (!opts?.force && currentStep?.canContinue && !currentStep.canContinue(ctx)) return;
         const ok = await runStepPersist(currentStep);
         if (!ok) return;
       }
       setCurrentIndex(target);
     },
-    [clampedIndex, furthestIndex, steps.length, currentStep, runStepPersist]
+    [clampedIndex, furthestIndex, steps.length, currentStep, ctx, runStepPersist]
   );
 
   const finish = useCallback(async (): Promise<{ ok: boolean; href: string | null }> => {

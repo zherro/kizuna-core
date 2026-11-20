@@ -149,4 +149,45 @@ describe('useWizardState', () => {
     });
     expect(result.current.currentIndex).toBe(0); // furthest ainda é 0
   });
+
+  it('jumpTo para frente respeita canContinue; com force pula sem validar', async () => {
+    let valid = true;
+    const persistA = vi.fn(async () => {});
+    const cfg = makeConfig({
+      registry: {
+        a: step('a', { canContinue: () => valid, persist: persistA }),
+        b: step('b'),
+        c: step('c'),
+      },
+    });
+    const { result } = renderHook(() =>
+      useWizardState({
+        config: cfg,
+        mode: 'edit',
+        entities: {},
+        initialState: { name: 'ok' },
+        initialResourceId: '1',
+      })
+    );
+    await act(async () => {
+      await result.current.goContinue();
+    }); // a -> b (furthest = 1)
+    await act(async () => {
+      await result.current.jumpTo(0);
+    }); // volta livre
+    expect(result.current.currentIndex).toBe(0);
+    persistA.mockClear();
+
+    valid = false;
+    await act(async () => {
+      await result.current.jumpTo(1);
+    });
+    expect(result.current.currentIndex).toBe(0); // inválido: não avança
+    expect(persistA).not.toHaveBeenCalled(); // nem grava o passo
+
+    await act(async () => {
+      await result.current.jumpTo(1, { force: true });
+    });
+    expect(result.current.currentIndex).toBe(1); // atalho de dev pula
+  });
 });
