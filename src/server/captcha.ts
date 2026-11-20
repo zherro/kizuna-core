@@ -8,6 +8,7 @@
  *                                       então dá para checá-la aqui.
  * - `AUTH_CAPTCHA_ENABLED`            — opcional; se `"false"`, força o captcha desligado
  *                                       mesmo com as duas keys presentes.
+ * - `auth.captchaEnabled` no kizuna.config.json — `false` desliga do mesmo jeito (via commit).
  *
  * Regra: captcha habilitado ⟺ `TURNSTILE_SECRET_KEY` presente
  *   E `NEXT_PUBLIC_TURNSTILE_SITE_KEY` presente
@@ -15,6 +16,8 @@
  *
  * Sem as keys, o captcha simplesmente não existe (nem no server, nem na UI).
  */
+
+import cfg from '@/../kizuna.config.json';
 
 const SITEVERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
 
@@ -24,6 +27,8 @@ export function isCaptchaEnabled(): boolean {
   const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
   if (!secret || !siteKey) return false;
   if (process.env.AUTH_CAPTCHA_ENABLED === 'false') return false;
+  // Também desligável pelo projeto, via git: `auth.captchaEnabled: false` no kizuna.config.json.
+  if ((cfg as { auth?: { captchaEnabled?: boolean } }).auth?.captchaEnabled === false) return false;
   return true;
 }
 
