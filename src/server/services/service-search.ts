@@ -1,5 +1,7 @@
 import { pgrstRpc } from '../postrest/conn';
 import { withProjectRegionCities } from '../regions';
+import { projectBoostPlacement } from '../marketing/boost-config';
+import { sponsoredMaxParam } from '../../shared/marketing/boost-placement';
 import { SEARCH_RPC, type SearchAdsBody, type ServiceResult } from '../../client/components/search/search-types';
 
 /** Seed determinístico em [-1, 1) pro `setseed()` da RPC, pra uma lista ficar estável entre
@@ -22,8 +24,16 @@ export async function runServiceSearch(
   return runSearchRpc(searchBody(overrides, seed)).catch(() => []);
 }
 
+/** Vagas patrocinadas padrão das listas do servidor (`marketing.boost.listSlots`); quem quer outro
+ * número (trilhas da home: `railPool`) passa `p_sponsored_max` nos overrides. */
+function defaultSponsored(): Partial<SearchAdsBody> {
+  const max = sponsoredMaxParam(projectBoostPlacement, projectBoostPlacement.listSlots);
+  return max === undefined ? {} : { p_sponsored_max: max };
+}
+
 function searchBody(overrides: Partial<SearchAdsBody>, seed: number): SearchAdsBody {
   return withProjectRegionCities({
+    ...defaultSponsored(),
     p_state: null,
     p_city_id: null,
     p_city_ibge: null,
@@ -48,7 +58,12 @@ export async function runServiceSearchStrict(
 }
 
 async function runSearchRpc(body: SearchAdsBody): Promise<ServiceResult[]> {
-  const response = await pgrstRpc(SEARCH_RPC, body, { auth: null, schema: 'public' });
+  let response = await pgrstRpc(SEARCH_RPC, body, { auth: null, schema: 'public' });
+  // Banco sem a search 0014 recusa `p_sponsored_max`: repete sem a chave (lista orgânica, como antes).
+  if (!response.ok && body.p_sponsored_max !== undefined) {
+    const { p_sponsored_max: _s, ...rest } = body;
+    response = await pgrstRpc(SEARCH_RPC, rest, { auth: null, schema: 'public' });
+  }
   if (!response.ok) throw new Error(`${SEARCH_RPC}: HTTP ${response.status}`);
   const rows = (await response.json().catch(() => null)) as ServiceResult[] | null;
   return Array.isArray(rows) ? rows : [];

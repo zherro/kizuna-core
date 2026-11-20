@@ -1,12 +1,12 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState, type AnchorHTMLAttributes, type ReactNode } from 'react';
-import type { AnalyticsSource, EventRule } from '../../shared/analytics';
+import type { AnalyticsPlacement, AnalyticsSource, EventRule } from '../../shared/analytics';
 import { trackEvent } from './analytics-api';
-import { resolveAdSource } from './source';
+import { resolveAdPlacement, resolveAdSource } from './source';
 import { TrackView } from './track-view';
 
-type Ctx = { uid: string; source: AnalyticsSource | null };
+type Ctx = { uid: string; source: AnalyticsSource | null; placement: AnalyticsPlacement | null };
 const AdTrackingContext = createContext<Ctx | null>(null);
 
 /**
@@ -15,15 +15,22 @@ const AdTrackingContext = createContext<Ctx | null>(null);
  */
 export function AdTrackingProvider({ uid, children }: { uid: string; children: ReactNode }) {
   const [source, setSource] = useState<AnalyticsSource | null>(null);
+  const [placement, setPlacement] = useState<AnalyticsPlacement | null>(null);
   useEffect(() => {
     setSource(resolveAdSource(uid));
+    setPlacement(resolveAdPlacement(uid));
   }, [uid]);
-  return <AdTrackingContext.Provider value={{ uid, source }}>{children}</AdTrackingContext.Provider>;
+  return <AdTrackingContext.Provider value={{ uid, source, placement }}>{children}</AdTrackingContext.Provider>;
 }
 
 /** Origem resolvida do anúncio corrente (`undefined` fora do provider ou antes de montar). */
 export function useAdSource(): AnalyticsSource | undefined {
   return useContext(AdTrackingContext)?.source ?? undefined;
+}
+
+/** 'sponsored' se o detalhe veio de uma vaga patrocinada (`?pl=sp`); null = orgânico/fora do provider. */
+export function useAdPlacement(): AnalyticsPlacement | null {
+  return useContext(AdTrackingContext)?.placement ?? null;
 }
 
 /** Retorna `() => void` que registra `contact_click` do anúncio corrente (no-op fora do provider). */
@@ -36,6 +43,7 @@ export function useTrackContact(): () => void {
       entityId: ctx.uid,
       event: 'contact_click',
       source: ctx.source ?? resolveAdSource(ctx.uid),
+      placement: ctx.placement ?? resolveAdPlacement(ctx.uid),
     });
   };
 }
@@ -73,6 +81,7 @@ export function SourcedTrackView({
   children: ReactNode;
 }) {
   const source = useAdSource();
+  const placement = useAdPlacement();
   return (
     <TrackView
       entityType="service"
@@ -80,6 +89,7 @@ export function SourcedTrackView({
       event={event}
       rule={source ? rule : null}
       source={source}
+      placement={placement}
     >
       {children}
     </TrackView>

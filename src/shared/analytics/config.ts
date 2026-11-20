@@ -27,8 +27,17 @@ export const ANALYTICS_EVENTS = [
 ] as const;
 export type AnalyticsEvent = (typeof ANALYTICS_EVENTS)[number];
 
-export const ANALYTICS_SOURCES = ['search', 'home', 'category', 'direct', 'share', 'other'] as const;
+/** Origem do evento. 'today' (página Hoje), 'swipe' (Descobrir) e 'related' ("Também pode te
+ * interessar") exigem a migração analytics 0004 (CHECK `analytics_events_source_chk`). */
+export const ANALYTICS_SOURCES = ['search', 'home', 'category', 'direct', 'share', 'other', 'today', 'swipe', 'related'] as const;
 export type AnalyticsSource = (typeof ANALYTICS_SOURCES)[number];
+
+/**
+ * Onde o card estava: 'sponsored' = vaga patrocinada (impulsionamento) — ou detalhe aberto a partir
+ * de uma. Sem placement = orgânico. Coluna `analytics_events.placement` (analytics 0004).
+ */
+export const ANALYTICS_PLACEMENTS = ['sponsored'] as const;
+export type AnalyticsPlacement = (typeof ANALYTICS_PLACEMENTS)[number];
 
 export type EventRule = {
   /** Tempo contínuo visível (ms) antes de contar. 0 = conta na hora (ações explícitas). */

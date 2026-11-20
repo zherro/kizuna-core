@@ -37,6 +37,13 @@ describe('resourceMarketing', () => {
     expect(c.publicCacheSeconds).toBeUndefined();
   });
 
+  it('campanhas no ar: só criativo e espaço, público e sem cache', () => {
+    const c = resourceMarketing.vw_ad_campaigns_live;
+    expect(c.listRequiresAuth).toBe(false);
+    expect(c.select).toBe('creative_id,slot_slug');
+    expect(c.mapOutput!({ creative_id: 'c1', slot_slug: 'home-meio' })).toEqual({ creativeId: 'c1', slotSlug: 'home-meio' });
+  });
+
   it('nenhum recurso do marketing liga cache de servidor', () => {
     for (const cfg of Object.values(resourceMarketing)) expect(cfg.publicCacheSeconds).toBeUndefined();
   });

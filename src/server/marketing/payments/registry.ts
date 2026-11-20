@@ -1,3 +1,5 @@
+import { abacatePayProvider } from './abacatepay';
+import { devPaymentProvider } from './dev';
 import type { PaymentProvider } from './types';
 
 const providers = new Map<string, PaymentProvider>();
@@ -22,7 +24,15 @@ export const manualProvider: PaymentProvider = {
   },
 };
 
-providers.set(manualProvider.id, manualProvider);
+/** Embutidos: o manual sempre; os demais só aparecem quando `isConfigured()` (envs presentes). */
+function registerBuiltins() {
+  providers.set(manualProvider.id, manualProvider);
+  providers.set(abacatePayProvider.id, abacatePayProvider);
+  providers.set(devPaymentProvider.id, devPaymentProvider);
+}
+registerBuiltins();
+
+const usable = (p: PaymentProvider | undefined): p is PaymentProvider => !!p && p.isConfigured?.() !== false;
 
 export function registerPaymentProvider(provider: PaymentProvider) {
   if (!/^[a-z0-9_-]{1,30}$/.test(provider.id)) throw new Error('id de provedor inválido');
@@ -30,15 +40,16 @@ export function registerPaymentProvider(provider: PaymentProvider) {
 }
 
 export function getPaymentProvider(id?: string | null): PaymentProvider | null {
-  return providers.get(id || defaultProviderId()) ?? null;
+  const p = providers.get(id || defaultProviderId());
+  return usable(p) ? p : null;
 }
 
 export function defaultProviderId(): string {
   const id = process.env.MARKETING_PAYMENT_PROVIDER?.trim();
-  return id && providers.has(id) ? id : 'manual';
+  return id && usable(providers.get(id)) ? id : 'manual';
 }
 
 export function __resetPaymentProviders() {
   providers.clear();
-  providers.set(manualProvider.id, manualProvider);
+  registerBuiltins();
 }

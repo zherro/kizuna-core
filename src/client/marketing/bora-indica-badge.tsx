@@ -73,14 +73,17 @@ export function BoraIndicaSeal({ variant = 'card', className }: { variant?: Bora
  */
 export function BoraIndicaBadge({
   serviceUid,
+  boosted,
   variant = 'card',
   className,
 }: {
   serviceUid?: string | null;
+  /** Já resolvido no servidor: definido, não consulta `vw_boosts_live` no navegador. */
+  boosted?: boolean | null;
   variant?: BoraIndicaVariant;
   className?: string;
 }) {
-  const boosted = useIsBoosted(serviceUid);
-  if (!boosted) return null;
+  const isBoosted = useIsBoosted(serviceUid, boosted);
+  if (!isBoosted) return null;
   return <BoraIndicaSeal variant={variant} className={className} />;
 }

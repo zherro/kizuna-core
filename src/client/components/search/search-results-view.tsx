@@ -15,12 +15,27 @@ import { expiredLabelFor, type ExpiredByGroup } from './expired';
 import { formatLocationLabel } from './format-location-label';
 import { serviceHref } from '../../../shared/city-routing/city-slug';
 import { SponsoredStrip, interleaveSponsored, usePromotedBoosted } from '../../marketing/sponsored-strip';
+import { isSponsored, pinSponsored } from '../../../shared/marketing/boost-placement';
 
-/** Quantos impulsionados a faixa "Indicados pelo Bora" mostra de uma vez. */
+/** Só com RPC antiga (sem `boosted`): quantos impulsionados a faixa promove no navegador. */
 const SPONSORED_MAX = 3;
-/** Na trilha horizontal (celular): 1 impulsionado a cada 3 cards. */
+/** Só com RPC antiga: na trilha horizontal (celular), 1 impulsionado a cada 3 cards. */
 const SPONSORED_EVERY_STRIP = 3;
 const uidOfResult = (r: ServiceResult) => r.uid;
+
+/**
+ * Patrocinados da lista. Com a `fn_search_services` 0014 (`boosted` presente) quem escolhe é o BANCO
+ * (`sponsor_slot`: impulsionados que casam com a busca, cidade primeiro, rodízio pela semente) — zero
+ * requisição no navegador. RPC antiga: cai na promoção no navegador entre os já carregados (legado).
+ */
+function useSponsored(results: ServiceResult[]) {
+  const serverResolved = results.some((r) => typeof r.boosted === 'boolean');
+  // lista vazia (antes da 1ª resposta) também não consulta: espera saber se o banco já resolveu
+  const legacy = usePromotedBoosted(results, uidOfResult, SPONSORED_MAX, !serverResolved && results.length > 0);
+  if (!serverResolved) return { ...legacy, server: false };
+  const ordered = pinSponsored(results);
+  return { promoted: ordered.filter(isSponsored), rest: ordered.filter((r) => !isSponsored(r)), server: true };
+}
 
 // Colunas com a largura do card do carrossel (`RESULT_CARD_WIDTH`, ~6 por tela): o card da busca tem
 // a mesma proporção do da home e do detalhe. No celular, 1 coluna cheia.
@@ -91,6 +106,7 @@ function toCardProps(r: ServiceResult, detailConfig?: ServiceDetailConfig | null
     imageUrl: r.cover_file_id ? `/api/public/storage/files/${r.cover_file_id}/content?size=thumb` : null,
     locationLabel: formatLocationLabel(r),
     serviceUid: r.uid,
+    boosted: r.boosted,
     highlighted: r.sponsored,
     highlightLabel: 'Patrocinado',
     providerName: r.provider_name,
@@ -147,9 +163,12 @@ export function SearchResultsView({
   // Impulsionados (consulta direta, sem cache, só no navegador) entre os resultados JÁ carregados:
   // sorteados uma vez por montagem e promovidos. Antes da consulta voltar, `promoted` é vazio e a
   // lista é a de sempre — o primeiro render bate com o do servidor.
-  const { promoted, rest } = usePromotedBoosted(results, uidOfResult, SPONSORED_MAX);
+  const { promoted, rest, server } = useSponsored(results);
+  const paidUids = new Set(promoted.map(uidOfResult));
   const card = (r: ServiceResult, variant: 'strip' | 'grid') => {
-    const item = <ListingResultCard key={r.uid} {...toCardProps(r, serviceDetailConfig)} expiredLabel={expiredLabelFor(expiredByGroup, r.category_group_slug, r.expires_at)} groupLabel={groupNameOf?.(r.category_group_slug) ?? null} href={withSource(serviceHref(r), source)} variant={variant} />;
+    // vaga patrocinada: impressão e clique contam à parte (placement) e o card leva o selo
+    const placement = paidUids.has(r.uid) ? ('sponsored' as const) : null;
+    const item = <ListingResultCard key={r.uid} {...toCardProps(r, serviceDetailConfig)} highlighted={r.sponsored || placement !== null} expiredLabel={expiredLabelFor(expiredByGroup, r.category_group_slug, r.expires_at)} groupLabel={groupNameOf?.(r.category_group_slug) ?? null} href={withSource(serviceHref(r), source, placement)} variant={variant} />;
     if (!impressionRule) return item;
     return (
       <TrackView
@@ -159,6 +178,7 @@ export function SearchResultsView({
         event="impression"
         rule={impressionRule}
         source={source}
+        placement={placement}
         className={variant === 'strip' ? 'shrink-0' : 'h-full'}
       >
         {item}
@@ -263,7 +283,9 @@ export function SearchResultsView({
       <div aria-busy={refreshing} className={busy}>
         {notice}
         <div className="flex gap-3 overflow-x-auto pb-2">
-          {interleaveSponsored(rest, promoted, SPONSORED_EVERY_STRIP, uidOfResult).map((r) => card(r, 'strip'))}
+          {(server ? [...promoted, ...rest] : interleaveSponsored(rest, promoted, SPONSORED_EVERY_STRIP, uidOfResult)).map((r) =>
+            card(r, 'strip')
+          )}
         </div>
       </div>
     );

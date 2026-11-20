@@ -116,7 +116,7 @@ function BreakdownTable({ title, hint, rows, firstCol }: { title: string; hint?:
               <th className="px-4 py-2 font-medium md:px-6">{firstCol}</th>
               <th className="px-2 py-2 text-right font-medium">Impr.</th>
               <th className="px-2 py-2 text-right font-medium">Views</th>
-              <th className="px-2 py-2 text-right font-medium">CTR</th>
+              <th className="px-2 py-2 text-right font-medium" title="Visualizações ÷ impressões. Pode passar de 100%: a visualização também vem de link direto, compartilhamento e Google, e a impressão só conta card visível na lista.">CTR</th>
               <th className="px-2 py-2 text-right font-medium">Contatos</th>
               <th className="px-4 py-2 text-right font-medium md:px-6">Taxa</th>
             </tr>
@@ -293,7 +293,7 @@ export function PainelMetricas({ tenantId }: { tenantId: string }) {
                     <th className="px-4 py-2 font-medium md:px-6">Anúncio</th>
                     <th className="px-2 py-2 text-right font-medium">Impr.</th>
                     <th className="px-2 py-2 text-right font-medium">Views</th>
-                    <th className="px-2 py-2 text-right font-medium">CTR</th>
+                    <th className="px-2 py-2 text-right font-medium" title="Visualizações ÷ impressões. Pode passar de 100%: a visualização também vem de link direto, compartilhamento e Google, e a impressão só conta card visível na lista.">CTR</th>
                     <th className="px-2 py-2 text-right font-medium">Fav.</th>
                     <th className="px-2 py-2 text-right font-medium">Contatos</th>
                     <th className="px-2 py-2 text-right font-medium">Taxa</th>
@@ -307,12 +307,12 @@ export function PainelMetricas({ tenantId }: { tenantId: string }) {
                       <td className="px-2 py-2.5 text-right tabular-nums">{int(ad.impressions)}</td>
                       <td className="px-2 py-2.5 text-right tabular-nums">{int(ad.views)}</td>
                       <td className="px-2 py-2.5 text-right tabular-nums">
-                        {pct(ad.impressions > 0 ? Math.min(100, (ad.views / ad.impressions) * 100) : null)}
+                        {pct(ad.impressions > 0 ? (ad.views / ad.impressions) * 100 : null)}
                       </td>
                       <td className="px-2 py-2.5 text-right tabular-nums">{int(ad.favorites)}</td>
                       <td className="px-2 py-2.5 text-right tabular-nums">{int(ad.contacts)}</td>
                       <td className="px-2 py-2.5 text-right tabular-nums">
-                        {pct(ad.views > 0 ? Math.min(100, (ad.contacts / ad.views) * 100) : null)}
+                        {pct(ad.views > 0 ? (ad.contacts / ad.views) * 100 : null)}
                       </td>
                       <td className="px-4 py-2.5 text-right tabular-nums md:px-6">
                         {ad.rating == null ? '—' : formatMetric('rating', ad.rating)}

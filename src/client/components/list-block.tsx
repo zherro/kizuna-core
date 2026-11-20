@@ -115,6 +115,15 @@ export type ListBlockConfig = {
     hrefBase: string;
     icon?: 'edit' | 'review';
   };
+  /**
+   * Ação extra por linha (ex.: "Impulsionar" em Minhas publicações). `href` com `{campo}` trocado
+   * pelo valor do item (ex.: `{uid}`). `showWhen`: só aparece se TODOS os campos do item (já mapeado) baterem. Dado puro.
+   */
+  secondaryAction?: {
+    label: string;
+    href: string;
+    showWhen?: Record<string, string | number | boolean>;
+  };
   statusFilter?: {
     defaultValue?: string;
   };
@@ -556,6 +565,18 @@ export function ListBlock({ config }: { config: ListBlockConfig }) {
                         setToggled((prev) => ({ ...prev, [String(item.id)]: value }))
                       }
                     />
+                  ) : null}
+                  {config.secondaryAction &&
+                  Object.entries(config.secondaryAction.showWhen ?? {}).every(
+                    ([k, v]) => (config.toggle?.field === k ? (toggled[String(item.id)] ?? item[k]) : item[k]) === v,
+                  ) ? (
+                    <Link
+                      href={config.secondaryAction.href.replace(/\{(\w+)\}/g, (_, f: string) => encodeURIComponent(String(item[f] ?? '')))}
+                      className={cn(buttonVariants({ size: 'sm', variant: 'outline' }), 'h-8 w-full justify-center text-xs sm:w-auto')}
+                    >
+                      <Sparkles className="h-3.5 w-3.5" />
+                      {config.secondaryAction.label}
+                    </Link>
                   ) : null}
                   <Link
                     href={`${config.action.hrefBase}/${item.id}`}

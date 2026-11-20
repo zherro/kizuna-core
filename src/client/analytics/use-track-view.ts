@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import type { AnalyticsEvent, AnalyticsSource, EventRule } from '../../shared/analytics';
+import type { AnalyticsEvent, AnalyticsPlacement, AnalyticsSource, EventRule } from '../../shared/analytics';
 import { sendTrack } from './analytics-api';
 
 export type TrackViewOptions = {
@@ -11,6 +11,8 @@ export type TrackViewOptions = {
   /** Regra já resolvida no servidor (`resolveEventRule`). `null` = evento desligado. */
   rule: EventRule | null;
   source?: AnalyticsSource;
+  /** 'sponsored' = o card está numa vaga patrocinada: conta à parte da exibição orgânica. */
+  placement?: AnalyticsPlacement | null;
 };
 
 function sessionGet(key: string): boolean {
@@ -36,6 +38,7 @@ function sessionSet(key: string) {
 export function useTrackView(opts: TrackViewOptions): (el: Element | null) => void {
   const [el, setEl] = useState<Element | null>(null);
   const { entityType, entityId, event, rule, source } = opts;
+  const placement = opts.placement === 'sponsored' ? 'sponsored' : null;
   const minMs = rule?.minVisibleMs ?? 0;
   const ratio = rule?.minVisibleRatio ?? 0;
   const once = rule?.oncePerSession ?? false;
@@ -43,7 +46,8 @@ export function useTrackView(opts: TrackViewOptions): (el: Element | null) => vo
 
   useEffect(() => {
     if (!enabled || !el) return;
-    const key = `kz-trk:${entityType}:${entityId}:${event}`;
+    // patrocinada e orgânica são exposições diferentes: chaves de sessão separadas
+    const key = `kz-trk:${entityType}:${entityId}:${event}${placement ? ':sp' : ''}`;
     if (once && sessionGet(key)) return;
 
     let inView = false;
@@ -61,6 +65,7 @@ export function useTrackView(opts: TrackViewOptions): (el: Element | null) => vo
         entityId,
         event,
         source,
+        placement,
         visibleMs: Math.max(accumulated + (Date.now() - startedAt), minMs),
       });
       cleanup();
@@ -95,7 +100,7 @@ export function useTrackView(opts: TrackViewOptions): (el: Element | null) => vo
       if (timer !== undefined) clearTimeout(timer);
     }
     return cleanup;
-  }, [el, enabled, entityType, entityId, event, minMs, ratio, once, source]);
+  }, [el, enabled, entityType, entityId, event, minMs, ratio, once, source, placement]);
 
   return setEl;
 }

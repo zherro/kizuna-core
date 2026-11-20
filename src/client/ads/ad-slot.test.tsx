@@ -6,7 +6,12 @@ let pathname = '/cuiaba/bares';
 vi.mock('next/navigation', () => ({ usePathname: () => pathname }));
 const trackAd = vi.fn();
 const loadAdPool = vi.fn();
-vi.mock('./ads-api', () => ({ loadAdPool: () => loadAdPool(), trackAd: (p: unknown) => trackAd(p) }));
+const loadLiveCampaigns = vi.fn();
+vi.mock('./ads-api', () => ({
+  loadAdPool: () => loadAdPool(),
+  loadLiveCampaigns: () => loadLiveCampaigns(),
+  trackAd: (p: unknown) => trackAd(p),
+}));
 
 import { GOOGLE_CREATIVE_ID } from '../../shared/ads';
 import { AdSlot, __resetAdSlotCounter } from './ad-slot';
@@ -35,6 +40,7 @@ beforeEach(() => {
   pathname = '/cuiaba/bares';
   trackAd.mockReset();
   loadAdPool.mockReset().mockResolvedValue({ slots: [slotCfg], creatives: [creative] });
+  loadLiveCampaigns.mockReset().mockResolvedValue([]);
   __resetAdSlotCounter();
   vi.stubGlobal('IntersectionObserver', FakeIO);
   Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'visible' });
@@ -223,5 +229,68 @@ describe('AdSlot', () => {
     await flush();
     expect(b.container.querySelector('aside')?.className).toMatch(/max-w-\[1600px\]/);
     b.unmount();
+  });
+
+  it('sem paidShare não busca campanhas (projetos sem marketing ficam iguais)', async () => {
+    render(<AdSlot slot="home-meio" />);
+    await flush();
+    expect(loadLiveCampaigns).not.toHaveBeenCalled();
+  });
+
+  it('modo pago: campanha no ar no espaço sai com paidShare=1; Google com paidShare=0', async () => {
+    const paidCreative = { ...creative, id: 'p1', alt: 'Pago' };
+    loadAdPool.mockResolvedValue({ slots: [{ ...slotCfg, googleWeight: 1, googleAdUnit: '123' }], creatives: [paidCreative] });
+    loadLiveCampaigns.mockResolvedValue([{ creativeId: 'p1', slotSlug: 'home-meio' }]);
+    const a = render(<AdSlot slot="home-meio" adsenseClient="ca-pub-1" paidShare={1} />);
+    await flush();
+    expect(loadLiveCampaigns).toHaveBeenCalled();
+    expect(screen.getByAltText('Pago')).toBeTruthy();
+    a.unmount();
+    __resetAdSlotCounter();
+    const b = render(<AdSlot slot="home-meio" adsenseClient="ca-pub-1" paidShare={0} />);
+    await flush();
+    expect(b.container.querySelector('ins.adsbygoogle')).not.toBeNull();
+    b.unmount();
+  });
+
+  it('modo pago: criativo com campanha em OUTRO espaço não aparece aqui', async () => {
+    loadLiveCampaigns.mockResolvedValue([{ creativeId: 'c1', slotSlug: 'cidade-topo' }]);
+    const { container } = render(<AdSlot slot="home-meio" paidShare={0.7} />);
+    await flush();
+    expect(container.firstChild).toBeNull();
+  });
+
+  it('rotação nunca troca um anúncio do Google (política do AdSense)', async () => {
+    loadAdPool.mockResolvedValue({
+      slots: [{ ...slotCfg, rotateSeconds: 5, googleWeight: 1000, googleAdUnit: '123' }],
+      creatives: [creative, { ...creative, id: 'c2' }],
+    });
+    const spy = vi.spyOn(Math, 'random').mockReturnValue(0.9999); // último candidato = Google
+    const { container } = render(<AdSlot slot="home-meio" adsenseClient="ca-pub-1" />);
+    await flush();
+    expect(container.querySelector('ins.adsbygoogle')).not.toBeNull();
+    spy.mockReturnValue(0);
+    act(() => { vi.advanceTimersByTime(30_000); });
+    expect(container.querySelector('ins.adsbygoogle')).not.toBeNull();
+    expect(container.querySelector('img')).toBeNull();
+    spy.mockRestore();
+  });
+
+  it('rotação entre próprios não sorteia o Google', async () => {
+    loadAdPool.mockResolvedValue({
+      slots: [{ ...slotCfg, rotateSeconds: 5, googleWeight: 1, googleAdUnit: '123' }],
+      creatives: [{ ...creative, weight: 1000 }, { ...creative, id: 'c2', alt: 'Anúncio B', weight: 1000 }],
+    });
+    const spy = vi.spyOn(Math, 'random').mockReturnValue(0); // primeiro = c1
+    const { container } = render(<AdSlot slot="home-meio" adsenseClient="ca-pub-1" />);
+    await flush();
+    expect(container.querySelector('img')).not.toBeNull();
+    spy.mockReturnValue(0.9999);
+    for (let i = 0; i < 6; i++) {
+      act(() => { vi.advanceTimersByTime(5000); });
+      expect(container.querySelector('ins.adsbygoogle')).toBeNull();
+      expect(container.querySelector('img')).not.toBeNull();
+    }
+    spy.mockRestore();
   });
 });

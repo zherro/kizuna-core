@@ -14,11 +14,14 @@ export function PeriodFields({
   onChange,
   evaluation,
   balanceCents,
+  directPayment = false,
 }: {
   draft: PeriodDraft;
   onChange: (d: PeriodDraft) => void;
   evaluation: PeriodEval;
   balanceCents: number;
+  /** Pagamento direto (PIX): o saldo não entra na conta, só o custo do período. */
+  directPayment?: boolean;
 }) {
   const today = dbToday();
   return (
@@ -34,6 +37,18 @@ export function PeriodFields({
           <Input type="date" min={draft.startsOn || today} value={draft.endsOn} onChange={(e) => onChange({ ...draft, endsOn: e.target.value })} />
         </Field>
       </div>
+      {directPayment ? (
+        <dl className="grid grid-cols-2 gap-2 rounded-lg bg-muted/50 p-3 text-sm">
+          <div>
+            <dt className="text-xs text-muted-foreground">Total a pagar</dt>
+            <dd className="font-semibold tabular-nums">{formatBRL(evaluation.totalCents)}</dd>
+          </div>
+          <div>
+            <dt className="text-xs text-muted-foreground">Forma</dt>
+            <dd className="font-semibold">PIX</dd>
+          </div>
+        </dl>
+      ) : (
       <dl className="grid grid-cols-3 gap-2 rounded-lg bg-muted/50 p-3 text-sm">
         <div>
           <dt className="text-xs text-muted-foreground">Custo do período</dt>
@@ -50,6 +65,7 @@ export function PeriodFields({
           </dd>
         </div>
       </dl>
+      )}
       {!evaluation.check.ok ? <Notice tone="warn">{evaluation.check.reason}</Notice> : null}
     </div>
   );

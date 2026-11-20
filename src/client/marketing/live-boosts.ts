@@ -38,9 +38,10 @@ export function __resetLiveBoosts() {
 }
 
 /** Conjunto de uids impulsionados agora. Vazio no servidor e no primeiro render (sem divergência de hidratação). */
-export function useLiveBoosts(): ReadonlySet<string> {
+export function useLiveBoosts(enabled = true): ReadonlySet<string> {
   const [set, setSet] = useState<ReadonlySet<string>>(() => new Set());
   useEffect(() => {
+    if (!enabled) return;
     let cancelled = false;
     void loadLiveBoosts().then((s) => {
       if (!cancelled) setSet(s);
@@ -48,12 +49,17 @@ export function useLiveBoosts(): ReadonlySet<string> {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [enabled]);
   return set;
 }
 
-/** `true` se o anúncio (uid) tem impulsionamento vigente. */
-export function useIsBoosted(serviceUid: string | null | undefined): boolean {
-  const live = useLiveBoosts();
+/**
+ * `true` se o anúncio (uid) tem impulsionamento vigente. Com `known` (valor que já veio do servidor,
+ * ex. `ServiceResult.boosted` da `fn_search_services` 0014) não consulta nada: zero requisição.
+ */
+export function useIsBoosted(serviceUid: string | null | undefined, known?: boolean | null): boolean {
+  const resolved = typeof known === 'boolean';
+  const live = useLiveBoosts(!resolved);
+  if (resolved) return !!serviceUid && known;
   return !!serviceUid && live.has(serviceUid);
 }

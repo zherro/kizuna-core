@@ -43,6 +43,11 @@ export type ServiceResult = {
   state?: string | null;
   /** Total de endereços ativos do serviço. */
   address_count?: number | null;
+  /** Impulsionamento vigente (plugin marketing; `fn_search_services` 0014 com `p_sponsored_max`).
+   * Ausente = RPC antiga ou sem o pedido (o selo cai na consulta do navegador). */
+  boosted?: boolean | null;
+  /** Vaga patrocinada (1..N) que o banco deu ao anúncio impulsionado; null/ausente = orgânico. */
+  sponsor_slot?: number | null;
 };
 
 export type SearchFilters = {
@@ -133,6 +138,9 @@ export type SearchAdsBody = {
   /** Vencidos que ainda aparecem, por grupo: `{ "eventos": 2 }` = até 2 dias depois do `expires_at`
    * (`fn_search_services` 0013). Só mande quando houver — a RPC anterior à 0013 recusa a chave. */
   p_expired_grace?: Record<string, number>;
+  /** Vagas patrocinadas no topo da página 0 (`fn_search_services` 0014; 0 = só marca `boosted`).
+   * Só mande quando houver — a RPC anterior à 0014 recusa a chave. */
+  p_sponsored_max?: number;
 };
 
 export type TaxonomySubcategory = { id: number; name: string };

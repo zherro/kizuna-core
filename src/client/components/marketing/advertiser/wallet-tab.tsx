@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Loader2, Wallet } from 'lucide-react';
 import { formatBRL, parseBRLToCents } from '../../../../shared/marketing/cost';
 import { cn } from '../../../../lib/utils';
@@ -8,6 +8,7 @@ import { Input } from '../../ui/input';
 import { EmptyStateCard } from '../../ui-better-soft/lists/empty-state-card';
 import { fetchPage } from './data';
 import type { Balance, IntentRow, LedgerRow } from './types';
+import { PixBox, PurchaseStatusLine, usePurchaseStatus, type CheckoutResponse } from './pix-checkout';
 import { useLoad } from './use-load';
 import { Field, formatDay, LoadError, Loading, Notice, Pager, SectionTitle, Stat } from './ui';
 
@@ -26,7 +27,7 @@ const INTENT_LABEL: Record<string, string> = {
   expired: 'Expirado',
 };
 
-export type CheckoutResult = { intentId: string; status: string; url?: string; instructions?: string };
+export type CheckoutResult = CheckoutResponse;
 
 /** Valor digitado → centavos válidos para recarga, ou a mensagem do que corrigir. */
 export function checkTopup(text: string): { ok: true; cents: number } | { ok: false; reason: string } {
@@ -43,6 +44,16 @@ function TopUp({ onDone }: { onDone: () => void }) {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<CheckoutResult | null>(null);
   const check = checkTopup(text);
+  // Provedor com PIX na página: acompanha até pagar e então atualiza saldo/extrato.
+  const status = usePurchaseStatus(result?.pix ? result.intentId : null);
+  const finished = !!status && status.outcome !== 'waiting';
+  const doneFor = useRef<string | null>(null);
+  useEffect(() => {
+    if (finished && result && doneFor.current !== result.intentId) {
+      doneFor.current = result.intentId;
+      onDone();
+    }
+  }, [finished, result, onDone]);
 
   async function submit() {
     if (!check.ok) {
@@ -110,6 +121,16 @@ function TopUp({ onDone }: { onDone: () => void }) {
             <strong className="block">Pedido de {check.ok ? formatBRL(check.cents) : ''} criado.</strong>
             {result.instructions ?? 'Assim que o pagamento for confirmado, o saldo entra aqui.'}
           </Notice>
+          {result.pix && !finished ? (
+            <div className="mt-3">
+              <PixBox pix={result.pix} />
+            </div>
+          ) : null}
+          {result.pix ? (
+            <div className="mt-3">
+              <PurchaseStatusLine status={status} />
+            </div>
+          ) : null}
         </div>
       ) : null}
     </section>

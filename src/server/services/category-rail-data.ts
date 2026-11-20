@@ -2,6 +2,8 @@ import { unstable_cache } from 'next/cache';
 import { serverFetchResource } from '../postgrest-crud';
 import type { ServiceResult } from '../../client/components/search/search-types';
 import { runServiceSearch } from './service-search';
+import { projectBoostPlacement } from '../marketing/boost-config';
+import { sponsoredMaxParam } from '../../shared/marketing/boost-placement';
 
 /**
  * Dados de um carrossel "por categoria" ou "por grupo de categoria" (home). Genérico: só conhece o
@@ -43,6 +45,11 @@ type CategoryRailOptions = {
   cityIbges?: string[];
 };
 
+function sponsoredPool(): { p_sponsored_max?: number } {
+  const max = sponsoredMaxParam(projectBoostPlacement, projectBoostPlacement.railPool);
+  return max === undefined ? {} : { p_sponsored_max: max };
+}
+
 /** TTL do cache dos dados da trilha (s): a home não muda a cada segundo; poupa o PostgREST. */
 export const CATEGORY_RAIL_CACHE_SECONDS = 300;
 
@@ -72,6 +79,8 @@ async function fetchCategoryRail(
     {
       ...filter,
       p_page_size: poolSize,
+      // impulsionamento: até `railPool` candidatos no topo do pool; quem exibe sorteia `railSlots`
+      ...sponsoredPool(),
       p_city_ibge: cities?.[0] ?? cityIbge ?? null,
       // só manda quando há irmãs — sem a chave, a RPC aceita a assinatura antiga também
       ...(cities && cities.length > 1 ? { p_city_ibges: cities } : {}),

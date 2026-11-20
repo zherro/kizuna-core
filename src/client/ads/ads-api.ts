@@ -1,4 +1,4 @@
-import { GOOGLE_CREATIVE_ID, type AdCreative, type AdSlotConfig } from '../../shared/ads';
+import { GOOGLE_CREATIVE_ID, type AdCreative, type AdLiveCampaign, type AdSlotConfig } from '../../shared/ads';
 import { isAutomated } from '../analytics/visitor';
 
 export type AdPool = { slots: AdSlotConfig[]; creatives: AdCreative[] };
@@ -6,9 +6,9 @@ export type AdPool = { slots: AdSlotConfig[]; creatives: AdCreative[] };
 const TRACK_URL = '/api/resources/fn_ad_track';
 let pool: Promise<AdPool> | null = null;
 
-async function getItems<T>(resource: string, pageSize: number): Promise<T[]> {
+async function getItems<T>(resource: string, pageSize: number, init: RequestInit = {}): Promise<T[]> {
   try {
-    const res = await fetch(`/api/resources/${resource}?pageSize=${pageSize}`, { credentials: 'same-origin' });
+    const res = await fetch(`/api/resources/${resource}?pageSize=${pageSize}`, { credentials: 'same-origin', ...init });
     if (!res.ok) return [];
     const body = (await res.json()) as { items?: T[] };
     return Array.isArray(body.items) ? body.items : [];
@@ -30,6 +30,27 @@ export function loadAdPool(): Promise<AdPool> {
 
 export function __resetAdPool() {
   pool = null;
+  campaigns = null;
+}
+
+let campaigns: Promise<AdLiveCampaign[]> | null = null;
+
+/**
+ * Campanhas pagas no ar (plugin marketing, `vw_ad_campaigns_live`: só criativo e espaço, sem
+ * valores). Uma busca por carga de página, SEM cache (pausa/fim de campanha vale na hora). Só é
+ * chamada quando o projeto liga o modo pago (`paidShare` no AdSlot); falha → [] (sorteio antigo).
+ */
+export function loadLiveCampaigns(): Promise<AdLiveCampaign[]> {
+  if (!campaigns) {
+    campaigns = getItems<{ creativeId?: string; slotSlug?: string }>('vw_ad_campaigns_live', 1000, { cache: 'no-store' })
+      .then((rows) =>
+        rows
+          .map((r) => ({ creativeId: String(r.creativeId ?? ''), slotSlug: String(r.slotSlug ?? '') }))
+          .filter((r) => r.creativeId && r.slotSlug),
+      )
+      .catch(() => []);
+  }
+  return campaigns;
 }
 
 export function trackAd(p: { slot: string; creativeId: string | null; page: string; event: 'impression' | 'click' }): void {

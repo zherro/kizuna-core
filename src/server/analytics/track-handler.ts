@@ -19,7 +19,9 @@ import { lookupIpRegion } from './ip-geo';
  * `POST /api/analytics/track` — grava um evento de métrica com o contexto que só o servidor tem:
  * aparelho (enviado pelo cliente), região aproximada e IP (dos headers). Corpo JSON (fetch ou
  * `sendBeacon`, que pode chegar como `text/plain`), até 4 KB:
- * `{ p_entity_type, p_entity_id, p_event_type, p_visitor_hash, p_source?, p_visible_ms?, p_device? }`.
+ * `{ p_entity_type, p_entity_id, p_event_type, p_visitor_hash, p_source?, p_visible_ms?, p_device?, p_placement? }`.
+ * `p_placement: 'sponsored'` = exibição numa vaga patrocinada (analytics 0004); outro valor é ignorado.
+ * User-Agent de robô (mesma regra do cliente) → 204 sem gravar.
  * Campos desconhecidos são ignorados (o cliente não manda IP, região nem viewer).
  *
  * Respostas: 200 `{ tracked }`; 204 analytics/evento desligado na config; 400 corpo inválido;
@@ -44,6 +46,14 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const VISITOR_HASH = /^[0-9a-f]{16,64}$/;
 const ENTITY_TYPE = /^[a-z][a-z0-9_]{0,63}$/;
 const MAX_VISIBLE_MS = 3_600_000;
+/** Mesma regra de `isAutomated` (client/analytics/visitor.ts): robô que chama a rota direto não conta. */
+const BOT_UA =
+  /bot|crawl|spider|slurp|headless|lighthouse|pagespeed|preview|facebookexternalhit|whatsapp\/|telegrambot|curl|wget|python-requests|okhttp/i;
+
+/** `true` para User-Agent vazio ou de robô/automação conhecido. */
+export function isBotUserAgent(ua: string | null | undefined): boolean {
+  return !ua || BOT_UA.test(ua);
+}
 
 export type AnalyticsTrackHandlerOptions = {
   config?: AnalyticsConfig;
@@ -59,6 +69,7 @@ type TrackInput = {
   source: string;
   visibleMs: number;
   device: AnalyticsDevice | null;
+  placement: 'sponsored' | null;
 };
 
 class BodyTooLarge extends Error {}
@@ -101,7 +112,7 @@ async function readBoundedText(request: Request): Promise<string> {
 }
 
 function parseInput(body: Record<string, unknown>, collectDevice: boolean): TrackInput | null {
-  const { p_entity_type, p_entity_id, p_event_type, p_visitor_hash, p_source, p_visible_ms, p_device } = body;
+  const { p_entity_type, p_entity_id, p_event_type, p_visitor_hash, p_source, p_visible_ms, p_device, p_placement } = body;
   if (typeof p_entity_type !== 'string' || !ENTITY_TYPE.test(p_entity_type)) return null;
   if (typeof p_entity_id !== 'string' || !UUID.test(p_entity_id)) return null;
   if (typeof p_event_type !== 'string' || !(ANALYTICS_EVENTS as readonly string[]).includes(p_event_type)) {
@@ -143,6 +154,8 @@ function parseInput(body: Record<string, unknown>, collectDevice: boolean): Trac
     source,
     visibleMs,
     device,
+    // desconhecido não derruba o evento: vira orgânico
+    placement: p_placement === 'sponsored' ? 'sponsored' : null,
   };
 }
 
@@ -238,6 +251,7 @@ export function createAnalyticsTrackHandler(opts: AnalyticsTrackHandlerOptions =
 
   return async function POST(request: Request): Promise<Response> {
     if (!config.enabled) return new NextResponse(null, { status: 204 });
+    if (isBotUserAgent(request.headers.get('user-agent'))) return new NextResponse(null, { status: 204 });
 
     const requestIp = clientIp(request.headers);
     if (!checkRateLimit(`analytics:${requestIp ?? 'unknown'}`, RATE_MAX, RATE_WINDOW_MS)) {
@@ -294,6 +308,8 @@ export function createAnalyticsTrackHandler(opts: AnalyticsTrackHandlerOptions =
       p_region_uf: region?.uf ?? null,
       ...ipData,
       p_viewer_id: viewer,
+      // só manda quando há: banco sem analytics 0004 continua aceitando a chamada de 13 argumentos
+      ...(input.placement ? { p_placement: input.placement } : {}),
     };
 
     try {

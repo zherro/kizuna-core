@@ -10,6 +10,7 @@ import {
   type AdMedia,
   type AdSlotConfig,
   type AdStatRow,
+  normalizeAdUnit,
 } from '../../../shared/ads';
 import { Button } from '../ui/button';
 import { Checkbox } from '../ui/checkbox';
@@ -35,6 +36,10 @@ function validate(c: AdSlotConfig): string {
   if (!Number.isFinite(c.googleWeight) || c.googleWeight < 0 || c.googleWeight > 1000) {
     return 'Peso do Google deve ficar entre 0 e 1000.';
   }
+  const unit = (c.googleAdUnit ?? '').trim();
+  if (unit && !normalizeAdUnit(unit)) {
+    return 'Ad unit do Google: use só os números do data-ad-slot do bloco (ex.: 1234567890).';
+  }
   const r = c.rotateSeconds;
   if (!Number.isInteger(r) || (r !== 0 && (r < 5 || r > 600))) {
     return 'Rotação deve ser 0 (desligada) ou de 5 a 600 segundos.';
@@ -59,6 +64,7 @@ function SlotCard({
   const ownCtr = stats ? summarizeOwn(stats, { slot: def.slug }).ctr : null;
   const googleOn = cfg.media.includes('google');
   const noUnit = googleOn && !(cfg.googleAdUnit ?? '').trim();
+  const noWeight = googleOn && !noUnit && !(cfg.googleWeight > 0);
   const slug = def.slug;
 
   function toggleMedia(media: AdMedia, on: boolean) {
@@ -166,6 +172,13 @@ function SlotCard({
         <p className="flex items-center gap-2 text-xs text-amber-700 dark:text-amber-300">
           <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden="true" />
           Google marcado sem ad unit, o Google não será exibido.
+        </p>
+      )}
+
+      {noWeight && (
+        <p className="flex items-center gap-2 text-xs text-amber-700 dark:text-amber-300">
+          <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden="true" />
+          Peso do Google em 0: o Google não entra no sorteio deste espaço.
         </p>
       )}
 

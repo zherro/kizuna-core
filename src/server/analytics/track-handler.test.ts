@@ -35,6 +35,9 @@ const baseBody = {
   p_device: 'mobile',
 };
 
+const BROWSER_UA =
+  'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Mobile Safari/537.36';
+
 function req(
   body: unknown,
   headers: Record<string, string> = { 'x-forwarded-for': IP },
@@ -42,7 +45,7 @@ function req(
 ) {
   return new Request('http://localhost/api/analytics/track', {
     method: 'POST',
-    headers: { 'content-type': contentType, ...headers },
+    headers: { 'content-type': contentType, 'user-agent': BROWSER_UA, ...headers },
     body: typeof body === 'string' ? body : JSON.stringify(body),
   });
 }
@@ -415,5 +418,38 @@ describe('createAnalyticsTrackHandler', () => {
     const h2 = createAnalyticsTrackHandler({ config: cfg(), getViewerId: async () => 'nao-uuid' });
     await h2(req(baseBody));
     expect(rpcArgs().p_viewer_id).toBeNull();
+  });
+});
+
+describe('robôs, placement e origens novas', () => {
+  it('User-Agent de robô responde 204 e não chama o banco', async () => {
+    const handler = createAnalyticsTrackHandler({ config: cfg() });
+    const res = await handler(req(baseBody, { 'x-forwarded-for': IP, 'user-agent': 'Mozilla/5.0 (compatible; Googlebot/2.1)' }));
+    expect(res.status).toBe(204);
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it('User-Agent vazio também conta como automação', async () => {
+    const handler = createAnalyticsTrackHandler({ config: cfg() });
+    const res = await handler(req(baseBody, { 'x-forwarded-for': IP, 'user-agent': '' }));
+    expect(res.status).toBe(204);
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it('repassa p_placement=sponsored e aceita as origens today/swipe/related', async () => {
+    rpc.mockResolvedValue(new Response('true', { status: 200 }));
+    const handler = createAnalyticsTrackHandler({ config: cfg() });
+    const res = await handler(req({ ...baseBody, p_source: 'today', p_placement: 'sponsored' }));
+    expect(res.status).toBe(200);
+    const args = rpcArgs();
+    expect(args.p_placement).toBe('sponsored');
+    expect(args.p_source).toBe('today');
+  });
+
+  it('placement desconhecido vira orgânico (sem a chave no RPC)', async () => {
+    rpc.mockResolvedValue(new Response('true', { status: 200 }));
+    const handler = createAnalyticsTrackHandler({ config: cfg() });
+    await handler(req({ ...baseBody, p_source: 'swipe', p_placement: 'banner' }));
+    expect('p_placement' in rpcArgs()).toBe(false);
   });
 });

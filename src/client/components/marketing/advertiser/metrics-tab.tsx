@@ -13,6 +13,7 @@ import {
   lift,
   servedDays,
   spentSoFar,
+  splitPaidOrganic,
   sum,
   type DailyPoint,
   type DeliveryPoint,
@@ -73,10 +74,11 @@ function BoostMetrics({ tenantId }: { tenantId: string }) {
   const end = lastDay(boost, today);
   const from = boost.startsOn;
   const hasRange = periodDays({ startsOn: from, endsOn: end }) > 0;
-  const impressions = m ? sum(m.rows, 'impressions') : 0;
-  const views = m ? sum(m.rows, 'views') : 0;
-  const contacts = m ? sum(m.rows, 'contactClicks') : 0;
-  const interactions = m ? sum(m.rows, 'interactions') : 0;
+  const split = m ? splitPaidOrganic(m.rows) : null;
+  const impressions = split?.total.impressions ?? 0;
+  const views = split?.total.views ?? 0;
+  const contacts = split?.total.contactClicks ?? 0;
+  const interactions = split?.total.interactions ?? 0;
   const spent = m ? spentSoFar(boost.dailyCents, m.period) : 0;
   const cpv = costPerView(spent, views);
 
@@ -101,6 +103,7 @@ function BoostMetrics({ tenantId }: { tenantId: string }) {
             <Stat label="Cliques no contato" value={formatInt(contacts)} hint={`${formatInt(interactions)} favoritos e compartilhamentos`} />
             <Stat label="Custo por visualização" value={cpv === null ? '—' : formatBRL(cpv)} hint={`Gasto até hoje: ${formatBRL(spent)}`} />
           </div>
+          {split ? <PaidOrganic split={split} /> : null}
           {m.days > 0 && m.before ? (
             <Comparison before={m.before} views={views} impressions={impressions} days={m.days} />
           ) : m.days > 0 ? (
@@ -117,6 +120,41 @@ function BoostMetrics({ tenantId }: { tenantId: string }) {
         </>
       ) : null}
     </div>
+  );
+}
+
+/** Pago × orgânico no período: o que a vaga patrocinada entregou e o que o anúncio teve por conta própria. */
+function PaidOrganic({ split }: { split: ReturnType<typeof splitPaidOrganic> }) {
+  const row = (label: string, paid: number, organic: number) => (
+    <tr className="border-t">
+      <th scope="row" className="py-1.5 pr-3 text-left font-normal text-muted-foreground">{label}</th>
+      <td className="py-1.5 pr-3 text-right tabular-nums"><strong>{formatInt(paid)}</strong></td>
+      <td className="py-1.5 text-right tabular-nums">{formatInt(organic)}</td>
+    </tr>
+  );
+  return (
+    <section className="rounded-[var(--ui-radius-card,1rem)] border bg-card p-4" aria-label="Pago e orgânico">
+      <h3 className="text-sm font-semibold">De onde veio</h3>
+      <p className="mt-1 text-xs text-muted-foreground">
+        “Pelo impulsionamento” conta o anúncio exibido nas vagas com o selo Patrocinado (topo da busca, início das
+        trilhas) e o que veio de quem clicou nelas. “Orgânico” é o que ele teve no mesmo período sem a vaga.
+      </p>
+      <table className="mt-2 w-full text-sm">
+        <thead>
+          <tr className="text-xs text-muted-foreground">
+            <th scope="col" className="pb-1 text-left font-medium" />
+            <th scope="col" className="pb-1 pr-3 text-right font-medium">Pelo impulsionamento</th>
+            <th scope="col" className="pb-1 text-right font-medium">Orgânico</th>
+          </tr>
+        </thead>
+        <tbody>
+          {row('Apareceu na tela', split.paid.impressions, split.organic.impressions)}
+          {row('Abriram o anúncio', split.paid.views, split.organic.views)}
+          {row('Cliques no contato', split.paid.contactClicks, split.organic.contactClicks)}
+          {row('Favoritos e compartilhamentos', split.paid.interactions, split.organic.interactions)}
+        </tbody>
+      </table>
+    </section>
   );
 }
 

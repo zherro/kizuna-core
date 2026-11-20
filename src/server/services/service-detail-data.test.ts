@@ -8,6 +8,8 @@ const { serverFetchResource, pgrstRpc } = vi.hoisted(() => ({
 vi.mock('../postgrest-crud', () => ({ serverFetchResource }));
 vi.mock('../postrest/conn', () => ({ pgrstRpc }));
 vi.mock('../regions', () => ({ projectRegions: [], withProjectRegionCities: <T,>(b: T) => b }));
+// impulsionamento desligado aqui: estes testes contam as chamadas da RPC (o retry sem `p_sponsored_max` somaria uma)
+vi.mock('../marketing/boost-config', () => ({ projectBoostPlacement: { enabled: false, searchSlots: 0, railSlots: 0, railPool: 0, listSlots: 0 } }));
 
 import {
   ensureServiceTaxonomy,

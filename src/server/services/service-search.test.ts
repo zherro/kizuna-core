@@ -12,6 +12,12 @@ vi.mock('../regions', async () => {
   };
 });
 
+// `../marketing/boost-config` também lê o config do projeto: padrões (listSlots 1).
+vi.mock('../marketing/boost-config', async () => {
+  const { DEFAULT_BOOST_PLACEMENT } = await import('../../shared/marketing/boost-placement');
+  return { projectBoostPlacement: DEFAULT_BOOST_PLACEMENT };
+});
+
 import { runServiceSearch } from './service-search';
 
 beforeEach(() => {
@@ -35,3 +41,23 @@ describe('runServiceSearch', () => {
     expect(pgrstRpc.mock.calls[1][1]).not.toHaveProperty('p_city_ibges');
   });
 });
+
+describe('runServiceSearch — impulsionamento', () => {
+  it('manda p_sponsored_max = listSlots por padrão; override vence', async () => {
+    await runServiceSearch({}, 0);
+    await runServiceSearch({ p_sponsored_max: 3 }, 0);
+    expect(pgrstRpc.mock.calls[0][1]).toMatchObject({ p_sponsored_max: 1 });
+    expect(pgrstRpc.mock.calls[1][1]).toMatchObject({ p_sponsored_max: 3 });
+  });
+
+  it('banco sem a search 0014 recusa a chave: repete sem ela (lista orgânica)', async () => {
+    pgrstRpc
+      .mockResolvedValueOnce(new Response('{"code":"PGRST202"}', { status: 404 }))
+      .mockResolvedValueOnce(new Response('[{"uid":"x"}]', { status: 200 }));
+    const rows = await runServiceSearch({}, 0);
+    expect(rows).toEqual([{ uid: 'x' }]);
+    expect(pgrstRpc).toHaveBeenCalledTimes(2);
+    expect(pgrstRpc.mock.calls[1][1]).not.toHaveProperty('p_sponsored_max');
+  });
+});
+

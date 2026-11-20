@@ -41,8 +41,8 @@ function hostOf(url: string): string {
 export function BannersTab() {
   const [view, setView] = useState<'queue' | 'campaigns'>('queue');
   const queue = useLoader(async () => {
-    const [creatives, reviews] = await Promise.all([loadCreatives(), loadReviews()]);
-    return moderationQueue(creatives, reviews);
+    const [creatives, reviews, campaigns] = await Promise.all([loadCreatives(), loadReviews(), loadCampaigns()]);
+    return queueWithCampaigns(moderationQueue(creatives, reviews), campaigns);
   }, 'Não foi possível carregar a fila de banners.');
 
   return (
@@ -71,7 +71,20 @@ export function BannersTab() {
   );
 }
 
-function ModerationQueue({ queue }: { queue: ReturnType<typeof useLoader<CreativeRow[]>> }) {
+type QueueItem = { creative: CreativeRow; campaigns: CampaignRow[] };
+
+/** Banners com campanha (pagos/reservados) primeiro; os sem campanha não cobraram nada. */
+function queueWithCampaigns(queue: CreativeRow[], campaigns: CampaignRow[]): QueueItem[] {
+  const byCreative = new Map<string, CampaignRow[]>();
+  for (const k of campaigns) {
+    if (k.stoppedOn) continue;
+    byCreative.set(k.creativeId, [...(byCreative.get(k.creativeId) ?? []), k]);
+  }
+  const items = queue.map((creative) => ({ creative, campaigns: byCreative.get(creative.id) ?? [] }));
+  return [...items.filter((i) => i.campaigns.length > 0), ...items.filter((i) => i.campaigns.length === 0)];
+}
+
+function ModerationQueue({ queue }: { queue: ReturnType<typeof useLoader<QueueItem[]>> }) {
   const { data, error, loading, reload } = queue;
   if (loading && !data) return <Loading text="Carregando fila…" />;
   return (
@@ -81,8 +94,8 @@ function ModerationQueue({ queue }: { queue: ReturnType<typeof useLoader<Creativ
         <EmptyStateCard icon={ImageIcon} title="Fila vazia" description="Nenhum banner de anunciante aguardando revisão." />
       ) : (
         <ul className="flex flex-col gap-3">
-          {(data ?? []).map((c) => (
-            <ReviewCard key={c.id} creative={c} onDone={() => void reload()} />
+          {(data ?? []).map((i) => (
+            <ReviewCard key={i.creative.id} creative={i.creative} campaigns={i.campaigns} onDone={() => void reload()} />
           ))}
         </ul>
       )}
@@ -90,7 +103,7 @@ function ModerationQueue({ queue }: { queue: ReturnType<typeof useLoader<Creativ
   );
 }
 
-function ReviewCard({ creative: c, onDone }: { creative: CreativeRow; onDone: () => void }) {
+function ReviewCard({ creative: c, campaigns, onDone }: { creative: CreativeRow; campaigns: CampaignRow[]; onDone: () => void }) {
   const { success, error } = useToast();
   const [size, setSize] = useState<string>('');
   const [rejecting, setRejecting] = useState(false);
@@ -100,6 +113,7 @@ function ReviewCard({ creative: c, onDone }: { creative: CreativeRow; onDone: ()
 
   // `imageUrl`/`linkUrl` vêm do anunciante: só renderiza mídia/link com as mesmas regras do AdSlot.
   const imageOk = isSafeImageUrl(c.imageUrl);
+  const reserved = campaigns.reduce((sum, k) => sum + committedOf(k), 0);
   const linkOk = isSafeLinkUrl(c.linkUrl);
 
   async function approve() {
@@ -129,7 +143,21 @@ function ReviewCard({ creative: c, onDone }: { creative: CreativeRow; onDone: ()
     setBusy('reject');
     try {
       await send('POST', '/api/resources/ad_creative_reviews', { creativeId: c.id, status: 'rejected', reason: reason.trim() }, 'Não foi possível reprovar o banner.');
-      success('Banner reprovado.');
+      // Reprovado nunca foi ao ar: para cada campanha em `starts_on` (0 dias) — o valor inteiro volta
+      // ao saldo do anunciante (policy ad_campaigns_refund_rejected, marketing 0002).
+      const failed: string[] = [];
+      for (const k of campaigns) {
+        try {
+          await send('PATCH', `/api/resources/ad_campaigns/${k.id}`, { stoppedOn: k.startsOn }, 'Não foi possível devolver o valor.');
+        } catch {
+          failed.push(k.id);
+        }
+      }
+      if (failed.length > 0) {
+        error(`Banner reprovado, mas ${failed.length} campanha(s) não foram encerradas: confira em Campanhas e pare manualmente.`);
+      } else {
+        success(campaigns.length > 0 ? `Banner reprovado. ${formatBRL(reserved)} voltaram ao saldo do anunciante.` : 'Banner reprovado.');
+      }
       onDone();
     } catch (err) {
       error(errMsg(err, 'Não foi possível reprovar o banner.'));
@@ -175,6 +203,21 @@ function ReviewCard({ creative: c, onDone }: { creative: CreativeRow; onDone: ()
         />
       </dl>
       {c.alt ? <p className="text-xs text-muted-foreground">Texto alternativo: {c.alt}</p> : null}
+      {campaigns.length > 0 ? (
+        <div className="rounded-md border border-emerald-500/30 bg-emerald-500/5 p-3 text-xs">
+          <p className="font-semibold text-emerald-800 dark:text-emerald-300">Pago / reservado: {formatBRL(reserved)} — aguardando sua aprovação</p>
+          <ul className="mt-1 text-muted-foreground">
+            {campaigns.map((k) => (
+              <li key={k.id}>
+                {slotLabel(k.slotSlug)} · {brDate(k.startsOn)} a {brDate(k.endsOn)} · {formatBRL(k.dailyCents)}/dia
+              </li>
+            ))}
+          </ul>
+          <p className="mt-1 text-muted-foreground">Se reprovar, o valor inteiro volta ao saldo do anunciante.</p>
+        </div>
+      ) : (
+        <p className="text-xs text-muted-foreground">Sem campanha: o anunciante ainda não pagou este banner.</p>
+      )}
 
       {rejecting ? (
         <div className="flex flex-col gap-2">

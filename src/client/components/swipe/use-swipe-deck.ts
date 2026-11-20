@@ -103,7 +103,7 @@ export function useSwipeDeck({ baseBody, filterKey, loggedIn }: Opts) {
       recordSwipe([current.uid], action).catch((err) =>
         console.warn('[swipe] falha ao gravar swipe', err)
       );
-      if (action === 'like') trackEvent({ entityType: 'service', entityId: current.uid, event: 'favorite' });
+      if (action === 'like') trackEvent({ entityType: 'service', entityId: current.uid, event: 'favorite', source: 'swipe' });
     }
     setCards(rest);
   }, []);

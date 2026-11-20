@@ -16,6 +16,15 @@ import { TrackView } from '../../../analytics/track-view';
 import { withSource } from '../../../analytics/source';
 import type { AnalyticsSource, EventRule } from '../../../../shared/analytics';
 import { useGroupNames } from '../../../hooks/use-group-names';
+import { isSponsored, pickSponsored } from '../../../../shared/marketing/boost-placement';
+
+/** Teto de vagas patrocinadas por trilha (o banco já limita; isto cobre trilhas que juntam vários grupos). */
+const MAX_SPONSORED_PER_RAIL = 2;
+
+function withSponsoredFirst(services: ServiceResult[], max: number): ServiceResult[] {
+  const { pinned, rest } = pickSponsored(services, max);
+  return [...pinned, ...rest];
+}
 
 /**
  * Trilha horizontal de scroll livre com `ListingResultCard` (`variant="strip"`) — mesmo embla das
@@ -34,7 +43,13 @@ export function ServiceCarousel({
   source = 'home',
   adSlot = null,
   priorityFirst = false,
+  sponsoredLabel = 'Patrocinado',
+  sponsoredMax = MAX_SPONSORED_PER_RAIL,
 }: {
+  /** Máximo de vagas patrocinadas mostradas nesta trilha (o excedente vira orgânico, no fim). */
+  sponsoredMax?: number;
+  /** Selo de transparência das vagas patrocinadas (`marketing.boost.label`). */
+  sponsoredLabel?: string;
   /** Card patrocinado opcional (ex.: `<AdSlot>`), inserido após o 2º item. Colapsa se vazio. */
   adSlot?: ReactNode;
   services: ServiceResult[];
@@ -76,7 +91,10 @@ export function ServiceCarousel({
     <div className="group relative">
       <div className="overflow-hidden" ref={emblaRef}>
         <div className="flex gap-4">
-          {services.map((service, index) => {
+          {/* vaga patrocinada (impulsionamento, `sponsor_slot`) sempre na frente — nada sai da lista */}
+          {withSponsoredFirst(services, sponsoredMax).map((service, index) => {
+            const paid = isSponsored(service);
+            const placement = paid ? ('sponsored' as const) : null;
             const price = cardPriceParts(service.price, service.price_type);
             const extra = variantCardProps(
               resolveServiceCardVariant(
@@ -93,7 +111,7 @@ export function ServiceCarousel({
                 key={service.uid}
                 variant="strip"
                 imagePriority={priorityFirst && index === 0}
-                href={withSource(serviceHref(service), source)}
+                href={withSource(serviceHref(service), source, placement)}
                 title={service.title}
                 priceLabel={
                   extra ? extra.priceLabel : price.amount
@@ -108,8 +126,9 @@ export function ServiceCarousel({
                 imageUrl={service.cover_file_id ? thumbUrl(service.cover_file_id) : null}
                 locationLabel={extra?.locationLabel ?? (showCity ? formatLocationLabel(service) : null)}
                 serviceUid={service.uid}
-                highlighted={service.sponsored}
-                highlightLabel="Patrocinado"
+                boosted={service.boosted}
+                highlighted={service.sponsored || paid}
+                highlightLabel={sponsoredLabel}
               />
             );
             const adAfter =
@@ -135,6 +154,7 @@ export function ServiceCarousel({
                 event="impression"
                 rule={impressionRule}
                 source={source}
+                placement={placement}
                 className="shrink-0"
               >
                 {card}

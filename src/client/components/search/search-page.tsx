@@ -78,6 +78,12 @@ export type SearchPageProps = {
   /** Item patrocinado (ex.: `<AdSlot slot="busca-patrocinado">`) inserido na lista de resultados. */
   sponsoredSlot?: ReactNode;
   /**
+   * Impulsionamento (plugin marketing, `marketing.boost.searchSlots`): vagas patrocinadas no topo dos
+   * resultados, escolhidas pelo banco (`fn_search_services` 0014, `p_sponsored_max`). Ausente = não
+   * manda o parâmetro (comportamento de antes). Não confundir com `sponsoredSlot` (banner do plugin ads).
+   */
+  sponsoredSlots?: number;
+  /**
    * Segundo modo da página (ex.: "Pedir um serviço" — criar demanda). Quando informado, aparece um
    * toggle no topo e `?modo=pedir` troca a busca pelo conteúdo de `render`. O plugin `search` não
    * conhece demandas: quem monta a página injeta o fluxo. Sem ele, só há a busca.
@@ -158,6 +164,7 @@ function SearchPageInner({
   serviceDetailConfig,
   impressionRule,
   sponsoredSlot,
+  sponsoredSlots,
   aiEnabled = true,
   regions = [],
   defaults,
@@ -346,17 +353,21 @@ function SearchPageInner({
           body: JSON.stringify(b),
           signal,
         });
-      let res = await post(body);
+      // Vagas patrocinadas em TODAS as páginas: a mesma semente faz o banco escolher os mesmos, então
+      // o patrocinado do topo não reaparece na rolagem.
+      const sent: SearchAdsBody =
+        sponsoredSlots !== undefined ? { ...body, p_sponsored_max: sponsoredSlots } : body;
+      let res = await post(sent);
       // Banco sem a search 0010 recusa `p_order`: repete na ordem de sempre em vez de ficar vazio.
-      // O mesmo vale para `p_expired_grace` (search 0013): repete sem as chaves novas.
-      if (!res.ok && (body.p_order || body.p_expired_grace)) {
-        const { p_order: _o, p_expired_grace: _g, ...rest } = body;
+      // O mesmo vale para `p_expired_grace` (search 0013) e `p_sponsored_max` (0014): repete sem as chaves novas.
+      if (!res.ok && (sent.p_order || sent.p_expired_grace || sent.p_sponsored_max !== undefined)) {
+        const { p_order: _o, p_expired_grace: _g, p_sponsored_max: _s, ...rest } = sent;
         res = await post(rest);
       }
       const data = (await res.json().catch(() => null)) as { items?: unknown[] } | null;
       return Array.isArray(data?.items) ? (data.items as ServiceResult[]) : [];
     },
-    []
+    [sponsoredSlots]
   );
 
   useEffect(() => {

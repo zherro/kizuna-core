@@ -1,6 +1,46 @@
 import { addDays, committedDays, elapsedDays, periodDays, type Period } from '../../../../shared/marketing/cost';
 
-export type DailyPoint = { day: string; impressions: number; views: number; contactClicks: number; interactions: number };
+export type DailyPoint = {
+  day: string;
+  impressions: number;
+  views: number;
+  contactClicks: number;
+  interactions: number;
+  /** Parte da vaga patrocinada (marketing 0003). Ausente em banco sem a migração = 0. */
+  sponsoredImpressions?: number;
+  sponsoredViews?: number;
+  sponsoredContactClicks?: number;
+  sponsoredInteractions?: number;
+};
+
+export type Totals = { impressions: number; views: number; contactClicks: number; interactions: number };
+
+/**
+ * Separa o período do impulsionamento em PAGO (o que a vaga patrocinada entregou: card exibido na vaga,
+ * detalhe aberto a partir dela e cliques depois disso) e ORGÂNICO (o resto, que o anúncio teria de
+ * qualquer jeito). Orgânico nunca fica negativo.
+ */
+export function splitPaidOrganic(rows: DailyPoint[]): { total: Totals; paid: Totals; organic: Totals } {
+  const total: Totals = {
+    impressions: sum(rows, 'impressions'),
+    views: sum(rows, 'views'),
+    contactClicks: sum(rows, 'contactClicks'),
+    interactions: sum(rows, 'interactions'),
+  };
+  const paid: Totals = {
+    impressions: sum(rows, 'sponsoredImpressions'),
+    views: sum(rows, 'sponsoredViews'),
+    contactClicks: sum(rows, 'sponsoredContactClicks'),
+    interactions: sum(rows, 'sponsoredInteractions'),
+  };
+  const organic: Totals = {
+    impressions: Math.max(0, total.impressions - paid.impressions),
+    views: Math.max(0, total.views - paid.views),
+    contactClicks: Math.max(0, total.contactClicks - paid.contactClicks),
+    interactions: Math.max(0, total.interactions - paid.interactions),
+  };
+  return { total, paid, organic };
+}
 export type DeliveryPoint = { day: string; impressions: number; clicks: number };
 
 export function sum<T extends object>(rows: T[], key: keyof T): number {

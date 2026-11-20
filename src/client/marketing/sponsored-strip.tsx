@@ -88,8 +88,9 @@ export function interleaveSponsored<T>(
  * fixa até o componente sair da tela). Sem impulsionamento vigente ou antes de a consulta voltar,
  * `promoted` é vazio e `rest` é a lista inteira — o primeiro render é igual ao do servidor.
  */
-export function usePromotedBoosted<T>(items: readonly T[], uidOf: (item: T) => string, max = 3) {
-  const live = useLiveBoosts();
+export function usePromotedBoosted<T>(items: readonly T[], uidOf: (item: T) => string, max = 3, enabled = true) {
+  // `enabled=false`: o servidor já resolveu (fn_search_services 0014) — não consulta nada
+  const live = useLiveBoosts(enabled);
   const [seed] = useState(() => Math.floor(Math.random() * 2 ** 31));
   return useMemo(
     () => pickPromoted(items, live, uidOf, max, seededRandom(seed)),

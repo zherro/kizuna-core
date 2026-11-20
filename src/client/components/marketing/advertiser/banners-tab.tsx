@@ -1,8 +1,8 @@
 'use client';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { ImageIcon, Loader2 } from 'lucide-react';
 import { AD_FORMAT_SPECS, AD_SLOT_CATALOG, type AdFormat } from '../../../../shared/ads';
-import { costCents, formatBRL, situation } from '../../../../shared/marketing/cost';
+import { costCents, formatBRL, periodDays, situation } from '../../../../shared/marketing/cost';
 import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
 import { EmptyStateCard } from '../../ui-better-soft/lists/empty-state-card';
@@ -20,6 +20,7 @@ import { createItem, fetchPage } from './data';
 import { spentSoFar } from './metrics-math';
 import { PeriodFields, StopButton } from './period-fields';
 import { defaultDraft, evaluatePeriod, type PeriodDraft } from './period-form';
+import { PixPurchase, usePaymentInfo } from './pix-checkout';
 import type { Balance, CampaignRow, MyCreative } from './types';
 import { useLoad } from './use-load';
 import { Field, formatDay, LoadError, Loading, Notice, Pager, SectionTitle, selectClass, SituationBadge } from './ui';
@@ -45,10 +46,50 @@ function NewBanner({ tenantId, balance, onCreated }: { tenantId: string; balance
   const [done, setDone] = useState(false);
 
   const format: AdFormat | null = AD_SLOT_CATALOG.find((s) => s.slug === slot)?.format ?? null;
+  const pay = usePaymentInfo();
   const evaluation = useMemo(() => evaluatePeriod(draft, balance.balanceCents), [draft, balance.balanceCents]);
+  const periodOnly = useMemo(() => evaluatePeriod(draft, Number.MAX_SAFE_INTEGER), [draft]);
   const linkCheck = linkUrl ? validateBannerLink(linkUrl) : null;
   const imageCheck = picked && format ? checkBannerImage(format, picked) : null;
-  const ready = !!slot && !!picked && imageCheck?.ok === true && validateBannerLink(linkUrl).ok && alt.trim().length > 0 && evaluation.check.ok && !busy;
+  const creativeReady = !!slot && !!picked && imageCheck?.ok === true && validateBannerLink(linkUrl).ok && alt.trim().length > 0;
+  const ready = creativeReady && evaluation.check.ok && !busy;
+  const direct = pay.directPurchase;
+  const canPayPix = creativeReady && periodOnly.check.ok;
+  // Banner já enviado para ESTA escolha (arquivo + espaço + textos): gerar outro PIX não reenvia.
+  const sent = useRef<{ key: string; creativeId: string } | null>(null);
+
+  const ensureCreative = useCallback(async (): Promise<string> => {
+    if (!picked || !format) throw new Error('Escolha o espaço e a imagem.');
+    const key = [picked.file.name, picked.file.size, picked.file.lastModified, slot, linkUrl.trim(), alt.trim(), label.trim()].join('|');
+    if (sent.current?.key === key) return sent.current.creativeId;
+    const imageUrl = await uploadBanner(picked.file);
+    const creativeId = crypto.randomUUID();
+    await createItem('ad_creatives_mine', {
+      id: creativeId,
+      tenantId,
+      format,
+      kind: creativeKind(picked.file.type),
+      imageUrl,
+      alt: alt.trim(),
+      linkUrl: linkUrl.trim(),
+      label: label.trim(),
+      slots: [slot],
+    });
+    sent.current = { key, creativeId };
+    return creativeId;
+  }, [picked, format, slot, linkUrl, alt, label, tenantId]);
+
+  const getPurpose = useCallback(async () => {
+    const creativeId = await ensureCreative();
+    return {
+      kind: 'campaign' as const,
+      creativeId,
+      slotSlug: slot,
+      dailyCents: periodOnly.dailyCents,
+      startsOn: draft.startsOn,
+      days: periodDays(draft),
+    };
+  }, [ensureCreative, slot, periodOnly.dailyCents, draft]);
 
   async function onFile(file: File | undefined) {
     setPicked(null);
@@ -156,16 +197,32 @@ function NewBanner({ tenantId, balance, onCreated }: { tenantId: string; balance
               </Field>
             </div>
             {linkCheck && !linkCheck.ok ? <Notice tone="warn">{linkCheck.reason}</Notice> : null}
-            <PeriodFields draft={draft} onChange={setDraft} evaluation={evaluation} balanceCents={balance.balanceCents} />
+            <PeriodFields
+              draft={draft}
+              onChange={setDraft}
+              evaluation={direct && !evaluation.check.ok ? periodOnly : evaluation}
+              balanceCents={balance.balanceCents}
+              directPayment={direct && !evaluation.check.ok}
+            />
             {error ? <Notice tone="error">{error}</Notice> : null}
             {done ? <Notice tone="ok">Banner enviado para análise. Você acompanha a aprovação na lista abaixo.</Notice> : null}
-            <div className="flex flex-wrap items-center gap-3">
-              <Button type="button" onClick={submit} disabled={!ready}>
-                {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden /> : null}
-                Enviar por {formatBRL(evaluation.totalCents)}
-              </Button>
-              <span className="text-xs text-muted-foreground">Para outro espaço, envie outro banner.</span>
-            </div>
+            {direct ? (
+              <>
+                <p className="text-xs text-muted-foreground">
+                  Depois do pagamento o banner vai para a aprovação da equipe. Se for reprovado, o valor inteiro volta para o seu saldo.
+                </p>
+                <PixPurchase totalCents={periodOnly.totalCents} disabled={!canPayPix} getPurpose={getPurpose} onSettled={onCreated} label="Pagar banner com PIX" />
+              </>
+            ) : null}
+            {!direct || evaluation.check.ok ? (
+              <div className="flex flex-wrap items-center gap-3">
+                <Button type="button" variant={direct ? 'outline' : 'default'} onClick={submit} disabled={!ready}>
+                  {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden /> : null}
+                  {direct ? 'Usar meu saldo' : 'Enviar por'} {formatBRL(evaluation.totalCents)}
+                </Button>
+                <span className="text-xs text-muted-foreground">Para outro espaço, envie outro banner.</span>
+              </div>
+            ) : null}
           </>
         ) : null}
       </div>
@@ -231,7 +288,7 @@ function CampaignList({ refreshKey, onChanged }: { refreshKey: number; onChanged
                   </div>
                   {c?.reviewStatus === 'rejected' ? (
                     <div className="mt-3">
-                      <Notice tone="error">Reprovado{c.reviewReason ? `: ${c.reviewReason}` : '.'} O valor reservado volta ao saldo se você parar a campanha.</Notice>
+                      <Notice tone="error">Reprovado{c.reviewReason ? `: ${c.reviewReason}` : '.'} {k.stoppedOn === k.startsOn ? 'O valor voltou para o seu saldo.' : 'O valor reservado volta ao saldo se você parar a campanha.'}</Notice>
                     </div>
                   ) : null}
                   {!approved && c?.reviewStatus !== 'rejected' ? (

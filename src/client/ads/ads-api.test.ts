@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { GOOGLE_CREATIVE_ID } from '../../shared/ads';
 import { isAutomated } from '../analytics/visitor';
-import { __resetAdPool, loadAdPool, trackAd } from './ads-api';
+import { __resetAdPool, loadAdPool, loadLiveCampaigns, trackAd } from './ads-api';
 
 vi.mock('../analytics/visitor', () => ({ isAutomated: vi.fn(() => false) }));
 
@@ -111,5 +111,24 @@ describe('trackAd', () => {
     trackAd(payload);
     expect(f).toHaveBeenCalledOnce();
     expect((f.mock.calls[0] as unknown as [string, RequestInit])[1].keepalive).toBe(true);
+  });
+});
+
+describe('loadLiveCampaigns', () => {
+  it('busca vw_ad_campaigns_live sem cache, uma vez, e descarta linhas incompletas', async () => {
+    const f = vi.fn(async () =>
+      new Response(JSON.stringify({ items: [{ creativeId: 'c1', slotSlug: 'home-meio' }, { creativeId: 'c2' }] })));
+    vi.stubGlobal('fetch', f);
+    const a = await loadLiveCampaigns();
+    await loadLiveCampaigns();
+    expect(f).toHaveBeenCalledOnce();
+    const [url, init] = f.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toContain('/api/resources/vw_ad_campaigns_live');
+    expect(init.cache).toBe('no-store');
+    expect(a).toEqual([{ creativeId: 'c1', slotSlug: 'home-meio' }]);
+  });
+  it('recurso ausente (projeto sem marketing) → lista vazia', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 404 })));
+    await expect(loadLiveCampaigns()).resolves.toEqual([]);
   });
 });

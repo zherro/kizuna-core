@@ -13,7 +13,20 @@ import { LoadError } from './ui';
  * Painel do anunciante (`/painel/marketing`): saldo, impulsionar anúncios, banners e métricas.
  * Tudo por consulta direta (RLS por conta), sem cache. A página do projeto só passa o `tenantId`.
  */
-export function AdvertiserPanel({ tenantId }: { tenantId: string }) {
+const TABS = ['saldo', 'impulsionar', 'banners', 'metricas'] as const;
+
+export function AdvertiserPanel({
+  tenantId,
+  initialTab,
+  initialServiceUid,
+}: {
+  tenantId: string;
+  /** Aba inicial (`?aba=impulsionar`), ex.: vindo de "Impulsionar" em Minhas publicações. */
+  initialTab?: string;
+  /** Anúncio já escolhido no impulsionamento (`?anuncio=<uid>`). */
+  initialServiceUid?: string;
+}) {
+  const startTab = TABS.includes(initialTab as (typeof TABS)[number]) ? (initialTab as string) : 'saldo';
   const bal = useBalance(tenantId);
   const balance = bal.data ?? { ...EMPTY_BALANCE, tenantId };
 
@@ -35,7 +48,7 @@ export function AdvertiserPanel({ tenantId }: { tenantId: string }) {
       </header>
       {bal.error ? <LoadError message={bal.error} onRetry={bal.reload} /> : null}
 
-      <Tabs defaultValue="saldo" className="flex flex-col gap-4">
+      <Tabs defaultValue={startTab} className="flex flex-col gap-4">
         <div className="overflow-x-auto">
           <TabsList className="w-max min-w-full justify-start sm:min-w-0">
             <TabsTrigger value="saldo">Saldo</TabsTrigger>
@@ -48,7 +61,7 @@ export function AdvertiserPanel({ tenantId }: { tenantId: string }) {
           <WalletTab balance={balance} reloadBalance={bal.reload} />
         </TabsContent>
         <TabsContent value="impulsionar">
-          <BoostsTab tenantId={tenantId} balance={balance} reloadBalance={bal.reload} />
+          <BoostsTab tenantId={tenantId} balance={balance} reloadBalance={bal.reload} initialServiceUid={initialServiceUid} />
         </TabsContent>
         <TabsContent value="banners">
           <BannersTab tenantId={tenantId} balance={balance} reloadBalance={bal.reload} />

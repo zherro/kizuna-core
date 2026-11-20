@@ -4,7 +4,8 @@ import { Share2 } from 'lucide-react';
 import { Button } from '../../ui/button';
 import { useToast } from '../../../hooks/use-toast';
 import { trackEvent } from '../../../analytics/analytics-api';
-import { useAdSource } from '../../../analytics/ad-tracking';
+import { useAdPlacement, useAdSource } from '../../../analytics/ad-tracking';
+import { withSource } from '../../../analytics/source';
 
 /**
  * Usa a Web Share API quando o browser expõe uma (mobile e a maioria dos desktops hoje); cai pra
@@ -24,10 +25,12 @@ export function AdShareButton({
 }) {
   const toast = useToast();
   const source = useAdSource();
+  const placement = useAdPlacement();
 
   async function handleShare() {
-    const url = `${window.location.origin}${path}`;
-    if (trackUid) trackEvent({ entityType: 'service', entityId: trackUid, event: 'share', source });
+    // `?src=share`: quem abrir o link compartilhado conta como origem "compartilhamento"
+    const url = `${window.location.origin}${withSource(path, 'share')}`;
+    if (trackUid) trackEvent({ entityType: 'service', entityId: trackUid, event: 'share', source, placement });
 
     if (typeof navigator !== 'undefined' && navigator.share) {
       try {

@@ -1,6 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { isCaptchaEnabled, verifyCaptcha } from './captcha';
 
+// Isola do kizuna.config.json do projeto que roda os testes (ele pode desligar o captcha com
+// `auth.captchaEnabled: false`); aqui só as envs decidem.
+vi.mock('@/../kizuna.config.json', () => ({ default: {} }));
+
 const ORIGINAL_ENV = { ...process.env };
 
 function enableEnv() {

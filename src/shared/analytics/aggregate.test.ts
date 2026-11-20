@@ -141,13 +141,13 @@ describe('buildOwnerStats', () => {
     expect(s.entities.find((e) => e.entityId === A)).toMatchObject({ title: 'A', category: 'Pets' });
   });
 
-  it('CTR nunca passa de 100% e sem impressões é null', () => {
+  it('CTR mostra o valor real (pode passar de 100%) e sem impressões é null', () => {
     const s = buildOwnerStats({
       days: 3,
       bounds,
       rows: [row('2026-09-28', 'impression', A, 'a'), row('2026-09-28', 'view', A, 'a'), row('2026-09-28', 'view', A, 'b')],
     });
-    expect(s.metrics.ctr.value).toBe(100);
+    expect(s.metrics.ctr.value).toBe(200);
     const none = buildOwnerStats({ days: 3, bounds, rows: [row('2026-09-28', 'view', A, 'a')] });
     expect(none.metrics.ctr.value).toBeNull();
   });

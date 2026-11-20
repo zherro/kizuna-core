@@ -33,6 +33,13 @@ export type AdCreative = {
   active: boolean;
 };
 
+/**
+ * Campanha paga no ar (plugin marketing, view pública `vw_ad_campaigns_live`): o criativo do
+ * anunciante e o espaço comprado. Sem valores — só o que o sorteio precisa.
+ */
+export type AdLiveCampaign = { creativeId: string; slotSlug: string };
+
+/** `paid`: criativo de anunciante com campanha no ar NESTE espaço (só existe com o plugin marketing). */
 export type AdCandidate =
-  | { type: 'own'; creative: AdCreative; weight: number }
+  | { type: 'own'; creative: AdCreative; weight: number; paid?: boolean }
   | { type: 'google'; adUnit: string; weight: number };

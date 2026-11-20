@@ -8,6 +8,7 @@ import {
   type EntityRating,
   periodBounds,
   type AnalyticsEvent,
+  type AnalyticsPlacement,
   type AnalyticsRow,
   type AnalyticsSource,
   type OwnerStats,
@@ -21,6 +22,8 @@ export type TrackPayload = {
   event: AnalyticsEvent;
   visibleMs?: number;
   source?: AnalyticsSource;
+  /** 'sponsored' = card numa vaga patrocinada (ou detalhe aberto a partir de uma). Omitido = orgânico. */
+  placement?: AnalyticsPlacement | null;
 };
 
 const TRACK_URL = '/api/analytics/track';
@@ -44,6 +47,7 @@ export function sendTrack(p: TrackPayload): void {
     p_source: p.source && ANALYTICS_SOURCES.includes(p.source) ? p.source : 'direct',
     p_visible_ms: Math.round(p.visibleMs ?? 0),
     p_device: classifyDevice(navigator.userAgent, window.innerWidth),
+    ...(p.placement === 'sponsored' ? { p_placement: 'sponsored' } : {}),
   });
   try {
     if (

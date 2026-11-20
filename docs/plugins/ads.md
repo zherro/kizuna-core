@@ -21,12 +21,42 @@ Spec do desenho (no projeto starter):
    página os espaços habilitados e os criativos vigentes (`GET /api/resources/ad_slots` e
    `ad_creatives`; a RLS já filtra o que o visitante pode ver).
 3. No navegador, `buildCandidates` monta a lista de candidatos (criativos próprios que servem ao
-   espaço e, se permitido, o Google) e `pickWeighted` sorteia um pelo peso. Sem candidato, o espaço
-   não ocupa lugar nenhum.
+   espaço e, se permitido, o Google) e `pickAd` escolhe um (ver "Pago × Google" abaixo). Sem
+   candidato, o espaço não ocupa lugar nenhum.
 4. A impressão conta quando 50% do espaço fica à vista por 1 segundo; o clique conta no link do
    criativo. Ambos chamam `POST /api/resources/fn_ad_track` (RPC pública, sem login), por beacon.
 5. O painel root (`/painel/root/ads`, componente `AdsScreen`) tem 3 abas: Espaços, Criativos e
    Métricas.
+
+## Pago × Google (`pickAd`, modo pago)
+
+Com o plugin `marketing`, o projeto passa `paidShare` (0..1) ao `<AdSlot>`. Aí o AdSlot também lê
+`GET /api/resources/vw_ad_campaigns_live` (só `creative_id` e `slot_slug`, sem cache) e:
+
+- criativo de anunciante com campanha no ar **neste** espaço vira candidato pago; com campanha só em
+  outro espaço, fica de fora;
+- havendo pago: `paidShare` das exibições (padrão `DEFAULT_PAID_SHARE` = 0.7) vai para um pago,
+  sorteado pelo peso do criativo — os do anunciante nascem com peso 1, então é rodízio igual entre
+  campanhas; o resto vai para Google / criativos próprios, pelos pesos (`google_weight` × `weight`);
+  sem nenhum não-pago, sai sempre um pago;
+- sem pago: sorteio por peso entre próprios e Google, como antes.
+
+Sem `paidShare` (projeto sem marketing) o AdSlot nem busca campanhas: comportamento antigo, tudo
+pelo peso. Campanhas são cobradas por dia reservado (ver `marketing`), não por impressão: dividir o
+espaço não consome saldo.
+
+A rotação (`rotate_seconds`) só troca entre criativos próprios/pagos. Se o sorteio deu Google, o
+espaço fica com ele até a próxima navegação: a política do AdSense proíbe atualizar anúncio sem ação
+do usuário.
+
+## Google AdSense: o que precisa para o anúncio aparecer
+
+O `<ins class="adsbygoogle">` é um bloco de anúncios manual e precisa do ID do bloco
+(`data-ad-slot`, só dígitos). Sem ele o Google não entra no sorteio. Por espaço, no painel root →
+Publicidade → Espaços: **Habilitado**, mídia **Google** marcada, **Peso do Google** > 0 e o **Ad
+unit** (o número de `data-ad-slot` de um bloco de anúncios de display responsivo criado no AdSense).
+Mesmo configurado, o bloco pode ficar sem anúncio (altura 0, `data-ad-status="unfilled"`) quando o
+Google não tem anúncio para servir.
 
 ## Tabelas
 
@@ -145,6 +175,7 @@ Aba Métricas do painel, a partir de `ad_stats_daily` (`src/shared/ads/metrics.t
 |---|---|
 | `adsenseClient` | ID do editor Google (`ca-pub-` mais 10 a 20 dígitos). Vazio ou inválido = só criativos próprios |
 | `maxSlotsPerPage` | teto de espaços exibidos por página (1..10, padrão 3) |
+| `paidSharePercent` | (starter) % das exibições para banners pagos quando há campanha no ar no espaço (0..100, padrão 70); vira o `paidShare` do AdSlot |
 
 O starter lê isso em `src/lib/ads.ts` (`adsConfig`) e repassa às páginas. O painel root avisa
 quando `adsenseClient` não está configurado.

@@ -135,7 +135,11 @@ export type ServiceDetailPageProps = {
   path: string;
   searchHref?: string;
   /** Plugin analytics: regra da visualização (`resolveEventRule`, calculada no servidor). Sem isso, nada é contado. */
-  analytics?: { viewRule: EventRule | null };
+  analytics?: {
+    viewRule: EventRule | null;
+    /** Regra da impressão dos cards de "Também pode te interessar"/"Veja também" (origem `related`). */
+    impressionRule?: EventRule | null;
+  };
   /** Tela de edição deste anúncio no painel: com ela, root vê um botão "Editar" no topo. */
   editHref?: string;
 };
@@ -424,12 +428,16 @@ export function ServiceDetailPage({
           services={related.items}
           hue={hue}
           detailConfig={detailConfig}
+          impressionRule={analytics?.impressionRule ?? null}
+          source="related"
         />
         <ServiceCarouselSection
           title="Veja também"
           services={randomServices}
           hue={hue}
           detailConfig={detailConfig}
+          impressionRule={analytics?.impressionRule ?? null}
+          source="related"
         />
       </div>
     </main>

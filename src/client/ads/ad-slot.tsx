@@ -6,12 +6,13 @@ import {
   AD_SLOT_CATALOG,
   GOOGLE_CREATIVE_ID,
   buildCandidates,
-  pickWeighted,
+  pickAd,
   routePattern,
   type AdCandidate,
   type AdFormat,
+  type AdLiveCampaign,
 } from '../../shared/ads';
-import { loadAdPool, trackAd } from './ads-api';
+import { loadAdPool, loadLiveCampaigns, trackAd } from './ads-api';
 import { GoogleAd } from './google-ad';
 import { useVisibleFor } from './use-visible-once';
 
@@ -21,6 +22,12 @@ export type AdSlotProps = {
   adsenseClient?: string;
   allowGoogle?: boolean;
   maxPerPage?: number;
+  /**
+   * Modo pago (plugin marketing): fração 0..1 das exibições que vai para campanhas pagas no ar
+   * neste espaço quando houver alguma (ex.: 0.7 = ~70% pago, ~30% Google/criativo próprio).
+   * Ausente = comportamento antigo (nem busca campanhas; tudo pelo peso).
+   */
+  paidShare?: number;
   className?: string;
   /** true: sem container de página (largura do pai, sem padding/max-width) — para itens de lista. */
   inline?: boolean;
@@ -39,15 +46,24 @@ const FOCUS_RING =
 type Picked = { cand: AdCandidate; n: number };
 
 /**
- * Espaço publicitário: criativo próprio (imagem/gif) ou Google AdSense, sorteado por peso.
+ * Espaço publicitário: criativo próprio (imagem/gif), banner pago de anunciante (com `paidShare`) ou
+ * Google AdSense. Escolha em `pickAd` (pago tem prioridade; Google/próprio no restante, por peso).
  * Primeiro render é `null` (sem divergência de hidratação); sem candidatos, colapsa.
  */
-export function AdSlot({ slot, city, adsenseClient, allowGoogle = true, maxPerPage = 3, className, inline = false }: AdSlotProps) {
+export function AdSlot({
+  slot,
+  city,
+  adsenseClient,
+  allowGoogle = true,
+  maxPerPage = 3,
+  paidShare,
+  className,
+  inline = false,
+}: AdSlotProps) {
   const pathname = usePathname() ?? '/';
   const page = routePattern(pathname);
   const [picked, setPicked] = useState<Picked | null>(null);
   const [format, setFormat] = useState<AdFormat>('banner');
-  const poolRef = useRef<AdCandidate[]>([]);
   const boxRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -57,7 +73,9 @@ export function AdSlot({ slot, city, adsenseClient, allowGoogle = true, maxPerPa
     let cancelled = false;
     let reserved = false;
     let timer: ReturnType<typeof setInterval> | null = null;
-    void loadAdPool().then((pool) => {
+    const paidMode = typeof paidShare === 'number';
+    const campaignsP: Promise<AdLiveCampaign[] | null> = paidMode ? loadLiveCampaigns() : Promise.resolve(null);
+    void Promise.all([loadAdPool(), campaignsP]).then(([pool, liveCampaigns]) => {
       if (cancelled) return;
       const cfg = pool.slots.find((s) => s.slug === slot);
       if (!cfg || !cfg.enabled) return;
@@ -67,8 +85,9 @@ export function AdSlot({ slot, city, adsenseClient, allowGoogle = true, maxPerPa
         creatives: pool.creatives,
         city,
         googleReady: allowGoogle && !!adsenseClient,
+        liveCampaigns,
       });
-      const first = pickWeighted(cands);
+      const first = pickAd(cands, { paidShare });
       if (!first) return;
       if (counter.path !== pathname) {
         counter.path = pathname;
@@ -77,15 +96,18 @@ export function AdSlot({ slot, city, adsenseClient, allowGoogle = true, maxPerPa
       if (counter.count >= maxPerPage) return;
       counter.count += 1;
       reserved = true;
-      poolRef.current = cands;
       setFormat(def.format);
       setPicked({ cand: first, n: 0 });
-      if (cfg.rotateSeconds > 0 && cands.length >= 2) {
+      // Rotação só entre criativos próprios/pagos. O Google NUNCA entra nem sai por timer: a política
+      // do AdSense proíbe atualizar um anúncio sem ação do usuário. Se o sorteio inicial deu Google,
+      // o espaço fica com ele até a próxima navegação.
+      const rotatable = cands.filter((c) => c.type !== 'google');
+      if (cfg.rotateSeconds > 0 && first.type !== 'google' && rotatable.length >= 2) {
         timer = setInterval(() => {
           if (document.visibilityState !== 'visible') return;
           setPicked((cur) => {
-            const others = cur ? poolRef.current.filter((c) => c !== cur.cand) : poolRef.current;
-            const next = pickWeighted(others.length > 0 ? others : poolRef.current);
+            const others = cur ? rotatable.filter((c) => c !== cur.cand) : rotatable;
+            const next = pickAd(others.length > 0 ? others : rotatable, { paidShare });
             return next ? { cand: next, n: (cur?.n ?? 0) + 1 } : cur;
           });
         }, cfg.rotateSeconds * 1000);
@@ -96,7 +118,7 @@ export function AdSlot({ slot, city, adsenseClient, allowGoogle = true, maxPerPa
       if (timer) clearInterval(timer);
       if (reserved && counter.path === pathname && counter.count > 0) counter.count -= 1;
     };
-  }, [slot, city, adsenseClient, allowGoogle, maxPerPage, pathname]);
+  }, [slot, city, adsenseClient, allowGoogle, maxPerPage, paidShare, pathname]);
 
   const cand = picked?.cand ?? null;
   const creativeId = cand ? (cand.type === 'own' ? cand.creative.id : GOOGLE_CREATIVE_ID) : null;

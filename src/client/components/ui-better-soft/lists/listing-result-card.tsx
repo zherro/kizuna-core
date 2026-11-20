@@ -74,6 +74,9 @@ export type ListingResultCardProps = {
   /** uid do anúncio. Com ele o card mostra o selo BORA INDICA enquanto houver impulsionamento vigente
    * (lido no navegador, sem cache — o HTML do servidor/ISR nunca leva o selo). Sem uid, sem selo. */
   serviceUid?: string | null;
+  /** Impulsionamento já resolvido no servidor (`ServiceResult.boosted`). Definido (true/false), o selo
+   * BORA INDICA usa este valor e o card NÃO consulta `vw_boosts_live` no navegador. */
+  boosted?: boolean | null;
 };
 
 /** Selo "já venceu" sobre a capa: contraste forte, fora do apagado do resto do card. */
@@ -251,6 +254,7 @@ export function ListingResultCard({
   className,
   expiredLabel,
   serviceUid,
+  boosted,
 }: Readonly<ListingResultCardProps>) {
   const expired = expiredLabel?.trim() || null;
   // vencido: o destaque (patrocinado) não faz sentido
@@ -271,7 +275,7 @@ export function ListingResultCard({
   const tileAspect = isLugar && !imageAspect ? 'poster' : resolvedImageAspect;
   const containImage = tileAspect === 'poster' && !isLugar;
   // Vencido não é "indicado": sem selo. O selo some sozinho quando o impulsionamento acaba.
-  const boraBadge = serviceUid && !expired ? <BoraIndicaBadge serviceUid={serviceUid} variant="card" /> : null;
+  const boraBadge = serviceUid && !expired ? <BoraIndicaBadge serviceUid={serviceUid} boosted={boosted} variant="card" /> : null;
   const typeBadge = tagLabel || groupLabel ? <TypeBadge group={groupLabel} category={tagLabel} /> : null;
   const footerInfo = (
     <div className="flex min-h-8 min-w-0 flex-col justify-end">

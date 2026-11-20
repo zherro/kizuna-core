@@ -103,9 +103,12 @@ export type OwnerStats = {
 };
 
 const round1 = (n: number) => Math.round(n * 10) / 10;
-/** Razão em %, limitada a 100 (view/contato são por sessão; impressão pode faltar). Sem base = null. */
+/**
+ * Razão em %, SEM teto: passar de 100% é real (impressão só conta card visível na lista; a visualização
+ * também vem de link direto, compartilhamento e busca do Google) — limitar escondia o valor. Sem base = null.
+ */
 export function ratio(a: number, b: number): number | null {
-  return b > 0 ? Math.min(100, round1((a / b) * 100)) : null;
+  return b > 0 ? round1((a / b) * 100) : null;
 }
 
 function metricValues(rows: AnalyticsRow[]): Record<string, number | null> {

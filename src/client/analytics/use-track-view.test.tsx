@@ -92,3 +92,36 @@ describe('useTrackView', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });
+
+describe('useTrackView — vaga patrocinada', () => {
+  it('impressão patrocinada leva p_placement e conta à parte da orgânica na mesma sessão', () => {
+    const imp = { minVisibleMs: 500, minVisibleRatio: 0.6, oncePerSession: true };
+    mount({ event: 'impression', rule: imp, source: 'home' });
+    setInView(true);
+    act(() => vi.advanceTimersByTime(500));
+    const organic = JSON.parse(fetchMock.mock.calls[0]![1].body);
+    expect(organic).not.toHaveProperty('p_placement');
+
+    mount({ event: 'impression', rule: imp, source: 'home', placement: 'sponsored' });
+    setInView(true);
+    act(() => vi.advanceTimersByTime(500));
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const paid = JSON.parse(fetchMock.mock.calls[1]![1].body);
+    expect(paid).toMatchObject({ p_event_type: 'impression', p_placement: 'sponsored', p_source: 'home' });
+
+    // mesma sessão: nenhuma das duas repete
+    mount({ event: 'impression', rule: imp, source: 'home', placement: 'sponsored' });
+    setInView(true);
+    act(() => vi.advanceTimersByTime(5000));
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('robô (UA de crawler) não envia nada', () => {
+    vi.stubGlobal('navigator', { webdriver: false, userAgent: 'Mozilla/5.0 (compatible; Googlebot/2.1)' });
+    mount({ event: 'impression', rule: { minVisibleMs: 500, minVisibleRatio: 0.6, oncePerSession: true }, placement: 'sponsored' });
+    setInView(true);
+    act(() => vi.advanceTimersByTime(5000));
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+

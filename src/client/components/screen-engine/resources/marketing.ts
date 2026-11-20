@@ -221,10 +221,25 @@ export const resourceMarketing: Record<string, ResourceConfig> = {
     returnCountPreferDisabled: true,
     mapOutput: (r) => ({ serviceUid: str(r.service_uid) }),
   },
+  // Banner pago no ar: só criativo + espaço. Lido pelo AdSlot (modo pago) para dar prioridade e
+  // rodízio às campanhas — ver `pickAd` em shared/ads.
+  vw_ad_campaigns_live: {
+    schema: 'public',
+    table: 'vw_ad_campaigns_live',
+    select: 'creative_id,slot_slug',
+    primaryKey: 'creative_id',
+    defaultOrder: 'creative_id',
+    searchableColumns: [],
+    listRequiresAuth: false,
+    maxPageSize: 1000,
+    returnCountPreferDisabled: true,
+    mapOutput: (r) => ({ creativeId: str(r.creative_id), slotSlug: str(r.slot_slug) }),
+  },
   vw_boost_metrics_daily: {
     schema: 'public',
     table: 'vw_boost_metrics_daily',
-    select: 'boost_id,tenant_id,service_uid,day,impressions,views,contact_clicks,interactions',
+    // `*`: as colunas `sponsored_*` (marketing 0003) só existem depois da migração — sem ela, viram 0
+    select: '*',
     primaryKey: 'boost_id',
     defaultOrder: 'day',
     searchableColumns: [],
@@ -239,6 +254,11 @@ export const resourceMarketing: Record<string, ResourceConfig> = {
       views: num(r.views),
       contactClicks: num(r.contact_clicks),
       interactions: num(r.interactions),
+      // parte entregue pela VAGA PATROCINADA (analytics 0004 `placement`); orgânico = total − isto
+      sponsoredImpressions: num(r.sponsored_impressions),
+      sponsoredViews: num(r.sponsored_views),
+      sponsoredContactClicks: num(r.sponsored_contact_clicks),
+      sponsoredInteractions: num(r.sponsored_interactions),
     }),
   },
   vw_ad_delivery_daily: {

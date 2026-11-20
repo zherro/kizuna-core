@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { baselineWindow, costPerView, ctr, denseSeries, lift, spentSoFar, sum } from './metrics-math';
+import { baselineWindow, costPerView, ctr, denseSeries, lift, spentSoFar, splitPaidOrganic, sum } from './metrics-math';
 
 const p = { startsOn: '2026-12-01', endsOn: '2026-12-07' };
 
@@ -34,5 +34,23 @@ describe('metrics-math', () => {
   });
   it('sum', () => {
     expect(sum([{ a: 1 }, { a: 2 }], 'a')).toBe(3);
+  });
+});
+
+describe('splitPaidOrganic', () => {
+  it('separa o que a vaga patrocinada entregou do orgânico no período', () => {
+    const r = splitPaidOrganic([
+      { day: '2026-12-01', impressions: 10, views: 4, contactClicks: 1, interactions: 0, sponsoredImpressions: 6, sponsoredViews: 3, sponsoredContactClicks: 1, sponsoredInteractions: 0 },
+      { day: '2026-12-02', impressions: 5, views: 1, contactClicks: 0, interactions: 2, sponsoredImpressions: 2, sponsoredViews: 0, sponsoredContactClicks: 0, sponsoredInteractions: 1 },
+    ]);
+    expect(r.total).toEqual({ impressions: 15, views: 5, contactClicks: 1, interactions: 2 });
+    expect(r.paid).toEqual({ impressions: 8, views: 3, contactClicks: 1, interactions: 1 });
+    expect(r.organic).toEqual({ impressions: 7, views: 2, contactClicks: 0, interactions: 1 });
+  });
+
+  it('banco sem a migração (sem sponsored_*): tudo orgânico, nunca negativo', () => {
+    const r = splitPaidOrganic([{ day: '2026-12-01', impressions: 3, views: 1, contactClicks: 0, interactions: 0 }]);
+    expect(r.paid.impressions).toBe(0);
+    expect(r.organic.impressions).toBe(3);
   });
 });
