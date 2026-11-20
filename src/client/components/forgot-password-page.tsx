@@ -9,6 +9,7 @@ import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
+import { isCaptchaRequired } from './captcha/captcha-config';
 
 /**
  * "Esqueci minha senha": pede o email e dispara `POST /api/auth/forgot-password`, que envia o
@@ -31,7 +32,7 @@ export function ForgotPasswordPageContent({
   // gerar outro — sem isso o botão ficava travado depois de um erro (ex.: senha errada).
   const [captchaKey, setCaptchaKey] = useState(0);
   const [sent, setSent] = useState(false);
-  const captchaRequired = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
+  const captchaRequired = isCaptchaRequired();
 
   const form = useForm({
     initialValues: { email: '' },

@@ -6,6 +6,7 @@ import { TurnstileWidget } from '../captcha';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
+import { isCaptchaRequired } from '../captcha/captcha-config';
 
 type PhoneLoginFormProps = {
   onSuccess?: (user: PublicSession) => void;
@@ -61,7 +62,7 @@ export function PhoneLoginForm({
   const [captchaKey, setCaptchaKey] = useState(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const captchaRequired = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
+  const captchaRequired = isCaptchaRequired();
 
   useEffect(() => {
     if (resendIn <= 0) return;

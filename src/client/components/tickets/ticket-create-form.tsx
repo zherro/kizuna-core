@@ -9,6 +9,7 @@ import { SelectPopover } from '../ui-better-soft/select-popover';
 import { TicketCreatedNotice } from './ticket-created-notice';
 import { TicketImagePicker } from './ticket-image-picker';
 import { OTHER_SUBJECT, TICKET_SUBJECTS, TICKET_SUBJECT_OPTIONS } from './ticket-subjects';
+import { isCaptchaRequired } from '../captcha/captcha-config';
 
 const GENERIC_ERROR =
   'Não foi possível abrir o chamado. Confira o assunto (de 3 a 160 caracteres) e tente de novo.';
@@ -35,7 +36,7 @@ export function TicketCreateForm({ authenticated = true }: { authenticated?: boo
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
 
-  const captchaRequired = !authenticated && Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
+  const captchaRequired = !authenticated && isCaptchaRequired();
   const title = (subject === OTHER_SUBJECT ? customSubject : subject).trim();
 
   async function submit(event: FormEvent) {

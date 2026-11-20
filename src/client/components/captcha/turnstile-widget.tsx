@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { isCaptchaRequired } from './captcha-config';
 
 /**
  * Widget do Cloudflare Turnstile.
@@ -55,7 +56,8 @@ function ensureScript(): Promise<void> {
 
 export function TurnstileWidget({ onToken }: { onToken: (token: string | null) => void }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+  // Sem chave no build ou com `AUTH_CAPTCHA_ENABLED=false` (via <CaptchaFlagScript />): sem widget.
+  const siteKey = isCaptchaRequired() ? process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY : undefined;
 
   useEffect(() => {
     if (!siteKey) return;

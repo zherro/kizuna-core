@@ -30,6 +30,7 @@ import { ViewingCityProvider } from '@kizuna/core/client/components/viewing-city
 import { WeatherWidget } from '@kizuna/core/client/components/weather/weather-widget';
 import { Toaster } from 'sonner';
 import cfg from '@/../kizuna.config.json';
+import { CaptchaFlagScript } from '@kizuna/core/client/components/captcha/captcha-flag-script';
 import './globals.css';
 
 const headerCfg = (cfg as { header?: { variant?: string } }).header;
@@ -161,6 +162,8 @@ export default function RootLayout({
         suppressHydrationWarning
         className="min-h-full flex flex-col bg-background text-foreground"
       >
+        {/* AUTH_CAPTCHA_ENABLED=false desliga o captcha também na tela, sem rebuild. */}
+        <CaptchaFlagScript />
         <AppPreferencesProvider
           defaultThemeColor={defaultThemeColor}
           themeColorSelectable={themeColorSelectable}

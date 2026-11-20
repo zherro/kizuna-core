@@ -14,6 +14,7 @@ import { PasswordInput } from '../ui/password-input';
 import { Label } from '../ui/label';
 import { SocialLoginButtons } from './social-login-buttons';
 import { PhoneLoginForm } from './phone-login-form';
+import { isCaptchaRequired } from '../captcha/captcha-config';
 
 type LoginResponse = { message: string; user?: PublicSession };
 
@@ -62,7 +63,7 @@ export function LoginForm({
   // gerar outro — sem isso o botão ficava travado depois de um erro (ex.: senha errada).
   const [captchaKey, setCaptchaKey] = useState(0);
   const [usePhone, setUsePhone] = useState(false);
-  const captchaRequired = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
+  const captchaRequired = isCaptchaRequired();
 
   const form = useForm({
     initialValues: { email: '', password: '' },
