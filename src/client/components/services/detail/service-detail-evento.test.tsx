@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it } from 'vitest';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, render, screen, within } from '@testing-library/react';
 import { ServiceDetailEvento } from './service-detail-evento';
 import type { ServiceDetailLabels } from './category-style';
 import type { ServiceRecord } from '../service-type';
@@ -147,7 +147,8 @@ describe('ServiceDetailEvento onde comprar: botão de compra', () => {
       salePoints: [{ label: 'Disk ingresso', venue: null }],
     });
     expect(screen.queryByText(/Bora comprar ingresso/)).toBeNull();
-    expect(screen.getByText('Comprar ingresso')).toBeTruthy();
+    // (a barra fixa do celular também tem um "Comprar ingresso": olha só a seção)
+    expect(within(screen.getByText('Ingressos').closest('section')!).getByText('Comprar ingresso')).toBeTruthy();
   });
 
   it('sem salePoints resolvidos, lê {nome, link} e string pura do formulário', () => {
@@ -174,7 +175,7 @@ describe('ServiceDetailEvento onde comprar: botão de compra', () => {
         { label: '', venue: null, link: 'https://compra.test/x' },
       ],
     });
-    const buy = screen.getByRole('link', { name: 'Comprar ingresso' });
+    const buy = within(screen.getByText('PISTA').closest('section')!).getByRole('link', { name: 'Comprar ingresso' });
     expect(buy.getAttribute('href')).toBe('https://compra.test/x');
     expect(buy.getAttribute('target')).toBe('_blank');
     // fica na seção Ingressos (depois do card do ingresso), não em "Onde comprar"
@@ -187,7 +188,8 @@ describe('ServiceDetailEvento onde comprar: botão de compra', () => {
     renderEvento(null, { salePoints: [{ label: '', venue: null, link: 'https://compra.test/x' }] });
     expect(screen.queryByText('Onde comprar')).toBeNull();
     expect(screen.getByText('Ingressos')).toBeTruthy();
-    expect(screen.getByRole('link', { name: 'Comprar ingresso' }).getAttribute('href')).toBe('https://compra.test/x');
+    const ingressos = within(screen.getByText('Ingressos').closest('section')!);
+    expect(ingressos.getByRole('link', { name: 'Comprar ingresso' }).getAttribute('href')).toBe('https://compra.test/x');
   });
 });
 
@@ -250,5 +252,84 @@ describe('ServiceDetailEvento — "Acontece em" (expires_at)', () => {
   it('com hora de início: "· HH:MM"', () => {
     renderWithExpiry('2026-12-20T02:00:00.000Z'); // 19/12 22:00 em Cuiabá
     expect(screen.getByText(/19 de dez.* · 22:00/)).toBeTruthy();
+  });
+});
+
+describe('ServiceDetailEvento barra fixa de compra', () => {
+  const bar = () => screen.queryByRole('region', { name: 'Comprar ingresso' });
+  const withAnswers = (answers: Record<string, unknown>) =>
+    ({ ...extraFields, answers: { ...extraFields.answers, ...answers } }) as never;
+
+  it('com link e WhatsApp: "Comprar ingresso" (purchase) principal e WhatsApp secundário, com o preço', () => {
+    renderEvento(null, {
+      extraFields: withAnswers({
+        link_ingresso: 'https://compra.test/x',
+        contato_whatsapp: '(65) 99999-0000',
+        ingressos: [{ setor: 'PISTA', valor: 50 }],
+      }),
+    });
+    const b = within(bar()!);
+    expect(b.getByRole('link', { name: /Comprar ingresso/ }).getAttribute('href')).toBe('https://compra.test/x');
+    expect(b.getByRole('link', { name: 'Chamar no WhatsApp' }).getAttribute('href')).toBe('https://wa.me/5565999990000');
+    expect(b.getByText('A partir de')).toBeTruthy();
+  });
+
+  it('só WhatsApp (inclusive o da linha "Como comprar" da descrição): vira a ação principal', () => {
+    render(
+      <>
+        {ServiceDetailEvento({
+          service: { ...service, description: '- **Como comprar:** WhatsApp (65) 9.9953-1935' },
+          extraFields,
+          subcategoryNames: [],
+          hue: 200,
+          labels,
+        })}
+      </>
+    );
+    const link = within(bar()!).getByRole('link', { name: /Chamar no WhatsApp/ });
+    expect(link.getAttribute('href')).toBe('https://wa.me/5565999531935');
+    expect(within(bar()!).queryByText(/Comprar ingresso/)).toBeNull();
+  });
+
+  it('sem forma de comprar: sem barra', () => {
+    renderEvento(null);
+    expect(bar()).toBeNull();
+  });
+
+  it('evento encerrado: sem barra', () => {
+    renderEvento(null, { extraFields: withAnswers({ data_inicio: '2020-01-01T20:00', link_ingresso: 'https://compra.test/x' }) });
+    expect(bar()).toBeNull();
+  });
+});
+
+describe('ServiceDetailEvento ingressos agrupados', () => {
+  const ingressos = [
+    { setor: 'PISTA', tipo: 'Inteira', valor: 60 },
+    { setor: 'PISTA', tipo: 'Meia', valor: 30 },
+    { setor: 'CAMAROTE', valor: 400, pessoas: 10 },
+    { setor: 'MESA OURO', valor: 1200 },
+    { setor: 'MESA PRATA', valor: 1000 },
+    { setor: 'MESA BRONZE', valor: 800 },
+    { setor: 'MESA SAFIRA', valor: 600 },
+    { setor: 'MESA DIAMANTE', valor: 1500 },
+  ];
+  const renderTickets = () =>
+    renderEvento(null, { extraFields: { ...extraFields, answers: { ...extraFields.answers, ingressos } } as never });
+
+  it('setor como cabeçalho uma vez só, modalidades do mais barato ao mais caro', () => {
+    renderTickets();
+    expect(screen.getAllByText('PISTA')).toHaveLength(1);
+    const pista = screen.getByText('PISTA').closest('li')!;
+    const labels = within(pista).getAllByText(/^(Meia|Inteira)$/).map((n) => n.textContent);
+    expect(labels).toEqual(['Meia', 'Inteira']);
+  });
+
+  it('passando de 6 linhas, o resto fica no "Ver mais"', () => {
+    renderTickets();
+    const summary = screen.getByText(/Ver mais 2 ingressos/);
+    const details = summary.closest('details')!;
+    expect(details.hasAttribute('open')).toBe(false);
+    expect(within(details).getByText('MESA DIAMANTE')).toBeTruthy();
+    expect(within(details).getByText('MESA OURO')).toBeTruthy();
   });
 });

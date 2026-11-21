@@ -19,7 +19,7 @@ export const TAXONOMIA_SCREEN: ScreenConfig = {
         eyebrow: 'Painel administrativo',
         title: 'Taxonomia de servicos',
         description:
-          'Grupo → Categoria → Especialidade → Tags em uma unica arvore. Clique em "Editar" em qualquer nivel, ou use os botoes "+" para adicionar um item novo.',
+          'Grupo → Categoria → Especialidade → Tags em uma única árvore. Clique em "Editar" em qualquer nível, ou use os botões "+" para adicionar um item novo.',
         backHref: '/painel',
       },
     },

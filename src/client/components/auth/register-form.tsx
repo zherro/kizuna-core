@@ -70,7 +70,7 @@ export function RegisterForm({
       confirmPassword: Yup.string()
         .oneOf([Yup.ref('password')], 'As senhas nao conferem.')
         .required('Confirme sua senha.'),
-      acceptTerms: Yup.boolean().oneOf([true], 'Voce precisa aceitar os termos para continuar.'),
+      acceptTerms: Yup.boolean().oneOf([true], 'Você precisa aceitar os termos para continuar.'),
     }),
     onSubmit: async (values, { setError, setSuccess }) => {
       try {

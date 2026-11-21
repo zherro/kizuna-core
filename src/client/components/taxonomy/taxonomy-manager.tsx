@@ -228,7 +228,7 @@ export function TaxonomyManager() {
                 <Input
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Buscar por nome ou slug em qualquer nivel..."
+                  placeholder="Buscar por nome ou slug em qualquer nível..."
                   className="pl-9"
                 />
               </div>

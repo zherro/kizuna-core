@@ -149,7 +149,7 @@ describe('computeAccountStatus', () => {
     );
     expect(s.levels.find((l) => l.key === 'perfil')?.missing).toEqual([
       { key: 'avatar', label: 'Foto de perfil', href: '/painel/minha-conta#foto' },
-      { key: 'document', label: 'CPF ou CNPJ valido', href: '/painel/minha-conta#dados-pessoais' },
+      { key: 'document', label: 'CPF ou CNPJ válido', href: '/painel/minha-conta#dados-pessoais' },
     ]);
   });
 

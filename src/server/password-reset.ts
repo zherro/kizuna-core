@@ -299,7 +299,7 @@ export function createResetPasswordHandler(pgrstRpc: PgrstRpc) {
       }
 
       console.info('[auth.reset] success', { requestId, path });
-      return NextResponse.json({ message: 'Senha redefinida. Voce ja pode entrar.' });
+      return NextResponse.json({ message: 'Senha redefinida. Você já pode entrar.' });
     } catch (error) {
       console.error('[auth.reset] unexpected_error', {
         requestId,

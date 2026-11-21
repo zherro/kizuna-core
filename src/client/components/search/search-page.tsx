@@ -727,7 +727,7 @@ function SearchPageInner({
                 Buscando em <span className="font-medium text-foreground">{locationLabel}</span>
                 {location.autoDetected && <span className="italic"> (detectado automaticamente)</span>}
                 {' — '}
-                <button onClick={() => setLocationOpen(true)} className="underline hover:text-foreground">
+                <button type="button" onClick={() => setLocationOpen(true)} className="-my-1 inline-flex min-h-6 min-w-11 items-center justify-center rounded px-1 align-middle underline hover:text-foreground">
                   trocar
                 </button>
               </p>

@@ -11,4 +11,5 @@ export {
 } from './landing-blocks';
 export { LandingSection, WhatsAppButton } from './landing-ui';
 export { LandingStickyCta } from './landing-sticky-cta';
+export { LandingAuthAction, authAwareHref } from './landing-action';
 export { whatsappLink } from './whatsapp';

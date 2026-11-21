@@ -83,7 +83,7 @@ export function AccountLevelCard({
       {/* Mobile: só o nível no topo (o link vai para o rodapé). sm+: nível e link na mesma linha. */}
       <div className="flex min-h-8 items-center justify-between gap-3 pr-10">
         <p className="text-sm text-muted-foreground">
-          Nivel {status.level} de {total}
+          Nível {status.level} de {total}
           {current ? (
             <>
               {' '}
@@ -113,7 +113,7 @@ export function AccountLevelCard({
       </div>
 
       <div className="mt-4">
-        <p className="font-medium">Proximo: {next.title}</p>
+        <p className="font-medium">Próximo: {next.title}</p>
         <MissingList items={next.missing} className="text-sm" />
         {nextUnlocks.length ? (
           <p className="mt-2 text-sm">

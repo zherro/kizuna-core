@@ -102,7 +102,7 @@ export function LevelUpDialog({
 
         <p className="mb-4 text-sm text-muted-foreground">
           {can.required
-            ? `Para isso voce precisa chegar ao nivel "${can.required.title}".`
+            ? `Para isso você precisa chegar ao nível "${can.required.title}".`
             : 'Entre na sua conta para continuar.'}
         </p>
 
@@ -121,7 +121,7 @@ export function LevelUpDialog({
 
         {can.required?.enabled === false ? (
           <p className="text-sm text-muted-foreground">
-            Este nivel ainda nao esta disponivel. Em breve!
+            Este nível ainda não está disponível. Em breve!
           </p>
         ) : (
           <Link

@@ -65,7 +65,7 @@ export function EmailVerificationLinkPage({
           return;
         }
         clear();
-        setMessage(data.error || 'Nao foi possivel confirmar o e-mail.');
+        setMessage(data.error || 'Não foi possível confirmar o e-mail.');
         setStatus('error');
       } catch {
         sent.current = false;

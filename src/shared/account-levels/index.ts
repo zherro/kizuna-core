@@ -130,19 +130,19 @@ export const REQUIREMENTS: Record<
     if (f.documentRequired) {
       const type = p.documentType === 'cnpj' ? 'cnpj' : 'cpf';
       if (!filled(p.documentNumber) || !validateDocument(type, p.documentNumber ?? '')) {
-        missing.push(item('document', 'CPF ou CNPJ valido'));
+        missing.push(item('document', 'CPF ou CNPJ válido'));
       }
     }
     if (!filled(p.zipCode) || !filled(p.state) || !filled(p.city))
-      missing.push(item('address', 'Endereco (CEP, estado e cidade)'));
+      missing.push(item('address', 'Endereço (CEP, estado e cidade)'));
     return missing;
   },
 
   listing_published: (f) => {
     if (f.listings.published > 0) return [];
     return f.listings.pending > 0
-      ? [item('listingPending', 'Anuncio em analise')]
-      : [item('listing', 'Publicar seu primeiro anuncio')];
+      ? [item('listingPending', 'Anúncio em análise')]
+      : [item('listing', 'Publicar seu primeiro anúncio')];
   },
 
   // Porta para verificação de identidade (documento + selfie com IA). Sem implementação na v1.

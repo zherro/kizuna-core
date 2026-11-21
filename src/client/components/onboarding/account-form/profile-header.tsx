@@ -125,7 +125,7 @@ export function ProfileHeader({
             className="w-full rounded-[var(--ui-radius-card-sm,0.75rem)] bg-muted/50 px-4 py-3 text-left transition-colors hover:bg-muted sm:w-52"
           >
             <span className="flex items-center justify-between text-xs text-muted-foreground">
-              Nivel {levelStatus.level} de {levelStatus.levels.length}
+              Nível {levelStatus.level} de {levelStatus.levels.length}
               <ChevronRight className="h-3.5 w-3.5" />
             </span>
             <span className="mt-0.5 block truncate text-sm font-medium">

@@ -58,7 +58,7 @@ export function ResetPasswordPageContent({
 
         clear();
         setDone(true);
-        setSuccess(data.message || 'Senha redefinida. Voce ja pode entrar.');
+        setSuccess(data.message || 'Senha redefinida. Você já pode entrar.');
         setTimeout(() => router.push(loginHref), 1500);
       } catch {
         setError('Erro de conexao com o servidor.');

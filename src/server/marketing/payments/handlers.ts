@@ -6,6 +6,8 @@ import { defaultProviderId, getPaymentProvider } from './registry';
 import { parsePurpose, planPurpose, type Purpose } from './purpose';
 import { settlePayment } from './settle';
 import type { PaymentIntent } from './types';
+import { projectChargeFields } from './reference';
+import { projectChargeReference } from './reference-config';
 
 export const MIN_TOPUP_CENTS = 1_000;
 export const MAX_TOPUP_CENTS = 100_000_00;
@@ -156,7 +158,10 @@ export function createCheckoutHandler() {
       return NextResponse.json({ message: 'Não foi possível registrar o pedido.' }, { status: created.status });
     }
     const [row] = (await created.json()) as IntentRow[];
-    const intent = toIntent(row);
+    // Referência/descrição com o nome do projeto (conciliação de contas compartilhadas); sem
+    // `marketing.payments.referencePrefix` no config, sai como sempre.
+    const base = toIntent(row);
+    const intent = { ...base, ...projectChargeFields(base.id, purpose, projectChargeReference) };
 
     let checkout;
     try {

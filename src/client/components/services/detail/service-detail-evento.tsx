@@ -15,7 +15,6 @@ import {
   Phone,
   Ticket,
   Users,
-  Layers,
   Wallet,
 } from 'lucide-react';
 import { Fact, Section } from './service-detail-cinema';
@@ -23,6 +22,9 @@ import { AdDescription } from './ad-description';
 import { VenueCard } from './venue-card';
 import { humanizeSlug } from './ad-extra-fields-format';
 import type { ServiceDetailVariantComponent, ServiceSalePoint } from './service-detail-types';
+import { EventBuyBar } from './event-buy-bar';
+import { eventBuyActions, eventBuyUrl, eventSalePoints, eventWhatsapp } from './event-buy';
+import { TicketGroupList } from './ticket-group-list';
 import {
   eventClassification,
   eventDateParts,
@@ -40,16 +42,13 @@ import {
   isFreeEvent,
   mapsSearchUrl,
   parseNames,
-  parseSalePoints,
   splitSalePoints,
   parseSessionDays,
   parseTickets,
-  ticketDisplay,
   safeHttpUrl,
   telHref,
   textField,
   whatsappHref,
-  type EventTicket,
 } from './evento-helpers';
 
 export { eventoHeaderTags };
@@ -65,14 +64,6 @@ function EndedBadge() {
     <span className="inline-flex items-center rounded-full border border-border px-2.5 py-0.5 text-[11px] font-semibold text-muted-foreground">
       Encerrado
     </span>
-  );
-}
-
-/** Pontos de venda resolvidos pelo servidor quando houver; senão o cru do formulário. */
-function eventSalePoints(salePoints: ServiceSalePoint[] | null | undefined, answers: Record<string, unknown>): ServiceSalePoint[] {
-  return (
-    salePoints ??
-    parseSalePoints(answers.pontos_de_venda).map((p) => ({ label: p.nome, venue: null, ...(p.link ? { link: p.link } : {}) }))
   );
 }
 
@@ -128,39 +119,6 @@ function SalePointCard({ point }: { point: ServiceSalePoint }) {
   );
 }
 
-/** Card de ingresso: nome (setor) + preço em destaque; abaixo, o que inclui; por fim lotação e lote.
- * No mobile o preço desce para baixo do nome quando o nome é longo (flex-wrap), sem espremer o texto. */
-function TicketCard({ ticket }: { ticket: EventTicket }) {
-  const { name, detail, lote, people } = ticketDisplay(ticket);
-  const value = ticket.valor == null ? null : ticket.valor > 0 ? formatBRL(ticket.valor) : 'Gratuito';
-  return (
-    <li className={`flex flex-col gap-2 p-4 ${CARD_CLASS}`}>
-      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <h3 className="min-w-0 flex-1 basis-48 text-base font-bold leading-snug">{name}</h3>
-        {value && <div className="shrink-0 text-lg font-black leading-tight text-brand">{value}</div>}
-      </div>
-      {detail && <p className="text-sm leading-relaxed text-muted-foreground">{detail}</p>}
-      {(people || lote) && (
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-medium text-foreground/80">
-          {people && (
-            <span className="inline-flex items-center gap-1.5">
-              <Users aria-hidden className="h-3.5 w-3.5 text-muted-foreground" />
-              {people}
-            </span>
-          )}
-          {lote && (
-            <span className="inline-flex items-center gap-1.5">
-              <Layers aria-hidden className="h-3.5 w-3.5 text-muted-foreground" />
-              {lote}
-            </span>
-          )}
-        </div>
-      )}
-      {ticket.comprar && <div className="text-xs text-muted-foreground">{ticket.comprar}</div>}
-    </li>
-  );
-}
-
 /**
  * Sidebar da variant `"evento"` — troca a caixa de preço por: data em destaque, título, local e
  * "a partir de" (+ link de compra). Só lg+ (`hidden lg:block`, aplicado por quem chama); no mobile o
@@ -177,9 +135,9 @@ export const ServiceDetailEventoSidebar: ServiceDetailVariantComponent = ({ serv
     priceUnit: service.priceUnit,
     tickets,
   });
-  // Link geral do evento; sem ele, o primeiro ponto de venda sem lugar cadastrado que tem link.
-  const buyUrl =
-    safeHttpUrl(answers.link_ingresso) ?? splitSalePoints(eventSalePoints(salePoints, answers)).buyLinks[0]?.href ?? null;
+  // Link geral do evento; sem ele, o de um ponto de venda. Sem link nenhum, o WhatsApp de compra.
+  const buyUrl = eventBuyUrl(answers, eventSalePoints(salePoints, answers));
+  const whatsapp = buyUrl ? null : eventWhatsapp(answers, service.description);
   const over = isEventOver(answers, service.expiresAt);
 
   return (
@@ -228,6 +186,17 @@ export const ServiceDetailEventoSidebar: ServiceDetailVariantComponent = ({ serv
       {buyUrl && !over && (
         <TrackedContactLink channel="purchase" href={buyUrl} target="_blank" rel="noopener noreferrer" className={`mt-4 ${BUY_LINK_CLASS}`}>
           <Ticket className="h-4 w-4" /> Comprar ingresso
+        </TrackedContactLink>
+      )}
+      {whatsapp && !over && (
+        <TrackedContactLink
+          channel="whatsapp"
+          href={whatsappHref(whatsapp)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`mt-4 ${BUY_LINK_CLASS}`}
+        >
+          <MessageCircle className="h-4 w-4" /> Chamar no WhatsApp
         </TrackedContactLink>
       )}
     </>
@@ -284,6 +253,12 @@ export const ServiceDetailEvento: ServiceDetailVariantComponent = ({ service, ex
   const whatsapp = textField(answers.contato_whatsapp);
   const email = textField(answers.contato_email);
   const over = isEventOver(answers, service.expiresAt);
+  // Barra fixa de compra (celular/tablet): link de compra e/ou WhatsApp; some com o evento encerrado.
+  const buyBar = eventBuyActions({
+    over,
+    buyUrl: eventBuyUrl(answers, eventSalePoints(salePoints, answers)),
+    whatsapp: eventWhatsapp(answers, service.description),
+  });
 
   type FactItem = { icon: ReactNode; label: string; value: ReactNode };
   // Casa resolvida pela tag `local:<slug>` → "Organizado por <casa>" (link); senão o `realizador` texto.
@@ -385,13 +360,7 @@ export const ServiceDetailEvento: ServiceDetailVariantComponent = ({ service, ex
 
       {(tickets.length > 0 || buyUrl || buyLinks.length > 0) && (
         <Section title="Ingressos" hue={hue}>
-          {tickets.length > 0 && (
-            <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {tickets.map((t, i) => (
-                <TicketCard key={`${t.titulo}-${t.setor}-${t.lote}-${i}`} ticket={t} />
-              ))}
-            </ul>
-          )}
+          {tickets.length > 0 && <TicketGroupList tickets={tickets} />}
           {buyUrl && (
             <TrackedContactLink
               channel="purchase"
@@ -500,6 +469,14 @@ export const ServiceDetailEvento: ServiceDetailVariantComponent = ({ service, ex
         </Section>
       )}
 
+      {buyBar && (
+        <EventBuyBar
+          primary={buyBar.primary}
+          secondary={buyBar.secondary}
+          priceCaption={price.caption}
+          priceAmount={price.kind === 'quote' ? null : price.amount}
+        />
+      )}
     </>
   );
 };

@@ -102,6 +102,62 @@ describe('createCheckout', () => {
   });
 });
 
+describe('createCheckout — identificação por projeto', () => {
+  const ok = () =>
+    fetchMock.mockResolvedValue(
+      json({ data: { id: 'pix_char_9', amount: 5000, status: 'PENDING', brCode: '000201' }, error: null, success: true }),
+    );
+  const sentData = () => JSON.parse(fetchMock.mock.calls[0][1].body).data;
+
+  it('sem os campos novos: comportamento de antes (externalId = id da intent, descrição padrão)', async () => {
+    ok();
+    await abacatePayProvider.createCheckout(intent, { origin: 'https://app.test' });
+    expect(sentData()).toMatchObject({
+      externalId: 'int_1',
+      description: 'Saldo para divulgação de anúncios',
+      metadata: { intentId: 'int_1', tenantId: 't1' },
+    });
+  });
+
+  it('com externalRef/description/metadata: envia os do projeto e mantém intentId/tenantId', async () => {
+    ok();
+    await abacatePayProvider.createCheckout(
+      {
+        ...intent,
+        externalRef: 'bora-impulsionamento-int_1',
+        description: 'Bora Cuiabá — impulsionamento #int_1',
+        metadata: { projeto: 'bora', tipo: 'impulsionamento', id: 'int_1' },
+      },
+      { origin: 'https://app.test' },
+    );
+    expect(sentData()).toMatchObject({
+      externalId: 'bora-impulsionamento-int_1',
+      // travessão vira hífen: a API recusa U+2014
+      description: 'Bora Cuiabá - impulsionamento #int_1',
+      metadata: { projeto: 'bora', tipo: 'impulsionamento', id: 'int_1', intentId: 'int_1', tenantId: 't1' },
+    });
+  });
+
+  it('limpa e corta com segurança: externalId [A-Za-z0-9_-] até 64, descrição sem emoji até 140, metadata só texto', async () => {
+    ok();
+    await abacatePayProvider.createCheckout(
+      {
+        ...intent,
+        externalRef: 'bora/banner #' + 'x'.repeat(100),
+        description: 'Bora 🎉 ' + 'd'.repeat(300),
+        metadata: { projeto: 'bora', n: 5 as unknown as string, intentId: 'forjado' },
+      },
+      { origin: 'https://app.test' },
+    );
+    const d = sentData();
+    expect(d.externalId).toMatch(/^[A-Za-z0-9_-]{1,64}$/);
+    expect(d.externalId.startsWith('bora-banner-')).toBe(true);
+    expect(d.description.length).toBeLessThanOrEqual(140);
+    expect(d.description).not.toMatch(/\p{Extended_Pictographic}/u);
+    expect(d.metadata).toEqual({ projeto: 'bora', n: '5', intentId: 'int_1', tenantId: 't1' });
+  });
+});
+
 describe('verifyWebhook', () => {
   it('pago válido (secret no header + HMAC do corpo cru) → evento paid com valor', async () => {
     expect(await abacatePayProvider.verifyWebhook(webhook(paid()))).toEqual({ externalId: 'pix_char_1', status: 'paid', amountCents: 5000 });

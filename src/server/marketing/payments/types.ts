@@ -10,6 +10,16 @@ export type PaymentIntent = {
   provider: string;
   externalId: string | null;
   status: 'pending' | 'paid' | 'failed' | 'expired';
+  /**
+   * Opcionais, para conciliação quando vários projetos usam a MESMA conta do provedor. Sem eles,
+   * vale o de sempre (referência = id da intent, descrição padrão do provedor).
+   * - `externalRef`: referência enviada ao provedor (ex.: `bora-impulsionamento-<id>`).
+   * - `description`: texto da cobrança (ex.: `Bora Cuiabá — impulsionamento #<id>`).
+   * - `metadata`: campos livres (texto); `intentId`/`tenantId` são sempre do sistema.
+   */
+  externalRef?: string;
+  description?: string;
+  metadata?: Record<string, string>;
 };
 
 export type CheckoutResult = {

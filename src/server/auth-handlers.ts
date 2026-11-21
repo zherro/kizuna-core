@@ -319,7 +319,7 @@ export function createRegisterHandler(pgrstRpc: PgrstRpc) {
 
     if (!acceptTerms) {
       return NextResponse.json(
-        { message: 'Voce precisa aceitar os termos para criar a conta.' },
+        { message: 'Você precisa aceitar os termos para criar a conta.' },
         { status: 400 }
       );
     }

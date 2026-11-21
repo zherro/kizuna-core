@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { whatsappLink } from './whatsapp';
 import { LandingPoints, LandingSteps } from './landing-blocks';
 import { LandingHero } from './landing-hero';
+import { authAwareHref } from './landing-action';
 
 describe('whatsappLink', () => {
   it('usa só os dígitos e codifica a mensagem', () => {
@@ -32,5 +33,17 @@ describe('blocos de captação', () => {
     const html = renderToStaticMarkup(<LandingSteps id="y" title="Como" steps={[{ title: 'A' }, { title: 'B' }]} />);
     expect(html).toContain('<ol');
     expect(html.match(/<li/g)).toHaveLength(2);
+  });
+});
+
+describe('authAwareHref', () => {
+  it('visitante anônimo passa pelo login e volta ao destino', () => {
+    expect(authAwareHref('/painel/meus-servicos/novo', true)).toBe(
+      '/login?returnTo=%2Fpainel%2Fmeus-servicos%2Fnovo'
+    );
+  });
+
+  it('logado (ou sessão ainda carregando) vai direto', () => {
+    expect(authAwareHref('/painel/meus-servicos/novo', false)).toBe('/painel/meus-servicos/novo');
   });
 });

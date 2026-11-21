@@ -136,7 +136,7 @@ describe('PainelWelcome', () => {
     });
     render(<PainelWelcome name="Ana" fetchLikedItems={fetchLikedItems} />);
     await waitFor(() => expect(screen.getByText(/Nada salvo ainda/)).toBeTruthy());
-    expect(screen.getByRole('link', { name: /Descobrir no swipe/ }).getAttribute('href')).toBe('/descobrir');
+    expect(screen.getByRole('link', { name: 'Descobrir' }).getAttribute('href')).toBe('/descobrir');
     expect(screen.getByRole('link', { name: /Pesquisar/ }).getAttribute('href')).toBe('/busca');
   });
 

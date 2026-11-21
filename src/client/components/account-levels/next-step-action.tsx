@@ -47,7 +47,7 @@ export function NextStepAction({
   if (level.requirement === 'listing_published' && level.missing.some((m) => m.key === 'listingPending')) {
     return (
       <p className="mt-3 text-sm text-muted-foreground">
-        Seu anuncio esta em analise. Voce vira Anunciante quando ele for aprovado.
+        Seu anúncio está em análise. Você vira Anunciante quando ele for aprovado.
       </p>
     );
   }
@@ -55,7 +55,7 @@ export function NextStepAction({
   if (!level.href) return null;
   return (
     <Link href={level.href} className={`mt-3 ${BUTTON}`}>
-      {level.requirement === 'listing_published' ? 'Publicar anuncio' : 'Completar'}
+      {level.requirement === 'listing_published' ? 'Publicar anúncio' : 'Completar'}
     </Link>
   );
 }

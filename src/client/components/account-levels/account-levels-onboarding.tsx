@@ -27,7 +27,7 @@ export function AccountLevelsOnboarding({
   actionLabel = null,
   phoneEnabled = false,
   title = 'Evolua sua conta',
-  description = 'Cada nivel libera mais coisas. Voce so precisa completar quando quiser usar.',
+  description = 'Cada nível libera mais coisas. Você só precisa completar quando quiser usar.',
 }: Props) {
   const router = useRouter();
   const isBlocked = Boolean(blocked && !blocked.allowed && blocked.required);
@@ -41,7 +41,7 @@ export function AccountLevelsOnboarding({
 
       {isBlocked ? (
         <p className="rounded-md border border-primary/40 bg-primary/10 px-3 py-2 text-sm">
-          Para <strong>{(actionLabel ?? 'continuar').toLowerCase()}</strong>, chegue ao nivel{' '}
+          Para <strong>{(actionLabel ?? 'continuar').toLowerCase()}</strong>, chegue ao nível{' '}
           <strong>{blocked!.required!.title}</strong>.
         </p>
       ) : null}

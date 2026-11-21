@@ -191,7 +191,7 @@ export function CategoryCarousel({
           emptyBox
         ) : (
           <ScrollRail
-            className="mt-4"
+            className={title ? "mt-4" : undefined}
             trackClassName="flex gap-3 overflow-x-auto p-1 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             watch={loading ? -1 : items.length}
           >
@@ -230,7 +230,7 @@ export function CategoryCarousel({
         emptyBox
       ) : (
         <ScrollRail
-          className="mt-6"
+          className={title ? "mt-6" : undefined}
           trackClassName="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           watch={loading ? -1 : items.length}
         >
@@ -359,7 +359,9 @@ function Header({
   compact?: boolean;
   style?: CSSProperties | undefined;
 }) {
-  // Mesmo cabeçalho de seção dos outros blocos da home (título, barra e "ver todas").
+  // Mesmo cabeçalho de seção dos outros blocos da home (título, barra e "ver todas"). Sem título e
+  // sem link (ex.: /busca, `title=""`), nada: a barra de acento sozinha parecia um título vazio.
+  if (!title && !(allLabel && allHref)) return null;
   return (
     <SectionHeading
       title={title}

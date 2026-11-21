@@ -41,7 +41,7 @@ export function AccountLevelsPanel({
   if (!status) {
     return (
       <p className="text-sm text-muted-foreground">
-        {loading ? 'Carregando...' : 'Nao foi possivel carregar.'}
+        {loading ? 'Carregando...' : 'Não foi possível carregar.'}
       </p>
     );
   }
@@ -54,7 +54,7 @@ export function AccountLevelsPanel({
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
-        Seu nivel atual:{' '}
+        Seu nível atual:{' '}
         <strong className="text-foreground">
           {status.level === 0
             ? 'Visitante'

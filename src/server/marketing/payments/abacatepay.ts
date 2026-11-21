@@ -103,6 +103,56 @@ function mapStatus(status: string | undefined): WebhookEvent['status'] | null {
   }
 }
 
+// Limites conservadores: a doc da v2 não documenta o tamanho de externalId/metadata e diverge sobre
+// a descrição (140 na página de PIX × 500 na especificação); emoji é recusado.
+const MAX_EXTERNAL_ID = 64;
+const MAX_DESCRIPTION = 140;
+const MAX_META_KEYS = 20;
+const MAX_META_VALUE = 120;
+const DEFAULT_DESCRIPTION = 'Saldo para divulgação de anúncios';
+
+/** `externalRef` do projeto (só [A-Za-z0-9_-], até 64) ou, sem ele, o id da intent. */
+function chargeExternalId(intent: PaymentIntent): string {
+  const ref = (intent.externalRef ?? '')
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^A-Za-z0-9_-]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, MAX_EXTERNAL_ID);
+  return ref || intent.id;
+}
+
+/**
+ * Descrição do projeto aceitável pela API (sandbox de 20/11: "Disallowed character in description:
+ * '—' (U+2014)"; acentos e '#' passam): sem emoji/controle, pontuação tipográfica em ASCII,
+ * cortada em 140; vazia → a padrão.
+ */
+function chargeDescription(description: string | undefined): string {
+  const clean = (description ?? '')
+    .replace(/[‒-―−]/g, '-')
+    .replace(/[‘’‚′]/g, "'")
+    .replace(/[“”„″]/g, '"')
+    .replace(/…/g, '...')
+    .replace(/[\p{Extended_Pictographic}\p{Cc}️‍]/gu, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!clean) return DEFAULT_DESCRIPTION;
+  return clean.length > MAX_DESCRIPTION ? clean.slice(0, MAX_DESCRIPTION - 3).trimEnd() + '...' : clean;
+}
+
+/** Metadata plano e só texto; `intentId`/`tenantId` sempre do sistema (não dá para forjar). */
+function chargeMetadata(intent: PaymentIntent): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(intent.metadata ?? {}).slice(0, MAX_META_KEYS)) {
+    if (v === null || v === undefined || typeof v === 'object') continue;
+    out[k] = String(v).slice(0, MAX_META_VALUE);
+  }
+  out.intentId = intent.id;
+  out.tenantId = intent.tenantId;
+  return out;
+}
+
 const isProdKey = (cfg: Config) => cfg.apiKey.startsWith('abc_prod_');
 
 export const abacatePayProvider: PaymentProvider = {
@@ -120,10 +170,11 @@ export const abacatePayProvider: PaymentProvider = {
         method: 'PIX',
         data: {
           amount: intent.amountCents,
-          description: 'Saldo para divulgacao de anuncios',
+          description: chargeDescription(intent.description),
           expiresIn: cfg.expiresIn,
-          externalId: intent.id, // idempotência do lado deles
-          metadata: { intentId: intent.id, tenantId: intent.tenantId },
+          // Idempotência do lado deles: cobrança PIX pendente com o mesmo externalId é devolvida.
+          externalId: chargeExternalId(intent),
+          metadata: chargeMetadata(intent),
         },
       }),
     });

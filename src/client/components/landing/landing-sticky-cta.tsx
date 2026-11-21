@@ -1,21 +1,25 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { WhatsAppButton } from './landing-ui';
 
 /**
  * Botão fixo no rodapé do celular (some do tablet para cima). Fica sobre a barra de abas
  * (`--mobile-tab-h`) e se esconde quando o botão do hero está na tela e a partir do bloco final
  * (`endId`), para não duplicar o botão nem cobrir o rodapé. Sem JS, fica visível.
+ * Padrão: o `WhatsAppButton` de `href`/`label`; `children` troca por outra ação (ex.: `LandingAuthAction`).
  */
 export function LandingStickyCta({
   href,
   label = 'Falar no WhatsApp',
   heroId,
   endId,
+  children,
 }: {
-  href: string;
+  href?: string;
   label?: string;
+  /** Ação no lugar do botão de WhatsApp (ocupe a largura toda com `className="w-full"`). */
+  children?: ReactNode;
   /** id do elemento do hero cujo botão já está visível. */
   heroId: string;
   /** id do bloco final: ao chegar nele (ou passar), o botão fixo some. */
@@ -54,7 +58,7 @@ export function LandingStickyCta({
         hidden ? 'pointer-events-none translate-y-full opacity-0' : 'translate-y-0 opacity-100'
       }`}
     >
-      <WhatsAppButton href={href} label={label} className="w-full" />
+      {children ?? (href ? <WhatsAppButton href={href} label={label} className="w-full" /> : null)}
     </div>
   );
 }
