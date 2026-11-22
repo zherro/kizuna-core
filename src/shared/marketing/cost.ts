@@ -75,13 +75,19 @@ export function situation(p: Period, today: string = dbToday()): Situation {
 
 export type PeriodCheck = { ok: true } | { ok: false; reason: string };
 
+/** Como escrever valores nas mensagens (padrão: R$ e "Saldo insuficiente"). */
+export type PeriodMessageFormat = { money?: (cents: number) => string; insufficient?: string };
+
 /** Mesmas regras do banco (CHECKs + policy de INSERT), com mensagem para o formulário. */
 export function validateNewPeriod(
   a: { dailyCents: number; startsOn: string; endsOn: string; balanceCents: number },
   today: string = dbToday(),
+  fmt: PeriodMessageFormat = {},
 ): PeriodCheck {
+  const money = fmt.money ?? formatBRL;
+  const insufficient = fmt.insufficient ?? 'Saldo insuficiente';
   if (!Number.isInteger(a.dailyCents) || a.dailyCents < MIN_DAILY_CENTS || a.dailyCents > MAX_DAILY_CENTS) {
-    return { ok: false, reason: `A diária deve ficar entre ${formatBRL(MIN_DAILY_CENTS)} e ${formatBRL(MAX_DAILY_CENTS)}.` };
+    return { ok: false, reason: `A diária deve ficar entre ${money(MIN_DAILY_CENTS)} e ${money(MAX_DAILY_CENTS)}.` };
   }
   if (!/^\d{4}-\d{2}-\d{2}$/.test(a.startsOn) || !/^\d{4}-\d{2}-\d{2}$/.test(a.endsOn)) {
     return { ok: false, reason: 'Informe as datas de início e fim.' };
@@ -92,7 +98,7 @@ export function validateNewPeriod(
   if (days > MAX_PERIOD_DAYS) return { ok: false, reason: `O período máximo é de ${MAX_PERIOD_DAYS} dias.` };
   const total = costCents(a.dailyCents, a);
   if (total > a.balanceCents) {
-    return { ok: false, reason: `Saldo insuficiente: o período custa ${formatBRL(total)} e você tem ${formatBRL(a.balanceCents)}.` };
+    return { ok: false, reason: `${insufficient}: o período custa ${money(total)} e você tem ${money(a.balanceCents)}.` };
   }
   return { ok: true };
 }

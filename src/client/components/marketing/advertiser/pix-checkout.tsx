@@ -1,7 +1,8 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import { CheckCircle2, Clock, Loader2, XCircle } from 'lucide-react';
-import { formatBRL } from '../../../../shared/marketing/cost';
+import type { MarketingWords } from '../../../../shared/marketing/display';
+import { useMarketingDisplay } from '../display-context';
 import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
 import { Field, Notice } from './ui';
@@ -157,19 +158,20 @@ export function PixBox({ pix }: { pix: PixData }) {
   );
 }
 
-const OUTCOME_TEXT: Record<PurchaseOutcome, string> = {
+const outcomeText = (w: Pick<MarketingWords, 'inYourBalance' | 'toYourBalance'>): Record<PurchaseOutcome, string> => ({
   waiting: 'Aguardando o pagamento… esta tela atualiza sozinha.',
   closed: 'Este PIX expirou ou não foi aprovado. Nada foi cobrado; gere outro se quiser.',
-  credited: 'Pago! O valor já está no seu saldo.',
+  credited: `Pago! O valor já está ${w.inYourBalance}.`,
   boost_active: 'Pago! O impulsionamento está ativo no período escolhido.',
   campaign_review: 'Pago! O banner está aguardando a aprovação da equipe e só vai ao ar depois de aprovado.',
   campaign_approved: 'Pago e aprovado! O banner está no ar no período escolhido.',
-  campaign_rejected: 'O banner foi reprovado. O valor voltou para o seu saldo.',
-  kept_in_balance: 'Pago, mas não deu para ativar. O valor ficou no seu saldo.',
-};
+  campaign_rejected: `O banner foi reprovado. O valor voltou ${w.toYourBalance}.`,
+  kept_in_balance: `Pago, mas não deu para ativar. O valor ficou ${w.inYourBalance}.`,
+});
 
 /** Linha de status do pagamento (aria-live para leitor de tela). */
 export function PurchaseStatusLine({ status }: { status: PurchaseStatus | null }) {
+  const { words } = useMarketingDisplay();
   const outcome = status?.outcome ?? 'waiting';
   const tone = outcome === 'waiting' ? 'info' : outcome === 'closed' || outcome === 'campaign_rejected' ? 'warn' : 'ok';
   const Icon = outcome === 'waiting' ? Loader2 : outcome === 'closed' ? XCircle : outcome === 'campaign_review' ? Clock : CheckCircle2;
@@ -179,7 +181,7 @@ export function PurchaseStatusLine({ status }: { status: PurchaseStatus | null }
         <span className="flex items-start gap-2">
           <Icon className={`mt-0.5 h-4 w-4 shrink-0 ${outcome === 'waiting' ? 'animate-spin' : ''}`} aria-hidden />
           <span>
-            {OUTCOME_TEXT[outcome]}
+            {outcomeText(words)[outcome]}
             {outcome === 'kept_in_balance' && status?.message ? <span className="block text-xs">{status.message}</span> : null}
           </span>
         </span>
@@ -205,6 +207,7 @@ export function PixPurchase({
   onSettled: () => void;
   label?: string;
 }) {
+  const { payMoney } = useMarketingDisplay();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [checkout, setCheckout] = useState<CheckoutResponse | null>(null);
@@ -241,7 +244,7 @@ export function PixPurchase({
     const waiting = !status || status.outcome === 'waiting';
     return (
       <div className="flex flex-col gap-3 rounded-lg border bg-muted/30 p-3">
-        <p className="text-sm font-medium">PIX de {formatBRL(checkout.amountCents ?? totalCents)}</p>
+        <p className="text-sm font-medium">PIX de {payMoney(checkout.amountCents ?? totalCents)}</p>
         {waiting && checkout.pix ? <PixBox pix={checkout.pix} /> : null}
         {waiting && checkout.instructions ? <p className="text-xs text-muted-foreground">{checkout.instructions}</p> : null}
         <PurchaseStatusLine status={status} />
@@ -257,11 +260,11 @@ export function PixPurchase({
   return (
     <div className="flex flex-col gap-2">
       {error ? <Notice tone="error">{error}</Notice> : null}
-      {tooLow ? <Notice tone="warn">O pagamento por PIX começa em {formatBRL(MIN_PAYMENT_CENTS)}. Aumente a diária ou os dias.</Notice> : null}
+      {tooLow ? <Notice tone="warn">O pagamento por PIX começa em {payMoney(MIN_PAYMENT_CENTS)}. Aumente a diária ou os dias.</Notice> : null}
       <div>
         <Button type="button" onClick={pay} disabled={disabled || busy || tooLow || totalCents <= 0}>
           {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden /> : null}
-          {label} · {formatBRL(totalCents)}
+          {label} · {payMoney(totalCents)}
         </Button>
       </div>
     </div>

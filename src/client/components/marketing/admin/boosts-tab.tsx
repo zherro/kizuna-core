@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { Rocket, Search } from 'lucide-react';
-import { formatBRL } from '../../../../shared/marketing/cost';
+import { useMarketingDisplay } from '../display-context';
 import { Input } from '../../ui/input';
 import { EmptyStateCard } from '../../ui-better-soft/lists/empty-state-card';
 import { LIMITS, loadBoostMetrics, loadBoosts } from './admin-data';
@@ -94,6 +94,7 @@ function BoostItem({
   stats?: { impressions: number; views: number; contactClicks: number };
   onChanged: () => void;
 }) {
+  const { money } = useMarketingDisplay();
   const impressions = stats?.impressions ?? 0;
   const views = stats?.views ?? 0;
   const spent = spentOf(b);
@@ -112,14 +113,14 @@ function BoostItem({
       </div>
       <AccountName label={null} tenantId={b.tenantId} />
       <dl className="grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-3 lg:grid-cols-6">
-        <Fact label="Diária" value={formatBRL(b.dailyCents)} />
-        <Fact label="Comprometido" value={formatBRL(committedOf(b))} />
-        <Fact label="Gasto até hoje" value={formatBRL(spent)} />
+        <Fact label="Diária" value={money(b.dailyCents)} />
+        <Fact label="Comprometido" value={money(committedOf(b))} />
+        <Fact label="Gasto até hoje" value={money(spent)} />
         <Fact label="Impressões" value={impressions} />
         <Fact label="Aberturas do detalhe" value={views} />
         <Fact label="Taxa de abertura" value={formatPct(ctr(views, impressions))} />
         <Fact label="Cliques de contato" value={stats?.contactClicks ?? 0} />
-        <Fact label="Custo por abertura" value={cpv == null ? '—' : formatBRL(cpv)} />
+        <Fact label="Custo por abertura" value={cpv == null ? '—' : money(cpv)} />
       </dl>
       <div>
         <StopButton resource="boosts" id={b.id} row={b} noun="impulsionamento" onDone={onChanged} />

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { Search, Wallet } from 'lucide-react';
-import { formatBRL } from '../../../../shared/marketing/cost';
+import { useMarketingDisplay } from '../display-context';
 import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
 import { EmptyStateCard } from '../../ui-better-soft/lists/empty-state-card';
@@ -49,6 +49,7 @@ export function AdvertisersTab() {
     return { advertisers: buildAdvertisers({ balances, boosts, campaigns }), capped: boosts.length >= LIMITS.boosts || campaigns.length >= LIMITS.campaigns };
   }, 'Não foi possível carregar os anunciantes.');
 
+  const { money, words } = useMarketingDisplay();
   const [query, setQuery] = useState('');
   const [adSearch, setAdSearch] = useState('');
   const [target, setTarget] = useState<Target | null>(null);
@@ -70,16 +71,16 @@ export function AdvertisersTab() {
     <div className="flex flex-col gap-5">
       <dl className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat label="Contas com movimento" value={advertisers.length} />
-        <Stat label="Creditado" value={formatBRL(totals.credited)} />
-        <Stat label="Comprometido" value={formatBRL(totals.committed)} hint="impulsionamentos e banners" />
-        <Stat label="Saldo disponível" value={formatBRL(totals.balance)} tone={totals.balance < 0 ? 'bad' : undefined} />
+        <Stat label="Creditado" value={money(totals.credited)} />
+        <Stat label="Comprometido" value={money(totals.committed)} hint={words.spendTargets} />
+        <Stat label={words.balanceAvailable} value={money(totals.balance)} tone={totals.balance < 0 ? 'bad' : undefined} />
       </dl>
 
       <section className={`${CARD} flex flex-col gap-3 p-4`}>
         <div>
-          <h3 className="text-sm font-semibold">Adicionar saldo a uma conta nova</h3>
+          <h3 className="text-sm font-semibold">{words.grantBalance} a uma conta nova</h3>
           <p className="text-xs text-muted-foreground">
-            Contas sem movimento ainda não aparecem na lista. Busque o título de um anúncio dela e lance o saldo.
+            Contas sem movimento ainda não aparecem na lista. Busque o título de um anúncio dela e lance {words.theBalance}.
           </p>
         </div>
         <div className="relative">
@@ -103,7 +104,7 @@ export function AdvertisersTab() {
               <li key={s.uid} className="flex flex-wrap items-center gap-3 py-2">
                 <AccountName label={s.title} tenantId={s.tenantId} />
                 <Button size="sm" variant="outline" className="ml-auto" onClick={() => setTarget({ tenantId: s.tenantId, label: s.title })}>
-                  <Wallet className="mr-1.5 h-4 w-4" aria-hidden="true" /> Adicionar saldo
+                  <Wallet className="mr-1.5 h-4 w-4" aria-hidden="true" /> {words.grantBalance}
                 </Button>
               </li>
             ))}
@@ -133,7 +134,7 @@ export function AdvertisersTab() {
           title={advertisers.length === 0 ? 'Nenhum anunciante ainda' : 'Nenhum resultado'}
           description={
             advertisers.length === 0
-              ? 'Quando alguém receber saldo ou impulsionar um anúncio, a conta aparece aqui.'
+              ? `Quando alguém receber ${words.balanceNoun} ou impulsionar um anúncio, a conta aparece aqui.`
               : 'Ajuste o filtro para ver outras contas.'
           }
         />
@@ -160,21 +161,22 @@ export function AdvertisersTab() {
 }
 
 function AdvertiserRow({ advertiser: a, onCredit }: { advertiser: Advertiser; onCredit: () => void }) {
+  const { money, words, banners } = useMarketingDisplay();
   return (
     <li className={`${CARD} flex flex-col gap-3 p-4`}>
       <div className="flex flex-wrap items-center gap-3">
         <AccountName label={a.label} tenantId={a.tenantId} />
         <Button size="sm" variant="outline" className="ml-auto" onClick={onCredit}>
-          <Wallet className="mr-1.5 h-4 w-4" aria-hidden="true" /> Adicionar saldo
+          <Wallet className="mr-1.5 h-4 w-4" aria-hidden="true" /> {words.grantBalance}
         </Button>
       </div>
       <dl className="grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-3 lg:grid-cols-6">
-        <Fact label="Saldo" value={<span className={a.balanceCents < 0 ? 'text-red-700 dark:text-red-400' : ''}>{formatBRL(a.balanceCents)}</span>} />
-        <Fact label="Creditado" value={formatBRL(a.creditedCents)} />
-        <Fact label="Comprometido" value={formatBRL(a.committedCents)} />
-        <Fact label="Gasto até hoje" value={formatBRL(a.spentCents)} />
+        <Fact label={words.balance} value={<span className={a.balanceCents < 0 ? 'text-red-700 dark:text-red-400' : ''}>{money(a.balanceCents)}</span>} />
+        <Fact label="Creditado" value={money(a.creditedCents)} />
+        <Fact label="Comprometido" value={money(a.committedCents)} />
+        <Fact label="Gasto até hoje" value={money(a.spentCents)} />
         <Fact label="Impulsionamentos no ar" value={a.activeBoosts} />
-        <Fact label="Banners no ar" value={a.activeCampaigns} />
+        {banners ? <Fact label="Banners no ar" value={a.activeCampaigns} /> : null}
       </dl>
     </li>
   );

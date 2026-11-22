@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import { formatBRL, parseBRLToCents } from '../../../../shared/marketing/cost';
+import { parseBRLToCents } from '../../../../shared/marketing/cost';
+import { useMarketingDisplay } from '../display-context';
 import { useToast } from '../../../hooks/use-toast';
 import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
@@ -30,6 +31,8 @@ export type CreditSheetProps = {
  */
 export function CreditSheet({ open, onOpenChange, tenantId, accountLabel, balanceCents, onDone }: CreditSheetProps) {
   const { success } = useToast();
+  const { money, words, unit } = useMarketingDisplay();
+  const credits = unit === 'credits';
   const [mode, setMode] = useState<CreditMode>('credit');
   const [amountText, setAmountText] = useState('');
   const [note, setNote] = useState('');
@@ -53,7 +56,7 @@ export function CreditSheet({ open, onOpenChange, tenantId, accountLabel, balanc
   const after = before + signed;
 
   function review() {
-    const problem = validateCredit({ mode, cents, balanceCents });
+    const problem = validateCredit({ mode, cents, balanceCents }, credits ? money : undefined);
     if (problem) return setError(problem);
     if (mode === 'adjust' && note.trim().length < 3) return setError('Explique a correção na observação.');
     setError('');
@@ -70,7 +73,7 @@ export function CreditSheet({ open, onOpenChange, tenantId, accountLabel, balanc
         { tenantId, kind: ledgerKind(mode), amountCents: signed, note: note.trim() },
         'Não foi possível lançar o saldo.',
       );
-      success(mode === 'credit' ? 'Saldo adicionado.' : 'Correção lançada.');
+      success(mode === 'credit' ? words.granted : 'Correção lançada.');
       onOpenChange(false);
       onDone?.();
     } catch (err) {
@@ -85,13 +88,13 @@ export function CreditSheet({ open, onOpenChange, tenantId, accountLabel, balanc
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="max-w-md">
         <SheetHeader>
-          <SheetTitle>{step === 'confirm' ? 'Confirmar lançamento' : 'Adicionar saldo'}</SheetTitle>
+          <SheetTitle>{step === 'confirm' ? 'Confirmar lançamento' : words.grantBalance}</SheetTitle>
         </SheetHeader>
         <div className="flex flex-col gap-4 p-4">
           <div className="rounded-md bg-muted/50 px-3 py-2 text-sm">
             <p className="font-medium">{accountLabel}</p>
             <p className="text-xs text-muted-foreground">
-              Saldo atual: {balanceCents == null ? 'sem lançamentos' : formatBRL(balanceCents)}
+              {words.balanceCurrent}: {balanceCents == null ? 'sem lançamentos' : money(balanceCents)}
             </p>
           </div>
 
@@ -100,7 +103,7 @@ export function CreditSheet({ open, onOpenChange, tenantId, accountLabel, balanc
               <fieldset className="flex gap-2" aria-label="Tipo de lançamento">
                 {(
                   [
-                    ['credit', 'Adicionar saldo'],
+                    ['credit', words.grantBalance],
                     ['adjust', 'Corrigir (descontar)'],
                   ] as const
                 ).map(([value, label]) => (
@@ -118,14 +121,15 @@ export function CreditSheet({ open, onOpenChange, tenantId, accountLabel, balanc
                 ))}
               </fieldset>
               <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-                Valor em reais
+                {credits ? words.amountLabel : 'Valor em reais'}
                 <Input
-                  aria-label="Valor em reais"
+                  aria-label={credits ? words.amountLabel : 'Valor em reais'}
                   inputMode="decimal"
-                  placeholder="50,00"
+                  placeholder={credits ? '50' : '50,00'}
                   value={amountText}
                   onChange={(e) => setAmountText(e.target.value)}
                 />
+                {words.unitHint ? <span>{words.unitHint}</span> : null}
               </label>
               <label className="flex flex-col gap-1 text-xs text-muted-foreground">
                 {mode === 'adjust' ? 'Motivo da correção' : 'Observação (opcional)'}
@@ -150,19 +154,19 @@ export function CreditSheet({ open, onOpenChange, tenantId, accountLabel, balanc
               <dl className="grid grid-cols-2 gap-3 text-sm">
                 <div>
                   <dt className="text-xs text-muted-foreground">{mode === 'credit' ? 'Crédito' : 'Desconto'}</dt>
-                  <dd className="text-lg font-semibold tabular-nums">{formatBRL(Math.abs(signed))}</dd>
+                  <dd className="text-lg font-semibold tabular-nums">{money(Math.abs(signed))}</dd>
                 </div>
                 <div>
-                  <dt className="text-xs text-muted-foreground">Saldo depois</dt>
+                  <dt className="text-xs text-muted-foreground">{words.balanceAfter}</dt>
                   <dd className={`text-lg font-semibold tabular-nums ${after < 0 ? 'text-red-700 dark:text-red-400' : ''}`}>
-                    {formatBRL(after)}
+                    {money(after)}
                   </dd>
                 </div>
               </dl>
               {note.trim() ? <p className="text-sm text-muted-foreground">“{note.trim()}”</p> : null}
               {after < 0 ? (
                 <p role="alert" className="text-sm text-red-700 dark:text-red-400">
-                  O saldo ficará negativo. Os impulsionamentos já reservados não são cancelados.
+                  {words.balanceNegative} Os impulsionamentos já reservados não são cancelados.
                 </p>
               ) : null}
               <p className="text-xs text-muted-foreground">

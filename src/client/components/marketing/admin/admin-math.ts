@@ -298,9 +298,15 @@ export function validateRejection(reason: string): string {
 export type CreditMode = 'credit' | 'adjust';
 export const MAX_CREDIT_CENTS = 100_000_000;
 
-export function validateCredit(a: { mode: CreditMode; cents: number; balanceCents: number | null }): string {
+export function validateCredit(
+  a: { mode: CreditMode; cents: number; balanceCents: number | null },
+  /** Unidade das mensagens (ex.: créditos); sem ela, o texto em R$ de sempre. */
+  money?: (cents: number) => string,
+): string {
   if (!Number.isFinite(a.cents) || a.cents <= 0) return 'Informe um valor maior que zero.';
-  if (a.cents > MAX_CREDIT_CENTS) return 'Valor acima do limite de R$ 1.000.000,00 por lançamento.';
+  if (a.cents > MAX_CREDIT_CENTS) {
+    return money ? `Valor acima do limite de ${money(MAX_CREDIT_CENTS)} por lançamento.` : 'Valor acima do limite de R$ 1.000.000,00 por lançamento.';
+  }
   return '';
 }
 

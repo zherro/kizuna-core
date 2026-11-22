@@ -1,7 +1,8 @@
 'use client';
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import { addDays, dbToday, earliestStop, formatBRL, refundIfStopped, situation, type Period } from '../../../../shared/marketing/cost';
+import { addDays, dbToday, earliestStop, MAX_DAILY_CENTS, MIN_DAILY_CENTS, refundIfStopped, situation, type Period } from '../../../../shared/marketing/cost';
+import { useMarketingDisplay } from '../display-context';
 import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
 import { patchItem } from './data';
@@ -24,10 +25,16 @@ export function PeriodFields({
   directPayment?: boolean;
 }) {
   const today = dbToday();
+  const { money, words, unit } = useMarketingDisplay();
+  // Em R$ o texto é o de sempre; em créditos, a faixa na unidade e a equivalência.
+  const dailyHint =
+    unit === 'credits'
+      ? `De ${money(MIN_DAILY_CENTS)} a ${money(MAX_DAILY_CENTS)} por dia · ${words.unitHint}`
+      : 'De R$ 5,00 a R$ 10.000,00 por dia';
   return (
     <div className="flex flex-col gap-3">
       <div className="grid gap-3 sm:grid-cols-3">
-        <Field label="Diária (R$)" hint="De R$ 5,00 a R$ 10.000,00 por dia">
+        <Field label={words.dailyLabel} hint={dailyHint}>
           <Input inputMode="decimal" value={draft.dailyText} onChange={(e) => onChange({ ...draft, dailyText: e.target.value })} />
         </Field>
         <Field label="Começa em" hint="Data do servidor (UTC)">
@@ -41,7 +48,7 @@ export function PeriodFields({
         <dl className="grid grid-cols-2 gap-2 rounded-lg bg-muted/50 p-3 text-sm">
           <div>
             <dt className="text-xs text-muted-foreground">Total a pagar</dt>
-            <dd className="font-semibold tabular-nums">{formatBRL(evaluation.totalCents)}</dd>
+            <dd className="font-semibold tabular-nums">{money(evaluation.totalCents)}</dd>
           </div>
           <div>
             <dt className="text-xs text-muted-foreground">Forma</dt>
@@ -52,16 +59,16 @@ export function PeriodFields({
       <dl className="grid grid-cols-3 gap-2 rounded-lg bg-muted/50 p-3 text-sm">
         <div>
           <dt className="text-xs text-muted-foreground">Custo do período</dt>
-          <dd className="font-semibold tabular-nums">{formatBRL(evaluation.totalCents)}</dd>
+          <dd className="font-semibold tabular-nums">{money(evaluation.totalCents)}</dd>
         </div>
         <div>
-          <dt className="text-xs text-muted-foreground">Saldo agora</dt>
-          <dd className="font-semibold tabular-nums">{formatBRL(balanceCents)}</dd>
+          <dt className="text-xs text-muted-foreground">{words.balanceNow}</dt>
+          <dd className="font-semibold tabular-nums">{money(balanceCents)}</dd>
         </div>
         <div>
-          <dt className="text-xs text-muted-foreground">Saldo depois</dt>
+          <dt className="text-xs text-muted-foreground">{words.balanceAfter}</dt>
           <dd className={evaluation.balanceAfterCents < 0 ? 'font-semibold tabular-nums text-destructive' : 'font-semibold tabular-nums'}>
-            {formatBRL(evaluation.balanceAfterCents)}
+            {money(evaluation.balanceAfterCents)}
           </dd>
         </div>
       </dl>
@@ -85,6 +92,7 @@ export function StopButton({
   period: Period;
   onStopped: () => void;
 }) {
+  const { money, words } = useMarketingDisplay();
   const [asking, setAsking] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -120,7 +128,7 @@ export function StopButton({
         {sit === 'scheduled' ? 'Cancelar antes de começar' : `Parar a partir de ${formatDay(stop)}`}.{' '}
         {refund > 0 ? (
           <>
-            Volta <strong>{formatBRL(refund)}</strong> ao saldo. Não dá para retomar depois.
+            Volta <strong>{money(refund)}</strong> {words.backToBalance}. Não dá para retomar depois.
           </>
         ) : (
           'Não há dias a devolver. Não dá para retomar depois.'

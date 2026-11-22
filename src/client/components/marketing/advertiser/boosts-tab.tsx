@@ -1,7 +1,8 @@
 'use client';
 import { useCallback, useMemo, useState } from 'react';
 import { Loader2, Rocket } from 'lucide-react';
-import { costCents, formatBRL, periodDays, situation } from '../../../../shared/marketing/cost';
+import { costCents, periodDays, situation } from '../../../../shared/marketing/cost';
+import { useMarketingDisplay } from '../display-context';
 import { Button } from '../../ui/button';
 import { EmptyStateCard } from '../../ui-better-soft/lists/empty-state-card';
 import { createItem, fetchPage } from './data';
@@ -37,8 +38,12 @@ function NewBoost({
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
   const pay = usePaymentInfo();
-  const evaluation = useMemo(() => evaluatePeriod(draft, balance.balanceCents), [draft, balance.balanceCents]);
-  const periodOnly = useMemo(() => evaluatePeriod(draft, NO_BALANCE_LIMIT), [draft]);
+  const { money, words, badgeName, periodFormat } = useMarketingDisplay();
+  const evaluation = useMemo(
+    () => evaluatePeriod(draft, balance.balanceCents, undefined, periodFormat),
+    [draft, balance.balanceCents, periodFormat],
+  );
+  const periodOnly = useMemo(() => evaluatePeriod(draft, NO_BALANCE_LIMIT, undefined, periodFormat), [draft, periodFormat]);
   const canSubmit = !!serviceUid && evaluation.check.ok && !busy;
   // Compra direta: o saldo não precisa cobrir; só diária/datas válidas.
   const direct = pay.directPurchase;
@@ -76,7 +81,7 @@ function NewBoost({
         Impulsionar um anúncio
       </h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        O anúncio ganha o selo BORA INDICA e entra na faixa de patrocinados, em todas as páginas, assim que começar.
+        O anúncio ganha o selo {badgeName} e entra na faixa de patrocinados, em todas as páginas, assim que começar.
       </p>
       <div className="mt-4 flex flex-col gap-4">
         <Field label="Anúncio" hint={services.length === 0 ? 'Você não tem anúncios publicados para impulsionar.' : 'Só aparecem anúncios publicados.'}>
@@ -111,7 +116,7 @@ function NewBoost({
           <div>
             <Button type="button" variant={direct ? 'outline' : 'default'} onClick={submit} disabled={!canSubmit}>
               {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden /> : null}
-              {direct ? 'Usar meu saldo' : 'Impulsionar por'} {formatBRL(evaluation.totalCents)}
+              {direct ? words.useBalance : 'Impulsionar por'} {money(evaluation.totalCents)}
             </Button>
           </div>
         ) : null}
@@ -122,6 +127,7 @@ function NewBoost({
 
 function BoostList({ services, refreshKey, onChanged }: { services: OwnService[]; refreshKey: number; onChanged: () => void }) {
   const [page, setPage] = useState(1);
+  const { money, badgeName } = useMarketingDisplay();
   const l = useLoad(() => fetchPage<BoostRow>('boosts', { page, pageSize: 8 }), [page, refreshKey]);
   const titleByUid = useMemo(() => new Map(services.map((s) => [s.uid, s.title])), [services]);
 
@@ -131,7 +137,7 @@ function BoostList({ services, refreshKey, onChanged }: { services: OwnService[]
       {l.loading && !l.data ? <Loading /> : null}
       {l.error ? <LoadError message={l.error} onRetry={l.reload} /> : null}
       {l.data && l.data.items.length === 0 ? (
-        <EmptyStateCard icon={Rocket} title="Nenhum impulsionamento ainda" description="Escolha um anúncio acima, defina a diária e o período e ele passa a aparecer com o selo BORA INDICA." />
+        <EmptyStateCard icon={Rocket} title="Nenhum impulsionamento ainda" description={`Escolha um anúncio acima, defina a diária e o período e ele passa a aparecer com o selo ${badgeName}.`} />
       ) : null}
       {l.data && l.data.items.length > 0 ? (
         <>
@@ -154,15 +160,15 @@ function BoostList({ services, refreshKey, onChanged }: { services: OwnService[]
                     </div>
                     <div>
                       <dt className="text-xs text-muted-foreground">Diária</dt>
-                      <dd className="tabular-nums">{formatBRL(b.dailyCents)}</dd>
+                      <dd className="tabular-nums">{money(b.dailyCents)}</dd>
                     </div>
                     <div>
                       <dt className="text-xs text-muted-foreground">Gasto até hoje</dt>
-                      <dd className="tabular-nums">{formatBRL(spentSoFar(b.dailyCents, period))}</dd>
+                      <dd className="tabular-nums">{money(spentSoFar(b.dailyCents, period))}</dd>
                     </div>
                     <div>
                       <dt className="text-xs text-muted-foreground">Reservado no total</dt>
-                      <dd className="tabular-nums">{formatBRL(costCents(b.dailyCents, period))}</dd>
+                      <dd className="tabular-nums">{money(costCents(b.dailyCents, period))}</dd>
                     </div>
                   </dl>
                   {b.stoppedOn ? <p className="mt-2 text-xs text-muted-foreground">Parado em {formatDay(b.stoppedOn)}.</p> : null}

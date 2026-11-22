@@ -2,7 +2,8 @@
 import { useMemo, useState } from 'react';
 import { BarChart3 } from 'lucide-react';
 import { AD_SLOT_CATALOG } from '../../../../shared/ads';
-import { addDays, dbToday, formatBRL, periodDays } from '../../../../shared/marketing/cost';
+import { addDays, dbToday, periodDays } from '../../../../shared/marketing/cost';
+import { useMarketingDisplay } from '../display-context';
 import { EmptyStateCard } from '../../ui-better-soft/lists/empty-state-card';
 import { fetchAll, fetchPage } from './data';
 import {
@@ -36,6 +37,7 @@ function BoostMetrics({ tenantId }: { tenantId: string }) {
     async () => (await fetchPage<OwnService>('services', { pageSize: 100, filters: { tenant_id: tenantId } })).items,
     [tenantId],
   );
+  const { money } = useMarketingDisplay();
   const [pick, setPick] = useState('');
   const boost = boosts.data?.find((b) => b.id === pick) ?? boosts.data?.[0] ?? null;
   const title = (uid: string) => services.data?.find((s) => s.uid === uid)?.title ?? 'Anúncio';
@@ -101,7 +103,7 @@ function BoostMetrics({ tenantId }: { tenantId: string }) {
             <Stat label="Apareceu na tela" value={formatInt(impressions)} hint="Impressões" />
             <Stat label="Abriram o anúncio" value={formatInt(views)} hint="Visualizações do detalhe" />
             <Stat label="Cliques no contato" value={formatInt(contacts)} hint={`${formatInt(interactions)} favoritos e compartilhamentos`} />
-            <Stat label="Custo por visualização" value={cpv === null ? '—' : formatBRL(cpv)} hint={`Gasto até hoje: ${formatBRL(spent)}`} />
+            <Stat label="Custo por visualização" value={cpv === null ? '—' : money(cpv)} hint={`Gasto até hoje: ${money(spent)}`} />
           </div>
           {split ? <PaidOrganic split={split} /> : null}
           {m.days > 0 && m.before ? (
@@ -185,6 +187,7 @@ function Comparison({ before, views, impressions, days }: { before: { views: num
 
 function CampaignMetrics() {
   const campaigns = useLoad(async () => (await fetchPage<CampaignRow>('ad_campaigns', { pageSize: 50 })).items, []);
+  const { money } = useMarketingDisplay();
   const [pick, setPick] = useState('');
   const c = campaigns.data?.find((k) => k.id === pick) ?? campaigns.data?.[0] ?? null;
   const data = useLoad(
@@ -231,8 +234,8 @@ function CampaignMetrics() {
             <Stat label="Taxa de clique" value={rate === null ? '—' : `${rate.toLocaleString('pt-BR')}%`} />
             <Stat
               label="Custo por clique"
-              value={stats.clicks > 0 ? formatBRL(Math.round(stats.spent / stats.clicks)) : '—'}
-              hint={`Gasto até hoje: ${formatBRL(stats.spent)}`}
+              value={stats.clicks > 0 ? money(Math.round(stats.spent / stats.clicks)) : '—'}
+              hint={`Gasto até hoje: ${money(stats.spent)}`}
             />
           </div>
           {stats.served > 0 && stats.impressions === 0 ? (
@@ -251,16 +254,19 @@ function CampaignMetrics() {
 }
 
 export function MetricsTab({ tenantId }: { tenantId: string }) {
+  const { banners } = useMarketingDisplay();
   return (
     <div className="flex flex-col gap-8">
       <section>
         <SectionTitle>Anúncios impulsionados</SectionTitle>
         <BoostMetrics tenantId={tenantId} />
       </section>
-      <section>
-        <SectionTitle>Banners</SectionTitle>
-        <CampaignMetrics />
-      </section>
+      {banners ? (
+        <section>
+          <SectionTitle>Banners</SectionTitle>
+          <CampaignMetrics />
+        </section>
+      ) : null}
     </div>
   );
 }

@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { CheckCircle2, ImageIcon, Loader2, XCircle } from 'lucide-react';
 import { AD_FORMAT_SPECS, AD_SLOT_CATALOG, isSafeImageUrl, isSafeLinkUrl, type AdFormat } from '../../../../shared/ads';
-import { formatBRL } from '../../../../shared/marketing/cost';
+import { useMarketingDisplay } from '../display-context';
 import { useToast } from '../../../hooks/use-toast';
 import { Badge } from '../../ui/badge';
 import { Button } from '../../ui/button';
@@ -105,6 +105,7 @@ function ModerationQueue({ queue }: { queue: ReturnType<typeof useLoader<QueueIt
 
 function ReviewCard({ creative: c, campaigns, onDone }: { creative: CreativeRow; campaigns: CampaignRow[]; onDone: () => void }) {
   const { success, error } = useToast();
+  const { money, words } = useMarketingDisplay();
   const [size, setSize] = useState<string>('');
   const [rejecting, setRejecting] = useState(false);
   const [reason, setReason] = useState('');
@@ -156,7 +157,7 @@ function ReviewCard({ creative: c, campaigns, onDone }: { creative: CreativeRow;
       if (failed.length > 0) {
         error(`Banner reprovado, mas ${failed.length} campanha(s) não foram encerradas: confira em Campanhas e pare manualmente.`);
       } else {
-        success(campaigns.length > 0 ? `Banner reprovado. ${formatBRL(reserved)} voltaram ao saldo do anunciante.` : 'Banner reprovado.');
+        success(campaigns.length > 0 ? `Banner reprovado. ${money(reserved)} voltaram ${words.backToBalance} do anunciante.` : 'Banner reprovado.');
       }
       onDone();
     } catch (err) {
@@ -205,15 +206,15 @@ function ReviewCard({ creative: c, campaigns, onDone }: { creative: CreativeRow;
       {c.alt ? <p className="text-xs text-muted-foreground">Texto alternativo: {c.alt}</p> : null}
       {campaigns.length > 0 ? (
         <div className="rounded-md border border-emerald-500/30 bg-emerald-500/5 p-3 text-xs">
-          <p className="font-semibold text-emerald-800 dark:text-emerald-300">Pago / reservado: {formatBRL(reserved)} — aguardando sua aprovação</p>
+          <p className="font-semibold text-emerald-800 dark:text-emerald-300">Pago / reservado: {money(reserved)} — aguardando sua aprovação</p>
           <ul className="mt-1 text-muted-foreground">
             {campaigns.map((k) => (
               <li key={k.id}>
-                {slotLabel(k.slotSlug)} · {brDate(k.startsOn)} a {brDate(k.endsOn)} · {formatBRL(k.dailyCents)}/dia
+                {slotLabel(k.slotSlug)} · {brDate(k.startsOn)} a {brDate(k.endsOn)} · {money(k.dailyCents)}/dia
               </li>
             ))}
           </ul>
-          <p className="mt-1 text-muted-foreground">Se reprovar, o valor inteiro volta ao saldo do anunciante.</p>
+          <p className="mt-1 text-muted-foreground">Se reprovar, o valor inteiro volta {words.backToBalance} do anunciante.</p>
         </div>
       ) : (
         <p className="text-xs text-muted-foreground">Sem campanha: o anunciante ainda não pagou este banner.</p>
@@ -281,6 +282,7 @@ function CampaignsList() {
 }
 
 function CampaignItem({ campaign: c, stats, onChanged }: { campaign: CampaignRow; stats?: { impressions: number; clicks: number }; onChanged: () => void }) {
+  const { money } = useMarketingDisplay();
   const impressions = stats?.impressions ?? 0;
   const clicks = stats?.clicks ?? 0;
   return (
@@ -301,9 +303,9 @@ function CampaignItem({ campaign: c, stats, onChanged }: { campaign: CampaignRow
       </div>
       <AccountName label={null} tenantId={c.tenantId} />
       <dl className="grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-3 lg:grid-cols-6">
-        <Fact label="Diária" value={formatBRL(c.dailyCents)} />
-        <Fact label="Comprometido" value={formatBRL(committedOf(c))} />
-        <Fact label="Gasto até hoje" value={formatBRL(spentOf(c))} />
+        <Fact label="Diária" value={money(c.dailyCents)} />
+        <Fact label="Comprometido" value={money(committedOf(c))} />
+        <Fact label="Gasto até hoje" value={money(spentOf(c))} />
         <Fact label="Entregas" value={impressions} />
         <Fact label="Cliques" value={clicks} />
         <Fact label="CTR" value={formatPct(ctr(clicks, impressions))} />

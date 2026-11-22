@@ -145,3 +145,33 @@ describe('resourceMarketingAdmin', () => {
     for (const cfg of Object.values(resourceMarketingAdmin)) expect(cfg.publicCacheSeconds).toBeUndefined();
   });
 });
+
+describe('MarketingAdminScreen com display', () => {
+  it('sem banners some a aba Banners; padrão mantém', async () => {
+    const { unmount } = render(<MarketingAdminScreen display={{ banners: false, unit: 'credits' }} />);
+    expect(screen.queryByRole('tab', { name: 'Banners' })).toBeNull();
+    expect(screen.getByText('Créditos dos anunciantes, impulsionamentos e o retorno que cada conta recebe.')).toBeTruthy();
+    unmount();
+    render(<MarketingAdminScreen />);
+    expect(screen.getByRole('tab', { name: 'Banners' })).toBeTruthy();
+    expect(screen.getByText('Saldo dos anunciantes, impulsionamentos, banners e o retorno que cada conta recebe.')).toBeTruthy();
+  });
+});
+
+describe('CreditSheet em créditos', () => {
+  it('rótulo e saldo em créditos; o valor continua indo em centavos', async () => {
+    const { MarketingDisplayProvider } = await import('../display-context');
+    render(
+      <MarketingDisplayProvider value={{ unit: 'credits' }}>
+        <CreditSheet open onOpenChange={() => {}} tenantId="T1" accountLabel="Pizzaria" balanceCents={1000} />
+      </MarketingDisplayProvider>,
+    );
+    expect(screen.getByText('Créditos atuais: 10 créditos')).toBeTruthy();
+    fireEvent.change(screen.getByLabelText('Créditos'), { target: { value: '50' } });
+    click(screen.getByText('Revisar lançamento'));
+    expect(await screen.findByText('60 créditos')).toBeTruthy();
+    click(screen.getByLabelText('Confirmar lançamento'));
+    await waitFor(() => expect(calls.some((c) => c.init?.method === 'POST')).toBe(true));
+    expect(JSON.parse(String(calls.find((c) => c.init?.method === 'POST')!.init!.body))).toMatchObject({ amountCents: 5000 });
+  });
+});

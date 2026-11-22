@@ -2,7 +2,8 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { ImageIcon, Loader2 } from 'lucide-react';
 import { AD_FORMAT_SPECS, AD_SLOT_CATALOG, type AdFormat } from '../../../../shared/ads';
-import { costCents, formatBRL, periodDays, situation } from '../../../../shared/marketing/cost';
+import { costCents, periodDays, situation } from '../../../../shared/marketing/cost';
+import { useMarketingDisplay } from '../display-context';
 import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
 import { EmptyStateCard } from '../../ui-better-soft/lists/empty-state-card';
@@ -47,8 +48,12 @@ function NewBanner({ tenantId, balance, onCreated }: { tenantId: string; balance
 
   const format: AdFormat | null = AD_SLOT_CATALOG.find((s) => s.slug === slot)?.format ?? null;
   const pay = usePaymentInfo();
-  const evaluation = useMemo(() => evaluatePeriod(draft, balance.balanceCents), [draft, balance.balanceCents]);
-  const periodOnly = useMemo(() => evaluatePeriod(draft, Number.MAX_SAFE_INTEGER), [draft]);
+  const { money, words, periodFormat } = useMarketingDisplay();
+  const evaluation = useMemo(
+    () => evaluatePeriod(draft, balance.balanceCents, undefined, periodFormat),
+    [draft, balance.balanceCents, periodFormat],
+  );
+  const periodOnly = useMemo(() => evaluatePeriod(draft, Number.MAX_SAFE_INTEGER, undefined, periodFormat), [draft, periodFormat]);
   const linkCheck = linkUrl ? validateBannerLink(linkUrl) : null;
   const imageCheck = picked && format ? checkBannerImage(format, picked) : null;
   const creativeReady = !!slot && !!picked && imageCheck?.ok === true && validateBannerLink(linkUrl).ok && alt.trim().length > 0;
@@ -153,7 +158,7 @@ function NewBanner({ tenantId, balance, onCreated }: { tenantId: string; balance
         Divulgar um banner
       </h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        Escolha o espaço, envie a imagem ou GIF e defina o período. O banner só vai ao ar depois de aprovado pela equipe; o valor fica reservado no saldo e volta se você parar antes.
+        Escolha o espaço, envie a imagem ou GIF e defina o período. O banner só vai ao ar depois de aprovado pela equipe; o valor fica reservado {words.inBalance} e volta se você parar antes.
       </p>
       <div className="mt-4 flex flex-col gap-4">
         {slots.loading && !slots.data ? <Loading /> : null}
@@ -209,7 +214,7 @@ function NewBanner({ tenantId, balance, onCreated }: { tenantId: string; balance
             {direct ? (
               <>
                 <p className="text-xs text-muted-foreground">
-                  Depois do pagamento o banner vai para a aprovação da equipe. Se for reprovado, o valor inteiro volta para o seu saldo.
+                  Depois do pagamento o banner vai para a aprovação da equipe. Se for reprovado, o valor inteiro volta {words.toYourBalance}.
                 </p>
                 <PixPurchase totalCents={periodOnly.totalCents} disabled={!canPayPix} getPurpose={getPurpose} onSettled={onCreated} label="Pagar banner com PIX" />
               </>
@@ -218,7 +223,7 @@ function NewBanner({ tenantId, balance, onCreated }: { tenantId: string; balance
               <div className="flex flex-wrap items-center gap-3">
                 <Button type="button" variant={direct ? 'outline' : 'default'} onClick={submit} disabled={!ready}>
                   {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden /> : null}
-                  {direct ? 'Usar meu saldo' : 'Enviar por'} {formatBRL(evaluation.totalCents)}
+                  {direct ? words.useBalance : 'Enviar por'} {money(evaluation.totalCents)}
                 </Button>
                 <span className="text-xs text-muted-foreground">Para outro espaço, envie outro banner.</span>
               </div>
@@ -243,6 +248,7 @@ function ReviewBadge({ status }: { status: string }) {
 }
 
 function CampaignList({ refreshKey, onChanged }: { refreshKey: number; onChanged: () => void }) {
+  const { money, words } = useMarketingDisplay();
   const [page, setPage] = useState(1);
   const campaigns = useLoad(() => fetchPage<CampaignRow>('ad_campaigns', { page, pageSize: 6 }), [page, refreshKey]);
   const creatives = useLoad(() => fetchPage<MyCreative>('my_ad_creatives', { pageSize: 200 }), [refreshKey]);
@@ -288,7 +294,7 @@ function CampaignList({ refreshKey, onChanged }: { refreshKey: number; onChanged
                   </div>
                   {c?.reviewStatus === 'rejected' ? (
                     <div className="mt-3">
-                      <Notice tone="error">Reprovado{c.reviewReason ? `: ${c.reviewReason}` : '.'} {k.stoppedOn === k.startsOn ? 'O valor voltou para o seu saldo.' : 'O valor reservado volta ao saldo se você parar a campanha.'}</Notice>
+                      <Notice tone="error">Reprovado{c.reviewReason ? `: ${c.reviewReason}` : '.'} {k.stoppedOn === k.startsOn ? `O valor voltou ${words.toYourBalance}.` : `O valor reservado volta ${words.backToBalance} se você parar a campanha.`}</Notice>
                     </div>
                   ) : null}
                   {!approved && c?.reviewStatus !== 'rejected' ? (
@@ -303,15 +309,15 @@ function CampaignList({ refreshKey, onChanged }: { refreshKey: number; onChanged
                     </div>
                     <div>
                       <dt className="text-xs text-muted-foreground">Diária</dt>
-                      <dd className="tabular-nums">{formatBRL(k.dailyCents)}</dd>
+                      <dd className="tabular-nums">{money(k.dailyCents)}</dd>
                     </div>
                     <div>
                       <dt className="text-xs text-muted-foreground">Gasto até hoje</dt>
-                      <dd className="tabular-nums">{formatBRL(spentSoFar(k.dailyCents, period))}</dd>
+                      <dd className="tabular-nums">{money(spentSoFar(k.dailyCents, period))}</dd>
                     </div>
                     <div>
                       <dt className="text-xs text-muted-foreground">Reservado no total</dt>
-                      <dd className="tabular-nums">{formatBRL(costCents(k.dailyCents, period))}</dd>
+                      <dd className="tabular-nums">{money(costCents(k.dailyCents, period))}</dd>
                     </div>
                   </dl>
                   <div className="mt-3">

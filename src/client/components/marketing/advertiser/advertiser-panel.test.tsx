@@ -72,3 +72,38 @@ describe('AdvertiserPanel', () => {
     expect(JSON.parse(String(post?.init?.body))).toEqual({ amountCents: 5000 });
   });
 });
+
+describe('AdvertiserPanel com display', () => {
+  it('créditos, sem banners e extrato completo lendo vw_wallet_statement', async () => {
+    stubApi({
+      vw_wallet_balance: [{ tenantId: 't', balanceCents: 12300, creditedCents: 20000, committedCents: 7700 }],
+      vw_wallet_statement: [
+        { id: 'B:1', tenantId: 't', kind: 'boost', amountCents: -3000, note: '', refId: '1', serviceUid: 'u1', serviceTitle: 'Bar do Zé', slotSlug: null, days: 3, occurredAt: '2026-11-01T10:00:00Z' },
+        { id: 'BR:1', tenantId: 't', kind: 'boost_refund', amountCents: 1000, note: '', refId: '1', serviceUid: 'u1', serviceTitle: 'Bar do Zé', slotSlug: null, days: 1, occurredAt: '2026-11-02T10:00:00Z' },
+      ],
+    });
+    render(<AdvertiserPanel tenantId="t" initialTab="banners" display={{ unit: 'credits', banners: false, statement: 'full' }} />);
+    expect(await screen.findByText('Impulsionou "Bar do Zé" por 3 dias', undefined, { timeout: 10_000 })).toBeTruthy();
+    expect(screen.getByText('Devolução de impulsionamento')).toBeTruthy();
+    expect(screen.getByText('-30 créditos')).toBeTruthy();
+    expect(screen.getByText(/\+\s*10 créditos/)).toBeTruthy();
+    await waitFor(() => expect(screen.getAllByText('123 créditos').length).toBeGreaterThan(0));
+    expect(screen.getAllByText('Créditos disponíveis').length).toBeGreaterThan(0);
+    expect(screen.getByText('Comprar créditos')).toBeTruthy();
+    expect(screen.queryByRole('tab', { name: 'Banners' })).toBeNull();
+    // ?aba=banners sem banners cai na aba inicial padrão
+    expect(screen.getByRole('tab', { name: 'Créditos' }).getAttribute('aria-selected')).toBe('true');
+    expect(screen.queryByText(/divulgue banners/)).toBeNull();
+    expect(calls.some((c) => c.url.includes('/api/resources/vw_wallet_statement?'))).toBe(true);
+    expect(calls.some((c) => c.url.includes('/api/resources/wallet_ledger'))).toBe(false);
+  });
+
+  it('sem display continua lendo wallet_ledger, em R$ e com aba Banners', async () => {
+    stubApi({ vw_wallet_balance: [], wallet_ledger: [{ id: '1', kind: 'credit_admin', amountCents: 5000, note: '', createdAt: '2026-11-01T00:00:00Z' }] });
+    render(<AdvertiserPanel tenantId="t" />);
+    expect(await screen.findByText('Crédito do Bora', undefined, { timeout: 10_000 })).toBeTruthy();
+    expect(screen.getByRole('tab', { name: 'Banners' })).toBeTruthy();
+    expect(screen.getByText(/selo BORA INDICA e divulgue banners/)).toBeTruthy();
+    expect(calls.some((c) => c.url.includes('vw_wallet_statement'))).toBe(false);
+  });
+});

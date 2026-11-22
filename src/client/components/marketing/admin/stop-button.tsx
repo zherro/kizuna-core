@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Loader2, Square } from 'lucide-react';
-import { formatBRL } from '../../../../shared/marketing/cost';
+import { useMarketingDisplay } from '../display-context';
 import { useToast } from '../../../hooks/use-toast';
 import { Button } from '../../ui/button';
 import { send, errMsg } from './admin-api';
@@ -29,6 +29,7 @@ export function StopButton({
   onDone: () => void;
 }) {
   const { success, error } = useToast();
+  const { money, words } = useMarketingDisplay();
   const [confirming, setConfirming] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -61,7 +62,7 @@ export function StopButton({
     <div className="flex flex-wrap items-center gap-2" role="group" aria-label={`Confirmar parada do ${noun}`}>
       <span className="text-xs text-muted-foreground">
         Para de valer em {stopDate(row).split('-').reverse().join('/')}
-        {refund > 0 ? ` e devolve ${formatBRL(refund)} ao saldo.` : '.'}
+        {refund > 0 ? ` e devolve ${money(refund)} ${words.backToBalance}.` : '.'}
       </span>
       <Button size="sm" onClick={() => void stop()} disabled={saving} aria-label={`Confirmar parar ${noun}`}>
         {saving && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" aria-hidden="true" />}

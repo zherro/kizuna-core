@@ -46,6 +46,7 @@
   * [Plugin location](plugins/location.md)
   * [Plugin tickets](plugins/tickets.md)
   * [Plugin ads](plugins/ads.md)
+  * [Plugin marketing](plugins/marketing.md)
 
 ## Análise (performance e segurança)
 

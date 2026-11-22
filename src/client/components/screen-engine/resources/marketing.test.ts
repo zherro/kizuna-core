@@ -47,4 +47,26 @@ describe('resourceMarketing', () => {
   it('nenhum recurso do marketing liga cache de servidor', () => {
     for (const cfg of Object.values(resourceMarketing)) expect(cfg.publicCacheSeconds).toBeUndefined();
   });
+  it('crédito de admin só manda ref_id quando vier', () => {
+    expect(resourceMarketing.wallet_ledger.mapInput!({ tenantId: 't', amountCents: 100 })).not.toHaveProperty('ref_id');
+    expect(resourceMarketing.wallet_ledger.mapInput!({ tenantId: 't', amountCents: 100, refId: 'pay-1' })).toMatchObject({ ref_id: 'pay-1' });
+  });
+
+  it('extrato completo é só leitura e devolve camelCase', () => {
+    const c = resourceMarketing.vw_wallet_statement;
+    expect(c.table).toBe('vw_wallet_statement');
+    expect(c.primaryKey).toBe('entry_id');
+    expect(c.defaultOrder).toBe('occurred_at');
+    expect(c.mapInput).toBeUndefined();
+    expect(c.select).toBe('tenant_id,entry_id,kind,amount_cents,note,ref_id,service_uid,service_title,slot_slug,days,occurred_at');
+    expect(
+      c.mapOutput!({
+        tenant_id: 't', entry_id: 'B:9', kind: 'boost', amount_cents: '-3000', note: null, ref_id: 9,
+        service_uid: 'u1', service_title: 'Bar', slot_slug: null, days: '3', occurred_at: '2026-11-01T00:00:00Z',
+      }),
+    ).toEqual({
+      id: 'B:9', tenantId: 't', kind: 'boost', amountCents: -3000, note: '', refId: '9',
+      serviceUid: 'u1', serviceTitle: 'Bar', slotSlug: null, days: 3, occurredAt: '2026-11-01T00:00:00Z',
+    });
+  });
 });

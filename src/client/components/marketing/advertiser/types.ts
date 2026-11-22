@@ -1,6 +1,20 @@
 /** Formas (já em camelCase) devolvidas pelos recursos do plugin marketing. Valores em centavos. */
 export type Balance = { tenantId: string; balanceCents: number; creditedCents: number; committedCents: number };
 export type LedgerRow = { id: string; kind: string; amountCents: number; note: string; createdAt: string };
+/** Linha de `vw_wallet_statement`: razão + débitos de impulsionamento/banner + devoluções. */
+export type StatementRow = {
+  id: string;
+  tenantId: string;
+  kind: string;
+  amountCents: number;
+  note: string;
+  refId: string | null;
+  serviceUid: string | null;
+  serviceTitle: string | null;
+  slotSlug: string | null;
+  days: number | null;
+  occurredAt: string;
+};
 export type IntentRow = { id: string; amountCents: number; provider: string; status: string; createdAt: string };
 export type BoostRow = {
   id: string;

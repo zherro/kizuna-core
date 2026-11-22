@@ -5,6 +5,7 @@ import {
   parseBRLToCents,
   validateNewPeriod,
   type PeriodCheck,
+  type PeriodMessageFormat,
 } from '../../../../shared/marketing/cost';
 
 export type PeriodDraft = { dailyText: string; startsOn: string; endsOn: string };
@@ -22,12 +23,17 @@ export function defaultDraft(today: string = dbToday()): PeriodDraft {
 }
 
 /** Mesma conta que o banco faz na policy de INSERT, para avisar antes de enviar. */
-export function evaluatePeriod(d: PeriodDraft, balanceCents: number, today: string = dbToday()): PeriodEval {
+export function evaluatePeriod(
+  d: PeriodDraft,
+  balanceCents: number,
+  today: string = dbToday(),
+  fmt: PeriodMessageFormat = {},
+): PeriodEval {
   const raw = parseBRLToCents(d.dailyText);
   const dailyCents = Number.isFinite(raw) ? raw : 0;
   const totalCents = d.startsOn && d.endsOn ? costCents(dailyCents, d) : 0;
   const check = Number.isFinite(raw)
-    ? validateNewPeriod({ dailyCents, startsOn: d.startsOn, endsOn: d.endsOn, balanceCents }, today)
+    ? validateNewPeriod({ dailyCents, startsOn: d.startsOn, endsOn: d.endsOn, balanceCents }, today, fmt)
     : ({ ok: false, reason: 'Digite a diária, por exemplo 10,00.' } as PeriodCheck);
   return { dailyCents, totalCents, balanceAfterCents: balanceCents - totalCents, check };
 }

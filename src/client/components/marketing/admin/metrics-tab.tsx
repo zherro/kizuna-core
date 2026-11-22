@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from 'react';
 import { BarChart3 } from 'lucide-react';
-import { dbToday, formatBRL } from '../../../../shared/marketing/cost';
+import { dbToday } from '../../../../shared/marketing/cost';
+import { useMarketingDisplay } from '../display-context';
 import { EmptyStateCard } from '../../ui-better-soft/lists/empty-state-card';
 import { LIMITS, loadBoostMetrics, loadBoosts, loadCampaigns, loadDelivery, loadLedger } from './admin-data';
 import { buildTenantMetrics, ctr, formatPct, periodFrom } from './admin-math';
@@ -15,6 +16,7 @@ const PERIODS = [7, 30, 90] as const;
  * numa janela de dias terminando hoje (dia do banco). Cada abertura refaz as leituras sem cache.
  */
 export function MetricsTab() {
+  const { money, words, banners } = useMarketingDisplay();
   const [days, setDays] = useState<number>(30);
   const today = dbToday();
   const from = periodFrom(days, today);
@@ -58,30 +60,34 @@ export function MetricsTab() {
         <>
           {loading ? <Loading text="Atualizando…" /> : null}
           <dl className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <Stat label="Receita lançada" value={formatBRL(t.creditsCents)} hint="créditos no período" />
-            <Stat label="Comprometido" value={formatBRL(t.committedCents)} hint="impulsionamentos e banners ativos no período" />
+            <Stat label="Receita lançada" value={money(t.creditsCents)} hint="créditos no período" />
+            <Stat label="Comprometido" value={money(t.committedCents)} hint={`${words.spendTargets} ativos no período`} />
             <Stat label="Impressões dos anúncios" value={t.boostImpressions} />
             <Stat label="Aberturas do detalhe" value={t.boostViews} hint={`taxa de abertura ${formatPct(ctr(t.boostViews, t.boostImpressions))}`} />
-            <Stat label="Entregas de banner" value={t.bannerImpressions} />
-            <Stat label="Cliques em banner" value={t.bannerClicks} hint={`CTR ${formatPct(ctr(t.bannerClicks, t.bannerImpressions))}`} />
+            {banners ? <Stat label="Entregas de banner" value={t.bannerImpressions} /> : null}
+            {banners ? (
+              <Stat label="Cliques em banner" value={t.bannerClicks} hint={`CTR ${formatPct(ctr(t.bannerClicks, t.bannerImpressions))}`} />
+            ) : null}
             <Stat label="Cliques de contato" value={t.contactClicks} />
           </dl>
 
           {rows.length === 0 ? (
-            <EmptyStateCard icon={BarChart3} title="Sem movimento no período" description="Nenhum crédito, impulsionamento ou banner nesta janela." />
+            <EmptyStateCard icon={BarChart3} title="Sem movimento no período" description={banners ? 'Nenhum crédito, impulsionamento ou banner nesta janela.' : 'Nenhum crédito ou impulsionamento nesta janela.'} />
           ) : (
             <ul className="flex flex-col gap-3">
               {rows.map((r) => (
                 <li key={r.tenantId} className={`${CARD} flex flex-col gap-3 p-4`}>
                   <AccountName label={r.label} tenantId={r.tenantId} />
                   <dl className="grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-3 lg:grid-cols-5">
-                    <Fact label="Créditos" value={formatBRL(r.creditsCents)} />
-                    <Fact label="Comprometido" value={formatBRL(r.committedCents)} />
+                    <Fact label="Créditos" value={money(r.creditsCents)} />
+                    <Fact label="Comprometido" value={money(r.committedCents)} />
                     <Fact label="Impressões" value={r.boostImpressions} />
                     <Fact label="Aberturas" value={`${r.boostViews} (${formatPct(ctr(r.boostViews, r.boostImpressions))})`} />
                     <Fact label="Contatos" value={r.contactClicks} />
-                    <Fact label="Entregas de banner" value={r.bannerImpressions} />
-                    <Fact label="Cliques em banner" value={`${r.bannerClicks} (${formatPct(ctr(r.bannerClicks, r.bannerImpressions))})`} />
+                    {banners ? <Fact label="Entregas de banner" value={r.bannerImpressions} /> : null}
+                    {banners ? (
+                      <Fact label="Cliques em banner" value={`${r.bannerClicks} (${formatPct(ctr(r.bannerClicks, r.bannerImpressions))})`} />
+                    ) : null}
                   </dl>
                 </li>
               ))}

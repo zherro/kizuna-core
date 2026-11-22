@@ -34,6 +34,8 @@ export const resourceMarketing: Record<string, ResourceConfig> = {
       kind: i.kind ?? 'credit_admin',
       amount_cents: Math.round(num(i.amountCents)),
       note: str(i.note).slice(0, 300),
+      // Referência (ex.: id do pagamento) só quando vier — sem a chave, o banco usa o padrão.
+      ...(i.refId !== undefined ? { ref_id: i.refId === '' ? null : i.refId } : {}),
     }),
     mapOutput: (r) => ({
       id: String(r.id ?? ''),
@@ -43,6 +45,30 @@ export const resourceMarketing: Record<string, ResourceConfig> = {
       note: str(r.note),
       createdBy: r.created_by ? str(r.created_by) : null,
       createdAt: str(r.created_at),
+    }),
+  },
+  // Extrato completo (só leitura): razão + impulsionamentos/banners como débito + devoluções.
+  // `entry_id` = "L:<id>" | "B:<id>" | "BR:<id>" | "C:<id>" | "CR:<id>"; débitos negativos.
+  vw_wallet_statement: {
+    schema: 'public',
+    table: 'vw_wallet_statement',
+    select: 'tenant_id,entry_id,kind,amount_cents,note,ref_id,service_uid,service_title,slot_slug,days,occurred_at',
+    primaryKey: 'entry_id',
+    defaultOrder: 'occurred_at',
+    searchableColumns: [],
+    maxPageSize: 200,
+    mapOutput: (r) => ({
+      id: str(r.entry_id),
+      tenantId: str(r.tenant_id),
+      kind: str(r.kind),
+      amountCents: num(r.amount_cents),
+      note: str(r.note),
+      refId: r.ref_id == null ? null : str(r.ref_id),
+      serviceUid: r.service_uid == null ? null : str(r.service_uid),
+      serviceTitle: r.service_title == null ? null : str(r.service_title),
+      slotSlug: r.slot_slug == null ? null : str(r.slot_slug),
+      days: r.days == null ? null : num(r.days),
+      occurredAt: str(r.occurred_at),
     }),
   },
   vw_wallet_balance: {

@@ -123,6 +123,11 @@ follow-ups (`0002_*.sql`, …) for data seeds or later migrations; the installer
   (root sempre). Escrita anônima só pela `fn_ad_track` (`SECURITY DEFINER`, valida espaço, evento,
   página e criativo). Componente `AdSlot` em `@kizuna/core/client/ads`; tela root `AdsScreen`.
   Config `ads` (`adsenseClient`, `maxSlotsPerPage`). Ver `docs/plugins/ads.md`.
+- `marketing/` — carteira pré-paga por conta (`wallet_ledger`, só inserção, centavos), impulsionar
+  anúncios (`boosts`) e banners pagos (`ad_campaigns`); saldo = razão − reservado (`vw_wallet_balance`).
+  Regra do plugin: sem funções e sem triggers, com UMA exceção na 0004 — `fn_marketing__wallet_guard`
+  (trava de saldo por conta contra corrida e saldo negativo; aprovada em 22/11/2026). A 0004 também
+  traz `credit_bonus`/`reversal` e o extrato `vw_wallet_statement`. Ver `docs/plugins/marketing.md`.
 - `reviews/` — generic ratings/reviews infrastructure, scoped by `domain` + `reference_id` (no
   FK to the reviewed entity — same decoupling as `forms`). Tables: `reviews` (rating 1–5 +
   comment + status `pending`/`published`/`hidden`/`rejected` + soft delete), `review_tags`
