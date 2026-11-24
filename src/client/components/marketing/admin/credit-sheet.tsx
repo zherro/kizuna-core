@@ -166,7 +166,7 @@ export function CreditSheet({ open, onOpenChange, tenantId, accountLabel, balanc
               {note.trim() ? <p className="text-sm text-muted-foreground">“{note.trim()}”</p> : null}
               {after < 0 ? (
                 <p role="alert" className="text-sm text-red-700 dark:text-red-400">
-                  {words.balanceNegative} Os impulsionamentos já reservados não são cancelados.
+                  {words.balanceNegative} A conta não pode ficar negativa: diminua o valor.
                 </p>
               ) : null}
               <p className="text-xs text-muted-foreground">
@@ -174,7 +174,7 @@ export function CreditSheet({ open, onOpenChange, tenantId, accountLabel, balanc
               </p>
               <ErrorNote text={error} />
               <div className="flex gap-2">
-                <Button onClick={() => void confirm()} disabled={saving} aria-label="Confirmar lançamento">
+                <Button onClick={() => void confirm()} disabled={saving || after < 0} aria-label="Confirmar lançamento">
                   {saving && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" aria-hidden="true" />}
                   Confirmar
                 </Button>

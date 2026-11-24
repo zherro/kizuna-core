@@ -24,14 +24,14 @@ export function MarketingAdminScreen({ display }: { display?: MarketingDisplay }
 }
 
 function AdminScreen() {
-  const { banners, unit } = useMarketingDisplay();
+  const { banners, unit, title } = useMarketingDisplay();
   const who = unit === 'credits' ? 'Créditos dos anunciantes' : 'Saldo dos anunciantes';
   const description = banners
     ? `${who}, impulsionamentos, banners e o retorno que cada conta recebe.`
     : `${who}, impulsionamentos e o retorno que cada conta recebe.`;
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-8 md:px-6">
-      <PageHeader eyebrow="Root" title="Marketing" description={description} />
+      <PageHeader eyebrow="Root" title={title} description={description} />
       <Tabs defaultValue="anunciantes">
         <TabsList className="h-auto max-w-full flex-wrap justify-start">
           <TabsTrigger value="anunciantes">Anunciantes</TabsTrigger>

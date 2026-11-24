@@ -34,7 +34,7 @@ export function AdvertiserPanel({ display, ...props }: PanelProps & { display?: 
 }
 
 function Panel({ tenantId, initialTab, initialServiceUid }: PanelProps) {
-  const { money, words, banners, badgeName } = useMarketingDisplay();
+  const { money, words, banners, badgeName, title } = useMarketingDisplay();
   const tabs = banners ? TABS : TABS.filter((t) => t !== 'banners');
   const startTab = (tabs as readonly string[]).includes(initialTab ?? '') ? (initialTab as string) : 'saldo';
   const bal = useBalance(tenantId);
@@ -47,7 +47,7 @@ function Panel({ tenantId, initialTab, initialServiceUid }: PanelProps) {
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-5 px-4 py-6 sm:px-6">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="text-2xl font-semibold tracking-tight">Marketing</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
           <p className="mt-1 max-w-prose text-sm text-muted-foreground">{lead}</p>
         </div>
         <div className="text-right">

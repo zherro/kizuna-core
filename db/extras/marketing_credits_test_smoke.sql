@@ -1,6 +1,6 @@
 -- Smoke da 0004 do plugin marketing (créditos, estorno, trava de saldo, extrato).
 -- Roda tudo numa transação e desfaz no fim (ROLLBACK): não deixa dado nenhum.
--- Precisa de: plugin marketing 1.3.0, um usuário com conta (auth.user_roles) e um anúncio ativo.
+-- Precisa de: plugin marketing 1.4.0, um usuário com conta (auth.user_roles) e um anúncio ativo.
 BEGIN;
 DO $$
 DECLARE
@@ -14,7 +14,7 @@ DECLARE
   v_n integer;
   v_boost bigint;
 BEGIN
-  ASSERT EXISTS (SELECT 1 FROM auth.plugin_registry WHERE name = 'marketing' AND version >= '1.3.0'), 'marketing 1.3.0';
+  ASSERT EXISTS (SELECT 1 FROM auth.plugin_registry WHERE name = 'marketing' AND version >= '1.4.0'), 'marketing 1.4.0';
   ASSERT to_regclass('public.vw_wallet_statement') IS NOT NULL, 'vw_wallet_statement existe';
 
   SELECT ur.tenant_id, ur.user_id INTO v_t, v_u FROM auth.user_roles ur LIMIT 1;
@@ -110,6 +110,13 @@ BEGIN
   ASSERT v_bal = 2000 AND v_stmt = v_bal, 'devolveu 4 dias (2000): ' || v_stmt || ' / ' || v_bal;
   ASSERT EXISTS (SELECT 1 FROM public.vw_wallet_statement WHERE tenant_id = v_t AND kind = 'boost_refund'
                    AND amount_cents = 2000 AND days = 4), 'linha de devolução';
+
+  -- 5) (0005) parado a partir de amanhã: hoje já foi pago, então continua no ar hoje
+  ASSERT EXISTS (SELECT 1 FROM public.vw_boosts_live WHERE service_uid = v_s), 'no ar até o fim do dia pago';
+  -- comprometido = só reserva (1 dia × 500), sem o estorno; comprado = só pagamento (nenhum aqui)
+  ASSERT (SELECT committed_cents FROM public.vw_wallet_balance WHERE tenant_id = v_t) = 500, 'comprometido só com reserva';
+  ASSERT (SELECT credited_cents FROM public.vw_wallet_balance WHERE tenant_id = v_t) = 3000, 'creditado = bônus';
+  ASSERT (SELECT COALESCE(purchased_cents, 0) FROM public.vw_wallet_balance WHERE tenant_id = v_t) = 0, 'comprado = só pagamento';
 
   RAISE NOTICE 'marketing_credits smoke: ok';
 END $$;

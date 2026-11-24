@@ -38,7 +38,7 @@ function NewBoost({
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
   const pay = usePaymentInfo();
-  const { money, words, badgeName, periodFormat } = useMarketingDisplay();
+  const { money, words, badgeName, periodFormat, boostPlacement } = useMarketingDisplay();
   const evaluation = useMemo(
     () => evaluatePeriod(draft, balance.balanceCents, undefined, periodFormat),
     [draft, balance.balanceCents, periodFormat],
@@ -81,7 +81,7 @@ function NewBoost({
         Impulsionar um anúncio
       </h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        O anúncio ganha o selo {badgeName} e entra na faixa de patrocinados, em todas as páginas, assim que começar.
+        O anúncio ganha o selo {badgeName} e {boostPlacement}, assim que começar.
       </p>
       <div className="mt-4 flex flex-col gap-4">
         <Field label="Anúncio" hint={services.length === 0 ? 'Você não tem anúncios publicados para impulsionar.' : 'Só aparecem anúncios publicados.'}>

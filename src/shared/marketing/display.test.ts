@@ -21,16 +21,33 @@ describe('formatAmount', () => {
 
 describe('resolveMarketingDisplay', () => {
   it('sem configuração = padrão do Bora', () => {
-    expect(resolveMarketingDisplay()).toEqual({ banners: true, unit: 'brl', statement: 'ledger', badgeName: 'BORA INDICA', kindLabels: {} });
+    expect(resolveMarketingDisplay()).toEqual({
+      banners: true,
+      unit: 'brl',
+      statement: 'ledger',
+      badgeName: 'BORA INDICA',
+      kindLabels: {},
+      title: 'Marketing',
+      boostPlacement: 'entra na faixa de patrocinados, em todas as páginas',
+      dateHint: 'Data do servidor (UTC)',
+    });
+  });
+
+  it('textos fixos configuráveis (título, onde aparece, dica da data); vazio cai no padrão', () => {
+    const r = resolveMarketingDisplay({ title: 'Destaques', boostPlacement: 'aparece no topo da busca', dateHint: '' });
+    expect(r.title).toBe('Destaques');
+    expect(r.boostPlacement).toBe('aparece no topo da busca');
+    expect(r.dateHint).toBe('Data do servidor (UTC)');
   });
 
   it('mantém o que veio e completa o resto', () => {
-    expect(resolveMarketingDisplay({ unit: 'credits', banners: false, badgeName: 'ALÔ' })).toEqual({
+    expect(resolveMarketingDisplay({ unit: 'credits', banners: false, badgeName: 'ALÔ' })).toMatchObject({
       banners: false,
       unit: 'credits',
       statement: 'ledger',
       badgeName: 'ALÔ',
       kindLabels: {},
+      title: 'Marketing',
     });
   });
 });

@@ -25,7 +25,7 @@ export function PeriodFields({
   directPayment?: boolean;
 }) {
   const today = dbToday();
-  const { money, words, unit } = useMarketingDisplay();
+  const { money, words, unit, dateHint } = useMarketingDisplay();
   // Em R$ o texto é o de sempre; em créditos, a faixa na unidade e a equivalência.
   const dailyHint =
     unit === 'credits'
@@ -37,7 +37,7 @@ export function PeriodFields({
         <Field label={words.dailyLabel} hint={dailyHint}>
           <Input inputMode="decimal" value={draft.dailyText} onChange={(e) => onChange({ ...draft, dailyText: e.target.value })} />
         </Field>
-        <Field label="Começa em" hint="Data do servidor (UTC)">
+        <Field label="Começa em" hint={dateHint}>
           <Input type="date" min={today} value={draft.startsOn} onChange={(e) => onChange({ ...draft, startsOn: e.target.value })} />
         </Field>
         <Field label="Termina em" hint={`Até ${formatDay(addDays(draft.startsOn || today, 89))} (90 dias)`}>

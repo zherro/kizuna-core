@@ -29,6 +29,12 @@ export type MarketingDisplay = {
   badgeName?: string;
   /** Sobrescreve rótulos do extrato por kind. */
   kindLabels?: Partial<Record<StatementKind, string>>;
+  /** Título da página (anunciante e admin). Padrão 'Marketing'. */
+  title?: string;
+  /** Onde o impulsionado aparece, no texto "O anúncio ganha o selo X e <isto>, assim que começar." */
+  boostPlacement?: string;
+  /** Dica do campo "Começa em". Padrão 'Data do servidor (UTC)'. */
+  dateHint?: string;
 };
 
 export type ResolvedMarketingDisplay = Required<MarketingDisplay>;
@@ -39,7 +45,12 @@ export const DEFAULT_MARKETING_DISPLAY: ResolvedMarketingDisplay = {
   statement: 'ledger',
   badgeName: 'BORA INDICA',
   kindLabels: {},
+  title: 'Marketing',
+  boostPlacement: 'entra na faixa de patrocinados, em todas as páginas',
+  dateHint: 'Data do servidor (UTC)',
 };
+
+const orDefault = (v: string | undefined, d: string) => (v?.trim() ? v : d);
 
 export function resolveMarketingDisplay(d?: MarketingDisplay): ResolvedMarketingDisplay {
   return {
@@ -48,6 +59,9 @@ export function resolveMarketingDisplay(d?: MarketingDisplay): ResolvedMarketing
     statement: d?.statement ?? DEFAULT_MARKETING_DISPLAY.statement,
     badgeName: d?.badgeName?.trim() ? d.badgeName : DEFAULT_MARKETING_DISPLAY.badgeName,
     kindLabels: { ...(d?.kindLabels ?? {}) },
+    title: orDefault(d?.title, DEFAULT_MARKETING_DISPLAY.title),
+    boostPlacement: orDefault(d?.boostPlacement, DEFAULT_MARKETING_DISPLAY.boostPlacement),
+    dateHint: orDefault(d?.dateHint, DEFAULT_MARKETING_DISPLAY.dateHint),
   };
 }
 
@@ -145,7 +159,8 @@ export function marketingWords(d?: MarketingDisplay): MarketingWords {
         balanceAvailable: 'Créditos disponíveis',
         addBalance: 'Comprar créditos',
         committed: 'Créditos comprometidos',
-        totalCredited: 'Total comprado',
+        // Soma todo crédito positivo (pagamento, bônus, admin) — não só o comprado.
+        totalCredited: 'Total recebido',
         balanceNow: 'Créditos agora',
         balanceAfter: 'Créditos depois',
         insufficient: 'Créditos insuficientes',

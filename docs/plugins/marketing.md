@@ -13,12 +13,22 @@ Carteira pré-paga por conta (`tenant_id`), impulsionar anúncios e banners pago
 | `0002_marketing_purchase.sql` | compra com propósito (PIX que já cria o impulsionamento/campanha), devolução de banner reprovado |
 | `0003_boost_metrics_placement.sql` | métricas do impulsionado por lugar (patrocinado × orgânico) |
 | `0004_marketing_credits.sql` | `credit_bonus` e `reversal`, trava de saldo, extrato `vw_wallet_statement` (v1.3.0) |
+| `0005_marketing_live_until_paid.sql` | parado continua no ar até o fim do dia pago; `committed_cents` só com reserva; coluna `purchased_cents` (v1.4.0) |
 
 ## Modelo
 
 - **Saldo** = soma do razão − custo reservado de `boosts` e `ad_campaigns` (diária × dias). Não há
   débito no razão: a reserva é o próprio impulsionamento/campanha. Parar (`stopped_on`) devolve os
   dias não usados.
+- **Parar:** `stopped_on` é o primeiro dia **não** servido (no mínimo amanhã), então hoje já foi
+  pago. Desde a 0005, `vw_boosts_live` e `vw_ad_campaigns_live` mantêm o impulsionado/banner no ar
+  até o fim do dia pago (antes saíam na hora).
+- **`vw_wallet_balance`:** `balance_cents` (saldo), `credited_cents` (todo crédito positivo:
+  pagamento, admin, bônus), `committed_cents` (só o reservado em impulsionamentos e campanhas; desde
+  a 0005 não soma `adjust`/`reversal`), `purchased_cents` (0005: só `credit_payment`). A tela não lê
+  `purchased_cents`, para funcionar em banco sem a 0005.
+- **Dia do banco:** `CURRENT_DATE` segue o fuso do banco (UTC por padrão). Em Cuiabá (UTC−4) o dia
+  do impulsionamento vira às 20h. Ainda não tratado.
 - **Tipos de lançamento** (`wallet_ledger.kind`):
 
 | kind | Sinal | Quem lança | `ref_id` |
@@ -92,6 +102,12 @@ como antes** (R$, aba de banners, extrato lendo só `wallet_ledger`).
 | `statement` | `'ledger'` | `'full'` faz o extrato ler `vw_wallet_statement` (precisa da 0004) |
 | `badgeName` | `'BORA INDICA'` | nome do selo nos textos |
 | `kindLabels` | `{}` | sobrescreve o rótulo do extrato por `kind` |
+| `title` | `'Marketing'` | título da página (anunciante e admin) |
+| `boostPlacement` | `'entra na faixa de patrocinados, em todas as páginas'` | onde o impulsionado aparece, em "O anúncio ganha o selo X e …, assim que começar." |
+| `dateHint` | `'Data do servidor (UTC)'` | dica do campo "Começa em" |
+
+No admin, o desconto ("Corrigir") que deixaria a conta negativa mostra o aviso e não deixa confirmar
+(o banco também recusa desde a 0004).
 
 ```tsx
 <AdvertiserPanel

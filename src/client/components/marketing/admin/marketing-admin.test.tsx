@@ -69,6 +69,19 @@ describe('CreditSheet', () => {
     expect(JSON.parse(String(calls.find((c) => c.init?.method === 'POST')!.init!.body))).toMatchObject({ kind: 'adjust', amountCents: -500 });
   });
 
+  it('desconto que deixaria a conta negativa: avisa e não deixa confirmar', async () => {
+    open();
+    click(screen.getByText('Corrigir (descontar)'));
+    fireEvent.change(screen.getByLabelText('Valor em reais'), { target: { value: '15' } });
+    fireEvent.change(screen.getByLabelText('Observação'), { target: { value: 'duplicado' } });
+    click(screen.getByText('Revisar lançamento'));
+    expect(await screen.findByText(/A conta não pode ficar negativa/)).toBeTruthy();
+    const confirm = screen.getByLabelText('Confirmar lançamento') as HTMLButtonElement;
+    expect(confirm.disabled).toBe(true);
+    click(confirm);
+    expect(calls.some((c) => c.init?.method === 'POST')).toBe(false);
+  });
+
   it('recusa valor zero ou inválido sem chamar a API', async () => {
     open();
     fireEvent.change(screen.getByLabelText('Valor em reais'), { target: { value: 'abc' } });
