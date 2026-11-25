@@ -1,5 +1,5 @@
 import { it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { run as install } from './install.mjs';
@@ -83,4 +83,44 @@ it('conflito mantido: arquivo do projeto intacto, lock não avança', async () =
   expect(readFileSync(proxy, 'utf8')).toContain('proxy = 999');
   const lockAfter = JSON.parse(readFileSync(join(proj, 'kizuna.lock'), 'utf8'));
   expect(lockAfter.template.files['app/proxy.ts']).toBe(lockedHash);
+});
+
+it('seed que sombrearia o projeto: pula X.ts quando há X/index.ts e app/manifest.ts quando há public/manifest.webmanifest', async () => {
+  // core novo traz dois seeds que, num projeto real (Alô), derrubaram rotas:
+  //  - src/lib/server/resources.ts sombreia src/lib/server/resources/index.ts (404 nas /api/resources/*);
+  //  - src/app/manifest.ts disputa /manifest.webmanifest com public/manifest.webmanifest (500 no Next).
+  fakeCore('export const proxy = 1;\n', '1.1.0');
+  writeFileSync(
+    join(core, 'template', 'kizuna.manifest.json'),
+    JSON.stringify({
+      owner: 'base',
+      files: {
+        'app/proxy.ts': 'managed',
+        'src/lib/server/resources.ts': 'seed',
+        'src/app/manifest.ts': 'seed',
+      },
+    })
+  );
+  mkdirSync(join(core, 'template', 'src', 'lib', 'server'), { recursive: true });
+  mkdirSync(join(core, 'template', 'src', 'app'), { recursive: true });
+  writeFileSync(join(core, 'template', 'src', 'lib', 'server', 'resources.ts'), 'export {};\n');
+  writeFileSync(join(core, 'template', 'src', 'app', 'manifest.ts'), 'export default () => ({});\n');
+
+  mkdirSync(join(proj, 'src', 'lib', 'server', 'resources'), { recursive: true });
+  writeFileSync(join(proj, 'src', 'lib', 'server', 'resources', 'index.ts'), 'export const mine = 1;\n');
+  mkdirSync(join(proj, 'public'), { recursive: true });
+  writeFileSync(join(proj, 'public', 'manifest.webmanifest'), '{}\n');
+
+  const code = await update(ctx({ pull: false, skipDb: true, input: false }));
+  expect(code).toBe(0);
+
+  expect(existsSync(join(proj, 'src', 'lib', 'server', 'resources.ts'))).toBe(false);
+  expect(existsSync(join(proj, 'src', 'app', 'manifest.ts'))).toBe(false);
+  const lock = JSON.parse(readFileSync(join(proj, 'kizuna.lock'), 'utf8'));
+  expect(lock.template.seeds?.['src/lib/server/resources.ts']).toBeUndefined();
+  expect(lock.template.seeds?.['src/app/manifest.ts']).toBeUndefined();
+
+  const out = console.log.mock.calls.map((c) => c.join(' ')).join('\n');
+  expect(out).toMatch(/src\/lib\/server\/resources\.ts.*src\/lib\/server\/resources\/index\.ts/);
+  expect(out).toMatch(/src\/app\/manifest\.ts.*public\/manifest\.webmanifest/);
 });

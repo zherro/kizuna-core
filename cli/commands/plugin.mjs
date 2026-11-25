@@ -3,7 +3,7 @@
 // aplica suas migrations.
 
 import { loadManifests, DuplicateOwnerError } from '../lib/manifest.mjs';
-import { materialize } from '../lib/materialize.mjs';
+import { materialize, shadowedWarning } from '../lib/materialize.mjs';
 import { readEnabled, addEnabled, listAvailable } from '../lib/plugins-file.mjs';
 import { readLock, writeLock, emptyLock } from '../lib/lockfile.mjs';
 import { applyFragment } from '../lib/lock-build.mjs';
@@ -87,6 +87,7 @@ export async function run(ctx) {
     writeLock(projectDir, lock);
 
     console.log(`plugin "${name}" habilitado (${report.applied.length} arquivo(s) de casca)`);
+    for (const line of shadowedWarning(report)) console.log(line);
     return 0;
   }
 

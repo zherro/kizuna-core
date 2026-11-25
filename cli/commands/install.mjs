@@ -4,7 +4,7 @@
 import { existsSync, writeFileSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import { loadManifests, DuplicateOwnerError } from '../lib/manifest.mjs';
-import { materialize } from '../lib/materialize.mjs';
+import { materialize, shadowedWarning } from '../lib/materialize.mjs';
 import { readEnabled, addEnabled, listAvailable } from '../lib/plugins-file.mjs';
 import { readLock, writeLock } from '../lib/lockfile.mjs';
 import { buildFreshLock } from '../lib/lock-build.mjs';
@@ -121,5 +121,6 @@ export async function run(ctx) {
   console.log(
     `casca instalada: ${report.applied.length} novo(s)/atualizado(s), ${report.conflicts.length} ${verb}`
   );
+  for (const line of shadowedWarning(report)) console.log(line);
   return 0;
 }

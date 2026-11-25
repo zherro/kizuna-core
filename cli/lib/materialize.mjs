@@ -37,6 +37,61 @@ function existsSameStem(target) {
   }
 }
 
+const MODULE_EXTS = ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs'];
+
+/**
+ * Se CRIAR `projectPath` sombrearia (ou disputaria rota com) algo que o projeto já tem,
+ * devolve o path relativo do arquivo existente; senão null. Só vale para alvo AUSENTE.
+ *  - `X.ts` × `X/index.*`: o resolvedor do TS/Next prefere o arquivo à pasta, então o
+ *    seed novo esconderia o módulo do projeto (caso real: resources.ts × resources/index.ts
+ *    → 404 em todas as /api/resources/* do Alô). E o inverso: `X/index.ts` × `X.*`.
+ *  - `app/manifest.(ts|js)`: gera /manifest.webmanifest; com `public/manifest.webmanifest`
+ *    ou `app/manifest.(json|webmanifest)` o Next quebra (500).
+ */
+export function findShadow(projectDir, projectPath) {
+  const rel = projectPath.replaceAll('\\', '/');
+  const ext = extname(rel);
+  if (!MODULE_EXTS.includes(ext)) return null;
+  const has = (p) => existsSync(join(projectDir, p));
+  const stemPath = rel.slice(0, -ext.length);
+
+  if (basename(stemPath) === 'index') {
+    const parent = dirname(stemPath);
+    if (parent !== '.') {
+      const hit = MODULE_EXTS.map((e) => `${parent}${e}`).find(has);
+      if (hit) return hit;
+    }
+  } else {
+    const hit = MODULE_EXTS.map((e) => `${stemPath}/index${e}`).find(has);
+    if (hit) return hit;
+  }
+
+  if (/(^|\/)app\/manifest$/.test(stemPath)) {
+    const appDir = dirname(stemPath);
+    const candidates = [
+      'public/manifest.webmanifest',
+      `${appDir}/manifest.json`,
+      `${appDir}/manifest.webmanifest`,
+      ...MODULE_EXTS.filter((e) => e !== ext).map((e) => `${stemPath}${e}`),
+    ];
+    const hit = candidates.find(has);
+    if (hit) return hit;
+  }
+  return null;
+}
+
+/** Linhas de aviso para `report.shadowed` (update/install imprimem no fim do relatório). */
+export function shadowedWarning(report) {
+  const list = report?.shadowed ?? [];
+  if (!list.length) return [];
+  return [
+    '',
+    `  ⚠ ${list.length} arquivo(s) do core NÃO criado(s) — colidiriam com o que o projeto já tem:`,
+    ...list.map((s) => `      ${s.path}  (sombrearia ${s.by})`),
+    '    o projeto segue com o dele. Para adotar a versão do core, remova o arquivo do projeto e rode o update de novo.',
+  ];
+}
+
 /**
  * `package.json` criado do zero pelo install: sem `name`/`version` o `next.config.ts` (que lê
  * `version` para o rodapé) não compila, e o npm reclama. Outros alvos de merge começam vazios.
@@ -67,6 +122,8 @@ export async function materialize(manifestSet, opts) {
     conflicts: [],
     merges: [],
     seedDrift: [],
+    // { path, by }: alvo ausente que NÃO foi criado porque sombrearia `by` (ver findShadow).
+    shadowed: [],
     materializedPaths: manifestSet.entries.map((e) => e.projectPath),
     newLockFragment: { templateFiles: {}, pluginShellFiles: {}, seedFiles: {}, packageOwnedKeys: null },
   };
@@ -122,6 +179,17 @@ export async function materialize(manifestSet, opts) {
     }
 
     // direction === 'apply'
+    // Alvo ausente que colidiria com algo do projeto: não cria (vale para todos os modos)
+    // e não registra hash — no próximo update a checagem roda de novo.
+    if (!existsSync(target)) {
+      const by = findShadow(projectDir, entry.projectPath);
+      if (by) {
+        report.skipped.push(entry.projectPath);
+        report.shadowed.push({ path: entry.projectPath, by });
+        continue;
+      }
+    }
+
     if (entry.mode === 'install') {
       // Copiado só quando ausente. NUNCA sobrescrito: ignora `reseed` (all ou
       // lista) e `force`, e não entra em seedDrift — divergir do template é o

@@ -308,3 +308,80 @@ describe('newPackageJsonBase', () => {
     expect(newPackageJsonBase('outro.json', '/tmp/x')).toEqual({});
   });
 });
+
+describe('não cria arquivo que sombrearia o projeto', () => {
+  async function run(manifestFiles, projFiles, lock = emptyLock()) {
+    const core = mkdtempSync(join(tmpdir(), 'kz-core-'));
+    const proj = mkdtempSync(join(tmpdir(), 'kz-proj-'));
+    mkdirSync(join(core, 'template'), { recursive: true });
+    writeFileSync(
+      join(core, 'template', 'kizuna.manifest.json'),
+      JSON.stringify({ owner: 'base', files: manifestFiles })
+    );
+    for (const p of Object.keys(manifestFiles)) {
+      mkdirSync(join(core, 'template', p, '..'), { recursive: true });
+      writeFileSync(join(core, 'template', p), `// template ${p}\n`);
+    }
+    for (const p of projFiles) {
+      mkdirSync(join(proj, p, '..'), { recursive: true });
+      writeFileSync(join(proj, p), `// projeto ${p}\n`);
+    }
+    const report = await materialize(loadManifests(core, []), {
+      projectDir: proj,
+      direction: 'apply',
+      lock,
+      prompt: { choose: vi.fn(), confirm: vi.fn() },
+    });
+    return {
+      report,
+      exists: (p) => existsSync(join(proj, p)),
+      cleanup: () => {
+        rmSync(core, { recursive: true, force: true });
+        rmSync(proj, { recursive: true, force: true });
+      },
+    };
+  }
+
+  for (const mode of ['seed', 'install', 'managed']) {
+    it(`${mode}: X.ts não é criado quando o projeto tem X/index.ts`, async () => {
+      const r = await run({ 'src/lib/server/resources.ts': mode }, ['src/lib/server/resources/index.ts']);
+      expect(r.exists('src/lib/server/resources.ts')).toBe(false);
+      expect(r.report.applied).not.toContain('src/lib/server/resources.ts');
+      expect(r.report.shadowed).toEqual([
+        { path: 'src/lib/server/resources.ts', by: 'src/lib/server/resources/index.ts' },
+      ]);
+      expect(r.report.newLockFragment.seedFiles['src/lib/server/resources.ts']).toBeUndefined();
+      expect(r.report.newLockFragment.templateFiles['src/lib/server/resources.ts']).toBeUndefined();
+      r.cleanup();
+    });
+  }
+
+  it('X/index.ts não é criado quando o projeto tem X.tsx', async () => {
+    const r = await run({ 'src/lib/foo/index.ts': 'seed' }, ['src/lib/foo.tsx']);
+    expect(r.exists('src/lib/foo/index.ts')).toBe(false);
+    expect(r.report.shadowed).toEqual([{ path: 'src/lib/foo/index.ts', by: 'src/lib/foo.tsx' }]);
+    r.cleanup();
+  });
+
+  it('app/manifest.ts não é criado quando há public/manifest.webmanifest (ou app/manifest.json)', async () => {
+    const a = await run({ 'src/app/manifest.ts': 'seed' }, ['public/manifest.webmanifest']);
+    expect(a.exists('src/app/manifest.ts')).toBe(false);
+    expect(a.report.shadowed).toEqual([{ path: 'src/app/manifest.ts', by: 'public/manifest.webmanifest' }]);
+    a.cleanup();
+
+    const b = await run({ 'app/manifest.ts': 'seed' }, ['app/manifest.json']);
+    expect(b.exists('app/manifest.ts')).toBe(false);
+    expect(b.report.shadowed).toEqual([{ path: 'app/manifest.ts', by: 'app/manifest.json' }]);
+    b.cleanup();
+  });
+
+  it('sem colisão o seed é criado normalmente; arquivo já existente não é afetado', async () => {
+    const a = await run({ 'src/lib/server/resources.ts': 'seed', 'src/app/manifest.ts': 'seed' }, [
+      'src/lib/server/resources/outro.ts',
+    ]);
+    expect(a.exists('src/lib/server/resources.ts')).toBe(true);
+    expect(a.exists('src/app/manifest.ts')).toBe(true);
+    expect(a.report.shadowed).toEqual([]);
+    a.cleanup();
+  });
+});

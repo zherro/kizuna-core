@@ -4,7 +4,7 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { loadManifests, DuplicateOwnerError } from '../lib/manifest.mjs';
-import { materialize } from '../lib/materialize.mjs';
+import { materialize, shadowedWarning } from '../lib/materialize.mjs';
 import { readEnabled } from '../lib/plugins-file.mjs';
 import { readLock, writeLock } from '../lib/lockfile.mjs';
 import { applyFragment, stampCore } from '../lib/lock-build.mjs';
@@ -138,6 +138,7 @@ export async function run(ctx) {
   );
   if (report.applied.length) console.log(`  aplicados: ${report.applied.join(', ')}`);
   if (report.conflicts.length) console.log(`  conflitos: ${report.conflicts.join(', ')}`);
+  for (const line of shadowedWarning(report)) console.log(line);
   // Por último, para ficar visível: o que NÃO foi tocado por estar customizado.
   if (report.seedDrift?.length) {
     console.log('');
