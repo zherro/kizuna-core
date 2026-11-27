@@ -51,7 +51,7 @@ function Panel({ tenantId, initialTab, initialServiceUid }: PanelProps) {
           <p className="mt-1 max-w-prose text-sm text-muted-foreground">{lead}</p>
         </div>
         <div className="text-right">
-          <p className="text-xs text-muted-foreground">{words.balanceAvailable}</p>
+          <p className="text-sm text-muted-foreground">{words.balanceAvailable}</p>
           <p className="text-2xl font-semibold tabular-nums" aria-live="polite">
             {bal.loading && !bal.data ? '…' : money(balance.balanceCents)}
           </p>

@@ -229,10 +229,10 @@ export function WalletTab({ balance, reloadBalance }: { balance: Balance; reload
   const { money, words } = useMarketingDisplay();
   return (
     <div className="flex flex-col gap-6">
-      <div className="grid gap-3 sm:grid-cols-3">
-        <Stat strong label={words.balanceAvailable} value={money(balance.balanceCents)} hint="Pode ser usado agora" />
-        <Stat label={words.committed} value={money(balance.committedCents)} hint={`Reservado em ${words.spendTargets}`} />
-        <Stat label={words.totalCredited} value={money(balance.creditedCents)} />
+      {/* O disponível já está no topo do painel (visível em toda aba): aqui só o resto, num cartão. */}
+      <div className="grid grid-cols-2 divide-x rounded-[var(--ui-radius-card,1rem)] border bg-card">
+        <Stat bare label={`Reservado em ${words.spendTargets}`} value={money(balance.committedCents)} />
+        <Stat bare label={words.totalCredited} value={money(balance.creditedCents)} />
       </div>
       <TopUp
         onDone={() => {

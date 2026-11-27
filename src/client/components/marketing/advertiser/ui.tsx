@@ -67,12 +67,25 @@ export function LoadError({ message, onRetry }: { message: string; onRetry?: () 
   );
 }
 
-export function Stat({ label, value, hint, strong }: { label: string; value: ReactNode; hint?: string; strong?: boolean }) {
+/** `bare`: sem cartão próprio — para dividir um cartão com outros números. */
+export function Stat({
+  label,
+  value,
+  hint,
+  strong,
+  bare,
+}: {
+  label: string;
+  value: ReactNode;
+  hint?: string;
+  strong?: boolean;
+  bare?: boolean;
+}) {
   return (
-    <div className="min-w-0 rounded-[var(--ui-radius-card,1rem)] border bg-card p-4">
-      <p className="text-xs text-muted-foreground">{label}</p>
+    <div className={cn('min-w-0 p-4', !bare && 'rounded-[var(--ui-radius-card,1rem)] border bg-card')}>
+      <p className="text-sm text-muted-foreground">{label}</p>
       <p className={cn('mt-1 break-words font-semibold tabular-nums', strong ? 'text-3xl' : 'text-xl')}>{value}</p>
-      {hint ? <p className="mt-1 text-xs text-muted-foreground">{hint}</p> : null}
+      {hint ? <p className="mt-1 text-sm text-muted-foreground">{hint}</p> : null}
     </div>
   );
 }
